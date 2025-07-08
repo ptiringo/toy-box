@@ -1,20 +1,51 @@
 ---
-name: Feature request
+name: ✨ Feature Request
 about: Suggest an idea for this project
-title: ''
-labels: ''
+title: "[FEAT]: "
+labels: enhancement
 assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## 目的 (Goal/Objective)
+この Issue で達成したい具体的な目標を明確に記述してください。
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+例: ユーザーがプロフィール画像をアップロードできるようにする機能を追加する。
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+## 現状と問題点 (Current State & Problem)
+現在発生している問題や、この機能が必要な理由について詳しく説明してください。
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+例: 現在のプロフィールページには、ユーザーが自分の画像をアップロードする機能がありません。これにより、ユーザーは自分を表現する手段が限られています。
+
+## 期待される挙動 (Expected Behavior)
+この Issue 解決後にシステムがどのように振る舞うべきかを具体的に記述してください。
+
+例:
+- ユーザーはプロフィール編集ページで画像選択ボタンをクリックできる。
+- 画像を選択すると、サーバーにアップロードされ、プロフィール画像として表示される。
+- 画像のアップロードは非同期で行われ、ユーザー体験を損なわない。
+
+## 関連ファイル/モジュール (Relevant Files/Modules) - オプション
+この機能に関連する可能性のあるファイルやモジュールがあれば記述してください。
+
+例:
+- `src/components/UserProfile.js`
+- `src/api/userApi.js`
+- `server/routes/upload.js`
+
+## テスト方法 (How to Test) - オプション
+この機能が正しく動作するかを確認するためのテスト方法を記述してください。
+
+例:
+1.  ユーザーとしてログインする。
+2.  プロフィール編集ページに移動する。
+3.  画像選択ボタンをクリックし、適当な画像をアップロードする。
+4.  画像が正常に表示されることを確認する。
+
+## 考慮事項/制約 (Considerations/Constraints) - オプション
+実装上の制約や、特に考慮すべき事項があれば記述してください。
+
+例:
+- 画像のファイルサイズは 5MB までに制限する。
+- サポートする画像形式は JPG, PNG, GIF のみとする。
+- CDN を利用して画像を配信する。
