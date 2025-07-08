@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Enable updates for Gradle dependencies in the api project
+  - package-ecosystem: "gradle"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    # Keep PRs manageable by limiting the number of open PRs
+    open-pull-requests-limit: 5
+
+  # Enable updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Keep PRs manageable by limiting the number of open PRs  
+    open-pull-requests-limit: 5
