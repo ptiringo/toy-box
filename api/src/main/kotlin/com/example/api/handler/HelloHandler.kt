@@ -3,13 +3,13 @@ package com.example.api.handler
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import reactor.core.publisher.Mono
+import org.springframework.web.reactive.function.server.bodyValueAndAwait
 
 @Component
 class HelloHandler {
 
-    fun hello(request: ServerRequest): Mono<ServerResponse> {
+    suspend fun hello(request: ServerRequest): ServerResponse {
         return ServerResponse.ok()
-            .bodyValue(mapOf("message" to "Hello World"))
+            .bodyValueAndAwait(mapOf("message" to "Hello World"))
     }
 }
