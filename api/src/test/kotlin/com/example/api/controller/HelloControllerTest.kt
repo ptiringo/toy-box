@@ -3,13 +3,14 @@ package com.example.api.controller
 import com.example.api.config.RouterConfig
 import com.example.api.handler.HelloHandler
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.context.annotation.Import
 import org.springframework.test.web.reactive.server.WebTestClient
 
-class HelloControllerTest {
-
-    private val helloHandler = HelloHandler()
-    private val routerConfig = RouterConfig()
-    private val webTestClient = WebTestClient.bindToRouterFunction(routerConfig.apiRoutes(helloHandler)).build()
+@WebFluxTest
+@Import(RouterConfig::class, HelloHandler::class)
+class HelloControllerTest(@Autowired val webTestClient: WebTestClient) {
 
     @Test
     fun `should return Hello World message when calling hello endpoint`() {

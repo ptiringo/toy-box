@@ -11,7 +11,7 @@ import org.springframework.web.reactive.function.server.coRouter
 class RouterConfig {
 
     @Bean
-    fun apiRoutes(helloHandler: HelloHandler): RouterFunction<ServerResponse> {
+    fun helloRoute(helloHandler: HelloHandler): RouterFunction<ServerResponse> {
         return coRouter {
             GET("/api/hello", helloHandler::hello)
         }
