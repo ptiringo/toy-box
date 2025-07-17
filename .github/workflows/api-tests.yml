@@ -1,3 +1,8 @@
+# API Testing Workflow
+# 
+# Purpose: Automatically run API project tests on Pull Requests to ensure code quality
+# and prevent broken code from being merged into the main branch.
+
 name: API Tests
 
 on:
@@ -9,6 +14,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Run API Tests
+    defaults:
+      run:
+        working-directory: api
     
     steps:
     - name: Checkout code
@@ -20,20 +28,8 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         
-    - name: Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-          
-    - name: Grant execute permission for gradlew
-      run: chmod +x ./api/gradlew
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4
       
     - name: Run API tests
-      run: |
-        cd api
-        ./gradlew test --no-daemon --stacktrace
+      run: ./gradlew test --no-daemon --stacktrace
