@@ -19,12 +19,5 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install editorconfig-checker
-      run: |
-        # Download and install editorconfig-checker
-        curl -sSL https://github.com/editorconfig-checker/editorconfig-checker/releases/latest/download/ec-linux-amd64.tar.gz | tar -xz
-        sudo mv bin/ec-linux-amd64 /usr/local/bin/editorconfig-checker
-
     - name: Run EditorConfig check
-      run: |
-        editorconfig-checker -format github-actions
+      uses: editorconfig-checker/action-editorconfig-checker@main
