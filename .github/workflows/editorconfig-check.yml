@@ -19,5 +19,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run EditorConfig check
+    - name: Install EditorConfig check
       uses: editorconfig-checker/action-editorconfig-checker@v2
+
+    - name: Run EditorConfig check
+      run: editorconfig-checker --format github-actions
+
