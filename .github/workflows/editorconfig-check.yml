@@ -1,0 +1,27 @@
+# EditorConfig Format Check Workflow
+#
+# Purpose: Automatically check file format compliance with .editorconfig settings
+# on Pull Requests to ensure consistent code formatting across the repository.
+
+name: EditorConfig Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  editorconfig-check:
+    runs-on: ubuntu-latest
+    name: Check EditorConfig Compliance
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install EditorConfig check
+      uses: editorconfig-checker/action-editorconfig-checker@v2
+
+    - name: Run EditorConfig check
+      run: editorconfig-checker --format github-actions
+
