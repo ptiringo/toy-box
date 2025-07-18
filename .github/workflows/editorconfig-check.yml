@@ -5,7 +5,7 @@
 
 name: EditorConfig Check
 
-"on":
+on:
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened]
@@ -20,4 +20,4 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run EditorConfig check
-      uses: editorconfig-checker/action-editorconfig-checker@main
+      uses: editorconfig-checker/action-editorconfig-checker@v2
