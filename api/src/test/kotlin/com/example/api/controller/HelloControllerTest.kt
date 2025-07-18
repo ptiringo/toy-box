@@ -10,7 +10,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 
 @WebFluxTest
 @Import(RouterConfig::class, HelloHandler::class)
-class HelloControllerTest(@Autowired val webTestClient: WebTestClient) {
+class HelloControllerTest(@param:Autowired val webTestClient: WebTestClient) {
 
     @Test
     fun `should return Hello World message when calling hello endpoint`() {
