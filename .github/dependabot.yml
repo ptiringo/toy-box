@@ -7,6 +7,12 @@ updates:
       interval: "weekly"
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
+    # Group Kotlin plugins together (Spring manages other Kotlin dependencies)
+    groups:
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin.jvm"
+          - "org.jetbrains.kotlin.plugin.spring"
 
   # Enable updates for GitHub Actions
   - package-ecosystem: "github-actions"
