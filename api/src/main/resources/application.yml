@@ -2,11 +2,14 @@ spring:
   application:
     name: api
 
+# Spring Boot Actuator の設定
 management:
   endpoints:
     web:
       exposure:
+        # セキュリティのため、ヘルスチェックエンドポイントのみ公開
         include: health
   endpoint:
     health:
+      # 詳細な情報は認証された場合のみ表示（セキュリティ考慮）
       show-details: when-authorized
