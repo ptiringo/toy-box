@@ -59,4 +59,20 @@
 - **定数**: UPPER_SNAKE_CASE（例: MAX_RETRY_COUNT）
 - **プロパティ**: camelCase（例: userId, emailAddress）
 
+## EditorConfig 準拠（EditorConfig Compliance）
+
+### ファイル形式の遵守
+- **全てのファイルはEditorConfigの設定に従う必要があります**
+- `.editorconfig` ファイルで定義された以下の設定を厳密に守ってください：
+  - `end_of_line = lf`: 改行コードはLF（Unix形式）を使用
+  - `insert_final_newline = true`: ファイル末尾に必ず改行を挿入
+  - `trim_trailing_whitespace = true`: 行末の空白文字を削除
+  - `charset = utf-8`: UTF-8エンコーディングを使用
+- **マークダウンファイルの特例**: `*.md` ファイルでは行末空白の削除は無効（`trim_trailing_whitespace = false`）
+
+### CI/CDでの自動チェック
+- EditorConfig Checkがプルリクエスト時に自動実行されます
+- 違反があると自動的にエラーとなるため、コミット前に必ず確認してください
+- ローカルでの事前チェックを推奨します
+
 これらの指針に従って、高品質で保守性が高く、セキュリティを考慮したKotlin Spring Bootアプリケーションの開発を支援してください。
