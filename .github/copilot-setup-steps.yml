@@ -1,0 +1,93 @@
+# GitHub Copilot セットアップ手順 (Setup Steps)
+# このファイルは開発環境のセットアップを自動化するための手順を定義します
+# This file defines automated setup procedures for the development environment
+
+name: "Project Setup"
+description: "Setup development environment for toy-box project"
+
+steps:
+  # Java 21 のインストール (Java 21 Installation)
+  - name: "Install Java 21"
+    description: "Install Java 21 (Eclipse Temurin) used by the project"
+    platforms:
+      ubuntu:
+        commands:
+          - "wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo apt-key add -"
+          - "echo 'deb https://packages.adoptium.net/artifactory/deb $(lsb_release -sc) main' | sudo tee /etc/apt/sources.list.d/adoptium.list"
+          - "sudo apt update"
+          - "sudo apt install -y temurin-21-jdk"
+        verify: "java -version 2>&1 | grep -q 'openjdk version \"21'"
+      macos:
+        commands:
+          - "brew tap homebrew/cask-versions"
+          - "brew install --cask temurin21"
+        verify: "java -version 2>&1 | grep -q 'openjdk version \"21'"
+      windows:
+        commands:
+          - "choco install temurin21 -y"
+        verify: "java -version 2>&1 | findstr \"openjdk version \\\"21\""
+
+  # editorconfig-checker のインストール (EditorConfig Checker Installation)
+  - name: "Install EditorConfig Checker"
+    description: "Install editorconfig-checker for file format consistency checks"
+    platforms:
+      ubuntu:
+        commands:
+          - "curl -L -o editorconfig-checker.tar.gz https://github.com/editorconfig-checker/editorconfig-checker/releases/latest/download/ec-linux-amd64.tar.gz"
+          - "tar -xzf editorconfig-checker.tar.gz"
+          - "sudo mv bin/ec-linux-amd64 /usr/local/bin/editorconfig-checker"
+          - "sudo chmod +x /usr/local/bin/editorconfig-checker"
+          - "rm -rf bin editorconfig-checker.tar.gz"
+        verify: "editorconfig-checker --version"
+      macos:
+        commands:
+          - "brew install editorconfig-checker"
+        verify: "editorconfig-checker --version"
+      windows:
+        commands:
+          - "choco install editorconfig-checker -y"
+        verify: "editorconfig-checker --version"
+
+  # 環境確認 (Environment Verification)
+  - name: "Verify Environment"
+    description: "Verify that setup completed successfully"
+    commands:
+      - "echo '=== Environment Verification ==='"
+      - "echo 'Java version:'"
+      - "java -version"
+      - "echo ''"
+      - "echo 'EditorConfig Checker version:'"
+      - "editorconfig-checker --version"
+      - "echo ''"
+      - "echo 'Gradle wrapper version:'"
+      - "cd api && ./gradlew --version"
+
+  # プロジェクトビルド確認 (Project Build Verification)
+  - name: "Verify Project Build"
+    description: "Verify that the project builds successfully"
+    commands:
+      - "echo '=== Project Build Verification ==='"
+      - "cd api && ./gradlew build --no-daemon"
+      - "echo 'Build completed successfully!'"
+
+  # EditorConfig チェック (EditorConfig Check)
+  - name: "EditorConfig Check"
+    description: "Verify that project files comply with EditorConfig settings"
+    commands:
+      - "echo '=== EditorConfig Check ==='"
+      - "editorconfig-checker"
+      - "echo 'EditorConfig check completed successfully!'"
+
+# 追加情報 (Additional Information)
+additional_info:
+  java_version: "21"
+  java_distribution: "Eclipse Temurin"
+  gradle_version: "8.14.2"
+  kotlin_version: "2.2.0"
+  spring_boot_version: "3.5.3"
+
+# 今後の拡張予定 (Future Extensions)
+future_steps:
+  - "Docker environment setup"
+  - "IDE configuration automation"
+  - "Project-specific toolchain additions"
