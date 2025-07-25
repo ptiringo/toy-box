@@ -1,7 +1,7 @@
 package com.example.api.domain.horse_racing
 
 /** 騎手 */
-class Jockey(
+data class Jockey(
     /** 名 */
     val firstName: String,
     /** 姓 */
