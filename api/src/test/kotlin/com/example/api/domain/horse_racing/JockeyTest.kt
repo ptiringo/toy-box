@@ -7,7 +7,7 @@ class JockeyTest {
 
     @Test
     @DisplayName("コンストラクタ")
-    fun testJockey() {
+    fun コンストラクタでプロパティが正しく設定されること() {
         val jockey = Jockey("武", "豊")
         assert(jockey.firstName == "武")
         assert(jockey.lastName == "豊")
