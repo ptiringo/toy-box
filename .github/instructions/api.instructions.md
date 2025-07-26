@@ -36,6 +36,14 @@
 - **@DataR2dbcTest**: R2DBCリポジトリのテストに使用
 - **TestContainers**: データベースなど外部リソースが必要な場合は積極的に活用
 
+### アサーション方法（Assertion Methods）
+- **Kotlin assert関数の優先利用**: 単体テストでは Kotlin の `assert` 関数（Power Assert）を優先的に使用してください
+- **Power Assertの利点**: 詳細なデバッグ情報が自動的に生成され、テスト失敗時の原因特定が容易になります
+- **適切な使い分け**: 
+  - 単体テスト: `assert` 関数を使用
+  - 統合テスト（WebFlux）: `WebTestClient` のアサーションメソッドを使用
+  - 特定のフレームワークテスト: そのフレームワークに適したアサーション方法を使用
+
 ## ドキュメンテーション（Documentation）
 
 ### ドキュメンテーション標準（Documentation Standards）
