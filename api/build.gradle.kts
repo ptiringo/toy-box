@@ -4,7 +4,6 @@ plugins {
     kotlin("plugin.power-assert") version "2.2.0"
     id("org.springframework.boot") version "3.5.4"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
 }
 
 group = "com.example"
@@ -42,16 +41,4 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-// ktlint の設定
-ktlint {
-    version.set("1.5.0")
-    verbose.set(true)
-    outputToConsole.set(true)
-    coloredOutput.set(true)
-    reporters {
-        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
-        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.JSON)
-    }
 }

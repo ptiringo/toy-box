@@ -13,18 +13,16 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @Import(RouterConfig::class, HelloHandler::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class HelloControllerTest(
-    val webTestClient: WebTestClient,
+    val webTestClient: WebTestClient
 ) {
+
     @Test
     fun `should return Hello World message when calling hello endpoint`() {
-        webTestClient
-            .get()
+        webTestClient.get()
             .uri("/api/hello")
             .exchange()
-            .expectStatus()
-            .isOk
+            .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.message")
-            .isEqualTo("Hello World")
+            .jsonPath("$.message").isEqualTo("Hello World")
     }
 }

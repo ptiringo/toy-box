@@ -9,9 +9,11 @@ import org.springframework.web.reactive.function.server.coRouter
 
 @Configuration
 class RouterConfig {
+
     @Bean
-    fun helloRoute(helloHandler: HelloHandler): RouterFunction<ServerResponse> =
-        coRouter {
+    fun helloRoute(helloHandler: HelloHandler): RouterFunction<ServerResponse> {
+        return coRouter {
             GET("/api/hello", helloHandler::hello)
         }
+    }
 }

@@ -17,8 +17,7 @@ lefthook install
 コミット前に以下の検証が自動実行されます：
 
 1. **EditorConfig チェック** - `.editorconfig` の設定に準拠しているかチェック
-2. **Kotlin コードフォーマット** - ktlint によるコードスタイルのチェックと自動修正
-3. **API テスト** - 変更されたKotlinファイルに関連するテストの実行
+2. **API テスト** - 変更されたKotlinファイルに関連するテストの実行
 
 ### pre-push
 
@@ -37,7 +36,7 @@ lefthook install
 lefthook run pre-commit
 
 # 特定のコマンドのみ実行
-lefthook run pre-commit ktlint-check
+lefthook run pre-commit api-test
 ```
 
 ## フックのスキップ

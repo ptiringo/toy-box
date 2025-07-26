@@ -1,4 +1,4 @@
-package com.example.api.domain.horseracing
+package com.example.api.domain.horse_racing
 
 /** 騎手 */
 data class Jockey(
