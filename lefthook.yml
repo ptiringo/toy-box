@@ -1,0 +1,57 @@
+# Lefthook の設定ファイル
+# pre-commit hook を使用してコード品質をコミット前に確保する
+
+pre-commit:
+  parallel: true
+  commands:
+    # EditorConfig準拠チェック
+    editorconfig-check:
+      run: editorconfig-checker --format github-actions --exclude "*.bat"
+      tags: format
+
+    # Kotlin コードフォーマットチェック（API）
+    ktlint-check:
+      root: "api/"
+      run: ./gradlew ktlintCheck --no-daemon
+      tags: kotlin lint
+      files: git diff --name-only --cached
+      glob: "*.kt"
+
+    # Kotlin コードフォーマット自動修正（API）
+    ktlint-format:
+      root: "api/"
+      run: ./gradlew ktlintFormat --no-daemon
+      tags: kotlin format
+      files: git diff --name-only --cached
+      glob: "*.kt"
+      stage_fixed: true
+
+    # API テスト実行
+    api-test:
+      root: "api/"
+      run: ./gradlew test --no-daemon
+      tags: test
+      files: git diff --name-only --cached
+      glob: "*.kt"
+
+pre-push:
+  commands:
+    # プッシュ前に全体のテストを実行
+    full-test:
+      root: "api/"
+      run: ./gradlew test --no-daemon
+      tags: test
+
+commit-msg:
+  commands:
+    # コミットメッセージのフォーマットチェック（オプション）
+    commitizen-check:
+      run: |
+        if ! echo "$(head -n1 {1})" | grep -E "^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .{1,50}" > /dev/null; then
+          echo "コミットメッセージは conventional commit 形式で記述してください"
+          echo "例: feat: 新機能を追加"
+          echo "例: fix: バグを修正"
+          echo "例: docs: ドキュメントを更新"
+          exit 1
+        fi
+      tags: commit-msg
