@@ -9,23 +9,6 @@ pre-commit:
       run: editorconfig-checker --format github-actions --exclude "*.bat"
       tags: format
 
-    # Kotlin コードフォーマットチェック（API）
-    ktlint-check:
-      root: "api/"
-      run: ./gradlew ktlintCheck --no-daemon
-      tags: kotlin lint
-      files: git diff --name-only --cached
-      glob: "*.kt"
-
-    # Kotlin コードフォーマット自動修正（API）
-    ktlint-format:
-      root: "api/"
-      run: ./gradlew ktlintFormat --no-daemon
-      tags: kotlin format
-      files: git diff --name-only --cached
-      glob: "*.kt"
-      stage_fixed: true
-
     # API テスト実行
     api-test:
       root: "api/"
