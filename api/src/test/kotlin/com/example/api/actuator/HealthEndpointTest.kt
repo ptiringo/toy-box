@@ -9,16 +9,18 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class HealthEndpointTest(
-    val webTestClient: WebTestClient
+    val webTestClient: WebTestClient,
 ) {
-
     @Test
     fun `ヘルスエンドポイントを呼び出すとUPステータスが返される`() {
-        webTestClient.get()
+        webTestClient
+            .get()
             .uri("/actuator/health")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.status").isEqualTo("UP")
+            .jsonPath("$.status")
+            .isEqualTo("UP")
     }
 }
