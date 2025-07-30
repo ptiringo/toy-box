@@ -17,10 +17,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
     - name: Install EditorConfig check
-      uses: editorconfig-checker/action-editorconfig-checker@v2
+      uses: editorconfig-checker/action-editorconfig-checker@d4c87b8aa72665554f5355abe02c6c7e1ebaebdc # v2.0.1
 
     - name: Run EditorConfig check
       run: editorconfig-checker --format github-actions
