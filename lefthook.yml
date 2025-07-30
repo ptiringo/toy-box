@@ -6,23 +6,15 @@ pre-commit:
   commands:
     # EditorConfig準拠チェック
     editorconfig-check:
-      run: editorconfig-checker --format github-actions --exclude "*.bat"
+      run: ec
       tags: format
-
-    # API テスト実行
-    api-test:
-      root: "api/"
-      run: ./gradlew test --no-daemon
-      tags: test
-      files: git diff --name-only --cached
-      glob: "*.kt"
 
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行
     full-test:
       root: "api/"
-      run: ./gradlew test --no-daemon
+      run: ./gradlew test
       tags: test
 
 commit-msg:
