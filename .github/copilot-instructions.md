@@ -19,6 +19,22 @@
 - **テスト開発**: `.github/instructions/testing.instructions.md`
 - **ドキュメント作成**: `.github/instructions/docs.instructions.md`
 
+## ツール管理（Tool Management）
+
+### mise によるツール管理
+このリポジトリでは **mise** を使用してプロジェクトで必要なツールを管理しています：
+
+- **設定ファイル**: `mise.toml` にプロジェクトで使用するツールとバージョンを定義
+
+### 開発者向け mise 使用方法
+- **ツールのインストール**: `mise install` コマンドで定義されたツールを一括インストール
+- **ツールの確認**: `mise list` コマンドで現在インストールされているツールを確認
+- **自動有効化**: プロジェクトディレクトリに入ると自動的に適切なバージョンのツールが有効化されます
+
+### CI/CD での mise 使用
+GitHub Actionsワークフローでも mise を使用してツール管理の一貫性を保っています。
+新しいツールを追加する際は `mise.toml` ファイルを更新してください。
+
 ## 命名規則とコード構成（Naming Conventions and Code Organization）
 
 ### 命名規則
