@@ -1,0 +1,49 @@
+# Terraform Validation and Format Check Workflow
+#
+# Purpose: Automatically run terraform validate and format checks on Pull Requests
+# and pushes to ensure Terraform configuration quality and consistent formatting.
+
+name: Terraform Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'infra/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'infra/**'
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-check:
+    runs-on: ubuntu-latest
+    name: Terraform Validation and Format Check
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install mise
+      uses: jdx/mise-action@v2
+
+    - name: Verify Terraform version
+      run: terraform version
+
+    - name: Initialize Terraform
+      run: terraform init -backend=false
+
+    - name: Terraform Format Check
+      run: terraform fmt -check -recursive
+
+    - name: Terraform Validation
+      run: terraform validate
