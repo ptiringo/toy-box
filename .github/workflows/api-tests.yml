@@ -9,8 +9,12 @@ on:
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened]
+    paths:
+      - "api/**"
   push:
     branches: [ main ]
+    paths:
+      - "api/**"
 
 jobs:
   test:
