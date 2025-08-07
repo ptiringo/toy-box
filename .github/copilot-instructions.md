@@ -67,6 +67,8 @@ cd api
 # アプリケーション起動
 ./gradlew bootRun
 # -> http://localhost:8080 でアクセス可能
+# -> http://localhost:8080/actuator/health (ヘルスチェック)
+# -> http://localhost:8080/api/hello (サンプルAPI)
 ```
 
 ### 🏗️ インフラ（infra/ディレクトリ）
