@@ -1,3 +1,8 @@
+---
+applyTo:
+  - "api/**/*"
+---
+
 # API開発専用指示 (API Development Instructions)
 
 ## プロジェクト構造（Project Structure）

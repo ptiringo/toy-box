@@ -1,3 +1,12 @@
+---
+applyTo:
+  - "**/*.md"
+  - "**/README*"
+  - "**/docs/**/*"
+  - "**/*.rst"
+  - "**/*.txt"
+---
+
 # ドキュメント開発専用指示 (Documentation Development Instructions)
 
 ## ドキュメンテーション標準（Documentation Standards）
