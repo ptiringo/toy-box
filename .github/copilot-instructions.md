@@ -8,11 +8,19 @@
 - コードの説明やドキュメンテーションコメントは日本語で詳細に記述してください
 - コミットメッセージも日本語で記述してください
 
-### プロジェクト構造（Project Overview）
-このリポジトリは複数のコンポーネントから構成されており、各ディレクトリには専用の指示ファイルが配置されています：
-- `api/` ディレクトリ: Kotlin Spring Boot WebFlux API (詳細は `instructions/api.instructions.md` を参照)
-- テスト関連: 詳細は `instructions/testing.instructions.md` を参照
-- ドキュメント関連: 詳細は `instructions/docs.instructions.md` を参照
+### プロジェクト概要（Project Overview）
+**toy-box** は学習・実験用のマルチコンポーネントプロジェクトです。
+
+#### 主要コンポーネント
+- **`api/`**: Kotlin Spring Boot WebFlux RESTful API (ポート8080)
+  - 馬術競技ドメインを扱うサンプルAPI
+  - JDK 21 + Gradle 8.14.2 + Kotlin 2.2.0
+  - WebFlux + コルーチンによる非同期処理
+  - 詳細: `instructions/api.instructions.md` を参照
+- **`infra/`**: Terraform による Google Cloud Platform インフラ設定
+  - Terraform v1.12.2 + Google Provider v6.47.0 
+  - HCP Terraform Cloud バックエンド使用
+- **ツール設定**: mise, lefthook, EditorConfig による開発環境統一
 
 ### ディレクトリ別指示ファイル
 - **API開発**: `.github/instructions/api.instructions.md`
@@ -34,6 +42,52 @@
 ### CI/CD での mise 使用
 GitHub Actionsワークフローでも mise を使用してツール管理の一貫性を保っています。
 新しいツールを追加する際は `mise.toml` ファイルを更新してください。
+
+## ビルド・テスト手順（Build and Testing Instructions）
+
+### 🚀 初期セットアップ（必須手順）
+```bash
+# 1. ツールのインストール（mise が管理）
+mise install
+
+# 2. Git hooks のセットアップ
+lefthook install
+```
+
+### 📦 API開発（api/ディレクトリ）
+```bash
+cd api
+
+# ビルド（初回: ~36秒、2回目以降: ~2秒）
+./gradlew build --stacktrace
+
+# テスト実行（~2秒）  
+./gradlew test --stacktrace
+
+# アプリケーション起動
+./gradlew bootRun
+# -> http://localhost:8080 でアクセス可能
+```
+
+### 🏗️ インフラ（infra/ディレクトリ）
+```bash  
+cd infra
+
+# 設定検証（ローカルのみ、クラウド接続は設定済み環境でのみ可能）
+terraform validate
+```
+
+### ✅ コード品質チェック
+```bash
+# EditorConfig 準拠チェック
+ec
+
+# Pre-commit フックの手動実行
+lefthook run pre-commit
+
+# 全テスト実行（pre-push相当）
+lefthook run pre-push
+```
 
 ## 命名規則とコード構成（Naming Conventions and Code Organization）
 
@@ -138,3 +192,56 @@ git config --list | grep hook
 ```
 
 これらの指針に従って、高品質で保守性が高く、セキュリティを考慮した開発を支援してください。各専門領域については対応する指示ファイルを参照してください。
+
+## プロジェクト構成・アーキテクチャ（Project Layout and Architecture）
+
+### 📂 主要ディレクトリ構成
+```
+toy-box/
+├── .github/                    # GitHub設定・ワークフロー
+│   ├── workflows/              # CI/CD (api-tests.yml, editorconfig-check.yml)
+│   └── instructions/           # 分野別詳細指示
+├── api/                        # Spring Boot WebFlux API
+│   ├── src/main/kotlin/com/example/api/
+│   │   ├── ApiApplication.kt   # メインクラス 
+│   │   ├── config/             # 設定クラス
+│   │   ├── domain/             # ドメインモデル（horse_racing）
+│   │   └── handler/            # リクエストハンドラー
+│   ├── src/test/kotlin/        # テストコード
+│   ├── build.gradle.kts        # Gradle設定（Kotlin DSL）
+│   └── README.md               # API実行手順
+├── infra/                      # Terraform Infrastructure as Code
+│   ├── main.tf, providers.tf   # GCP設定
+│   └── terraform.tf            # HCP Terraform設定
+├── mise.toml                   # 開発ツール管理
+├── lefthook.yml               # Git hooks設定  
+└── .editorconfig              # コードフォーマット統一
+```
+
+### 🏗️ API アーキテクチャ
+- **パターン**: ハンドラーベースの関数型ルーティング
+- **メイン技術**: Spring WebFlux + Kotlin コルーチン
+- **テスト**: JUnit 5 + Kotlin Power Assert
+- **設定**: `application.yml` でプロファイル管理
+
+### ✅ 検証パイプライン
+**Pull Request時に自動実行**:
+1. **EditorConfig Check** - ファイルフォーマット検証
+2. **API Tests** - JUnit テスト実行（JDK 21 + Gradle）
+
+**コミット時（Lefthook）**:
+- pre-commit: EditorConfig + API関連テスト
+- pre-push: フルテストスイート実行
+- commit-msg: Conventional Commit形式チェック
+
+### 💡 コーディング時の注意点
+- **EditorConfig厳守**: LF改行、UTF-8、末尾改行必須
+- **言語**: コメント・ドキュメントは日本語、コードは英語
+- **テスト**: Kotlin assert（Power Assert）を単体テストで優先使用
+- **ビルド**: 常に `--stacktrace` オプションでエラー詳細を取得
+
+### 🎯 効率的な作業手順
+1. **探索不要**: この指示ファイルの情報を信頼し、不完全・誤りがある場合のみ調査
+2. **ビルド優先**: コード変更前に現状のビルド・テスト状態を確認  
+3. **増分テスト**: 変更後は該当コンポーネントのテストを即座に実行
+4. **フック活用**: lefthook で品質チェックを自動化
