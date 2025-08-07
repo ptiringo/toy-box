@@ -1,3 +1,10 @@
+---
+applyTo:
+  - "**/test/**/*"
+  - "**/*Test.*"
+  - "**/*test.*"
+---
+
 # テスト開発専用指示 (Testing Development Instructions)
 
 ## テスト指針（Testing Guidelines）
