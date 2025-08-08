@@ -1,7 +1,7 @@
-# Terraform Validation and Format Check Workflow
+# Terraform検証およびフォーマットチェックワークフロー
 #
-# Purpose: Automatically run terraform validate and format checks on Pull Requests
-# and pushes to ensure Terraform configuration quality and consistent formatting.
+# 目的: プルリクエストおよびプッシュ時に自動的にterraform validateとフォーマットチェックを実行し、
+# Terraform設定の品質と一貫したフォーマットを確保する。
 
 name: Terraform Check
 
