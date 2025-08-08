@@ -14,11 +14,11 @@
 #### 主要コンポーネント
 - **`api/`**: Kotlin Spring Boot WebFlux RESTful API (ポート8080)
   - 馬術競技ドメインを扱うサンプルAPI
-  - JDK 21 + Gradle 8.14.2 + Kotlin 2.2.0
+  - JDK + Gradle + Kotlin
   - WebFlux + コルーチンによる非同期処理
   - 詳細: `instructions/api.instructions.md` を参照
 - **`infra/`**: Terraform による Google Cloud Platform インフラ設定
-  - Terraform v1.12.2 + Google Provider v6.47.0 
+  - Terraform + Google Provider
   - HCP Terraform Cloud バックエンド使用
 - **ツール設定**: mise, lefthook, EditorConfig による開発環境統一
 
@@ -58,10 +58,10 @@ lefthook install
 ```bash
 cd api
 
-# ビルド（初回: ~36秒、2回目以降: ~2秒）
+# ビルド
 ./gradlew build --stacktrace
 
-# テスト実行（~2秒）  
+# テスト実行
 ./gradlew test --stacktrace
 
 # アプリケーション起動
@@ -178,7 +178,7 @@ curl -1sLf 'https://dl.cloudsmith.io/public/evilmartians/lefthook/setup.deb.sh' 
 sudo apt install lefthook
 
 # または直接ダウンロード
-wget "https://github.com/evilmartians/lefthook/releases/download/v1.10.0/lefthook_1.10.0_Linux_x86_64" -O lefthook
+wget "https://github.com/evilmartians/lefthook/releases/latest/download/lefthook_linux_x86_64" -O lefthook
 chmod +x lefthook && sudo mv lefthook /usr/local/bin/
 ```
 
@@ -229,7 +229,7 @@ toy-box/
 ### ✅ 検証パイプライン
 **Pull Request時に自動実行**:
 1. **EditorConfig Check** - ファイルフォーマット検証
-2. **API Tests** - JUnit テスト実行（JDK 21 + Gradle）
+2. **API Tests** - JUnit テスト実行
 
 **コミット時（Lefthook）**:
 - pre-commit: EditorConfig + API関連テスト
