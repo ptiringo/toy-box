@@ -13,7 +13,6 @@
 
 #### 主要コンポーネント
 - **`api/`**: Kotlin Spring Boot WebFlux RESTful API (ポート8080)
-  - 馬術競技ドメインを扱うサンプルAPI
   - JDK + Gradle + Kotlin
   - WebFlux + コルーチンによる非同期処理
   - 詳細: `instructions/api.instructions.md` を参照
@@ -169,18 +168,6 @@ LEFTHOOK_EXCLUDE=api-test git commit -m "テストをスキップしてコミッ
 ```
 
 ### トラブルシューティング
-
-#### Lefthook がインストールされていない場合
-
-```bash
-# Ubuntu/Debian
-curl -1sLf 'https://dl.cloudsmith.io/public/evilmartians/lefthook/setup.deb.sh' | sudo -E bash
-sudo apt install lefthook
-
-# または直接ダウンロード
-wget "https://github.com/evilmartians/lefthook/releases/latest/download/lefthook_linux_x86_64" -O lefthook
-chmod +x lefthook && sudo mv lefthook /usr/local/bin/
-```
 
 #### hooks が実行されない場合
 
