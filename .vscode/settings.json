@@ -9,5 +9,6 @@
     {
       "text": "その後ファイルごとの詳細な変更内容を記述してください"
     }
-  ]
+  ],
+  "files.insertFinalNewline": true
 }
