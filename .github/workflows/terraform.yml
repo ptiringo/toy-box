@@ -40,6 +40,8 @@ jobs:
       run: terraform version
 
     - name: Initialize Terraform
+      # -backend=false フラグは、CI上でバックエンド設定を無視し、プロバイダーのみを初期化するために使用しています。
+      # これにより、リモートステートへのアクセス不要でvalidateやfmt等のチェックが可能です。
       run: terraform init -backend=false
 
     - name: Terraform Format Check
