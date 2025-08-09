@@ -1,20 +1,8 @@
 {
-  "mcpServers": {
+  "servers": {
     "context7": {
-      "command": "npx",
-      "args": ["@upstash/context7"],
-      "env": {
-        "UPSTASH_REDIS_REST_URL": "${UPSTASH_REDIS_REST_URL}",
-        "UPSTASH_REDIS_REST_TOKEN": "${UPSTASH_REDIS_REST_TOKEN}",
-        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}",
-        "CONTEXT7_NAMESPACE": "${CONTEXT7_NAMESPACE:-default}"
-      },
-      "description": "Context7 MCP Server for enhanced contextual information retrieval and memory management",
-      "metadata": {
-        "version": "latest",
-        "provider": "upstash",
-        "service": "context7"
-      }
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }
