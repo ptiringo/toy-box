@@ -13,7 +13,7 @@ class HealthEndpointTest(
 ) {
 
     @Test
-    fun `ヘルスエンドポイントを呼び出すとUPステータスが返される`() {
+    fun ヘルスエンドポイントを呼び出すとUPステータスが返される() {
         webTestClient.get()
             .uri("/actuator/health")
             .exchange()

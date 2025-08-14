@@ -1,1 +1,3 @@
-use Japanese when generate commit message.
+必ず日本語で記述してください。
+コミットメッセージは、最初にConventional Commitsに則って記述してください。
+その後ファイルごとの詳細な変更内容を記述してください。
