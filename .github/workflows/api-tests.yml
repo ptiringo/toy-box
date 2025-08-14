@@ -9,20 +9,13 @@ on:
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened]
-    paths: &trigger_paths
-      - "api/**"
-      - ".github/workflows/api-tests.yml"
   push:
     branches: [ main ]
-    paths: *trigger_paths
 
 jobs:
   test:
     runs-on: ubuntu-latest
     name: Run API Tests
-    defaults:
-      run:
-        working-directory: api
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

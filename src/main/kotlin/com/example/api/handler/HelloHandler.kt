@@ -8,7 +8,7 @@ import org.springframework.web.reactive.function.server.bodyValueAndAwait
 @Component
 class HelloHandler {
 
-    suspend fun hello(request: ServerRequest): ServerResponse {
+    suspend fun hello(@Suppress("unused") request: ServerRequest): ServerResponse {
         return ServerResponse.ok()
             .bodyValueAndAwait(mapOf("message" to "Hello World"))
     }

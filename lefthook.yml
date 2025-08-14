@@ -9,25 +9,10 @@ pre-commit:
       run: ec
       tags: format
 
-    # Terraform バリデーション
-    terraform-validate:
-      root: "infra/"
-      glob: "*.tf"
-      run: terraform init -backend=false && terraform validate
-      tags: terraform
-
-    # Terraform フォーマットチェック
-    terraform-fmt-check:
-      root: "infra/"
-      glob: "*.tf"
-      run: terraform fmt -check
-      tags: terraform
-
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行
     full-test:
-      root: "api/"
       run: ./gradlew test
       tags: test
 
