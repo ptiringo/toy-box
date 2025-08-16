@@ -165,7 +165,7 @@ git config --list | grep hook
 - **TestContainers**: データベースなど外部リソースが必要な場合は積極的に活用
 
 ### アサーション方法（Assertion Methods）
-- **Kotlin assert関数の優先利用**: 単体テストでは Kotlin の `assert` 関数（Power Assert）を優先的に使用してください
+- **Kotlin assert関数の優先利用**: 単体テストでは kotlin.test パッケージのアサーション関数ではなく、Kotlin 標準の `assert` 関数（Power Assert）を優先的に使用してください
 - **Power Assertの利点**: 詳細なデバッグ情報が自動的に生成され、テスト失敗時の原因特定が容易になります
 - **適切な使い分け**: 
   - 単体テスト: `assert` 関数を使用
