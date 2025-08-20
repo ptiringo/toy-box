@@ -1,7 +1,7 @@
 package com.example.api.domain.sakamichi
 
 import org.junit.jupiter.api.Nested
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 /**
  * Member クラスのユニットテスト
