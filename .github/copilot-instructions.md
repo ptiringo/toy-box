@@ -15,7 +15,7 @@
 - **`api/`**: Kotlin Spring Boot WebFlux RESTful API (ポート8080)
   - JDK + Gradle + Kotlin
   - WebFlux + コルーチンによる非同期処理
-  - 詳細: `instructions/api.instructions.md` を参照
+  - 詳細: `.github/instructions/api.instructions.md` を参照
 - **`infra/`**: Terraform による Google Cloud Platform インフラ設定
   - Terraform + Google Provider
   - HCP Terraform Cloud バックエンド使用
@@ -194,11 +194,12 @@ toy-box/
 │   ├── src/main/kotlin/com/example/api/
 │   │   ├── ApiApplication.kt   # メインクラス 
 │   │   ├── config/             # 設定クラス
-│   │   ├── domain/             # ドメインモデル（horse_racing）
+│   │   ├── domain/             # ドメインモデル
 │   │   └── handler/            # リクエストハンドラー
 │   ├── src/test/kotlin/        # テストコード
 │   ├── build.gradle.kts        # Gradle設定（Kotlin DSL）
-│   └── README.md               # API実行手順
+│   ├── gradlew                 # Gradle Wrapper スクリプト
+│   └── HEALTH_ENDPOINT.md      # ヘルスチェック仕様
 ├── infra/                      # Terraform Infrastructure as Code
 │   ├── main.tf, providers.tf   # GCP設定
 │   └── terraform.tf            # HCP Terraform設定
@@ -212,6 +213,9 @@ toy-box/
 - **メイン技術**: Spring WebFlux + Kotlin コルーチン
 - **テスト**: JUnit 5 + Kotlin Power Assert
 - **設定**: `application.yml` でプロファイル管理
+- **エンドポイント**: 
+  - ヘルスチェック: `/actuator/health` → `{"status":"UP"}`
+  - サンプルAPI: `/api/hello` → `{"message":"Hello World"}`
 
 ### ✅ 検証パイプライン
 **Pull Request時に自動実行**:
