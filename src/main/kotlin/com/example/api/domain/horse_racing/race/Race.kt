@@ -1,4 +1,4 @@
-package com.example.api.domain.horse_racing
+package com.example.api.domain.horse_racing.race
 
 /** レースID */
 @JvmInline
