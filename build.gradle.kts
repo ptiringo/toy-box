@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.power-assert") version "2.2.0"
     id("org.springframework.boot") version "3.5.4"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
 }
 
 group = "com.example"
@@ -20,12 +21,16 @@ repositories {
 }
 
 dependencies {
+    @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
+    implementation(platform("org.springdoc:springdoc-openapi-bom:2.8.10"))
+
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
