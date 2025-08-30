@@ -1,6 +1,6 @@
 package com.example.api.domain.tennis
 
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 /**
  * Player クラスのユニットテスト

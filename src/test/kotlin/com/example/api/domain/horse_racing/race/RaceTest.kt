@@ -1,6 +1,6 @@
 package com.example.api.domain.horse_racing.race
 
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 /**
  * Race クラスのユニットテスト
