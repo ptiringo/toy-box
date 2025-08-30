@@ -8,11 +8,11 @@ import java.util.*
 value class PlayerId(val value: UUID)
 
 /** 選手 */
-data class Player(
+class Player(
     /** 名 */
-    val firstName: String,
+    @Suppress("unused") val firstName: String,
     /** 姓 */
-    val lastName: String,
+    @Suppress("unused") val lastName: String,
 ) {
     val id = PlayerId(Generators.timeBasedEpochRandomGenerator().generate())
 
