@@ -1,6 +1,8 @@
 package com.example.api.domain.horse_racing.jockey
 
 import com.fasterxml.uuid.Generators
+import org.jmolecules.ddd.annotation.AggregateRoot
+import org.jmolecules.ddd.annotation.ValueObject
 import java.util.UUID
 
 /**
@@ -8,6 +10,7 @@ import java.util.UUID
  *
  * @property value UUID形式のID値
  */
+@ValueObject
 @JvmInline
 value class JockeyId(val value: UUID)
 
@@ -18,6 +21,7 @@ value class JockeyId(val value: UUID)
  * @property lastName 姓
  * @property id ジョッキーID（自動生成）
  */
+@AggregateRoot
 data class Jockey(
     /** 名 */
     val firstName: String,

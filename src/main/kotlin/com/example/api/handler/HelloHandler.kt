@@ -4,14 +4,18 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import org.jmolecules.ddd.annotation.Service
+import org.jmolecules.ddd.annotation.ValueObject
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
 
+@Service
 @Component
 class HelloHandler {
 
+    @ValueObject
     data class HelloResponse(val message: String)
 
     @Operation(

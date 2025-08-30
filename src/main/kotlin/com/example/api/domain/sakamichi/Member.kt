@@ -1,10 +1,15 @@
 package com.example.api.domain.sakamichi
 
+import org.jmolecules.ddd.annotation.AggregateRoot
+import org.jmolecules.ddd.annotation.ValueObject
+
 /** メンバーID */
+@ValueObject
 @JvmInline
 value class MemberId(val value: Long)
 
 /** メンバー */
+@AggregateRoot
 data class Member(
     /** メンバーID */
     val id: MemberId,
