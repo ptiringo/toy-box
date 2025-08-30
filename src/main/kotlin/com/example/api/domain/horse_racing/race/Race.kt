@@ -1,13 +1,31 @@
 package com.example.api.domain.horse_racing.race
 
+import com.fasterxml.uuid.Generators
+import java.util.*
+
 /** レースID */
 @JvmInline
-value class RaceId(val value: Long)
+value class RaceId(val value: UUID)
 
 /** レース */
-data class Race(
-    /** ID */
-    val id: RaceId,
+class Race(
     /** レース名 */
     val name: String,
-)
+) {
+    /** レースID */
+    val id = RaceId(Generators.timeBasedEpochRandomGenerator().generate())
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (javaClass != other?.javaClass){
+            return false
+        }
+        return id == (other as Race).id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+}

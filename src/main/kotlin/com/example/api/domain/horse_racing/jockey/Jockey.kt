@@ -18,7 +18,7 @@ value class JockeyId(val value: UUID)
  * @property lastName 姓
  * @property id ジョッキーID（自動生成）
  */
-data class Jockey(
+class Jockey(
     /** 名 */
     val firstName: String,
     /** 姓 */

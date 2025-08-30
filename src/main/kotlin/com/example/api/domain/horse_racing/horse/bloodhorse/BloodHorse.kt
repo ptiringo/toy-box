@@ -17,8 +17,11 @@ enum class Sex {
 }
 
 /** 軽種馬 */
-@ConsistentCopyVisibility
-data class BloodHorse private constructor(val sex: Sex) {
+class BloodHorse private constructor(
+    /** 性 */
+    @Suppress("unused") val sex: Sex
+) {
+    /** 軽種馬ID */
     val id: BloodHorseId = BloodHorseId(UUID.randomUUID())
 
     override fun equals(other: Any?): Boolean {

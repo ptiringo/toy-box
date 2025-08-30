@@ -1,14 +1,21 @@
 package com.example.api.domain.tennis
 
+import com.fasterxml.uuid.Generators
+import java.util.*
+
 /** 選手ID */
 @JvmInline
-value class PlayerId(val value: Long)
+value class PlayerId(val value: UUID)
 
 /** 選手 */
 data class Player(
-    /** 選手ID */
-    val id: PlayerId,
+    /** 名 */
+    val firstName: String,
+    /** 姓 */
+    val lastName: String,
 ) {
+    val id = PlayerId(Generators.timeBasedEpochRandomGenerator().generate())
+
     override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
