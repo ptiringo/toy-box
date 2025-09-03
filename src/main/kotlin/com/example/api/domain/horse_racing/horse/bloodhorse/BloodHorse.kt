@@ -22,7 +22,7 @@ class BloodHorse private constructor(
     @Suppress("unused") val sex: Sex
 ) {
     /** 軽種馬ID */
-    val id: BloodHorseId = BloodHorseId(UUID.randomUUID())
+    val id = BloodHorseId(UUID.randomUUID())
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
