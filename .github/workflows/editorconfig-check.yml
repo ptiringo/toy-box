@@ -1,4 +1,4 @@
-# Pull Request 時に EditorConfig のフォーマッチチェックを自動実行し、mainブランチへのフォーマットが崩れたコードのマージを防止します。
+# Pull Request 時に EditorConfig のフォーマットチェックを自動実行し、mainブランチへのフォーマットが崩れたコードのマージを防止します。
 name: EditorConfig Check
 run-name: EditorConfig Check for ${{ github.ref }}
 
