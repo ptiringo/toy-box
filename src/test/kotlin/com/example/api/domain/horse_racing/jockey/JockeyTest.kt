@@ -1,7 +1,7 @@
 package com.example.api.domain.horse_racing.jockey
 
 import org.junit.jupiter.api.Nested
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 /**
  * Jockey クラスのユニットテスト

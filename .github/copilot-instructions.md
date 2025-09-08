@@ -164,6 +164,11 @@ git config --list | grep hook
 - **@DataR2dbcTest**: R2DBCリポジトリのテストに使用
 - **TestContainers**: データベースなど外部リソースが必要な場合は積極的に活用
 
+### テストアノテーション（Test Annotations）
+- **JUnit5アノテーションの使用**: テストメソッドには `org.junit.jupiter.api.Test` アノテーションを使用してください
+- **kotlin.test.Testは使用禁止**: マルチプラットフォーム対応が不要なため、JUnit5の機能を積極的に活用します
+- **JUnit5拡張機能の活用**: `@Nested`、`@ParameterizedTest`、`@BeforeEach`、`@AfterEach` などの機能を積極的に使用してください
+
 ### アサーション方法（Assertion Methods）
 - **Kotlin assert関数の優先利用**: 単体テストでは kotlin.test パッケージのアサーション関数ではなく、Kotlin 標準の `assert` 関数（Power Assert）を優先的に使用してください
 - **Power Assertの利点**: 詳細なデバッグ情報が自動的に生成され、テスト失敗時の原因特定が容易になります
