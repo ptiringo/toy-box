@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.2.10"
     kotlin("plugin.spring") version "2.2.0"
     kotlin("plugin.power-assert") version "2.2.0"
     id("org.springframework.boot") version "3.5.4"
