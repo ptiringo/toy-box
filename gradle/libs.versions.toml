@@ -1,0 +1,33 @@
+[versions]
+# Kotlin関連のバージョン
+kotlin = "2.2.0"
+
+# プラグインのバージョン
+spring-boot = "3.5.4"
+spring-dependency-management = "1.1.7"
+springdoc-openapi-gradle = "1.9.0"
+
+# ライブラリのバージョン
+springdoc-openapi-bom = "2.8.10"
+java-uuid-generator = "5.1.0"
+
+[libraries]
+# SpringDoc OpenAPI
+springdoc-openapi-bom = { module = "org.springdoc:springdoc-openapi-bom", version.ref = "springdoc-openapi-bom" }
+springdoc-openapi-starter-webflux-ui = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui" }
+
+# UUID Generator
+java-uuid-generator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "java-uuid-generator" }
+
+[plugins]
+# Kotlin プラグイン
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlin" }
+
+# Spring Boot プラグイン
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+
+# SpringDoc OpenAPI プラグイン
+springdoc-openapi-gradle = { id = "org.springdoc.openapi-gradle-plugin", version.ref = "springdoc-openapi-gradle" }
