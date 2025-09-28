@@ -1,0 +1,61 @@
+# Cloud Native Buildpacks を使用してDocker イメージをビルドするワークフロー
+# main ブランチへのマージ時に自動実行され、レジストリへの push は行わない
+name: Buildpack Build
+run-name: Buildpack Build for ${{ github.ref }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+jobs:
+  buildpack-build:
+    # PRがマージされた場合のみ実行
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    name: Build with Cloud Native Buildpacks
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - name: Build Spring Boot JAR
+        run: ./gradlew bootJar --no-daemon --stacktrace
+
+      - name: Build Docker image with Cloud Native Buildpacks
+        run: |
+          # pack CLI をコンテナ内で実行してイメージをビルド
+          # --network host を追加してネットワーク問題を回避
+          docker run --rm \
+            --network host \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            buildpacksio/pack:latest \
+            build toy-box:latest \
+            --builder paketobuildpacks/builder:base \
+            --path . \
+            --verbose
+
+      - name: Save Docker image as tar
+        run: |
+          # ビルドしたイメージを tar ファイルとして保存
+          docker save toy-box:latest -o toy-box-image.tar
+          
+      - name: Upload image artifact
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: toy-box-docker-image
+          path: toy-box-image.tar
+          retention-days: 7
+          compression-level: 1
