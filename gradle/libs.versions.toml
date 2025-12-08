@@ -8,7 +8,7 @@ spring-dependency-management = "1.1.7"
 springdoc-openapi-gradle = "1.9.0"
 
 # ライブラリのバージョン
-springdoc-openapi-bom = "2.8.14"
+springdoc-openapi-bom = "3.0.0"
 java-uuid-generator = "5.2.0"
 
 [libraries]
