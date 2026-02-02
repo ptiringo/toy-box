@@ -3,7 +3,7 @@ package com.example.api.controller
 import com.example.api.config.RouterConfig
 import com.example.api.handler.HelloHandler
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
