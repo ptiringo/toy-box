@@ -17,12 +17,11 @@ data class RaceResult(
 /** 到達順位 */
 data class OrderOfFinish(
     // TODO: 正しい型を設計する
-    val something: Nothing
+    val something: Nothing,
 )
 
 /** レース確定イベント */
 data class ConfirmRaceResultEvent(
     // TODO: 正しい型を設計する
-    val confirmedRaceResult: Nothing
+    val confirmedRaceResult: Nothing,
 )
-

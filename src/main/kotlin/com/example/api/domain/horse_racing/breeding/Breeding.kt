@@ -4,7 +4,9 @@ import java.util.*
 
 /** 繁殖ID */
 @JvmInline
-value class BreedingId(val value: UUID)
+value class BreedingId(
+    val value: UUID,
+)
 
 /** 繁殖 */
 @Suppress("unused")

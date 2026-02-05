@@ -4,7 +4,9 @@ import java.util.*
 
 /** 軽種馬ID */
 @JvmInline
-value class BloodHorseId(val value: UUID)
+value class BloodHorseId(
+    val value: UUID,
+)
 
 /** 性 */
 @Suppress("unused")
@@ -13,13 +15,13 @@ enum class Sex {
     MALE,
 
     /** 雌 */
-    FEMALE;
+    FEMALE,
 }
 
 /** 軽種馬 */
 class BloodHorse private constructor(
     /** 性 */
-    @Suppress("unused") val sex: Sex
+    @Suppress("unused") val sex: Sex,
 ) {
     /** 軽種馬ID */
     val id = BloodHorseId(UUID.randomUUID())
@@ -34,7 +36,5 @@ class BloodHorse private constructor(
         return id == (other as BloodHorse).id
     }
 
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 }

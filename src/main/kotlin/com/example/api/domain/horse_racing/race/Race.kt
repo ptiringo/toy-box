@@ -5,7 +5,9 @@ import java.util.*
 
 /** レースID */
 @JvmInline
-value class RaceId(val value: UUID)
+value class RaceId(
+    val value: UUID,
+)
 
 /** レース */
 class Race(
@@ -19,13 +21,11 @@ class Race(
         if (this === other) {
             return true
         }
-        if (javaClass != other?.javaClass){
+        if (javaClass != other?.javaClass) {
             return false
         }
         return id == (other as Race).id
     }
 
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 }

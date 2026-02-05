@@ -9,7 +9,9 @@ import java.util.UUID
  * @property value UUID形式のID値
  */
 @JvmInline
-value class JockeyId(val value: UUID)
+value class JockeyId(
+    val value: UUID,
+)
 
 /**
  * 騎手（ジョッキー）を表すデータクラス
@@ -41,7 +43,7 @@ class Jockey(
         if (this === other) {
             return true
         }
-        if (javaClass != other?.javaClass){
+        if (javaClass != other?.javaClass) {
             return false
         }
         return id == (other as Jockey).id
@@ -53,7 +55,5 @@ class Jockey(
      *
      * @return ハッシュ値
      */
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 }

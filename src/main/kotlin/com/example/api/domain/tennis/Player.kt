@@ -5,7 +5,9 @@ import java.util.*
 
 /** 選手ID */
 @JvmInline
-value class PlayerId(val value: UUID)
+value class PlayerId(
+    val value: UUID,
+)
 
 /** 選手 */
 class Player(
@@ -26,7 +28,5 @@ class Player(
         return id == (other as Player).id
     }
 
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 }

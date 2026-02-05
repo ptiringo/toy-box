@@ -15,16 +15,14 @@ import org.springframework.web.reactive.function.server.coRouter
 @OpenAPIDefinition(
     info = Info(title = "toy-box", summary = "toy-box の API 定義です。"),
     tags = [
-        Tag(name = "Hello", description = "サンプル")
-    ]
+        Tag(name = "Hello", description = "サンプル"),
+    ],
 )
 class RouterConfig {
-
     @Bean
     @RouterOperation(beanClass = HelloHandler::class, beanMethod = "hello")
-    fun helloRoute(helloHandler: HelloHandler): RouterFunction<ServerResponse> {
-        return coRouter {
+    fun helloRoute(helloHandler: HelloHandler): RouterFunction<ServerResponse> =
+        coRouter {
             GET("/api/hello", helloHandler::hello)
         }
-    }
 }
