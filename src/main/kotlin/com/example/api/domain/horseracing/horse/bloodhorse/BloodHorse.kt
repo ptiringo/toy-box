@@ -1,6 +1,6 @@
-package com.example.api.domain.horse_racing.horse.bloodhorse
+package com.example.api.domain.horseracing.horse.bloodhorse
 
-import java.util.*
+import java.util.UUID
 
 /** 軽種馬ID */
 @JvmInline

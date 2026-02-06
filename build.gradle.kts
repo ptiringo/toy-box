@@ -54,7 +54,7 @@ tasks.withType<Test> {
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     // ktlint のバージョン（プラグインが管理）
-    version.set("1.5.0")
+    version.set("1.8.0")
 
     // デバッグモードの有効化（必要に応じて）
     debug.set(false)
@@ -78,5 +78,6 @@ configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     filter {
         exclude("**/generated/**")
         include("**/kotlin/**")
+        include("**/*.kts")
     }
 }

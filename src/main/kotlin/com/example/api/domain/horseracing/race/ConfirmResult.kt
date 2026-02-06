@@ -1,4 +1,4 @@
-package com.example.api.domain.horse_racing.race
+package com.example.api.domain.horseracing.race
 
 /** レースの確定 */
 @Suppress("unused")

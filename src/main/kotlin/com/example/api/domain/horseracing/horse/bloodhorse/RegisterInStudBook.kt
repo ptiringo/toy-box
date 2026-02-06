@@ -1,4 +1,4 @@
-package com.example.api.domain.horse_racing.horse.bloodhorse
+package com.example.api.domain.horseracing.horse.bloodhorse
 
 import com.example.api.domain.Command
 

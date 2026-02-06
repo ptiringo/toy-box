@@ -1,4 +1,4 @@
-package com.example.api.domain.horse_racing.jockey
+package com.example.api.domain.horseracing.jockey
 
 import com.fasterxml.uuid.Generators
 import java.util.UUID

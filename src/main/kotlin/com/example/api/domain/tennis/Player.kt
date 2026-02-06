@@ -1,7 +1,7 @@
 package com.example.api.domain.tennis
 
 import com.fasterxml.uuid.Generators
-import java.util.*
+import java.util.UUID
 
 /** 選手ID */
 @JvmInline

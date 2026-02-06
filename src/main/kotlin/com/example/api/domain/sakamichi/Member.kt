@@ -1,7 +1,7 @@
 package com.example.api.domain.sakamichi
 
 import com.fasterxml.uuid.Generators
-import java.util.*
+import java.util.UUID
 
 /** メンバーID */
 @JvmInline
