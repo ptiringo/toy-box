@@ -18,21 +18,24 @@
 Pull Request を作成すると、GitHub Actions で自動的に ktlint チェックが実行されます。
 スタイル違反がある場合、CI は失敗します。
 
-#### ベースラインについて
+#### pre-commit フック
 
-`config/ktlint/baseline.xml` には、既存のコードベースで発見されたスタイル違反の「ベースライン」が記録されています。
-新しいコードでは、これらの違反を繰り返さないようにしてください。
+このプロジェクトでは **Lefthook** を使用して Git フックを管理しています。
 
-#### pre-commit フック（オプション）
-
-コミット前に自動的にフォーマットを適用したい場合は、以下のGit hookを設定できます：
+Lefthook をセットアップするには：
 
 ```bash
-./gradlew addKtlintFormatGitPreCommitHook
+lefthook install
 ```
 
-チェックのみを実行したい場合：
+これにより、以下のフックが自動的に有効化されます：
+
+- **pre-commit**: コミット前に ktlint チェックと EditorConfig チェックを実行
+- **pre-push**: プッシュ前に全テストを実行
+- **commit-msg**: コミットメッセージの形式をチェック
+
+特定のフックをスキップしたい場合：
 
 ```bash
-./gradlew addKtlintCheckGitPreCommitHook
+LEFTHOOK_EXCLUDE=ktlint-check git commit -m "メッセージ"
 ```
