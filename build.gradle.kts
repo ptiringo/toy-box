@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.springdoc.openapi.gradle)
+    alias(libs.plugins.ktlint)
 }
 
 group = "com.example"
@@ -49,4 +50,34 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    // ktlint のバージョン（プラグインが管理）
+    version.set("1.8.0")
+
+    // デバッグモードの有効化（必要に応じて）
+    debug.set(false)
+
+    // 詳細なログ出力
+    verbose.set(true)
+
+    // Android用のルールセットを使用しない
+    android.set(false)
+
+    // 出力形式の設定
+    outputToConsole.set(true)
+
+    // エラー時にビルドを失敗させる
+    ignoreFailures.set(false)
+
+    // EditorConfig の設定を尊重
+    enableExperimentalRules.set(false)
+
+    // フィルター設定
+    filter {
+        exclude("**/generated/**")
+        include("**/kotlin/**")
+        include("**/*.kts")
+    }
 }

@@ -1,11 +1,13 @@
 package com.example.api.domain.sakamichi
 
 import com.fasterxml.uuid.Generators
-import java.util.*
+import java.util.UUID
 
 /** メンバーID */
 @JvmInline
-value class MemberId(val value: UUID)
+value class MemberId(
+    val value: UUID,
+)
 
 /** メンバー */
 class Member(
@@ -27,7 +29,5 @@ class Member(
         return id == (other as Member).id
     }
 
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 }

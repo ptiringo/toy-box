@@ -1,10 +1,12 @@
-package com.example.api.domain.horse_racing.breeding
+package com.example.api.domain.horseracing.breeding
 
-import java.util.*
+import java.util.UUID
 
 /** 繁殖ID */
 @JvmInline
-value class BreedingId(val value: UUID)
+value class BreedingId(
+    val value: UUID,
+)
 
 /** 繁殖 */
 @Suppress("unused")

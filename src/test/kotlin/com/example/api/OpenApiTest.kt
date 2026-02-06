@@ -16,28 +16,35 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @AutoConfigureWebTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class OpenApiTest(
-    private val webTestClient: WebTestClient
+    private val webTestClient: WebTestClient,
 ) {
-
     @Test
     fun `OpenAPI の JSON ドキュメントが取得できること`() {
-        webTestClient.get()
+        webTestClient
+            .get()
             .uri("/v3/api-docs")
             .exchange()
-            .expectStatus().isOk
-            .expectHeader().contentType("application/json")
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("application/json")
             .expectBody()
-            .jsonPath("$.openapi").isEqualTo("3.1.0")
-            .jsonPath("$.info.title").isEqualTo("toy-box")
+            .jsonPath("$.openapi")
+            .isEqualTo("3.1.0")
+            .jsonPath("$.info.title")
+            .isEqualTo("toy-box")
     }
 
     @Test
     fun `Swagger UI が表示されること`() {
-        webTestClient.get()
+        webTestClient
+            .get()
             .uri("/swagger-ui/index.html")
             .exchange()
-            .expectStatus().isOk
-            .expectHeader().contentType("text/html")
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("text/html")
             .expectBody(String::class.java)
             .value { body ->
                 assert(body?.contains("Swagger UI") == true) { "Swagger UI のタイトルが含まれていません" }
