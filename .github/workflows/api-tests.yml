@@ -31,7 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5.0.1
 
       - name: Run ktlint check
-        run: ./gradlew ktlintCheck --no-daemon --stacktrace
+        run: ./gradlew ktlintCheck --stacktrace
 
       - name: Run API tests
-        run: ./gradlew test --no-daemon --stacktrace
+        run: ./gradlew test --stacktrace
