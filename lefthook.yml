@@ -12,14 +12,15 @@ pre-commit:
     # ktlint によるコードスタイルチェック
     ktlint-check:
       glob: "**/*.{kt,kts}"
-      run: ./gradlew ktlintCheck --daemon
+      run: mise exec -- ./gradlew ktlintCheck --daemon
       tags: format lint
 
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行
     full-test:
-      run: ./gradlew test
+      glob: "**/*.{kt,kts,java}"
+      run: mise exec -- ./gradlew test
       tags: test
 
 commit-msg:
