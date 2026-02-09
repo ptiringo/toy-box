@@ -97,9 +97,9 @@ value class BloodHorseId(val value: UUID)
 `Command<T>` でドメインコマンドをラップ：
 
 ```kotlin
-data class Command<T>(
-    val data: T,
-    val timestamp: Instant = Instant.now()
+class Command<T>(
+    val t: T,
+    val timestamp: LocalDateTime,
 )
 
 // 使用例
