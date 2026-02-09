@@ -8,40 +8,56 @@ Kotlin Spring Boot WebFlux を使用した API プロジェクトです。複数
 
 ## 開発コマンド
 
+### 重要: mise を使用したコマンド実行
+
+このプロジェクトでは mise を使用してツールバージョンを管理しています。**Claude Code や非対話型シェルからコマンドを実行する場合は、`mise exec --` プレフィックスを使用してください**。これにより、mise で管理されている正しいバージョンの Java やその他のツールが使用されます。
+
+例：
+```bash
+# mise exec を使用したコマンド実行
+mise exec -- ./gradlew build
+
+# または環境変数を設定
+eval "$(mise activate bash)"  # bash の場合
+./gradlew build
+```
+
+対話型シェルで mise がすでにアクティブな場合は、直接 `./gradlew` コマンドを実行できます。
+
 ### ビルドとテスト
 
 ```bash
 # ビルド
-./gradlew build
+mise exec -- ./gradlew build
 
 # テスト実行
-./gradlew test
+mise exec -- ./gradlew test
 
 # アプリケーション起動
-./gradlew bootRun
+mise exec -- ./gradlew bootRun
 ```
 
 ### コード品質チェック
 
 ```bash
 # ktlint チェック
-./gradlew ktlintCheck
+mise exec -- ./gradlew ktlintCheck
 
 # ktlint 自動フォーマット
-./gradlew ktlintFormat
+mise exec -- ./gradlew ktlintFormat
 
 # 全チェック実行
-./gradlew check
+mise exec -- ./gradlew check
 ```
 
 ### 単一テストの実行
 
 ```bash
 # 特定のテストクラスを実行
-./gradlew test --tests "HelloControllerTest"
+mise exec -- ./gradlew test --tests "HelloControllerTest"
 
 # 特定のテストメソッドを実行（メソッド名に応じてパターンを調整してください）
-./gradlew test --tests "HelloControllerTest.*hello*"
+mise exec -- ./gradlew test --tests "HelloControllerTest.*hello*"
 ```
 
 ## アーキテクチャ
