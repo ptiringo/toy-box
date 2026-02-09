@@ -40,8 +40,8 @@ Kotlin Spring Boot WebFlux を使用した API プロジェクトです。複数
 # 特定のテストクラスを実行
 ./gradlew test --tests "HelloControllerTest"
 
-# 特定のテストメソッドを実行
-./gradlew test --tests "HelloControllerTest.helloエンドポイントがHello Worldを返すこと"
+# 特定のテストメソッドを実行（メソッド名に応じてパターンを調整してください）
+./gradlew test --tests "HelloControllerTest.*hello*"
 ```
 
 ## アーキテクチャ
