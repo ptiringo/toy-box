@@ -19,6 +19,7 @@ pre-push:
   commands:
     # プッシュ前に全体のテストを実行
     full-test:
+      glob: "**/*.{kt,kts,java}"
       run: mise exec -- ./gradlew test
       tags: test
 
