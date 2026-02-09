@@ -196,6 +196,7 @@ mise list
 ```
 
 現在管理されているツール：
+- `java`: JDK 21
 - `editorconfig-checker`: EditorConfig 準拠チェック
 - `lefthook`: Git フック管理
 
