@@ -16,6 +16,7 @@ jobs:
     name: Detect changes
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       app: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.app }}
     steps:
