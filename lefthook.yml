@@ -15,6 +15,18 @@ pre-commit:
       run: ./gradlew ktlintCheck --daemon
       tags: format lint
 
+    # Terraform フォーマットチェック
+    terraform-fmt-check:
+      glob: "infra/*.tf"
+      run: terraform fmt -check infra/
+      tags: format
+
+    # Terraform バリデーション
+    terraform-validate:
+      glob: "infra/*.tf"
+      run: cd infra && terraform init -backend=false && terraform validate
+      tags: lint
+
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行

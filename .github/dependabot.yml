@@ -21,3 +21,10 @@ updates:
       interval: "weekly"
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
+
+  # Enable updates for Terraform providers
+  - package-ecosystem: "terraform"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
