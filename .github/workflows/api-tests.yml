@@ -7,21 +7,35 @@ on:
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
-    paths:
-      - 'src/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle/**'
   push:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle/**'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    name: Detect changes
+    permissions:
+      contents: read
+    outputs:
+      app: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.app }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Check for app changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'src/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle/**'
+
   test:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     name: Run API Tests
     timeout-minutes: 15

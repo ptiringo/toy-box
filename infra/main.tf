@@ -32,3 +32,4 @@ resource "google_artifact_registry_repository_iam_member" "deployer_api_writer" 
   role       = "roles/artifactregistry.writer"
   member     = google_service_account.deployer.member
 }
+
