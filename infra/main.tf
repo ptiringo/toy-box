@@ -1,14 +1,10 @@
-locals {
-  api_services = [
+resource "google_project_service" "project" {
+  for_each = toset([
     "artifactregistry",
     "iam",
     "iamcredentials",
-  ]
-}
-
-resource "google_project_service" "project" {
-  for_each = toset(local.api_services)
-  service  = "${each.key}.googleapis.com"
+  ])
+  service = "${each.key}.googleapis.com"
 }
 
 resource "google_artifact_registry_repository" "api" {
