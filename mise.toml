@@ -1,5 +1,4 @@
 [tools]
 editorconfig-checker = "3.3.0"
-java = "21"
 lefthook = "1.12.2"
 terraform = "1.12.2"
