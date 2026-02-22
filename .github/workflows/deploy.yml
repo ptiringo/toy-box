@@ -1,0 +1,60 @@
+# mainブランチへのマージ時にDockerイメージをビルドし、Cloud Runにデプロイします。
+name: Deploy API
+run-name: Deploy API from ${{ github.sha }}
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'infra/**'
+      - '*.md'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build and Deploy to Cloud Run
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # WIFに必要
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version-file: '.java-version'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5.0.1
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: "projects/${{ vars.WIF_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool-id/providers/github-actions-pool-provider-id"
+          service_account: "deployer@ptiringo-toy-box.iam.gserviceaccount.com"
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
+
+      - name: Build Docker image with bootBuildImage
+        run: ./gradlew bootBuildImage --imageName=${{ vars.IMAGE }}:${{ github.sha }}
+
+      - name: Push Docker image
+        run: |
+          docker tag ${{ vars.IMAGE }}:${{ github.sha }} ${{ vars.IMAGE }}:latest
+          docker push ${{ vars.IMAGE }}:${{ github.sha }}
+          docker push ${{ vars.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
+        with:
+          service: api
+          region: asia-northeast1
+          image: ${{ vars.IMAGE }}:${{ github.sha }}
+          flags: '--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=512Mi --cpu=1 --min-instances=0 --max-instances=3'
