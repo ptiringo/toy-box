@@ -3,6 +3,7 @@ resource "google_project_service" "project" {
     "artifactregistry",
     "iam",
     "iamcredentials",
+    "run",
   ])
   service = "${each.key}.googleapis.com"
 }
@@ -14,18 +15,29 @@ resource "google_artifact_registry_repository" "api" {
   location      = "asia-northeast1"
 }
 
-resource "google_service_account" "deployer" {
-  account_id   = "deployer"
-  display_name = "Deployer"
-  description  = "Service account for deploying applications"
+module "cicd" {
+  source = "./modules/cicd"
+
+  project_id                      = "ptiringo-toy-box"
+  wif_project_number              = var.wif_project_number
+  github_repository               = "ptiringo/toy-box"
+  artifact_registry_repository_id = google_artifact_registry_repository.api.id
 }
 
-# DeployerサービスアカウントにArtifact Registry(apiリポジトリ)への書き込み権限を付与
-resource "google_artifact_registry_repository_iam_member" "deployer_api_writer" {
-  project    = google_artifact_registry_repository.api.project
-  location   = google_artifact_registry_repository.api.location
-  repository = google_artifact_registry_repository.api.name
-  role       = "roles/artifactregistry.writer"
-  member     = google_service_account.deployer.member
+module "cloudrun" {
+  source = "./modules/cloudrun"
+
+  deployer_member = module.cicd.deployer_member
 }
 
+# State 移行用 moved ブロック（apply 後に削除可能）
+
+moved {
+  from = google_service_account.deployer
+  to   = module.cicd.google_service_account.deployer
+}
+
+moved {
+  from = google_artifact_registry_repository_iam_member.deployer_api_writer
+  to   = module.cicd.google_artifact_registry_repository_iam_member.deployer_api_writer
+}
