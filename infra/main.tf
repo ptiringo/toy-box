@@ -3,6 +3,7 @@ resource "google_project_service" "project" {
     "artifactregistry",
     "iam",
     "iamcredentials",
+    "orgpolicy",
     "run",
   ])
   service = "${each.key}.googleapis.com"
@@ -30,14 +31,22 @@ module "cloudrun" {
   deployer_member = module.cicd.deployer_member
 }
 
-# State 移行用 moved ブロック（apply 後に削除可能）
+# プロジェクトレベルの組織ポリシー: WIF プールからの principalSet を許可
+resource "google_org_policy_policy" "allowed_policy_members" {
+  name   = "projects/ptiringo-toy-box/policies/iam.managed.allowedPolicyMembers"
+  parent = "projects/ptiringo-toy-box"
 
-moved {
-  from = google_service_account.deployer
-  to   = module.cicd.google_service_account.deployer
-}
+  spec {
+    inherit_from_parent = true
 
-moved {
-  from = google_artifact_registry_repository_iam_member.deployer_api_writer
-  to   = module.cicd.google_artifact_registry_repository_iam_member.deployer_api_writer
+    rules {
+      enforce = "TRUE"
+      parameters = jsonencode({
+        allowedMemberSubjects = []
+        allowedPrincipalSets = [
+          "principalSet://iam.googleapis.com/projects/865764667244/locations/global/workloadIdentityPools/github-actions-pool-id/*"
+        ]
+      })
+    }
+  }
 }
