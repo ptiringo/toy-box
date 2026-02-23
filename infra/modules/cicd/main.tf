@@ -4,11 +4,11 @@ resource "google_service_account" "deployer" {
   description  = "Service account for deploying applications"
 }
 
-# 既存WIF Pool（workload-identity-project）からDeployer SAへのバインディング
+# 既存WIF Pool（pt-workload-identity）からDeployer SAへのバインディング
 resource "google_service_account_iam_member" "deployer_workload_identity" {
   service_account_id = google_service_account.deployer.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/projects/${var.wif_project_number}/locations/global/workloadIdentityPools/github-actions-pool-id/attribute.repository/${var.github_repository}"
+  member             = "principalSet://iam.googleapis.com/projects/${var.wif_project_number}/locations/global/workloadIdentityPools/github/attribute.repository/${var.github_repository}"
 }
 
 # DeployerサービスアカウントにArtifact Registry(apiリポジトリ)への書き込み権限を付与
