@@ -23,6 +23,9 @@ module "cicd" {
   wif_project_number              = var.wif_project_number
   github_repository               = "ptiringo/toy-box"
   artifact_registry_repository_id = google_artifact_registry_repository.api.id
+
+  # WIF バインディングが org policy より先に作成されないようにする
+  depends_on = [google_org_policy_policy.allowed_policy_members]
 }
 
 module "cloudrun" {
