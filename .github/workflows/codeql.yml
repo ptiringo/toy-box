@@ -1,0 +1,48 @@
+# Kotlin/Java コードベースに対して CodeQL セキュリティ分析を実行し、脆弱性を検出します。
+name: CodeQL Analysis
+run-name: CodeQL Analysis for ${{ github.ref }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  push:
+    branches: [ main ]
+  schedule:
+    # 毎週月曜日の午前9時（JST）に定期実行
+    - cron: '0 0 * * 1'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    name: Analyze Kotlin/Java
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version-file: '.java-version'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@45580472a5bb82c4681c4ac726cfdb60060c2ee1 # v3.32.4
+        with:
+          languages: java-kotlin
+
+      - name: Build with Gradle
+        run: ./gradlew build -x test -x ktlintCheck --stacktrace
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@45580472a5bb82c4681c4ac726cfdb60060c2ee1 # v3.32.4
+        with:
+          category: '/language:java-kotlin'
