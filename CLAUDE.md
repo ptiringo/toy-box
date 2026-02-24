@@ -143,7 +143,7 @@ com.example.api/
 
 - **コメントとドキュメント**: 日本語で記述
 - **変数名、関数名、クラス名**: 英語で記述（意味を明確に）
-- **コミットメッセージ**: 日本語で記述、Conventional Commits 形式に準拠
+- **コミットメッセージ**: 日本語で記述、Conventional Commits 形式に準拠。最初に Conventional Commits ヘッダー（例: `feat: 新機能を追加`）を記述し、その後ファイルごとの詳細な変更内容を記述
 
 ### 命名規則
 
@@ -195,10 +195,12 @@ mise install
 mise list
 ```
 
-現在管理されているツール：
-- `java`: JDK 21
+現在管理されているツール（`mise.toml` 参照）：
 - `editorconfig-checker`: EditorConfig 準拠チェック
 - `lefthook`: Git フック管理
+- `terraform`: インフラ構成管理
+
+**注意**: Java（JDK 21）は mise ではなく Gradle toolchain で管理されています。
 
 ### Lefthook
 
@@ -212,7 +214,7 @@ lefthook install
 
 #### 実行されるフック
 
-- **pre-commit**: EditorConfig チェック、ktlint チェック
+- **pre-commit**（並列実行）: EditorConfig チェック、ktlint チェック、Terraform fmt チェック、Terraform validate
 - **pre-push**: 全テスト実行
 - **commit-msg**: Conventional Commits 形式のチェック
 
