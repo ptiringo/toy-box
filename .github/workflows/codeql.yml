@@ -19,6 +19,7 @@ jobs:
     name: Analyze Kotlin/Java
     timeout-minutes: 30
     permissions:
+      actions: read
       contents: read
       security-events: write
     steps:
@@ -35,7 +36,7 @@ jobs:
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@45580472a5bb82c4681c4ac726cfdb60060c2ee1 # v3.32.4
+        uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
         with:
           languages: java-kotlin
 
@@ -43,6 +44,6 @@ jobs:
         run: ./gradlew build -x test -x ktlintCheck --stacktrace
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@45580472a5bb82c4681c4ac726cfdb60060c2ee1 # v3.32.4
+        uses: github/codeql-action/analyze@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
         with:
           category: '/language:java-kotlin'
