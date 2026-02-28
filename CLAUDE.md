@@ -137,6 +137,49 @@ com.example.api/
 
 **設計原則**: ドメインパッケージはフレームワーク非依存。ハンドラーは HTTP とドメインロジックの薄いアダプター層として機能。
 
+### ロギング
+
+このプロジェクトでは構造化ロギングを採用しています：
+
+- **ロガーの取得**: `LoggerFactory.getLogger(クラス名::class.java)`
+- **ログレベル**:
+  - `DEBUG`: 開発時の詳細なトレース情報
+  - `INFO`: 通常の運用情報
+  - `WARN`: 警告（処理は継続可能）
+  - `ERROR`: エラー（処理に失敗）
+- **プロファイル別設定**:
+  - `dev`: テキスト形式、DEBUGレベル
+  - `prod`: JSON形式（Logstash形式）、INFOレベル
+
+例：
+```kotlin
+private val logger = LoggerFactory.getLogger(HelloHandler::class.java)
+
+logger.debug("デバッグ情報")
+logger.info("処理を開始しました")
+logger.warn("警告: {}", message)
+logger.error("エラーが発生しました", exception)
+```
+
+### エラーハンドリング
+
+グローバル例外ハンドラー（`GlobalExceptionHandler`）により、統一的なエラーレスポンスを提供：
+
+- **IllegalArgumentException** → 400 Bad Request
+- **IllegalStateException** → 409 Conflict
+- **NoSuchElementException** → 404 Not Found
+- **その他の例外** → 500 Internal Server Error
+
+エラーレスポンス形式：
+```json
+{
+  "timestamp": "2026-02-28T12:00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "不正な引数です"
+}
+```
+
 ## コーディング規約
 
 ### 言語とスタイル
@@ -201,6 +244,53 @@ mise list
 - `terraform`: インフラ構成管理
 
 **注意**: Java（JDK 21）は mise ではなく Gradle toolchain で管理されています。
+
+## 環境とプロファイル
+
+このプロジェクトでは環境別の設定をSpring Profilesで管理しています：
+
+### デフォルト（application.yml）
+- ポート: 8080（環境変数 `PORT` で上書き可）
+- Actuator: `/actuator/health` のみ公開
+
+### 開発環境（dev）
+```bash
+mise exec -- ./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
+- ログレベル: DEBUG
+- ログ形式: テキスト形式（可読性重視）
+- Actuator: health, info, metrics, env を公開
+- セキュリティ: 緩和（開発効率重視）
+
+### 本番環境（prod）
+```bash
+mise exec -- ./gradlew bootRun --args='--spring.profiles.active=prod'
+```
+
+- ログレベル: INFO
+- ログ形式: JSON形式（Logstash）
+- Actuator: health のみ公開
+- セキュリティ: 厳格（セキュリティヘッダー有効）
+
+## セキュリティ
+
+### セキュリティヘッダー
+
+`SecurityConfig` により以下のセキュリティヘッダーを自動設定：
+
+- **X-Frame-Options**: DENY（クリックジャッキング対策）
+- **Content-Security-Policy**: default-src 'self'（XSS対策）
+- **Referrer-Policy**: 参照元情報の制御
+- **Permissions-Policy**: 位置情報、マイク、カメラへのアクセス制限
+
+### 認証・認可
+
+現在は全エンドポイントを `permitAll()` で公開していますが、本番環境では以下を検討：
+
+- OAuth2 / JWT 認証の導入
+- エンドポイントごとの権限設定
+- CSRF 保護の有効化（必要に応じて）
 
 ### Lefthook
 
