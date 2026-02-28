@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- コンソール出力用アペンダー -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- JSON形式のログ出力（本番環境向け） -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>true</includeMdc>
+            <includeContext>true</includeContext>
+            <includeCallerData>false</includeCallerData>
+        </encoder>
+    </appender>
+
+    <!-- 開発環境ではテキスト形式、本番環境ではJSON形式 -->
+    <springProfile name="default,dev">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <!-- APIのロガーはDEBUGレベル -->
+        <logger name="com.example.api" level="DEBUG"/>
+    </springProfile>
+
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+        <logger name="com.example.api" level="INFO"/>
+    </springProfile>
+</configuration>
