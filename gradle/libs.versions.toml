@@ -9,7 +9,7 @@ springdoc-openapi-gradle = "1.9.0"
 ktlint = "14.0.1"
 
 # ライブラリのバージョン
-springdoc-openapi-bom = "3.0.1"
+springdoc-openapi-bom = "3.0.2"
 java-uuid-generator = "5.2.0"
 
 [libraries]
