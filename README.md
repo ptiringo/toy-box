@@ -2,6 +2,63 @@
 
 ## 開発環境
 
+### アプリケーションの起動
+
+```bash
+# デフォルトプロファイルで起動
+./gradlew bootRun
+
+# 開発プロファイルで起動（詳細なログ、追加のActuatorエンドポイント）
+./gradlew bootRun --args='--spring.profiles.active=dev'
+
+# 本番プロファイルで起動（最小限のログ、セキュアな設定）
+./gradlew bootRun --args='--spring.profiles.active=prod'
+```
+
+### APIエンドポイントの使い方
+
+アプリケーション起動後、以下のエンドポイントにアクセスできます：
+
+#### Hello World API
+```bash
+# Hello Worldメッセージを取得
+curl http://localhost:8080/api/hello
+
+# レスポンス例
+{
+  "message": "Hello World"
+}
+```
+
+#### OpenAPI / Swagger UI
+ブラウザで以下のURLにアクセス：
+```
+http://localhost:8080/swagger-ui.html
+```
+
+#### Actuator ヘルスチェック
+```bash
+# ヘルスチェック
+curl http://localhost:8080/actuator/health
+
+# レスポンス例
+{
+  "status": "UP"
+}
+```
+
+開発プロファイル（`dev`）で起動した場合は、追加のエンドポイントも利用可能：
+```bash
+# アプリケーション情報
+curl http://localhost:8080/actuator/info
+
+# メトリクス
+curl http://localhost:8080/actuator/metrics
+
+# 環境変数
+curl http://localhost:8080/actuator/env
+```
+
 ### コードスタイルとフォーマット
 
 このプロジェクトでは、Kotlin コードの品質とスタイルの統一のために **ktlint** を使用しています。

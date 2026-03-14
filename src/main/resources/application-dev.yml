@@ -1,0 +1,27 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: api
+
+springdoc:
+  show-actuator: true
+
+# Spring Boot Actuator の設定
+management:
+  endpoints:
+    web:
+      exposure:
+        # 開発環境ではより多くのエンドポイントを公開
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      # 詳細な情報を表示
+      show-details: always
+
+# ロギング設定（開発環境）
+logging:
+  level:
+    com.example.api: DEBUG
+    org.springframework.web: DEBUG

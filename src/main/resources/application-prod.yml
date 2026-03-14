@@ -1,0 +1,27 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: api
+
+springdoc:
+  show-actuator: false
+
+# Spring Boot Actuator の設定（本番環境）
+management:
+  endpoints:
+    web:
+      exposure:
+        # セキュリティのため、ヘルスチェックエンドポイントのみ公開
+        include: health
+  endpoint:
+    health:
+      # 詳細な情報は認証された場合のみ表示（セキュリティ考慮）
+      show-details: when-authorized
+
+# ロギング設定（本番環境）
+logging:
+  level:
+    com.example.api: INFO
+    org.springframework: WARN

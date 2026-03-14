@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -11,6 +12,8 @@ import org.springframework.web.reactive.function.server.bodyValueAndAwait
 
 @Component
 class HelloHandler {
+    private val logger = LoggerFactory.getLogger(HelloHandler::class.java)
+
     data class HelloResponse(
         val message: String,
     )
@@ -29,8 +32,10 @@ class HelloHandler {
     )
     suspend fun hello(
         @Suppress("unused") request: ServerRequest,
-    ): ServerResponse =
-        ServerResponse
+    ): ServerResponse {
+        logger.debug("Hello endpoint called")
+        return ServerResponse
             .ok()
             .bodyValueAndAwait(HelloResponse("Hello World"))
+    }
 }
