@@ -1,6 +1,6 @@
 [versions]
 # Kotlin関連のバージョン
-kotlin = "2.3.10"
+kotlin = "2.3.20"
 
 # プラグインのバージョン
 spring-boot = "4.0.3"
