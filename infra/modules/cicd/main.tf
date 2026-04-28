@@ -6,7 +6,8 @@ resource "google_service_account" "deployer" {
 
 # 既存WIF Pool（pt-workload-identity）からDeployer SAへのバインディング
 # principal:// (単数) で sub claim と完全一致させることで、
-# 「対象リポジトリ AND production environment」の AND 条件で制限している。
+# 「対象リポジトリ AND var.deploy_environment で指定した environment（既定: production）」の
+# AND 条件で制限している。
 # environment 側の保護ルール（main ブランチ限定、承認者必須など）は GitHub UI で設定。
 resource "google_service_account_iam_member" "deployer_workload_identity" {
   service_account_id = google_service_account.deployer.name
