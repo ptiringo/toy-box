@@ -25,6 +25,8 @@ mise が活性化されていない非対話シェルから実行する場合の
 mise exec -- ./gradlew build
 ```
 
+> いずれの環境でも mise 自体のインストールが前提です。未導入の場合は [mise インストール手順](https://mise.jdx.dev/getting-started.html) を参照のうえ、`mise install` で `mise.toml` 指定のツール一式をセットアップしてください。
+
 ### ビルドとテスト
 
 ```bash
