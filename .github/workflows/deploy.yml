@@ -7,7 +7,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'infra/**'
-      - '*.md'
+      - '**/*.md'
   workflow_dispatch:
 
 jobs:
