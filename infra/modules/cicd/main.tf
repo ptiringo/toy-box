@@ -5,10 +5,14 @@ resource "google_service_account" "deployer" {
 }
 
 # 既存WIF Pool（pt-workload-identity）からDeployer SAへのバインディング
+# principal:// (単数) で sub claim と完全一致させることで、
+# 「対象リポジトリ AND var.deploy_environment で指定した environment（既定: production）」の
+# AND 条件で制限している。
+# environment 側の保護ルール（main ブランチ限定、承認者必須など）は GitHub UI で設定。
 resource "google_service_account_iam_member" "deployer_workload_identity" {
   service_account_id = google_service_account.deployer.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/projects/${var.wif_project_number}/locations/global/workloadIdentityPools/github/attribute.repository/${var.github_repository}"
+  member             = "principal://iam.googleapis.com/projects/${var.wif_project_number}/locations/global/workloadIdentityPools/github/subject/repo:${var.github_repository}:environment:${var.deploy_environment}"
 }
 
 # DeployerサービスアカウントにArtifact Registry(apiリポジトリ)への書き込み権限を付与

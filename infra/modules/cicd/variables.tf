@@ -17,3 +17,9 @@ variable "project_id" {
   description = "GCP プロジェクト ID"
   type        = string
 }
+
+variable "deploy_environment" {
+  description = "デプロイを許可する GitHub Actions environment 名"
+  type        = string
+  default     = "production"
+}
