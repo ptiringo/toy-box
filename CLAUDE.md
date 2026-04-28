@@ -8,56 +8,59 @@ Kotlin Spring Boot WebFlux を使用した API プロジェクトです。複数
 
 ## 開発コマンド
 
-### 重要: mise を使用したコマンド実行
+### mise によるツールバージョン管理
 
-このプロジェクトでは mise を使用してツールバージョンを管理しています。**Claude Code や非対話型シェルからコマンドを実行する場合は、`mise exec --` プレフィックスを使用してください**。これにより、mise で管理されている正しいバージョンの Java やその他のツールが使用されます。
+このプロジェクトでは mise を使用してツールバージョンを管理しています。以下の環境では mise 管理下のツールが PATH に通った状態でコマンドを直接実行できます。
 
-例：
+- **対話型シェル**: `mise activate` 済みの場合（`~/.zshrc` 等で設定済みなら自動）
+- **Claude Code**: `.claude/hooks/session-start-mise.sh` が SessionStart 時に `mise hook-env` を適用するため、自動で mise 管理ツールが利用可能
+
+mise が活性化されていない非対話シェルから実行する場合のみ、`mise exec --` プレフィックスを付けてください。
+
 ```bash
-# mise exec を使用したコマンド実行
-mise exec -- ./gradlew build
-
-# または環境変数を設定
-eval "$(mise activate bash)"  # bash の場合
+# 通常はこちら（mise activate 済み / Claude Code セッション）
 ./gradlew build
+
+# mise が活性化されていない環境のみ
+mise exec -- ./gradlew build
 ```
 
-対話型シェルで mise がすでにアクティブな場合は、直接 `./gradlew` コマンドを実行できます。
+> いずれの環境でも mise 自体のインストールが前提です。未導入の場合は [mise インストール手順](https://mise.jdx.dev/getting-started.html) を参照のうえ、`mise install` で `mise.toml` 指定のツール一式をセットアップしてください。
 
 ### ビルドとテスト
 
 ```bash
 # ビルド
-mise exec -- ./gradlew build
+./gradlew build
 
 # テスト実行
-mise exec -- ./gradlew test
+./gradlew test
 
 # アプリケーション起動
-mise exec -- ./gradlew bootRun
+./gradlew bootRun
 ```
 
 ### コード品質チェック
 
 ```bash
 # ktlint チェック
-mise exec -- ./gradlew ktlintCheck
+./gradlew ktlintCheck
 
 # ktlint 自動フォーマット
-mise exec -- ./gradlew ktlintFormat
+./gradlew ktlintFormat
 
 # 全チェック実行
-mise exec -- ./gradlew check
+./gradlew check
 ```
 
 ### 単一テストの実行
 
 ```bash
 # 特定のテストクラスを実行
-mise exec -- ./gradlew test --tests "HelloControllerTest"
+./gradlew test --tests "HelloControllerTest"
 
 # 特定のテストメソッドを実行（メソッド名に応じてパターンを調整してください）
-mise exec -- ./gradlew test --tests "HelloControllerTest.*hello*"
+./gradlew test --tests "HelloControllerTest.*hello*"
 ```
 
 ## アーキテクチャ
@@ -277,16 +280,16 @@ infra/
 
 ```bash
 # 初期化
-mise exec -- terraform init
+terraform init
 
 # 差分確認
-mise exec -- terraform plan
+terraform plan
 
 # 適用
-mise exec -- terraform apply
+terraform apply
 
 # フォーマット
-mise exec -- terraform fmt -recursive
+terraform fmt -recursive
 ```
 
 ## 注意事項
