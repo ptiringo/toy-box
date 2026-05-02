@@ -1,11 +1,11 @@
 package com.example.api
 
 import org.junit.jupiter.api.Test
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
-import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.servlet.client.RestTestClient
 
 /**
  * OpenAPI ドキュメント生成機能のテストクラス
@@ -13,14 +13,14 @@ import org.springframework.test.web.reactive.server.WebTestClient
  * springdoc-openapi による REST API ドキュメントの自動生成が正しく動作することを検証します。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
+@AutoConfigureRestTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class OpenApiTest(
-    private val webTestClient: WebTestClient,
+    private val restTestClient: RestTestClient,
 ) {
     @Test
     fun `OpenAPI の JSON ドキュメントが取得できること`() {
-        webTestClient
+        restTestClient
             .get()
             .uri("/v3/api-docs")
             .exchange()
@@ -37,7 +37,7 @@ class OpenApiTest(
 
     @Test
     fun `Swagger UI が表示されること`() {
-        webTestClient
+        restTestClient
             .get()
             .uri("/swagger-ui/index.html")
             .exchange()

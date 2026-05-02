@@ -1,30 +1,28 @@
 package com.example.api.controller
 
-import com.example.api.config.RouterConfig
-import com.example.api.handler.HelloHandler
 import org.junit.jupiter.api.Test
-import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest
-import org.springframework.context.annotation.Import
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
-import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.assertj.MockMvcTester
 
-@WebFluxTest
-@Import(RouterConfig::class, HelloHandler::class)
+@WebMvcTest(HelloController::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class HelloControllerTest(
-    val webTestClient: WebTestClient,
+    val mockMvc: MockMvc,
 ) {
+    private val tester = MockMvcTester.create(mockMvc)
+
     @Test
-    fun `should return Hello World message when calling hello endpoint`() {
-        webTestClient
+    fun `helloエンドポイントがHello Worldを返すこと`() {
+        tester
             .get()
             .uri("/api/hello")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody()
-            .jsonPath("$.message")
+            .assertThat()
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.message")
             .isEqualTo("Hello World")
     }
 }

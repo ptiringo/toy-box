@@ -1,16 +1,14 @@
-package com.example.api.handler
+package com.example.api.controller
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.bodyValueAndAwait
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Component
-class HelloHandler {
+@RestController
+class HelloController {
     data class HelloResponse(
         val message: String,
     )
@@ -27,10 +25,6 @@ class HelloHandler {
             ),
         ],
     )
-    suspend fun hello(
-        @Suppress("unused") request: ServerRequest,
-    ): ServerResponse =
-        ServerResponse
-            .ok()
-            .bodyValueAndAwait(HelloResponse("Hello World"))
+    @GetMapping("/api/hello")
+    fun hello(): HelloResponse = HelloResponse("Hello World")
 }
