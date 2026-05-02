@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Kotlin Spring Boot WebFlux を使用した API プロジェクトです。複数のドメインモデル（競馬、エンターテイメント、テニス）を探索する sandbox プロジェクトとして開発されています。
+Kotlin Spring Boot (Spring MVC + Virtual Thread) を使用した API プロジェクトです。複数のドメインモデル（競馬、エンターテイメント、テニス）を探索する sandbox プロジェクトとして開発されています。
+
+JDK 21 の Virtual Thread (`spring.threads.virtual.enabled=true`) を有効化することで、ブロッキング JDBC 等の同期 IO を素直に書きながらスレッド占有を避ける構成を採用しています。WebFlux / Reactor / coroutine ベースのリアクティブ流派ではありません。
 
 ## 開発コマンド
 
@@ -67,24 +69,26 @@ mise exec -- ./gradlew build
 
 ### 構成パターン
 
-このプロジェクトは **Functional Routing** パターンを採用しています：
+このプロジェクトは **Spring MVC の標準的な `@RestController` パターン** を採用しています：
 
-- **RouterConfig** (`config/RouterConfig.kt`): `coRouter { }` DSL でルーティングを定義
-- **Handler** (`handler/`): コントローラーの代わりに suspend 関数ベースのハンドラーを使用
+- **Controller** (`controller/`): `@RestController` + `@GetMapping` 等で HTTP エンドポイントを定義
 - **Domain** (`domain/`): フレームワークに依存しないピュアなドメインモデル
+
+戻り値はオブジェクトをそのまま返却し、Jackson が JSON にシリアライズします。
 
 例：
 ```kotlin
-// RouterConfig.kt
-coRouter {
-    GET("/api/hello", helloHandler::hello)
-}
+// HelloController.kt
+@RestController
+class HelloController {
+    data class HelloResponse(val message: String)
 
-// HelloHandler.kt
-suspend fun hello(request: ServerRequest): ServerResponse {
-    return ok().bodyValueAndAwait(HelloResponse("Hello, World!"))
+    @GetMapping("/api/hello")
+    fun hello(): HelloResponse = HelloResponse("Hello World")
 }
 ```
+
+リクエスト処理スレッドは Virtual Thread 上で走るため、内部でブロッキング IO（JDBC 等）を呼び出しても OS スレッドは占有されません。`suspend` / `Mono` / `Flux` を導入する動機が薄いので、原則 **同期コードで書く** ことを推奨します。
 
 ### ドメイン駆動設計
 
@@ -129,16 +133,15 @@ fun registerInStudBook(command: Command<StudBook>)
 
 ```
 com.example.api/
-├── ApiApplication.kt    # エントリーポイント
-├── config/              # Spring 設定（RouterConfig）
-├── handler/             # WebFlux ハンドラー（ビジネスロジック）
+├── ApiApplication.kt    # エントリーポイント（@OpenAPIDefinition もここ）
+├── controller/          # @RestController（HTTP エンドポイント）
 └── domain/              # ドメインロジック（Spring に依存しない）
     ├── horseracing/     # 競馬ドメイン
     ├── sakamichi/       # エンターテイメントドメイン
     └── tennis/          # スポーツドメイン
 ```
 
-**設計原則**: ドメインパッケージはフレームワーク非依存。ハンドラーは HTTP とドメインロジックの薄いアダプター層として機能。
+**設計原則**: ドメインパッケージはフレームワーク非依存。コントローラーは HTTP とドメインロジックの薄いアダプター層として機能。
 
 ## コーディング規約
 
@@ -150,7 +153,7 @@ com.example.api/
 
 ### 命名規則
 
-- **クラス名**: PascalCase（例: `UserService`, `OrderHandler`）
+- **クラス名**: PascalCase（例: `UserService`, `OrderController`）
 - **関数名**: camelCase（例: `createUser`, `validateInput`）
 - **定数**: UPPER_SNAKE_CASE（例: `MAX_RETRY_COUNT`）
 - **プロパティ**: camelCase（例: `userId`, `emailAddress`）
@@ -165,15 +168,25 @@ com.example.api/
 #### アサーション
 
 - **Kotlin の `assert` 関数を優先**: 単体テストでは Power Assert を活用
-- **WebFlux テスト**: `WebTestClient` のアサーションメソッドを使用
+- **コントローラーの slice テスト**: `@WebMvcTest` + `MockMvcTester` を使用
+- **アプリ全体の統合テスト**: `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@AutoConfigureRestTestClient` + `RestTestClient` を使用（`RestTestClient` は Spring Framework 6.2 で追加された `RestClient` ベースの sync 版テストクライアント）
 - **テストケース命名**: 日本語でテストの意図を明確に表現
 
-例：
+例（slice テスト）：
 ```kotlin
-@Test
-fun `helloエンドポイントがHello Worldを返すこと`() {
-    val response = handler.hello(mockRequest).awaitSingle()
-    assert(response.statusCode() == HttpStatus.OK)
+@WebMvcTest(HelloController::class)
+class HelloControllerTest(val mockMvc: MockMvc) {
+    private val tester = MockMvcTester.create(mockMvc)
+
+    @Test
+    fun `helloエンドポイントがHello Worldを返すこと`() {
+        tester.get().uri("/api/hello")
+            .assertThat()
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.message")
+            .isEqualTo("Hello World")
+    }
 }
 ```
 
@@ -238,7 +251,7 @@ LEFTHOOK_EXCLUDE=ktlint-check git commit -m "メッセージ"
 - **エンドポイント**: `/swagger-ui.html`（アプリケーション起動後）
 - **OpenAPI JSON**: `/v3/api-docs`
 
-ハンドラーには `@Operation`, `@ApiResponse`, `@Content` などのアノテーションを付与してドキュメント化します。
+コントローラーのメソッドには `@Operation`, `@ApiResponse`, `@Content` などのアノテーションを付与してドキュメント化します。`@OpenAPIDefinition`（タイトル・タグ等の全体定義）は `ApiApplication.kt` に付与しています。
 
 ## Spring Boot Actuator
 

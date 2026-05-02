@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: api
+  threads:
+    virtual:
+      enabled: true
 
 springdoc:
   show-actuator: true
