@@ -59,4 +59,4 @@ jobs:
           service: api
           region: asia-northeast1
           image: ${{ vars.IMAGE }}:${{ github.sha }}
-          flags: '--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=512Mi --cpu=1 --min-instances=0 --max-instances=3'
+          flags: '--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 --cpu-boost --min-instances=0 --max-instances=3'
