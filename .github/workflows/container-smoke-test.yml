@@ -48,6 +48,8 @@ jobs:
         run: ./gradlew bootBuildImage --imageName=api-smoke:test
 
       # メモリ値は deploy.yml の --memory と揃えること。
+      # docker の `-m 1g` は 1 GiB (= 1024 MiB) を表し、gcloud の `--memory=1Gi` と等価。
+      # 単位表記が異なるため、片方だけを更新しないよう注意する。
       - name: Smoke test container with prod-like memory limit
         run: |
           docker run -d --name api-smoke -m 1g -p 8080:8080 -e PORT=8080 api-smoke:test
