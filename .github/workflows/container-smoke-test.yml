@@ -1,0 +1,65 @@
+# PR 時に bootBuildImage で生成したコンテナを Cloud Run と同じメモリ制約で起動し、
+# Paketo memory-calculator や Spring context の初期化が本番環境で成立することを検証します。
+# 本番デプロイの blocker となるコンテナ起動失敗を、main マージ前に検知するのが目的です。
+name: Container Smoke Test
+run-name: Container Smoke Test for ${{ github.ref }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - 'infra/**'
+      - '.claude/**'
+      - 'src/test/**'
+      - '**/*.md'
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'infra/**'
+      - '.claude/**'
+      - 'src/test/**'
+      - '**/*.md'
+
+jobs:
+  container-smoke-test:
+    runs-on: ubuntu-latest
+    name: Container Smoke Test
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version-file: '.java-version'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          cache-provider: basic
+
+      - name: Build Docker image with bootBuildImage
+        run: ./gradlew bootBuildImage --imageName=api-smoke:test
+
+      # メモリ値は deploy.yml の --memory と揃えること。
+      - name: Smoke test container with prod-like memory limit
+        run: |
+          docker run -d --name api-smoke -m 1g -p 8080:8080 -e PORT=8080 api-smoke:test
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              echo "Container healthy"
+              docker rm -f api-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Container did not become healthy in 60s"
+          docker logs api-smoke
+          docker rm -f api-smoke
+          exit 1
