@@ -15,6 +15,12 @@ pre-commit:
       run: mise exec -- ./gradlew ktfmtCheck --daemon
       tags: format
 
+    # detekt による静的解析
+    detekt:
+      glob: "**/*.{kt,kts}"
+      run: mise exec -- ./gradlew detekt --daemon
+      tags: lint
+
     # Terraform フォーマットチェック
     terraform-fmt-check:
       glob: "infra/*.tf"

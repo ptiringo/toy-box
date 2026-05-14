@@ -7,6 +7,7 @@ spring-boot = "4.0.6"
 spring-dependency-management = "1.1.7"
 springdoc-openapi-gradle = "1.9.0"
 ktfmt = "0.26.0"
+detekt = "2.0.0-alpha.3"
 
 # ライブラリのバージョン
 springdoc-openapi-bom = "3.0.3"
@@ -35,3 +36,6 @@ springdoc-openapi-gradle = { id = "org.springdoc.openapi-gradle-plugin", version
 
 # ktfmt プラグイン
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
+
+# detekt プラグイン
+detekt = { id = "dev.detekt", version.ref = "detekt" }
