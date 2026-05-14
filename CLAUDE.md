@@ -51,9 +51,14 @@ mise exec -- ./gradlew build
 # ktfmt 自動フォーマット
 ./gradlew ktfmtFormat
 
-# 全チェック実行
+# detekt 静的解析（命名規則・コードスメル・複雑度等の検出）
+./gradlew detekt
+
+# 全チェック実行（ktfmtCheck + detekt + test 等を含む）
 ./gradlew check
 ```
+
+ktfmt はフォーマッタ、detekt は静的解析ツールという役割分担です。detekt の設定は `config/detekt/detekt.yml` にあり、`buildUponDefaultConfig = true` でデフォルト設定に上書きする形で運用しています。雛形を再生成したい場合は `./gradlew detektGenerateConfig` を実行してください。レポートは `build/reports/detekt/` に HTML / SARIF / Checkstyle XML / Markdown 形式で出力されます。
 
 ### 単一テストの実行
 
@@ -231,7 +236,7 @@ lefthook install
 
 #### 実行されるフック
 
-- **pre-commit**（並列実行）: EditorConfig チェック、ktfmt チェック、Terraform fmt チェック、Terraform validate
+- **pre-commit**（並列実行）: EditorConfig チェック、ktfmt チェック、detekt 静的解析、Terraform fmt チェック、Terraform validate
 - **pre-push**: 全テスト実行
 - **commit-msg**: Conventional Commits 形式のチェック
 
@@ -310,4 +315,4 @@ terraform fmt -recursive
 
 - このプロジェクトは現在、永続化層（データベース、リポジトリ）を持ちません
 - ドメインモデルは探索的な実装であり、TODO コメントが含まれています
-- コード品質を重視しており、CI で ktfmt と EditorConfig のチェックが自動実行されます
+- コード品質を重視しており、CI で ktfmt / detekt / EditorConfig のチェックが自動実行されます

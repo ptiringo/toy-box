@@ -1,0 +1,21 @@
+# detekt 設定ファイル
+#
+# `buildUponDefaultConfig = true` を設定しているため、detekt 内部のデフォルト設定に
+# このファイルの内容がマージされます。プロジェクト固有の上書きのみを記述します。
+#
+# 雛形を再生成したい場合: `./gradlew detektGenerateConfig`
+# 雛形の全項目は detekt 公式のデフォルト設定を参照してください:
+#   https://github.com/detekt/detekt/blob/main/detekt-core/src/main/resources/default-detekt-config.yml
+
+empty-blocks:
+  # Spring Boot 標準の `contextLoads` テストや、sandbox の探索的実装で
+  # 意図的に空の関数本体を残すケースがあるため無効化する。
+  EmptyFunctionBlock:
+    active: false
+
+style:
+  # このプロジェクトは sandbox であり、ドメインモデルの探索的実装として
+  # TODO コメントを意図的に残している（CLAUDE.md 参照）。
+  # 個別の TODO 解消は別 issue で扱うため検出対象から外す。
+  ForbiddenComment:
+    active: false

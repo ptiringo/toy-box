@@ -35,5 +35,8 @@ jobs:
       - name: Run ktfmt check
         run: ./gradlew ktfmtCheck --stacktrace
 
+      - name: Run detekt
+        run: ./gradlew detekt --stacktrace
+
       - name: Run API tests
         run: ./gradlew test --stacktrace
