@@ -9,9 +9,7 @@ import org.springframework.boot.runApplication
 @SpringBootApplication
 @OpenAPIDefinition(
     info = Info(title = "toy-box", summary = "toy-box の API 定義です。"),
-    tags = [
-        Tag(name = "Hello", description = "サンプル"),
-    ],
+    tags = [Tag(name = "Hello", description = "サンプル")],
 )
 class ApiApplication
 

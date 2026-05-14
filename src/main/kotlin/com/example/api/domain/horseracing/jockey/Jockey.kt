@@ -8,10 +8,7 @@ import java.util.UUID
  *
  * @property value UUID形式のID値
  */
-@JvmInline
-value class JockeyId(
-    val value: UUID,
-)
+@JvmInline value class JockeyId(val value: UUID)
 
 /**
  * 騎手（ジョッキー）を表すデータクラス
@@ -26,15 +23,11 @@ class Jockey(
     /** 姓 */
     val lastName: String,
 ) {
-    /**
-     * ジョッキーID
-     * インスタンス生成時に一意なIDを自動生成する
-     */
+    /** ジョッキーID インスタンス生成時に一意なIDを自動生成する */
     val id = JockeyId(Generators.timeBasedEpochRandomGenerator().generate())
 
     /**
-     * 等価判定
-     * 同じ型かつIDが一致する場合のみ等価とみなす
+     * 等価判定 同じ型かつIDが一致する場合のみ等価とみなす
      *
      * @param other 比較対象
      * @return 等価ならtrue
@@ -50,8 +43,7 @@ class Jockey(
     }
 
     /**
-     * ハッシュコード生成
-     * ジョッキーIDに基づいてハッシュ値を返す
+     * ハッシュコード生成 ジョッキーIDに基づいてハッシュ値を返す
      *
      * @return ハッシュ値
      */

@@ -4,15 +4,12 @@ import com.fasterxml.uuid.Generators
 import java.util.UUID
 
 /** レースID */
-@JvmInline
-value class RaceId(
-    val value: UUID,
-)
+@JvmInline value class RaceId(val value: UUID)
 
 /** レース */
 class Race(
     /** レース名 */
-    val name: String,
+    val name: String
 ) {
     /** レースID */
     val id = RaceId(Generators.timeBasedEpochRandomGenerator().generate())

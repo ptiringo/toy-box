@@ -10,9 +10,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
-class HealthEndpointTest(
-    val restTestClient: RestTestClient,
-) {
+class HealthEndpointTest(val restTestClient: RestTestClient) {
     @Test
     fun `ヘルスエンドポイントを呼び出すとUPステータスが返される`() {
         restTestClient

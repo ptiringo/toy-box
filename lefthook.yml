@@ -9,11 +9,11 @@ pre-commit:
       run: ec
       tags: format
 
-    # ktlint によるコードスタイルチェック
-    ktlint-check:
+    # ktfmt によるフォーマットチェック
+    ktfmt-check:
       glob: "**/*.{kt,kts}"
-      run: mise exec -- ./gradlew ktlintCheck --daemon
-      tags: format lint
+      run: mise exec -- ./gradlew ktfmtCheck --daemon
+      tags: format
 
     # Terraform フォーマットチェック
     terraform-fmt-check:

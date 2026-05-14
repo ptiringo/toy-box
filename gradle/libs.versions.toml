@@ -6,7 +6,7 @@ kotlin = "2.3.21"
 spring-boot = "4.0.6"
 spring-dependency-management = "1.1.7"
 springdoc-openapi-gradle = "1.9.0"
-ktlint = "14.2.0"
+ktfmt = "0.26.0"
 
 # ライブラリのバージョン
 springdoc-openapi-bom = "3.0.3"
@@ -33,5 +33,5 @@ spring-dependency-management = { id = "io.spring.dependency-management", version
 # SpringDoc OpenAPI プラグイン
 springdoc-openapi-gradle = { id = "org.springdoc.openapi-gradle-plugin", version.ref = "springdoc-openapi-gradle" }
 
-# ktlint プラグイン
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+# ktfmt プラグイン
+ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }

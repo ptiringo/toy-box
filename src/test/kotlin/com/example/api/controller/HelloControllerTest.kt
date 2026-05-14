@@ -9,9 +9,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 
 @WebMvcTest(HelloController::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
-class HelloControllerTest(
-    val mockMvc: MockMvc,
-) {
+class HelloControllerTest(val mockMvc: MockMvc) {
     private val tester = MockMvcTester.create(mockMvc)
 
     @Test

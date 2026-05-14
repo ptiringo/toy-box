@@ -4,10 +4,7 @@ import com.fasterxml.uuid.Generators
 import java.util.UUID
 
 /** 選手ID */
-@JvmInline
-value class PlayerId(
-    val value: UUID,
-)
+@JvmInline value class PlayerId(val value: UUID)
 
 /** 選手 */
 class Player(
