@@ -3,10 +3,7 @@ package com.example.api.domain.horseracing.horse.bloodhorse
 import java.util.UUID
 
 /** 軽種馬ID */
-@JvmInline
-value class BloodHorseId(
-    val value: UUID,
-)
+@JvmInline value class BloodHorseId(val value: UUID)
 
 /** 性 */
 @Suppress("unused")
@@ -19,9 +16,10 @@ enum class Sex {
 }
 
 /** 軽種馬 */
-class BloodHorse private constructor(
+class BloodHorse
+private constructor(
     /** 性 */
-    @Suppress("unused") val sex: Sex,
+    @Suppress("unused") val sex: Sex
 ) {
     /** 軽種馬ID */
     val id = BloodHorseId(UUID.randomUUID())

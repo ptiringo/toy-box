@@ -1,4 +1,5 @@
 [tools]
 editorconfig-checker = "3.3.0"
+java = "temurin-21.0.0+35.0.LTS"
 lefthook = "1.12.2"
 terraform = "1.12.2"

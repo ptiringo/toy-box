@@ -3,9 +3,7 @@ package com.example.api.domain.horseracing.jockey
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-/**
- * Jockey クラスのユニットテスト
- */
+/** Jockey クラスのユニットテスト */
 class JockeyTest {
     @Nested
     inner class ConstructorTest {

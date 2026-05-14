@@ -1,4 +1,4 @@
-# Pull Request 時にテストとktlintチェックを自動実行し、mainブランチへの壊れたコードのマージを防止します。
+# Pull Request 時にテストと ktfmt チェックを自動実行し、mainブランチへの壊れたコードのマージを防止します。
 name: API Tests
 run-name: API Tests for ${{ github.ref }}
 
@@ -32,8 +32,8 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Run ktlint check
-        run: ./gradlew ktlintCheck --stacktrace
+      - name: Run ktfmt check
+        run: ./gradlew ktfmtCheck --stacktrace
 
       - name: Run API tests
         run: ./gradlew test --stacktrace

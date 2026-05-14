@@ -15,9 +15,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
-class OpenApiTest(
-    private val restTestClient: RestTestClient,
-) {
+class OpenApiTest(private val restTestClient: RestTestClient) {
     @Test
     fun `OpenAPI の JSON ドキュメントが取得できること`() {
         restTestClient

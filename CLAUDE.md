@@ -45,11 +45,11 @@ mise exec -- ./gradlew build
 ### コード品質チェック
 
 ```bash
-# ktlint チェック
-./gradlew ktlintCheck
+# ktfmt フォーマットチェック
+./gradlew ktfmtCheck
 
-# ktlint 自動フォーマット
-./gradlew ktlintFormat
+# ktfmt 自動フォーマット
+./gradlew ktfmtFormat
 
 # 全チェック実行
 ./gradlew check
@@ -213,10 +213,11 @@ mise list
 
 現在管理されているツール（`mise.toml` 参照）：
 - `editorconfig-checker`: EditorConfig 準拠チェック
+- `java` (Temurin 21): Gradle / Kotlin のビルドおよびテスト実行用 JDK
 - `lefthook`: Git フック管理
 - `terraform`: インフラ構成管理
 
-**注意**: Java（JDK 21）は mise ではなく Gradle toolchain で管理されています。
+**Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言しています（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出します。
 
 ### Lefthook
 
@@ -230,7 +231,7 @@ lefthook install
 
 #### 実行されるフック
 
-- **pre-commit**（並列実行）: EditorConfig チェック、ktlint チェック、Terraform fmt チェック、Terraform validate
+- **pre-commit**（並列実行）: EditorConfig チェック、ktfmt チェック、Terraform fmt チェック、Terraform validate
 - **pre-push**: 全テスト実行
 - **commit-msg**: Conventional Commits 形式のチェック
 
@@ -241,7 +242,7 @@ lefthook install
 lefthook run pre-commit
 
 # 特定のコマンドのみスキップ
-LEFTHOOK_EXCLUDE=ktlint-check git commit -m "メッセージ"
+LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"
 ```
 
 ## OpenAPI/Swagger
@@ -309,4 +310,4 @@ terraform fmt -recursive
 
 - このプロジェクトは現在、永続化層（データベース、リポジトリ）を持ちません
 - ドメインモデルは探索的な実装であり、TODO コメントが含まれています
-- コード品質を重視しており、CI で ktlint と EditorConfig のチェックが自動実行されます
+- コード品質を重視しており、CI で ktfmt と EditorConfig のチェックが自動実行されます

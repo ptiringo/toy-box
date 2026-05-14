@@ -5,21 +5,16 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.springdoc.openapi.gradle)
-    alias(libs.plugins.ktlint)
+    alias(libs.plugins.ktfmt)
 }
 
 group = "com.example"
+
 version = "0.0.1-SNAPSHOT"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 dependencies {
     @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
@@ -38,42 +33,11 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.addAll("-Xjsr305=strict")
-    }
-}
+kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
+tasks.withType<Test> { useJUnitPlatform() }
 
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    // ktlint のバージョン（プラグインが管理）
-    version.set("1.8.0")
-
-    // デバッグモードの有効化（必要に応じて）
-    debug.set(false)
-
-    // 詳細なログ出力
-    verbose.set(true)
-
-    // Android用のルールセットを使用しない
-    android.set(false)
-
-    // 出力形式の設定
-    outputToConsole.set(true)
-
-    // エラー時にビルドを失敗させる
-    ignoreFailures.set(false)
-
-    // EditorConfig の設定を尊重
-    enableExperimentalRules.set(false)
-
-    // フィルター設定
-    filter {
-        exclude("**/generated/**")
-        include("**/kotlin/**")
-        include("**/*.kts")
-    }
+ktfmt {
+    // Kotlin 公式コーディング規約準拠（4 space indent / 100 char limit）
+    kotlinLangStyle()
 }
