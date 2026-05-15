@@ -10,6 +10,25 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit-editorconfig.sh",
+            "timeout": 15,
+            "statusMessage": "EditorConfig チェック中..."
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit-terraform-fmt.sh",
+            "timeout": 30,
+            "statusMessage": "terraform fmt チェック中..."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -24,6 +43,18 @@
             "command": "./gradlew detekt --daemon",
             "timeout": 120,
             "statusMessage": "detekt 静的解析実行中..."
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/stop-gradle-test.sh",
+            "timeout": 180,
+            "statusMessage": "gradle test 実行中 (Kotlin/Java 変更時のみ)..."
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/stop-terraform-validate.sh",
+            "timeout": 60,
+            "statusMessage": "terraform validate 実行中 (Terraform 変更時のみ)..."
           }
         ]
       }
