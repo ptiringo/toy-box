@@ -9,6 +9,24 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./gradlew ktfmtFormat --daemon",
+            "timeout": 120,
+            "statusMessage": "ktfmt フォーマット適用中..."
+          },
+          {
+            "type": "command",
+            "command": "./gradlew detekt --daemon",
+            "timeout": 120,
+            "statusMessage": "detekt 静的解析実行中..."
+          }
+        ]
+      }
     ]
   }
 }
