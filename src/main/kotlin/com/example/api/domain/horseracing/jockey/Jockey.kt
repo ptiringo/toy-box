@@ -1,6 +1,9 @@
 package com.example.api.domain.horseracing.jockey
 
 import com.fasterxml.uuid.Generators
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
 import java.util.UUID
 
 /**
@@ -10,14 +13,29 @@ import java.util.UUID
  */
 @JvmInline value class JockeyId(val value: UUID)
 
+/** ジョッキー生成時に発生しうる不変条件違反。 */
+sealed interface JockeyValidationError {
+    /** 名がブランク。 */
+    data object BlankFirstName : JockeyValidationError
+
+    /** 姓がブランク。 */
+    data object BlankLastName : JockeyValidationError
+}
+
 /**
- * 騎手（ジョッキー）を表すデータクラス
+ * 騎手（ジョッキー）を表すエンティティ。
+ *
+ * 不変条件:
+ * - `firstName` / `lastName` のいずれもブランクではない
+ *
+ * 不変条件を満たした上で生成するために、コンストラクタは private にして [Jockey.create] でのみ生成する。
  *
  * @property firstName 名
  * @property lastName 姓
  * @property id ジョッキーID（自動生成）
  */
-class Jockey(
+class Jockey
+private constructor(
     /** 名 */
     val firstName: String,
     /** 姓 */
@@ -26,12 +44,7 @@ class Jockey(
     /** ジョッキーID インスタンス生成時に一意なIDを自動生成する */
     val id = JockeyId(Generators.timeBasedEpochRandomGenerator().generate())
 
-    /**
-     * 等価判定 同じ型かつIDが一致する場合のみ等価とみなす
-     *
-     * @param other 比較対象
-     * @return 等価ならtrue
-     */
+    /** 等価判定 同じ型かつIDが一致する場合のみ等価とみなす */
     override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
@@ -42,10 +55,20 @@ class Jockey(
         return id == (other as Jockey).id
     }
 
-    /**
-     * ハッシュコード生成 ジョッキーIDに基づいてハッシュ値を返す
-     *
-     * @return ハッシュ値
-     */
+    /** ハッシュコード生成 ジョッキーIDに基づいてハッシュ値を返す */
     override fun hashCode(): Int = id.hashCode()
+
+    companion object {
+        /**
+         * 不変条件を検証してから [Jockey] を生成する。
+         *
+         * @return 生成された [Jockey]、または不変条件違反を表す [JockeyValidationError]
+         */
+        fun create(firstName: String, lastName: String): Result<Jockey, JockeyValidationError> =
+            when {
+                firstName.isBlank() -> Err(JockeyValidationError.BlankFirstName)
+                lastName.isBlank() -> Err(JockeyValidationError.BlankLastName)
+                else -> Ok(Jockey(firstName, lastName))
+            }
+    }
 }

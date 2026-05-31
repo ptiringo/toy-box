@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## プロジェクト概要
 
 Kotlin Spring Boot (Spring MVC + Virtual Thread) を使用した API プロジェクトです。複数のドメインモデル（競馬、エンターテイメント、テニス）を探索する sandbox プロジェクトとして開発されています。
@@ -140,13 +138,24 @@ fun registerInStudBook(command: Command<StudBook>)
 com.example.api/
 ├── ApiApplication.kt    # エントリーポイント（@OpenAPIDefinition もここ）
 ├── controller/          # @RestController（HTTP エンドポイント）
-└── domain/              # ドメインロジック（Spring に依存しない）
-    ├── horseracing/     # 競馬ドメイン
-    ├── sakamichi/       # エンターテイメントドメイン
-    └── tennis/          # スポーツドメイン
+├── application/         # ユースケース（フレームワーク非依存）
+│   └── horseracing/
+├── domain/              # ドメインロジック（フレームワーク非依存）
+│   ├── horseracing/     # 競馬ドメイン
+│   ├── sakamichi/       # エンターテイメントドメイン
+│   └── tennis/          # スポーツドメイン
+└── infrastructure/      # ポートの具象実装（@Repository 等の Spring 依存可）
+    └── horseracing/
 ```
 
-**設計原則**: ドメインパッケージはフレームワーク非依存。コントローラーは HTTP とドメインロジックの薄いアダプター層として機能。
+**設計原則**:
+
+- **domain**: Entity / Value Object / Repository ポート（interface） / ドメインオブジェクト同士で完結するロジック。Spring に依存しない
+- **application**: ユースケース（コマンド DTO + ユースケースクラス + そのユースケースに紐づく失敗バリアント）。ドメインを組み合わせて業務シナリオを構築する。ユースケースを DI 経由で公開するための `@Service` / `@Component` のみ Spring 依存を許容し、ロジック本体は Plain Kotlin で書く
+- **controller**: HTTP アダプター。`Result` から `ResponseEntity` への変換のみを担う
+- **infrastructure**: Repository ポートの具体実装、外部システム連携などのアダプター。Spring 依存可
+
+ユースケース関数の命名は `動詞 + リソース名` を基本とし、入力 DTO は `〜Command`（書き込み系）／ `〜Query`（読み取り系）サフィックスを付ける。
 
 ## コーディング規約
 

@@ -25,12 +25,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
+    implementation(libs.kotlin.result)
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation(libs.mockk)
+    testImplementation(libs.springmockk)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

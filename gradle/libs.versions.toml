@@ -12,6 +12,9 @@ detekt = "2.0.0-alpha.3"
 # ライブラリのバージョン
 springdoc-openapi-bom = "3.0.3"
 java-uuid-generator = "5.2.0"
+kotlin-result = "2.3.1"
+mockk = "1.14.9"
+springmockk = "5.0.1"
 
 [libraries]
 # SpringDoc OpenAPI
@@ -20,6 +23,13 @@ springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openap
 
 # UUID Generator
 java-uuid-generator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "java-uuid-generator" }
+
+# kotlin-result（業務エラーを Result<V, E> で表現する）
+kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", version.ref = "kotlin-result" }
+
+# mockk（Kotlin 向けモックライブラリ）
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+springmockk = { module = "com.ninja-squad:springmockk", version.ref = "springmockk" }
 
 [plugins]
 # Kotlin プラグイン
