@@ -13,7 +13,7 @@ detekt = "2.0.0-alpha.3"
 springdoc-openapi-bom = "3.0.3"
 java-uuid-generator = "5.2.0"
 kotlin-result = "2.3.1"
-mockk = "1.14.9"
+mockk = "1.14.11"
 springmockk = "5.0.1"
 
 [libraries]
