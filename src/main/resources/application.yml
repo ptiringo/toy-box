@@ -7,6 +7,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  mvc:
+    problemdetails:
+      # Spring MVC 標準例外（リクエストボディ不正・媒体型不一致等）を RFC 9457 形式に変換する
+      enabled: true
 
 springdoc:
   show-actuator: true
