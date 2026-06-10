@@ -1,3 +1,6 @@
+[settings]
+lockfile = true
+
 [tools]
 editorconfig-checker = "3.3.0"
 gitleaks = "8.30.1"
