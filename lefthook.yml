@@ -4,6 +4,11 @@
 pre-commit:
   parallel: true
   commands:
+    # gitleaks によるシークレット混入チェック
+    gitleaks:
+      run: gitleaks git --pre-commit --staged --redact --no-banner
+      tags: security
+
     # EditorConfig準拠チェック
     editorconfig-check:
       run: ec
