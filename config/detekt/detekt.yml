@@ -19,3 +19,13 @@ style:
   # 個別の TODO 解消は別 issue で扱うため検出対象から外す。
   ForbiddenComment:
     active: false
+  # テスト規約（CLAUDE.md 参照）: JUnit 5 の org.junit.jupiter.api.Test と
+  # Power Assert（stdlib の kotlin.assert）を使用する。マルチプラットフォーム対応は
+  # 不要なため kotlin.test の誤 import を機械的に禁止する。
+  ForbiddenImport:
+    active: true
+    forbiddenImports:
+      - reason:
+          'kotlin.test は使用禁止。テストには org.junit.jupiter.api.Test と
+          Power Assert (kotlin.assert) を使用すること（CLAUDE.md テスト規約参照）。'
+        value: 'kotlin.test.*'
