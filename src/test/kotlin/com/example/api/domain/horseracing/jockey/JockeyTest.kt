@@ -55,9 +55,8 @@ class JockeyTest {
     inner class HashCodeTest {
         @Test
         fun `hashCodeがIDに依存していることを検証する`() {
-            val jockey1 = Jockey.create("四郎", "田中").unwrap()
-            val jockey2 = Jockey.create("四郎", "田中").unwrap()
-            assert(jockey1.hashCode() != jockey2.hashCode())
+            val jockey = Jockey.create("四郎", "田中").unwrap()
+            assert(jockey.hashCode() == jockey.id.hashCode())
         }
     }
 }

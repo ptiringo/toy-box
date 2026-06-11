@@ -59,10 +59,9 @@ class EntityTest {
         }
 
         @Test
-        fun `異なるIDを持つインスタンスは異なるハッシュコードを返す`() {
-            val entity1 = TestEntity(TestEntityId(UUID.randomUUID()))
-            val entity2 = TestEntity(TestEntityId(UUID.randomUUID()))
-            assert(entity1.hashCode() != entity2.hashCode())
+        fun `hashCode が ID の hashCode と一致する`() {
+            val id = TestEntityId(UUID.randomUUID())
+            assert(TestEntity(id).hashCode() == id.hashCode())
         }
     }
 }
