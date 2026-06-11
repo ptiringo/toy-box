@@ -31,7 +31,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(libs.mockk)
     testImplementation(libs.springmockk)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
