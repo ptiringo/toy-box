@@ -1,5 +1,6 @@
 package com.example.api.domain.sakamichi
 
+import com.example.api.domain.Entity
 import com.fasterxml.uuid.Generators
 import java.util.UUID
 
@@ -12,19 +13,7 @@ class Member(
     @Suppress("unused") val firstName: String,
     /** 姓 */
     @Suppress("unused") val lastName: String,
-) {
+) : Entity<MemberId>() {
     /** メンバーID */
-    val id = MemberId(Generators.timeBasedEpochRandomGenerator().generate())
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) {
-            return true
-        }
-        if (javaClass != other?.javaClass) {
-            return false
-        }
-        return id == (other as Member).id
-    }
-
-    override fun hashCode(): Int = id.hashCode()
+    override val id = MemberId(Generators.timeBasedEpochRandomGenerator().generate())
 }
