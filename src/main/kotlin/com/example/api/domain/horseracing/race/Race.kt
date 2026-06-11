@@ -1,5 +1,6 @@
 package com.example.api.domain.horseracing.race
 
+import com.example.api.domain.Entity
 import com.fasterxml.uuid.Generators
 import java.util.UUID
 
@@ -10,19 +11,7 @@ import java.util.UUID
 class Race(
     /** レース名 */
     val name: String
-) {
+) : Entity<RaceId>() {
     /** レースID */
-    val id = RaceId(Generators.timeBasedEpochRandomGenerator().generate())
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) {
-            return true
-        }
-        if (javaClass != other?.javaClass) {
-            return false
-        }
-        return id == (other as Race).id
-    }
-
-    override fun hashCode(): Int = id.hashCode()
+    override val id = RaceId(Generators.timeBasedEpochRandomGenerator().generate())
 }

@@ -1,5 +1,6 @@
 package com.example.api.domain.horseracing.horse.bloodhorse
 
+import com.example.api.domain.Entity
 import java.util.UUID
 
 /** 軽種馬ID */
@@ -20,19 +21,7 @@ class BloodHorse
 private constructor(
     /** 性 */
     @Suppress("unused") val sex: Sex
-) {
+) : Entity<BloodHorseId>() {
     /** 軽種馬ID */
-    val id = BloodHorseId(UUID.randomUUID())
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) {
-            return true
-        }
-        if (javaClass != other?.javaClass) {
-            return false
-        }
-        return id == (other as BloodHorse).id
-    }
-
-    override fun hashCode(): Int = id.hashCode()
+    override val id = BloodHorseId(UUID.randomUUID())
 }

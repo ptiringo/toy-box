@@ -1,5 +1,6 @@
 package com.example.api.domain.horseracing.jockey
 
+import com.example.api.domain.Entity
 import com.fasterxml.uuid.Generators
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -40,23 +41,9 @@ private constructor(
     val firstName: String,
     /** 姓 */
     val lastName: String,
-) {
+) : Entity<JockeyId>() {
     /** ジョッキーID インスタンス生成時に一意なIDを自動生成する */
-    val id = JockeyId(Generators.timeBasedEpochRandomGenerator().generate())
-
-    /** 等価判定 同じ型かつIDが一致する場合のみ等価とみなす */
-    override fun equals(other: Any?): Boolean {
-        if (this === other) {
-            return true
-        }
-        if (javaClass != other?.javaClass) {
-            return false
-        }
-        return id == (other as Jockey).id
-    }
-
-    /** ハッシュコード生成 ジョッキーIDに基づいてハッシュ値を返す */
-    override fun hashCode(): Int = id.hashCode()
+    override val id = JockeyId(Generators.timeBasedEpochRandomGenerator().generate())
 
     companion object {
         /**
