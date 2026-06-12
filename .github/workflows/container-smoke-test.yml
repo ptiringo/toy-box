@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Set up JDK
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -53,7 +55,7 @@ jobs:
       - name: Smoke test container with prod-like memory limit
         run: |
           docker run -d --name api-smoke -m 1g -p 8080:8080 -e PORT=8080 api-smoke:test
-          for i in {1..60}; do
+          for _ in {1..60}; do
             if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
               echo "Container healthy"
               docker rm -f api-smoke

@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Set up JDK
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -30,10 +32,12 @@ jobs:
           java-version-file: '.java-version'
           distribution: 'temurin'
 
+      # デプロイ用ワークフローでは cache poisoning（PR 由来の汚染キャッシュ経由で
+      # 成果物が改竄されるリスク）を避けるためキャッシュを無効化する。
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          cache-provider: basic
+          cache-disabled: true
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -44,14 +48,20 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 
+      # `${{ }}` をシェルスクリプトへ直接展開するとテンプレートインジェクションの
+      # 恐れがあるため、環境変数を経由して参照する。
       - name: Build Docker image with bootBuildImage
-        run: ./gradlew bootBuildImage --imageName=${{ vars.IMAGE }}:${{ github.sha }}
+        env:
+          IMAGE: ${{ vars.IMAGE }}
+        run: ./gradlew bootBuildImage --imageName="${IMAGE}:${GITHUB_SHA}"
 
       - name: Push Docker image
+        env:
+          IMAGE: ${{ vars.IMAGE }}
         run: |
-          docker tag ${{ vars.IMAGE }}:${{ github.sha }} ${{ vars.IMAGE }}:latest
-          docker push ${{ vars.IMAGE }}:${{ github.sha }}
-          docker push ${{ vars.IMAGE }}:latest
+          docker tag "${IMAGE}:${GITHUB_SHA}" "${IMAGE}:latest"
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE}:latest"
 
       # --memory: container-smoke-test.yml の docker run -m と揃えること。
       # gcloud の `--memory=1Gi` は 1 GiB (= 1024 MiB) を表し、docker の `-m 1g` と等価。
