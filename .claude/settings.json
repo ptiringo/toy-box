@@ -25,6 +25,12 @@
             "command": ".claude/hooks/post-edit-terraform-fmt.sh",
             "timeout": 30,
             "statusMessage": "terraform fmt チェック中..."
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit-workflow-lint.sh",
+            "timeout": 30,
+            "statusMessage": "actionlint / zizmor チェック中..."
           }
         ]
       }

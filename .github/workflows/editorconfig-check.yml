@@ -13,9 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     name: Check EditorConfig Compliance
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Install EditorConfig check
         uses: editorconfig-checker/action-editorconfig-checker@d2ed4fd072ae6f887e9407c909af0f585d2ad9f4 # v2.0.0

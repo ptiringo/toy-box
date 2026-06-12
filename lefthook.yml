@@ -26,6 +26,18 @@ pre-commit:
       run: mise exec -- ./gradlew detekt --daemon
       tags: lint
 
+    # actionlint による GitHub Actions ワークフローの lint
+    actionlint:
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: mise exec -- actionlint
+      tags: lint
+
+    # zizmor による GitHub Actions ワークフローのセキュリティ監査
+    zizmor:
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: mise exec -- zizmor --offline --quiet .github/workflows/
+      tags: security
+
     # Terraform フォーマットチェック
     terraform-fmt-check:
       glob: "infra/*.tf"

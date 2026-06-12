@@ -226,10 +226,13 @@ mise list
 ```
 
 現在管理されているツール（`mise.toml` 参照）：
+- `actionlint`: GitHub Actions ワークフローの lint
 - `editorconfig-checker`: EditorConfig 準拠チェック
+- `gitleaks`: シークレット混入スキャン
 - `java` (Temurin 21): Gradle / Kotlin のビルドおよびテスト実行用 JDK
 - `lefthook`: Git フック管理
 - `terraform`: インフラ構成管理
+- `zizmor`: GitHub Actions ワークフローのセキュリティ監査
 
 **Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言しています（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出します。
 
@@ -245,7 +248,7 @@ lefthook install
 
 #### 実行されるフック
 
-- **pre-commit**（並列実行）: EditorConfig チェック、ktfmt チェック、detekt 静的解析、Terraform fmt チェック、Terraform validate
+- **pre-commit**（並列実行）: gitleaks シークレットスキャン、EditorConfig チェック、ktfmt チェック、detekt 静的解析、actionlint、zizmor、Terraform fmt チェック、Terraform validate
 - **pre-push**: 全テスト実行
 - **commit-msg**: Conventional Commits 形式のチェック
 
