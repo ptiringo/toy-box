@@ -123,12 +123,12 @@ class HelloController {
 
 #### Command パターン
 
-`Command<T>` でドメインコマンドをラップ：
+`Command<T>` はドメインコマンドのペイロードに**発生時刻メタデータを添える封筒**。ペイロード（何をしたいか）と、それがいつ発生したかという横断的メタデータを分離する。発生時刻はタイムゾーン非依存のドメインイベント時刻として `Instant` で保持する：
 
 ```kotlin
 class Command<T>(
-    val t: T,
-    val timestamp: LocalDateTime,
+    val payload: T,
+    val issuedAt: Instant,
 )
 
 // 使用例

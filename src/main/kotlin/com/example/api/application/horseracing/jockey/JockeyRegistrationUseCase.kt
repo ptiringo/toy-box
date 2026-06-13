@@ -49,7 +49,7 @@ class JockeyRegistrationUseCase(private val jockeyRepository: JockeyRepository) 
     operator fun invoke(
         command: Command<RegisterJockeyCommand>
     ): Result<Jockey, JockeyRegistrationError> {
-        val input = command.t
+        val input = command.payload
         return Jockey.create(input.firstName, input.lastName)
             .mapError { JockeyRegistrationError.InvalidJockey(it) }
             .andThen { jockey ->
