@@ -240,6 +240,7 @@ mise list
 現在管理されているツール（`mise.toml` 参照）：
 - `actionlint`: GitHub Actions ワークフローの lint
 - `editorconfig-checker`: EditorConfig 準拠チェック
+- `fnox`: シークレット管理（暗号化保管／外部参照＋必要時だけ env へ展開）
 - `gitleaks`: シークレット混入スキャン
 - `java` (Temurin 21): Gradle / Kotlin のビルドおよびテスト実行用 JDK
 - `lefthook`: Git フック管理
@@ -273,6 +274,16 @@ lefthook run pre-commit
 # 特定のコマンドのみスキップ
 LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"
 ```
+
+## シークレット管理（fnox + 1Password）
+
+ローカル開発で必要なシークレット（当面は GitHub MCP 用の `GITHUB_PERSONAL_ACCESS_TOKEN`）は、平文で shell profile に `export` せず、**1Password に保管＋必要時だけ env へ展開**する。仕組みは mise 管理の [fnox](https://fnox.jdx.dev/) で統一する。
+
+- `fnox.toml` には `op://` 参照のみを書き（秘密情報を含まない）、**git にコミットしてよい**
+- 値の解決は 1Password CLI (`op`) 経由。`op` がサインイン済み（デスクトップアプリ連携）なら**サービスアカウントトークンは不要**
+- MCP への供給は `fnox exec -- claude` で起動し、`.mcp.json` の `${GITHUB_PERSONAL_ACCESS_TOKEN}` を env 補間する
+
+運用手順・前提セットアップの詳細は **`.claude/rules/secrets.md`** を参照。
 
 ## OpenAPI/Swagger
 
