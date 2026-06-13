@@ -1,7 +1,7 @@
 package com.example.api.domain.horseracing.model.jockey
 
 import com.example.api.domain.shared.Entity
-import com.fasterxml.uuid.Generators
+import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -47,8 +47,7 @@ private constructor(
     val lastName: String,
 ) : Entity<JockeyId>() {
     /** ジョッキーID インスタンス生成時に一意なIDを自動生成する */
-    @field:Identity
-    override val id = JockeyId(Generators.timeBasedEpochRandomGenerator().generate())
+    @field:Identity override val id = JockeyId(generateId())
 
     companion object {
         /**

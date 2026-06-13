@@ -1,7 +1,7 @@
 package com.example.api.domain.horseracing.model.race
 
 import com.example.api.domain.shared.Entity
-import com.fasterxml.uuid.Generators
+import com.example.api.domain.shared.generateId
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Identity
@@ -17,5 +17,5 @@ class Race(
     val name: String
 ) : Entity<RaceId>() {
     /** レースID */
-    @field:Identity override val id = RaceId(Generators.timeBasedEpochRandomGenerator().generate())
+    @field:Identity override val id = RaceId(generateId())
 }
