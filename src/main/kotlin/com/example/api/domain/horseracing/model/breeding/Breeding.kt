@@ -1,4 +1,4 @@
-package com.example.api.domain.horseracing.breeding
+package com.example.api.domain.horseracing.model.breeding
 
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot

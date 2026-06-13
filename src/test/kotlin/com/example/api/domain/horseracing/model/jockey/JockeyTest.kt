@@ -1,4 +1,4 @@
-package com.example.api.domain.horseracing.jockey
+package com.example.api.domain.horseracing.model.jockey
 
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap

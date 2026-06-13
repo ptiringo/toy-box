@@ -1,5 +1,8 @@
-package com.example.api.domain.horseracing.race
+package com.example.api.domain.horseracing.service.race
 
+import com.example.api.domain.horseracing.model.race.ConfirmRaceResultEvent
+import com.example.api.domain.horseracing.model.race.RaceId
+import com.example.api.domain.horseracing.model.race.RaceResult
 import com.github.michaelbull.result.Result
 
 /** レースの確定 */
@@ -18,23 +21,3 @@ sealed interface ConfirmRaceResultError {
     /** 到達順位がレースのルール上不正 */
     data class InvalidOrderOfFinish(val reason: String) : ConfirmRaceResultError
 }
-
-/** レース結果 */
-data class RaceResult(
-    /** レースID */
-    val raceId: RaceId,
-    /** 到達順位 */
-    val orderOfFinish: OrderOfFinish,
-)
-
-/** 到達順位 */
-data class OrderOfFinish(
-    // TODO: 正しい型を設計する
-    val something: Nothing
-)
-
-/** レース確定イベント */
-data class ConfirmRaceResultEvent(
-    // TODO: 正しい型を設計する
-    val confirmedRaceResult: Nothing
-)

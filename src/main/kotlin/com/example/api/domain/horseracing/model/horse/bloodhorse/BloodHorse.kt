@@ -1,6 +1,6 @@
-package com.example.api.domain.horseracing.horse.bloodhorse
+package com.example.api.domain.horseracing.model.horse.bloodhorse
 
-import com.example.api.domain.Entity
+import com.example.api.domain.shared.Entity
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Identity

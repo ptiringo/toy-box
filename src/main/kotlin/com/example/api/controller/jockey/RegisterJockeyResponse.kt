@@ -1,7 +1,7 @@
 package com.example.api.controller.jockey
 
 import com.example.api.application.horseracing.jockey.JockeyRegistrationError
-import com.example.api.domain.horseracing.jockey.JockeyValidationError
+import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
 import java.net.URI
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -10,7 +10,7 @@ import org.springframework.http.ProblemDetail
 /**
  * `POST /api/jockeys` の成功レスポンスボディ。
  *
- * @property id 登録された [com.example.api.domain.horseracing.jockey.JockeyId] の生 UUID
+ * @property id 登録された [com.example.api.domain.horseracing.model.jockey.JockeyId] の生 UUID
  * @property firstName 名
  * @property lastName 姓
  */

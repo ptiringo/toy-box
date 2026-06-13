@@ -1,8 +1,8 @@
 package com.example.api.infrastructure.horseracing.jockey
 
-import com.example.api.domain.horseracing.jockey.Jockey
-import com.example.api.domain.horseracing.jockey.JockeyId
-import com.example.api.domain.horseracing.jockey.JockeyRepository
+import com.example.api.domain.horseracing.model.jockey.Jockey
+import com.example.api.domain.horseracing.model.jockey.JockeyId
+import com.example.api.domain.horseracing.model.jockey.JockeyRepository
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Repository
 

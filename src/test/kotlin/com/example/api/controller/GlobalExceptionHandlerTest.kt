@@ -3,7 +3,7 @@ package com.example.api.controller
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
 import com.example.api.controller.jockey.JockeyController
-import com.example.api.domain.Command
+import com.example.api.domain.shared.Command
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.Test

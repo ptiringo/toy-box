@@ -1,6 +1,6 @@
-package com.example.api.domain.horseracing.race
+package com.example.api.domain.horseracing.model.race
 
-import com.example.api.domain.Entity
+import com.example.api.domain.shared.Entity
 import com.fasterxml.uuid.Generators
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot

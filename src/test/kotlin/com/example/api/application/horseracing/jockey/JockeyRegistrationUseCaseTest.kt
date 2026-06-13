@@ -1,9 +1,9 @@
 package com.example.api.application.horseracing.jockey
 
-import com.example.api.domain.Command
-import com.example.api.domain.horseracing.jockey.Jockey
-import com.example.api.domain.horseracing.jockey.JockeyRepository
-import com.example.api.domain.horseracing.jockey.JockeyValidationError
+import com.example.api.domain.horseracing.model.jockey.Jockey
+import com.example.api.domain.horseracing.model.jockey.JockeyRepository
+import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
+import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every

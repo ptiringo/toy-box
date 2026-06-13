@@ -1,6 +1,6 @@
-package com.example.api.domain.horseracing.jockey
+package com.example.api.domain.horseracing.model.jockey
 
-import com.example.api.domain.Entity
+import com.example.api.domain.shared.Entity
 import com.fasterxml.uuid.Generators
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

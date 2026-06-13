@@ -24,6 +24,12 @@ import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.RestController
 
 private const val DOMAIN = "com.example.api.domain.."
+// 共有カーネル（building block 基盤）。最内核としてドメインモデルリングに含める。
+private const val DOMAIN_SHARED = "com.example.api.domain.shared.."
+// 各コンテキストのドメインモデル（Entity / Value Object / Repository ポート）。
+private const val DOMAIN_MODEL = "com.example.api.domain..model.."
+// 各コンテキストのドメインサービス（モデルを組み合わせる、フレームワーク非依存のロジック）。
+private const val DOMAIN_SERVICE = "com.example.api.domain..service.."
 private const val APPLICATION = "com.example.api.application.."
 private const val CONTROLLER = "com.example.api.controller.."
 private const val INFRASTRUCTURE = "com.example.api.infrastructure.."
@@ -32,7 +38,8 @@ private const val INFRASTRUCTURE = "com.example.api.infrastructure.."
  * 境界づけられたコンテキスト（horseracing / sakamichi / tennis 等）へのスライス割り当て。
  *
  * application / domain / infrastructure 各層の直下のパッケージ名をコンテキスト名とみなす。 domain
- * 直下の共有カーネル（[com.example.api.domain.Command] 等）、controller、 ルートパッケージはコンテキストに属さないため対象外とする。
+ * 直下の共有カーネル（`shared`、[com.example.api.domain.shared.Command] 等）、controller、
+ * ルートパッケージはコンテキストに属さないため対象外とする。
  */
 private object BoundedContextAssignment : SliceAssignment {
     private val contextPackage =
@@ -40,7 +47,11 @@ private object BoundedContextAssignment : SliceAssignment {
 
     override fun getIdentifierOf(javaClass: JavaClass): SliceIdentifier {
         val context = contextPackage.matchEntire(javaClass.packageName)?.groupValues?.get(1)
-        return if (context != null) SliceIdentifier.of(context) else SliceIdentifier.ignore()
+        return if (context == null || context == "shared") {
+            SliceIdentifier.ignore()
+        } else {
+            SliceIdentifier.of(context)
+        }
     }
 
     override fun getDescription(): String = "境界づけられたコンテキスト"
@@ -59,13 +70,14 @@ class ArchitectureTest {
     /**
      * オニオンアーキテクチャの依存方向に従うこと。
      *
-     * domain ← application ← adapter（controller / infrastructure）。アダプター同士の参照も禁止される。
+     * 内側から domainModel（共有カーネル + 各コンテキストの model）← domainService ← applicationService ←
+     * adapter（controller / infrastructure）。ドメインサービスはモデルにのみ依存でき、その逆は禁止。 アダプター同士の参照も禁止される。
      */
     @ArchTest
     val onionLayers =
         onionArchitecture()
-            .domainModels(DOMAIN)
-            .domainServices(DOMAIN)
+            .domainModels(DOMAIN_SHARED, DOMAIN_MODEL)
+            .domainServices(DOMAIN_SERVICE)
             .applicationServices(APPLICATION)
             .adapter("rest", CONTROLLER)
             .adapter("persistence", INFRASTRUCTURE)
@@ -105,9 +117,9 @@ class ArchitectureTest {
      */
     @ArchTest val dddBuildingBlocks = JMoleculesDddRules.all()
 
-    /** DDD ビルディングブロック（jMolecules アノテーション付きクラス）は domain 層に置くこと。 */
+    /** DDD ビルディングブロック（jMolecules アノテーション付きクラス）はドメインモデルリングに置くこと。 */
     @ArchTest
-    val dddBuildingBlocksResideInDomain =
+    val dddBuildingBlocksResideInDomainModel =
         classes()
             .that()
             .areAnnotatedWith(AggregateRoot::class.java)
@@ -118,7 +130,7 @@ class ArchitectureTest {
             .or()
             .areAnnotatedWith(DddRepository::class.java)
             .should()
-            .resideInAPackage(DOMAIN)
+            .resideInAPackage(DOMAIN_MODEL)
 
     /** HTTP アダプター（@RestController）は controller 層に置くこと。 */
     @ArchTest

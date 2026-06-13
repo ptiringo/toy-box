@@ -3,9 +3,9 @@ package com.example.api.controller.jockey
 import com.example.api.application.horseracing.jockey.JockeyRegistrationError
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
-import com.example.api.domain.Command
-import com.example.api.domain.horseracing.jockey.Jockey
-import com.example.api.domain.horseracing.jockey.JockeyValidationError
+import com.example.api.domain.horseracing.model.jockey.Jockey
+import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
+import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap

@@ -1,6 +1,6 @@
-package com.example.api.domain.sakamichi
+package com.example.api.domain.sakamichi.model
 
-import com.example.api.domain.Entity
+import com.example.api.domain.shared.Entity
 import com.fasterxml.uuid.Generators
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot

@@ -1,30 +1,68 @@
 # アーキテクチャ規約
 
-本プロジェクトはポート&アダプター（軽量オニオンアーキテクチャ）を採用する。規約は ArchUnit（`src/test/kotlin/com/example/api/architecture/ArchitectureTest.kt`）で機械的に強制されており、違反すると `./gradlew test` が失敗する。**新しいコードを書くときは以下の規約に従うこと。規約を変えたい場合はテストと本ファイルを同時に更新する。**
+本プロジェクトはオニオンアーキテクチャ（ドメインモデル / ドメインサービス / アプリケーションサービス / アダプターの 4 リング）を採用する。規約は ArchUnit（`src/test/kotlin/com/example/api/architecture/ArchitectureTest.kt`）で機械的に強制されており、違反すると `./gradlew test` が失敗する。**新しいコードを書くときは以下の規約に従うこと。規約を変えたい場合はテストと本ファイルを同時に更新する。**
 
-## レイヤー依存ルール（オニオン）
+## レイヤー依存ルール（オニオン 4 リング）
+
+内側ほど安定し、依存の矢印は常に外→内に向く。`onionArchitecture()` で強制している。
 
 ```
-controller ──┬──→ application ──→ domain ←── infrastructure
-             └──────────────────→ domain
+                  ┌─────────────── adapter ───────────────┐
+                  │  controller / infrastructure          │
+                  │   ┌────── applicationService ──────┐  │
+                  │   │   ┌─── domainService ───┐       │  │
+                  │   │   │  ┌ domainModel ┐    │       │  │
+                  │   │   │  │ shared+model │   │       │  │
+                  │   │   │  └──────────────┘   │       │  │
+                  │   │   └─────────────────────┘       │  │
+                  │   └─────────────────────────────────┘  │
+                  └────────────────────────────────────────┘
 ```
 
-| レイヤー | 依存してよい先 | Spring 依存 |
-|---------|--------------|------------|
-| `domain` | 純粋ライブラリのみ（kotlin-result / java-uuid-generator / jMolecules） | 禁止（jakarta / Jackson も禁止） |
-| `application` | `domain` | `org.springframework.stereotype`（`@Service` / `@Component`）のみ |
-| `controller` | `application`, `domain` | 可 |
-| `infrastructure` | `domain` | 可 |
+| リング | パッケージ | 依存してよい先 | Spring 依存 |
+|-------|-----------|--------------|------------|
+| domainModel | `domain.shared` + `domain.*.model` | 純粋ライブラリのみ（kotlin-result / java-uuid-generator / jMolecules） | 禁止（jakarta / Jackson も禁止） |
+| domainService | `domain.*.service` | domainModel | 禁止 |
+| applicationService | `application` | domainModel / domainService | `org.springframework.stereotype`（`@Service` / `@Component`）のみ |
+| adapter (rest) | `controller` | 内側すべて | 可 |
+| adapter (persistence) | `infrastructure` | 内側すべて | 可 |
 
+- **ドメインサービスはドメインモデルにのみ依存でき、その逆（モデル→サービス）は禁止**
 - アダプター同士（`controller` ⇔ `infrastructure`）の参照は禁止
 - `@RestController` は `controller`、`@Service` は `application`、Spring の `@Repository`（ポート実装）は `infrastructure` に置く
 
+### ドメインモデルとドメインサービスの分け方
+
+各コンテキストの配下を `model/` と `service/` に分割する（パッケージ構造を参照）。
+
+- **model**: Entity / Value Object / Repository ポート（interface）/ 集約内で完結するロジック
+- **service**: 複数の集約やモデルをまたぐドメインロジック。**Kotlin のトップレベル関数で書く**（`object` でラップしない）。jMolecules の `@Service` は付けない（パッケージ配置で表現し、`service/` に居ることがドメインサービスの証）
+- 1 ファイルにモデルとサービスを混在させない（例: `confirmRaceResult` は `service/race/` に、入力 VO の `RaceResult` は `model/race/` に置く）
+
+## パッケージ構造
+
+```
+domain/
+├── shared/                      # 共有カーネル（Command / Entity 基底）。全コンテキストから参照可
+├── horseracing/
+│   ├── model/                   # ドメインモデルリング
+│   │   ├── jockey/              #   Jockey, JockeyId, JockeyRepository
+│   │   ├── race/                #   Race, RaceResult, ...
+│   │   ├── breeding/
+│   │   └── horse/...
+│   └── service/                 # ドメインサービスリング
+│       ├── race/                #   confirmRaceResult
+│       └── horse/               #   registerInStudBook
+├── sakamichi/model/
+└── tennis/model/
+```
+
 ## 境界づけられたコンテキストの分離
 
-`application` / `domain` / `infrastructure` 直下のパッケージ名（`horseracing` / `sakamichi` / `tennis`）を境界づけられたコンテキストとみなし、**コンテキスト間の依存は層をまたぐ場合も含めて一切禁止**する（例: `application.horseracing` → `domain.tennis` は違反）。
+`application` / `domain` / `infrastructure` 各層の直下のパッケージ名（`horseracing` / `sakamichi` / `tennis`）を境界づけられたコンテキストとみなし、**コンテキスト間の依存は層やリングをまたぐ場合も含めて一切禁止**する（例: `application.horseracing` → `domain.tennis.model` は違反）。`model` / `service` のサブ階層はコンテキスト名の判定に影響しない。
 
-- `domain` 直下（`Command` / `Entity`）は共有カーネルであり、どのコンテキストからも参照可
-- 新しいコンテキストを追加する場合、パッケージを切るだけで自動的に分離ルールの対象になる
+- `domain.shared` は共有カーネルであり、コンテキスト分離の対象外（どのコンテキストからも参照可）
+- 新しいコンテキストを追加する場合、`<context>/model/`（必要なら `service/`）を切るだけで自動的に分離ルールの対象になる
 
 ## DDD ビルディングブロック（jMolecules）
 
@@ -38,10 +76,12 @@ controller ──┬──→ application ──→ domain ←── infrastruct
 | 識別子プロパティ | `@field:Identity` | `Jockey.id` |
 | Repository ポート（interface） | `@Repository`（jMolecules 版） | `JockeyRepository` |
 
+ドメインサービス（`service/` のトップレベル関数）には jMolecules アノテーションを付けない。`@Service`（jMolecules）は型向けでトップレベル関数に付けられず、ドメインサービスであることは `service/` パッケージへの配置で表現する。
+
 注意点:
 
 - `@Identity` は FIELD / METHOD ターゲットのため、Kotlin プロパティには **`@field:Identity`** と use-site target を明示する
-- jMolecules アノテーション付きクラスは domain 層にのみ置ける（ArchUnit で強制）
+- jMolecules アノテーション付きクラスはドメインモデルリング（`domain.*.model`）にのみ置ける（ArchUnit で強制）
 - `JMoleculesDddRules.all()` により以下が強制される:
   - `@Entity` / `@AggregateRoot` は `@Identity` 付き識別子を持つ
   - **他の集約への参照は ID 値クラス（または `Association`）経由のみ**。集約オブジェクトを直接フィールドに持ってはならない（例: `Stallion` は `BloodHorse` ではなく `BloodHorseId` を持つ）

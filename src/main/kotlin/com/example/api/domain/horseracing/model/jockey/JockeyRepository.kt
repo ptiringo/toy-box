@@ -1,4 +1,4 @@
-package com.example.api.domain.horseracing.jockey
+package com.example.api.domain.horseracing.model.jockey
 
 import org.jmolecules.ddd.annotation.Repository
 

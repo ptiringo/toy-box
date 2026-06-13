@@ -139,30 +139,37 @@ fun registerInStudBook(command: Command<StudBook>)
 
 ### パッケージ構成
 
+オニオンアーキテクチャの 4 リング（domainModel / domainService / applicationService / adapter）構成。`domain` 配下は各コンテキストを `model/` と `service/` に分割する。
+
 ```
 com.example.api/
 ├── ApiApplication.kt    # エントリーポイント（@OpenAPIDefinition もここ）
-├── controller/          # @RestController（HTTP エンドポイント）
-├── application/         # ユースケース（フレームワーク非依存）
+├── controller/          # adapter (rest): @RestController（HTTP エンドポイント）
+├── application/         # applicationService: ユースケース
 │   └── horseracing/
-├── domain/              # ドメインロジック（フレームワーク非依存）
-│   ├── horseracing/     # 競馬ドメイン
-│   ├── sakamichi/       # エンターテイメントドメイン
-│   └── tennis/          # スポーツドメイン
-└── infrastructure/      # ポートの具象実装（@Repository 等の Spring 依存可）
+├── domain/              # ドメイン（フレームワーク非依存）
+│   ├── shared/          # 共有カーネル（Command / Entity 基底）。全コンテキストから参照可
+│   ├── horseracing/     # 競馬コンテキスト
+│   │   ├── model/       #   domainModel: Entity / VO / Repository ポート
+│   │   └── service/     #   domainService: トップレベル関数のドメインロジック
+│   ├── sakamichi/model/ # エンターテイメントコンテキスト
+│   └── tennis/model/    # スポーツコンテキスト
+└── infrastructure/      # adapter (persistence): ポートの具象実装（Spring 依存可）
     └── horseracing/
 ```
 
 **設計原則**（ArchUnit で強制。詳細は `.claude/rules/architecture.md`）:
 
-- **domain**: Entity / Value Object / Repository ポート（interface） / ドメインオブジェクト同士で完結するロジック。Spring に依存しない。Repository ポートには jMolecules の `@Repository` を付与
+- **domain.shared**: 共有カーネル。`Command` / `Entity` 基底など、コンテキスト横断の最小限の基盤のみ
+- **domain.\*.model**: Entity / Value Object / Repository ポート（interface）/ 集約内で完結するロジック。Repository ポートには jMolecules の `@Repository` を付与
+- **domain.\*.service**: 複数の集約をまたぐドメインロジック。**Kotlin のトップレベル関数で書き**、`service/` への配置でドメインサービスと表現する（jMolecules `@Service` は付けない）。モデルにのみ依存でき、その逆は禁止
 - **application**: ユースケース（コマンド DTO + ユースケースクラス + そのユースケースに紐づく失敗バリアント）。ドメインを組み合わせて業務シナリオを構築する。ユースケースを DI 経由で公開するための `@Service` / `@Component` のみ Spring 依存を許容し、ロジック本体は Plain Kotlin で書く
 - **controller**: HTTP アダプター。`Result` から `ResponseEntity` への変換のみを担う
 - **infrastructure**: Repository ポートの具体実装、外部システム連携などのアダプター。Spring 依存可
 
 ユースケース関数の命名は `動詞 + リソース名` を基本とし、入力 DTO は `〜Command`（書き込み系）／ `〜Query`（読み取り系）サフィックスを付ける。
 
-`domain` / `application` / `infrastructure` 直下のパッケージ（`horseracing` / `sakamichi` / `tennis`）は境界づけられたコンテキストであり、コンテキスト間の依存は層をまたぐ場合も含めて禁止（ArchUnit で強制）。
+`domain` / `application` / `infrastructure` 配下のコンテキスト（`horseracing` / `sakamichi` / `tennis`）は境界づけられたコンテキストであり、コンテキスト間の依存は層やリングをまたぐ場合も含めて禁止（ArchUnit で強制）。`domain.shared` は対象外。
 
 ## コーディング規約
 

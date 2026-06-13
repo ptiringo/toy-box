@@ -1,4 +1,4 @@
-package com.example.api.domain.tennis
+package com.example.api.domain.tennis.model
 
 import com.fasterxml.uuid.Generators
 import java.util.UUID
