@@ -1,0 +1,16 @@
+# fnox によるシークレット管理設定
+#
+# このファイルには「暗号化済みの値」または「外部参照（op:// など）」のみを記載し、
+# 平文のシークレットは決して書かない。そのため git にコミットしてよい。
+#
+# 値の解決には 1Password CLI (op) を使う。op がデスクトップアプリ連携または
+# `op signin` でサインイン済みであれば、サービスアカウントトークンは不要。
+# 詳細な運用手順は .claude/rules/secrets.md を参照。
+
+[providers.onepass]
+type = "1password"
+
+[secrets]
+# GitHub MCP (https://api.githubcopilot.com/mcp/) の Authorization ヘッダで使う PAT。
+# value は 1Password の op:// 参照 (op://<vault>/<item>/<field>)。実トークンはここには入らない。
+GITHUB_PERSONAL_ACCESS_TOKEN = { provider = "onepass", value = "op://Private/toy-box GitHub MCP/credential", description = "GitHub MCP (api.githubcopilot.com) 用 PAT" }
