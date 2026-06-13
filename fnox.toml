@@ -11,6 +11,7 @@
 type = "1password"
 
 [secrets]
-# GitHub MCP (https://api.githubcopilot.com/mcp/) の Authorization ヘッダで使う PAT。
-# value は 1Password の op:// 参照 (op://<vault>/<item>/<field>)。実トークンはここには入らない。
-GITHUB_PERSONAL_ACCESS_TOKEN = { provider = "onepass", value = "op://Private/toy-box GitHub MCP/credential", description = "GitHub MCP (api.githubcopilot.com) 用 PAT" }
+# 現状、リポジトリ管理下で定義しているシークレットはない。
+# GitHub MCP は OAuth 認証へ移行したため PAT の env 補間は不要になった（CLAUDE.md「MCP サーバー設定」参照）。
+# 将来 GCP 認証情報などを扱う場合は、ここに op:// 参照を追加する（実トークンはここには入れない）。
+# 例: SOME_TOKEN = { provider = "onepass", value = "op://<vault>/<item>/<field>", description = "..." }
