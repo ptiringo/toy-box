@@ -64,3 +64,15 @@ tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
         markdown.required.set(true)
     }
 }
+
+// mustRunAfter は両タスクが同一ビルドに含まれる場合のみ順序を強制する制約のため、
+// 片方しか含まれない通常のビルド（check 等）の実行には影響しない
+tasks.named("detekt") { mustRunAfter("ktfmtFormat") }
+
+tasks.named("test") { mustRunAfter("detekt") }
+
+tasks.register("kotlinQuality") {
+    group = "verification"
+    description = "ktfmtFormat → detekt → test を順に一括実行する（Claude Code Stop フック用）"
+    dependsOn("ktfmtFormat", "detekt", "test")
+}

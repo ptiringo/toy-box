@@ -41,14 +41,8 @@
           {
             "type": "command",
             "command": ".claude/hooks/stop-kotlin-quality.sh",
-            "timeout": 240,
-            "statusMessage": "ktfmt / detekt 実行中 (Kotlin 変更時のみ)..."
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/stop-gradle-test.sh",
-            "timeout": 180,
-            "statusMessage": "gradle test 実行中 (Kotlin/Java 変更時のみ)..."
+            "timeout": 300,
+            "statusMessage": "ktfmt / detekt / test 実行中 (Kotlin/Java 変更時のみ)..."
           },
           {
             "type": "command",
