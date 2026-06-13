@@ -3,6 +3,7 @@
 # `./gradlew ktfmtFormat` でフォーマットを適用し、`./gradlew detekt` で静的解析を行う。
 #
 # - HEAD との差分で *.kt / *.kts の変更が無いターンはスキップする。
+# - ./gradlew が存在しない、または実行可能でない場合もスキップする。
 # - 失敗時は exit 2 で Claude にフィードバックして修正を促す。
 
 set -uo pipefail
