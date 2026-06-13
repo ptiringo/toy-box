@@ -2,7 +2,7 @@
 
 ローカル開発で必要なシークレットは、平文で `~/.zshrc` 等に `export` せず、**暗号化保管／外部参照＋必要時だけ環境変数へ展開**する。仕組みは mise で管理する [fnox](https://fnox.jdx.dev/)（mise 作者 jdx 製）で統一する。
 
-当面の対象は GitHub MCP（`https://api.githubcopilot.com/mcp/`）用の `GITHUB_PERSONAL_ACCESS_TOKEN`。将来的に GCP 認証情報など他シークレットも同じ仕組みへ寄せる。
+**現状、リポジトリ管理下で定義しているシークレットはない**（`fnox.toml` の `[secrets]` は空）。GitHub MCP は当初 `GITHUB_PERSONAL_ACCESS_TOKEN`（PAT）を env 補間で渡す方式を検討したが、**OAuth 方式へ移行**したため fnox での PAT 管理は不要になった（GitHub MCP の認証は CLAUDE.md「MCP サーバー設定」を参照）。本ファイルは、将来 GCP 認証情報など別シークレットを扱う際の**運用規約**として維持する。
 
 ## バックエンド: 1Password（案C）
 
@@ -16,10 +16,10 @@
 1. **1Password デスクトップアプリの CLI 連携を有効化**
    - 1Password アプリ → 設定 → 開発者 →「1Password CLI と連携」をオン（生体認証で `op` が解錠される）。
    - 確認: `op whoami`（サインイン済みアカウントが表示されること）。
-2. **1Password に GitHub PAT を保管**
-   - 任意の Vault に PAT を保存し、その参照を `fnox.toml` の `value`（`op://<vault>/<item>/<field>`）に設定する。
-   - 例: `op://Personal/GitHub PAT/credential`
-   - PAT に必要なスコープは利用する GitHub MCP のツールに依存（最小権限で発行する）。
+2. **シークレットの実体を 1Password に保管**
+   - 任意の Vault にシークレットを保存し、その参照（`op://<vault>/<item>/<field>`）を `fnox.toml` の `value` に設定する。
+   - 例: `op://Private/GCP service account/credential`
+   - 各シークレットは最小権限で発行する。
 
 ## 日常運用
 
@@ -30,7 +30,7 @@
 fnox list
 
 # 値が解決できるか確認（op サインインが必要）
-fnox get GITHUB_PERSONAL_ACCESS_TOKEN
+fnox get <ENV_NAME>
 
 # 設定の健全性チェック
 fnox doctor
@@ -41,22 +41,13 @@ fnox set <ENV_NAME> "op://<vault>/<item>/<field>" --provider onepass
 
 > Claude Code の Bash サンドボックス内からは `op` がデスクトップアプリのソケットに到達できずエラーになる。`fnox` / `op` をローカルで実行・検証する際はサンドボックスを無効化して実行する（Claude Code では当該コマンドをサンドボックス無効で実行する）。
 
-### Claude Code（MCP）への env 供給
+### プロセスへの env 供給
 
-GitHub MCP は HTTP 接続で `Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}` を要求する（`.mcp.json` 参照）。`${...}` は **`claude` を起動したプロセスの環境変数**から補間されるため、トークンを `claude` の環境に注入した状態で起動する。
-
-**推奨: 起動時のみ注入（永続化しない）**
+シークレットを必要とするプロセスには、`fnox exec` で**起動時のみ env に展開**して渡す（永続化しない）。
 
 ```bash
-# このセッションの間だけ env に展開され、終了後は環境に残らない
-fnox exec -- claude
-```
-
-エイリアス化しておくと楽:
-
-```bash
-# ~/.zshrc など
-alias claude='fnox exec -- claude'
+# このセッション/プロセスの間だけ env に展開され、終了後は環境に残らない
+fnox exec -- <command>
 ```
 
 **代替: cd 時の自動ロード（`fnox activate`）**
@@ -66,17 +57,18 @@ alias claude='fnox exec -- claude'
 eval "$(fnox activate zsh)"
 ```
 
-プロジェクトディレクトリに `cd` した時点で env が自動ロードされる。ただし対話シェルの環境にトークンが載るため、「必要時だけ展開し永続化しない」方針には `fnox exec` のほうが忠実。
+プロジェクトディレクトリに `cd` した時点で env が自動ロードされる。ただし対話シェルの環境に値が載るため、「必要時だけ展開し永続化しない」方針には `fnox exec` のほうが忠実。
+
+> **GitHub MCP は対象外**: GitHub MCP は OAuth 認証（Claude Code が取得トークンを保持・更新）に移行済みで、env 補間も `fnox exec -- claude` も不要。詳細は CLAUDE.md「MCP サーバー設定」を参照。
 
 ## git / gitleaks との整合
 
 - `fnox.toml` は **コミット対象**（`op://` 参照のみで秘密情報を含まない）。`.gitignore` で除外しない。
 - gitleaks は `op://` 参照を秘密として誤検知しない（pre-commit の gitleaks スキャンと整合）。
-- 実トークンを誤って `fnox.toml` や `.mcp.json` に直接書かないこと（必ず参照 / env 補間を使う）。
+- 実トークンを誤って `fnox.toml` や設定ファイルに直接書かないこと（必ず参照 / env 補間を使う）。
 
 ## 関連ファイル
 
 - `mise.toml` — fnox をツールとして管理
-- `fnox.toml` — プロバイダ定義とシークレット参照（`op://`）
-- `.mcp.json` — GitHub MCP 定義（`${GITHUB_PERSONAL_ACCESS_TOKEN}` を env 補間）
+- `fnox.toml` — プロバイダ定義とシークレット参照（`op://`）。現状 `[secrets]` は空
 - `.claude/settings.local.json` — サンドボックス設定

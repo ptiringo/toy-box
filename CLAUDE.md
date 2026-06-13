@@ -275,13 +275,41 @@ lefthook run pre-commit
 LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"
 ```
 
+## MCP サーバー設定
+
+このリポジトリで必要とする MCP サーバーは、各自が `/plugin` 等でアドホックに導入するのではなく、**リポジトリ管理の設定ファイルに宣言**して共有する。クローンすれば誰でも同じ構成になり、再現性が保たれる。
+
+### Claude Code 用: `.mcp.json`（リポジトリ root）
+
+Claude Code がプロジェクトスコープで読む設定ファイル。採用 MCP は以下：
+
+| サーバー | 種別 | 認証 | 用途 |
+|---------|------|------|------|
+| `github` | http | OAuth（Claude Code が保持） | issue / PR 操作。sandbox 下の `gh` が TLS（`OSStatus -26276`）で詰まる問題の回避策にもなる |
+| `context7` | http | 不要 | ライブラリ・フレームワークの最新ドキュメント参照 |
+| `terraform` | stdio (docker) | 不要 | Terraform レジストリ / プロバイダ情報の参照（`infra/` 用） |
+
+- **GitHub MCP は OAuth で認証**する。`.mcp.json` には `url` のみを書き、`Authorization` ヘッダ（PAT）は持たせない。初回接続時に Claude Code が OAuth フロー（`api.githubcopilot.com` → `github.com/login/oauth`、RFC 9728 ベース）を起こし、**取得したトークンは Claude Code 自身の認証ストアに保持・更新**される。そのため `fnox exec` による env 注入は不要で、通常どおり `claude` 起動でよい。
+  - 初回のみ Claude Code 内で `/mcp` → `github` を選んで認証（ブラウザでの GitHub 認可）を済ませる。以降はトークンが自動更新される。
+- もしトークンを `.mcp.json` のヘッダ（`Authorization: Bearer ${ENV_VAR}`）で渡す方式を採る場合は、**平文を書かず必ず `${ENV_VAR}` 参照**にし、値の供給は fnox に委ねる（`fnox exec -- claude` で env 補間）。本リポジトリでは GitHub MCP は OAuth 方式に統一しているため、この方式は使っていない。
+- **プロジェクトスコープ `.mcp.json` は各開発者が初回に承認するフロー**になる。クローン後 Claude Code を起動すると未承認の MCP サーバーについて確認プロンプトが出るので、内容を確認のうえ承認する（承認状態は各自のローカル設定 `~/.claude.json` に記録され、リポジトリには載らない）。
+- 個人のグローバル設定や `/plugin` 経由で同名サーバーを二重定義しないこと（このリポジトリでは `.mcp.json` を唯一の出所とする）。
+
+### VS Code / Copilot 用: `.vscode/mcp.json`
+
+VS Code（GitHub Copilot）が読む MCP 設定。**`.mcp.json` とは別ファイル・別フォーマット**（キーが `servers` か `mcpServers` か等が異なる）であり、Claude Code とは共有されない。
+
+- 役割分担: **`.mcp.json` = Claude Code 用 / `.vscode/mcp.json` = VS Code・Copilot 用**。両者は別エディタ向けに併存させる。
+- 両ファイルで共通利用する MCP（例: `context7`）は、片方を更新したらもう片方も合わせて**同期させる**（放置すると構成が乖離する）。
+
 ## シークレット管理（fnox + 1Password）
 
-ローカル開発で必要なシークレット（当面は GitHub MCP 用の `GITHUB_PERSONAL_ACCESS_TOKEN`）は、平文で shell profile に `export` せず、**1Password に保管＋必要時だけ env へ展開**する。仕組みは mise 管理の [fnox](https://fnox.jdx.dev/) で統一する。
+ローカル開発で必要なシークレットは、平文で shell profile に `export` せず、**1Password に保管＋必要時だけ env へ展開**する。仕組みは mise 管理の [fnox](https://fnox.jdx.dev/) で統一する。
 
 - `fnox.toml` には `op://` 参照のみを書き（秘密情報を含まない）、**git にコミットしてよい**
 - 値の解決は 1Password CLI (`op`) 経由。`op` がサインイン済み（デスクトップアプリ連携）なら**サービスアカウントトークンは不要**
-- MCP への供給は `fnox exec -- claude` で起動し、`.mcp.json` の `${GITHUB_PERSONAL_ACCESS_TOKEN}` を env 補間する
+- シークレットを必要とするプロセスには `fnox exec -- <command>` で起動時のみ env に展開する（永続化しない）
+- **現状、定義しているシークレットはない**（`fnox.toml` の `[secrets]` は空）。GitHub MCP は OAuth 認証へ移行したため PAT 管理は不要になった（上記「MCP サーバー設定」参照）。本仕組みは将来のシークレット（GCP 認証情報など）に備えて維持する
 
 運用手順・前提セットアップの詳細は **`.claude/rules/secrets.md`** を参照。
 
