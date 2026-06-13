@@ -1,13 +1,17 @@
 package com.example.api.domain.horseracing.breeding
 
 import java.util.UUID
+import org.jmolecules.ddd.annotation.AggregateRoot
+import org.jmolecules.ddd.annotation.Identity
+import org.jmolecules.ddd.annotation.ValueObject
 
 /** 繁殖ID */
-@JvmInline value class BreedingId(val value: UUID)
+@ValueObject @JvmInline value class BreedingId(val value: UUID)
 
 /** 繁殖 */
 @Suppress("unused")
+@AggregateRoot
 class Breeding {
     /** 繁殖ID */
-    val id = BreedingId(UUID.randomUUID())
+    @field:Identity val id = BreedingId(UUID.randomUUID())
 }

@@ -20,12 +20,14 @@ repositories { mavenCentral() }
 dependencies {
     @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
     implementation(platform(libs.springdoc.openapi.bom))
+    implementation(platform(libs.jmolecules.bom))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)
+    implementation(libs.jmolecules.ddd)
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -33,6 +35,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
     testImplementation(libs.mockk)
     testImplementation(libs.springmockk)
+    testImplementation(libs.archunit.junit5)
+    testImplementation(libs.jmolecules.archunit)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
