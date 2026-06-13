@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import java.time.LocalDateTime
+import java.time.Instant
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
@@ -69,7 +69,7 @@ class JockeyController(private val registerJockey: JockeyRegistrationUseCase) {
     @PostMapping("/api/jockeys")
     fun register(@RequestBody request: RegisterJockeyRequest): ResponseEntity<Any> {
         val command =
-            Command(RegisterJockeyCommand(request.firstName, request.lastName), LocalDateTime.now())
+            Command(RegisterJockeyCommand(request.firstName, request.lastName), Instant.now())
         return registerJockey(command)
             .mapBoth(
                 success = { jockey ->

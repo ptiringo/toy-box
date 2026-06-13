@@ -9,14 +9,14 @@ import com.github.michaelbull.result.unwrap
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.time.LocalDateTime
+import java.time.Instant
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class JockeyRegistrationUseCaseTest {
 
     private fun command(firstName: String, lastName: String): Command<RegisterJockeyCommand> =
-        Command(RegisterJockeyCommand(firstName, lastName), LocalDateTime.now())
+        Command(RegisterJockeyCommand(firstName, lastName), Instant.now())
 
     @Nested
     inner class SuccessCase {
