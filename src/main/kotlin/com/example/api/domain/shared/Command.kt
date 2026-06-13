@@ -1,4 +1,4 @@
-package com.example.api.domain
+package com.example.api.domain.shared
 
 import java.time.LocalDateTime
 

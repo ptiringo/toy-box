@@ -1,18 +1,21 @@
-package com.example.api.domain.horseracing.jockey
+package com.example.api.domain.horseracing.model.jockey
 
-import com.example.api.domain.Entity
+import com.example.api.domain.shared.Entity
 import com.fasterxml.uuid.Generators
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import java.util.UUID
+import org.jmolecules.ddd.annotation.AggregateRoot
+import org.jmolecules.ddd.annotation.Identity
+import org.jmolecules.ddd.annotation.ValueObject
 
 /**
  * ジョッキーIDを表す値クラス
  *
  * @property value UUID形式のID値
  */
-@JvmInline value class JockeyId(val value: UUID)
+@ValueObject @JvmInline value class JockeyId(val value: UUID)
 
 /** ジョッキー生成時に発生しうる不変条件違反。 */
 sealed interface JockeyValidationError {
@@ -35,6 +38,7 @@ sealed interface JockeyValidationError {
  * @property lastName 姓
  * @property id ジョッキーID（自動生成）
  */
+@AggregateRoot
 class Jockey
 private constructor(
     /** 名 */
@@ -43,6 +47,7 @@ private constructor(
     val lastName: String,
 ) : Entity<JockeyId>() {
     /** ジョッキーID インスタンス生成時に一意なIDを自動生成する */
+    @field:Identity
     override val id = JockeyId(Generators.timeBasedEpochRandomGenerator().generate())
 
     companion object {

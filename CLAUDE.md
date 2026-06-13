@@ -93,21 +93,25 @@ class HelloController {
 
 リクエスト処理スレッドは Virtual Thread 上で走るため、内部でブロッキング IO（JDBC 等）を呼び出しても OS スレッドは占有されません。`suspend` / `Mono` / `Flux` を導入する動機が薄いので、原則 **同期コードで書く** ことを推奨します。
 
+### アーキテクチャテスト（ArchUnit）
+
+アーキテクチャ規約は ArchUnit + jMolecules で機械的に強制されています（`src/test/kotlin/com/example/api/architecture/ArchitectureTest.kt`）。レイヤー依存方向（オニオン）、境界づけられたコンテキスト間の分離、DDD ビルディングブロックの整合性などが `./gradlew test` で検証されます。規約の詳細は `.claude/rules/architecture.md` を参照してください。
+
 ### ドメイン駆動設計
+
+ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`org.jmolecules.ddd.annotation.*`）で DDD ビルディングブロックとしての役割を表明します。整合性は ArchUnit（`JMoleculesDddRules`）で検証されます。
 
 #### Value Object パターン
 
-型安全性のために `@JvmInline value class` を使用：
+型安全性のために `@JvmInline value class` を使用し、`@ValueObject` で役割を表明：
 
 ```kotlin
-@JvmInline
-value class JockeyId(val value: UUID)
+@ValueObject @JvmInline value class JockeyId(val value: UUID)
 
-@JvmInline
-value class BloodHorseId(val value: UUID)
+@ValueObject @JvmInline value class BloodHorseId(val value: UUID)
 ```
 
-ゼロコスト抽象化により、異なるエンティティの ID を誤って混同することを防ぎます。
+ゼロコスト抽象化により、異なるエンティティの ID を誤って混同することを防ぎます。他の集約への参照はこの ID 値クラスを介して行います（集約オブジェクトの直接参照は ArchUnit で違反として検出されます）。
 
 #### Entity パターン
 
@@ -117,6 +121,7 @@ value class BloodHorseId(val value: UUID)
 - **UUID 生成戦略**:
   - `UUID.randomUUID()`: シンプルなランダム生成
   - `Generators.timeBasedEpochRandomGenerator()`: タイムベース生成（`java-uuid-generator` ライブラリ使用）
+- **役割の表明**: 集約ルートには `@AggregateRoot`、識別子プロパティには `@field:Identity` を付与（`@Identity` は FIELD ターゲットのため use-site target の明示が必要）
 
 #### Command パターン
 
@@ -134,28 +139,37 @@ fun registerInStudBook(command: Command<StudBook>)
 
 ### パッケージ構成
 
+オニオンアーキテクチャの 4 リング（domainModel / domainService / applicationService / adapter）構成。`domain` 配下は各コンテキストを `model/` と `service/` に分割する。
+
 ```
 com.example.api/
 ├── ApiApplication.kt    # エントリーポイント（@OpenAPIDefinition もここ）
-├── controller/          # @RestController（HTTP エンドポイント）
-├── application/         # ユースケース（フレームワーク非依存）
+├── controller/          # adapter (rest): @RestController（HTTP エンドポイント）
+├── application/         # applicationService: ユースケース
 │   └── horseracing/
-├── domain/              # ドメインロジック（フレームワーク非依存）
-│   ├── horseracing/     # 競馬ドメイン
-│   ├── sakamichi/       # エンターテイメントドメイン
-│   └── tennis/          # スポーツドメイン
-└── infrastructure/      # ポートの具象実装（@Repository 等の Spring 依存可）
+├── domain/              # ドメイン（フレームワーク非依存）
+│   ├── shared/          # 共有カーネル（Command / Entity 基底）。全コンテキストから参照可
+│   ├── horseracing/     # 競馬コンテキスト
+│   │   ├── model/       #   domainModel: Entity / VO / Repository ポート
+│   │   └── service/     #   domainService: トップレベル関数のドメインロジック
+│   ├── sakamichi/model/ # エンターテイメントコンテキスト
+│   └── tennis/model/    # スポーツコンテキスト
+└── infrastructure/      # adapter (persistence): ポートの具象実装（Spring 依存可）
     └── horseracing/
 ```
 
-**設計原則**:
+**設計原則**（ArchUnit で強制。詳細は `.claude/rules/architecture.md`）:
 
-- **domain**: Entity / Value Object / Repository ポート（interface） / ドメインオブジェクト同士で完結するロジック。Spring に依存しない
+- **domain.shared**: 共有カーネル。`Command` / `Entity` 基底など、コンテキスト横断の最小限の基盤のみ
+- **domain.\*.model**: Entity / Value Object / Repository ポート（interface）/ 集約内で完結するロジック。Repository ポートには jMolecules の `@Repository` を付与
+- **domain.\*.service**: 複数の集約をまたぐドメインロジック。**Kotlin のトップレベル関数で書き**、`service/` への配置でドメインサービスと表現する（jMolecules `@Service` は付けない）。モデルにのみ依存でき、その逆は禁止
 - **application**: ユースケース（コマンド DTO + ユースケースクラス + そのユースケースに紐づく失敗バリアント）。ドメインを組み合わせて業務シナリオを構築する。ユースケースを DI 経由で公開するための `@Service` / `@Component` のみ Spring 依存を許容し、ロジック本体は Plain Kotlin で書く
 - **controller**: HTTP アダプター。`Result` から `ResponseEntity` への変換のみを担う
 - **infrastructure**: Repository ポートの具体実装、外部システム連携などのアダプター。Spring 依存可
 
 ユースケース関数の命名は `動詞 + リソース名` を基本とし、入力 DTO は `〜Command`（書き込み系）／ `〜Query`（読み取り系）サフィックスを付ける。
+
+`domain` / `application` / `infrastructure` 配下のコンテキスト（`horseracing` / `sakamichi` / `tennis`）は境界づけられたコンテキストであり、コンテキスト間の依存は層やリングをまたぐ場合も含めて禁止（ArchUnit で強制）。`domain.shared` は対象外。
 
 ## コーディング規約
 

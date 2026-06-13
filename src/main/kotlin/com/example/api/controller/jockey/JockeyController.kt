@@ -2,7 +2,7 @@ package com.example.api.controller.jockey
 
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
-import com.example.api.domain.Command
+import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapBoth
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content

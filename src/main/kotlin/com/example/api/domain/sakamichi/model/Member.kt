@@ -1,13 +1,17 @@
-package com.example.api.domain.sakamichi
+package com.example.api.domain.sakamichi.model
 
-import com.example.api.domain.Entity
+import com.example.api.domain.shared.Entity
 import com.fasterxml.uuid.Generators
 import java.util.UUID
+import org.jmolecules.ddd.annotation.AggregateRoot
+import org.jmolecules.ddd.annotation.Identity
+import org.jmolecules.ddd.annotation.ValueObject
 
 /** メンバーID */
-@JvmInline value class MemberId(val value: UUID)
+@ValueObject @JvmInline value class MemberId(val value: UUID)
 
 /** メンバー */
+@AggregateRoot
 class Member(
     /** 名 */
     @Suppress("unused") val firstName: String,
@@ -15,5 +19,6 @@ class Member(
     @Suppress("unused") val lastName: String,
 ) : Entity<MemberId>() {
     /** メンバーID */
+    @field:Identity
     override val id = MemberId(Generators.timeBasedEpochRandomGenerator().generate())
 }

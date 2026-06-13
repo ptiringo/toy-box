@@ -1,4 +1,4 @@
-package com.example.api.domain
+package com.example.api.domain.shared
 
 /**
  * ID ベースの等価性を持つエンティティの抽象基底クラス。
