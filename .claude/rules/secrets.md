@@ -2,7 +2,7 @@
 
 ローカル開発で必要なシークレットは、平文で `~/.zshrc` 等に `export` せず、**暗号化保管／外部参照＋必要時だけ環境変数へ展開**する。仕組みは mise で管理する [fnox](https://fnox.jdx.dev/)（mise 作者 jdx 製）で統一する。
 
-**現状、リポジトリ管理下で定義しているシークレットはない**（`fnox.toml` の `[secrets]` は空）。GitHub MCP は当初 `GITHUB_PERSONAL_ACCESS_TOKEN`（PAT）を env 補間で渡す方式を検討したが、**OAuth 方式へ移行**したため fnox での PAT 管理は不要になった（GitHub MCP の認証は CLAUDE.md「MCP サーバー設定」を参照）。本ファイルは、将来 GCP 認証情報など別シークレットを扱う際の**運用規約**として維持する。
+**現状、リポジトリ管理下で定義しているシークレットはない**（`fnox.toml` の `[secrets]` は空）。GitHub 操作は当初 GitHub MCP（PAT を env 補間で渡す案も検討）で行っていたが、**MCP を撤去して `gh` CLI 直接利用へ切り替えた**（sandbox 下の TLS 問題は `sandbox.enableWeakerNetworkIsolation` で解消。CLAUDE.md「MCP サーバー設定」を参照）ため、fnox での PAT 管理は不要になった。本ファイルは、将来 GCP 認証情報など別シークレットを扱う際の**運用規約**として維持する。
 
 ## バックエンド: 1Password（案C）
 
@@ -59,7 +59,7 @@ eval "$(fnox activate zsh)"
 
 プロジェクトディレクトリに `cd` した時点で env が自動ロードされる。ただし対話シェルの環境に値が載るため、「必要時だけ展開し永続化しない」方針には `fnox exec` のほうが忠実。
 
-> **GitHub MCP は対象外**: GitHub MCP は OAuth 認証（Claude Code が取得トークンを保持・更新）に移行済みで、env 補間も `fnox exec -- claude` も不要。詳細は CLAUDE.md「MCP サーバー設定」を参照。
+> **GitHub 操作は対象外**: GitHub の issue / PR 操作は MCP ではなく `gh` CLI で行う方針（`sandbox.enableWeakerNetworkIsolation` で sandbox 下の TLS 問題を解消）のため、PAT も env 補間も `fnox exec -- claude` も不要。詳細は CLAUDE.md「MCP サーバー設定」を参照。
 
 ## git / gitleaks との整合
 
