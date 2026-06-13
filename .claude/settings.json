@@ -40,21 +40,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./gradlew ktfmtFormat --daemon",
-            "timeout": 120,
-            "statusMessage": "ktfmt フォーマット適用中..."
-          },
-          {
-            "type": "command",
-            "command": "./gradlew detekt --daemon",
-            "timeout": 120,
-            "statusMessage": "detekt 静的解析実行中..."
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/stop-gradle-test.sh",
-            "timeout": 180,
-            "statusMessage": "gradle test 実行中 (Kotlin/Java 変更時のみ)..."
+            "command": ".claude/hooks/stop-kotlin-quality.sh",
+            "timeout": 300,
+            "statusMessage": "gradle check 実行中 (Kotlin/Java 変更時のみ)..."
           },
           {
             "type": "command",
