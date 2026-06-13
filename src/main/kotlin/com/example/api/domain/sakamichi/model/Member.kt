@@ -1,7 +1,7 @@
 package com.example.api.domain.sakamichi.model
 
 import com.example.api.domain.shared.Entity
-import com.fasterxml.uuid.Generators
+import com.example.api.domain.shared.generateId
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Identity
@@ -19,6 +19,5 @@ class Member(
     @Suppress("unused") val lastName: String,
 ) : Entity<MemberId>() {
     /** メンバーID */
-    @field:Identity
-    override val id = MemberId(Generators.timeBasedEpochRandomGenerator().generate())
+    @field:Identity override val id = MemberId(generateId())
 }

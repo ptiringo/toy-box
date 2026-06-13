@@ -1,6 +1,6 @@
 package com.example.api.domain.tennis.model
 
-import com.fasterxml.uuid.Generators
+import com.example.api.domain.shared.generateId
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Identity
@@ -17,7 +17,7 @@ class Player(
     /** 姓 */
     @Suppress("unused") val lastName: String,
 ) {
-    @field:Identity val id = PlayerId(Generators.timeBasedEpochRandomGenerator().generate())
+    @field:Identity val id = PlayerId(generateId())
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {

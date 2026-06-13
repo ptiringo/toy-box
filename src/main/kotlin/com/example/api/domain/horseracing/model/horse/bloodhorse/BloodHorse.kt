@@ -1,6 +1,7 @@
 package com.example.api.domain.horseracing.model.horse.bloodhorse
 
 import com.example.api.domain.shared.Entity
+import com.example.api.domain.shared.generateId
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Identity
@@ -27,5 +28,5 @@ private constructor(
     @Suppress("unused") val sex: Sex
 ) : Entity<BloodHorseId>() {
     /** 軽種馬ID */
-    @field:Identity override val id = BloodHorseId(UUID.randomUUID())
+    @field:Identity override val id = BloodHorseId(generateId())
 }

@@ -118,9 +118,7 @@ class HelloController {
 エンティティは UUID ベースの同一性を持ちます：
 
 - **ID による等価性**: `equals()` と `hashCode()` は ID のみで実装
-- **UUID 生成戦略**:
-  - `UUID.randomUUID()`: シンプルなランダム生成
-  - `Generators.timeBasedEpochRandomGenerator()`: タイムベース生成（`java-uuid-generator` ライブラリ使用）
+- **UUID 生成戦略**: タイムベース（UUIDv7 相当の `Generators.timeBasedEpochRandomGenerator()`、`java-uuid-generator` ライブラリ使用）に統一する。生成値が時刻順にソート可能で永続化時のインデックス局所性に優れるため、ランダム（`UUID.randomUUID()`）ではなくこちらを標準とする。生成ロジックは `domain.shared.generateId()` に集約しており、各 ID 値クラスは `JockeyId(generateId())` のようにこの関数を介して生成する（エンティティごとに生成方法を書き分けない）
 - **役割の表明**: 集約ルートには `@AggregateRoot`、識別子プロパティには `@field:Identity` を付与（`@Identity` は FIELD ターゲットのため use-site target の明示が必要）
 
 #### Command パターン
