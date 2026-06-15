@@ -28,8 +28,9 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     private val tester = MockMvcTester.create(mockMvc)
 
     @Test
-    fun `必須フィールド欠落のリクエストボディで 400 と problem+json が返ること`() {
-        // lastName が欠落しており Jackson のデシリアライズに失敗する
+    fun `必須フィールド欠落のリクエストボディで 400 と規約付与済みの problem+json が返ること`() {
+        // lastName が欠落しており Jackson のデシリアライズに失敗する。
+        // フレームワーク標準例外由来でも funnel で errorCode 規約が付与される。
         tester
             .post()
             .uri("/api/jockeys")
@@ -38,6 +39,9 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
             .assertThat()
             .hasStatus(HttpStatus.BAD_REQUEST)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.errorCode")
+            .isEqualTo("bad-request")
     }
 
     @Test

@@ -29,23 +29,27 @@ paths:
 
 ## Controller 境界での変換
 
-ドメイン / アプリケーション層に Spring 依存を持ち込まないため、`Result` から `ResponseEntity` への変換は Controller 境界で `mapBoth` を用いて行う。レスポンスは [api-design.md](api-design.md) に従い RFC 9457 形式の `ProblemDetail` で返す。
+全エラーレスポンスは中央の描画 funnel（`GlobalExceptionHandler` ＝ `ResponseEntityExceptionHandler`）に集約する。業務エラー・フレームワーク標準例外・想定外例外のすべてが同じ funnel を通り、[api-design.md](api-design.md) に従い RFC 9457 形式の `ProblemDetail`（`application/problem+json`）として一貫した形で描画される。
+
+業務エラーの流れ:
+
+1. ドメイン / アプリケーション層は **Result-first を保つ**（例外を投げない）
+2. Controller でエラーを `mapError { it.toProblemDetail() }` で `ProblemDetail` にマップする（どのエラー→どの `status` / `errorCode` という**方針はアダプタ層に置く**）
+3. `orThrowProblem()`（`controller/ProblemResponses.kt`）で `Err` を `ErrorResponseException` として送出し funnel に委譲、`Ok` なら値を取り出す
+4. 成功は `@ResponseStatus` ＋ 戻り値で resource を返す（`ResponseEntity` は使わない）
 
 ```kotlin
+@ResponseStatus(HttpStatus.CREATED)
 @PostMapping("/api/jockeys")
-fun register(@RequestBody request: RegisterJockeyRequest): ResponseEntity<Any> =
-    registerJockey(command).mapBoth(
-        success = { jockey ->
-            ResponseEntity.status(HttpStatus.CREATED).body<Any>(jockey.toResponse())
-        },
-        failure = { error ->
-            val problem = error.toProblemDetail()
-            ResponseEntity.status(problem.status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body<Any>(problem)
-        },
-    )
+fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyResponse {
+    val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
+    return jockey.toResponse()
+}
 ```
+
+> **Controller 境界に限った例外条項**: 「業務エラー＝`Result` / 例外＝インフラ」の原則は維持する。ただし**描画のためだけ**に、Controller 境界で業務エラーを `ErrorResponseException` へ再送出することを許す。ドメイン / アプリケーション層は一切例外を投げず、例外化は `orThrowProblem()` の一手に限定する（中央 funnel で problem 形を一元統制するための割り切り）。
+
+problem 形の統一は `GlobalExceptionHandler.handleExceptionInternal` が担い、`errorCode` 未設定の `ProblemDetail`（フレームワーク標準例外由来）に `type` / `errorCode` 規約を一律付与する。業務エラーは `toProblemDetail()` で既に規約済みのため二重付与しない。
 
 ## 段階的導入
 
