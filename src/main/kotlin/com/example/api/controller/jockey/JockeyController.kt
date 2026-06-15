@@ -2,8 +2,9 @@ package com.example.api.controller.jockey
 
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
+import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
-import com.github.michaelbull.result.mapBoth
+import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -12,9 +13,9 @@ import java.time.Instant
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -66,28 +67,16 @@ class JockeyController(private val registerJockey: JockeyRegistrationUseCase) {
                 ),
             ],
     )
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/jockeys")
-    fun register(@RequestBody request: RegisterJockeyRequest): ResponseEntity<Any> {
+    fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyResponse {
         val command =
             Command(RegisterJockeyCommand(request.firstName, request.lastName), Instant.now())
-        return registerJockey(command)
-            .mapBoth(
-                success = { jockey ->
-                    ResponseEntity.status(HttpStatus.CREATED)
-                        .body<Any>(
-                            RegisterJockeyResponse(
-                                id = jockey.id.value,
-                                firstName = jockey.firstName,
-                                lastName = jockey.lastName,
-                            )
-                        )
-                },
-                failure = { error ->
-                    val problem = error.toProblemDetail()
-                    ResponseEntity.status(problem.status)
-                        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                        .body<Any>(problem)
-                },
-            )
+        val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
+        return RegisterJockeyResponse(
+            id = jockey.id.value,
+            firstName = jockey.firstName,
+            lastName = jockey.lastName,
+        )
     }
 }

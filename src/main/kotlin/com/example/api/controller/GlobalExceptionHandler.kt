@@ -2,21 +2,28 @@ package com.example.api.controller
 
 import java.net.URI
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
 /**
- * 横断的な例外ハンドラ。
+ * 横断的な例外ハンドラ兼、全エラーレスポンスの描画 funnel。
  *
- * - Spring MVC 標準例外（リクエストボディ不正・媒体型不一致等）は親クラス [ResponseEntityExceptionHandler]
- *   に委譲する。`spring.mvc.problemdetails.enabled=true` により RFC 9457 (`application/problem+json`)
- *   形式へ変換される。
+ * すべての HTTP エラー応答（業務ルール違反・フレームワーク標準例外・想定外例外）はここを通り、RFC 9457 (`application/problem+json`) 形式に統一される。
+ * - 業務ルール違反は各 Controller 境界で `Result` を [ProblemDetail] にマップし、`orThrowProblem()` で
+ *   [org.springframework.web.ErrorResponseException] として送出される。本ハンドラ（基底
+ *   [ResponseEntityExceptionHandler]）が ProblemDetail をそのまま描画する。
+ * - Spring MVC 標準例外（リクエストボディ不正・媒体型不一致等）も基底クラスが ProblemDetail へ変換する。
  * - 上記以外の想定外例外（インフラ障害・プログラミングエラー）は 500 + problem+json で返す。
  *
- * 業務ルール違反は各 Controller 境界で `Result` から `ProblemDetail` に変換するため、ここでは扱わない。
+ * problem 形の一元化のため、[handleExceptionInternal] で `type` / `errorCode` 規約を未設定の ProblemDetail に
+ * 一律で付与する（業務エラーは既に規約済みのため二重付与しない）。
  */
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
@@ -36,7 +43,36 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         }
     }
 
+    /**
+     * 基底クラスが組み立てた標準例外の応答に、本プロジェクトの RFC 9457 規約（`type` / `errorCode`）を付与する。
+     *
+     * `errorCode` を既に持つ ProblemDetail（業務エラー由来）は規約済みとみなして触らない。
+     */
+    override fun handleExceptionInternal(
+        ex: Exception,
+        body: Any?,
+        headers: HttpHeaders,
+        statusCode: HttpStatusCode,
+        request: WebRequest,
+    ): ResponseEntity<Any>? {
+        val response = super.handleExceptionInternal(ex, body, headers, statusCode, request)
+        (response?.body as? ProblemDetail)?.let(::applyConvention)
+        return response
+    }
+
+    private fun applyConvention(problem: ProblemDetail) {
+        if (problem.properties?.containsKey("errorCode") == true) {
+            return
+        }
+        val code = HttpStatus.valueOf(problem.status).name.lowercase().replace('_', '-')
+        if (problem.type == BLANK_TYPE) {
+            problem.type = URI.create("urn:problem-type:$code")
+        }
+        problem.setProperty("errorCode", code)
+    }
+
     companion object {
         private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+        private val BLANK_TYPE = URI.create("about:blank")
     }
 }
