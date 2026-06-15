@@ -1,6 +1,5 @@
 package com.example.api.controller.horse
 
-import com.example.api.application.horseracing.horse.RegisterInStudBookCommand
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
@@ -69,26 +68,9 @@ class BloodHorseController(private val registerInStudBook: RegisterInStudBookUse
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/blood_horses")
-    fun register(@RequestBody request: RegisterBloodHorseRequest): RegisterBloodHorseResponse {
-        val command =
-            Command(
-                RegisterInStudBookCommand(
-                    sireId = request.sireId,
-                    damId = request.damId,
-                    sex = request.sex,
-                    coatColor = request.coatColor,
-                    breedType = request.breedType,
-                    dateOfBirth = request.dateOfBirth,
-                    breeder = request.breeder,
-                    microchipNumber = request.microchipNumber,
-                    dnaParentage = request.dnaParentage,
-                    registrationNumber = request.registrationNumber,
-                ),
-                Instant.now(),
-            )
-        return registerInStudBook(command)
+    fun register(@RequestBody request: RegisterBloodHorseRequest): RegisterBloodHorseResponse =
+        registerInStudBook(Command(request.toCommand(), Instant.now()))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toRegisterResponse()
-    }
 }

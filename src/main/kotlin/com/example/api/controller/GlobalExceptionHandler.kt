@@ -35,12 +35,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(Exception::class)
     fun handleUnexpectedException(ex: Exception): ProblemDetail {
         log.error("想定外の例外が発生しました", ex)
-        return ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR).apply {
-            type = URI.create("urn:problem-type:internal-server-error")
-            title = "Internal server error"
-            detail = "サーバー内部でエラーが発生しました。"
-            setProperty("errorCode", "internal-server-error")
-        }
+        return problem(
+            status = HttpStatus.INTERNAL_SERVER_ERROR,
+            code = "internal-server-error",
+            title = "Internal server error",
+            detail = "サーバー内部でエラーが発生しました。",
+        )
     }
 
     /**
@@ -64,7 +64,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         if (problem.properties?.containsKey("errorCode") == true) {
             return
         }
-        val code = HttpStatus.valueOf(problem.status).name.lowercase().replace('_', '-')
+        // 標準ステータスは enum 名から、非標準コードは数値からコードを導く（funnel 内で valueOf 例外を出さない）
+        val code =
+            HttpStatus.resolve(problem.status)?.name?.lowercase()?.replace('_', '-')
+                ?: "http-${problem.status}"
         if (problem.type == BLANK_TYPE) {
             problem.type = URI.create("urn:problem-type:$code")
         }

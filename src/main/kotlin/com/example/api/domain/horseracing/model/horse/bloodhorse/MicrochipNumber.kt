@@ -24,7 +24,7 @@ value class MicrochipNumber private constructor(val value: String) {
         /** 15 桁の数字であることを検証して [MicrochipNumber] を生成する。 */
         fun create(value: String): Result<MicrochipNumber, InvalidMicrochipNumber> {
             val trimmed = value.trim()
-            return if (trimmed.length == DIGITS && trimmed.all { it.isDigit() }) {
+            return if (trimmed.length == DIGITS && trimmed.all { it in '0'..'9' }) {
                 Ok(MicrochipNumber(trimmed))
             } else {
                 Err(InvalidMicrochipNumber)

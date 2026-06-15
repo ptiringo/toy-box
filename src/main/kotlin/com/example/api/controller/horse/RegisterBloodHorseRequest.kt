@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.horseracing.horse.RegisterInStudBookCommand
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
@@ -37,3 +38,18 @@ data class RegisterBloodHorseRequest(
     val dnaParentage: DnaParentageResult,
     val registrationNumber: String,
 )
+
+/** リクエストボディを血統登録ユースケースの入力コマンドへ変換する。境界 DTO ↔ コマンドのフィールド対応はここに集約する。 */
+fun RegisterBloodHorseRequest.toCommand(): RegisterInStudBookCommand =
+    RegisterInStudBookCommand(
+        sireId = sireId,
+        damId = damId,
+        sex = sex,
+        coatColor = coatColor,
+        breedType = breedType,
+        dateOfBirth = dateOfBirth,
+        breeder = breeder,
+        microchipNumber = microchipNumber,
+        dnaParentage = dnaParentage,
+        registrationNumber = registrationNumber,
+    )

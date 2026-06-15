@@ -1,8 +1,8 @@
 package com.example.api.controller.jockey
 
 import com.example.api.application.horseracing.jockey.JockeyRegistrationError
+import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
-import java.net.URI
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -54,17 +54,4 @@ private fun JockeyValidationError.toProblemDetail(): ProblemDetail =
                 title = "Last name is blank",
                 detail = "lastName は空であってはいけません。",
             )
-    }
-
-private fun problem(
-    status: HttpStatus,
-    code: String,
-    title: String,
-    detail: String,
-): ProblemDetail =
-    ProblemDetail.forStatus(status).apply {
-        type = URI.create("urn:problem-type:$code")
-        this.title = title
-        this.detail = detail
-        setProperty("errorCode", code)
     }

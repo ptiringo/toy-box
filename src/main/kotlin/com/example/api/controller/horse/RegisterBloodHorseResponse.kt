@@ -1,12 +1,12 @@
 package com.example.api.controller.horse
 
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
+import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
-import java.net.URI
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -135,17 +135,4 @@ private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
                 title = "Breed mismatch",
                 detail = "仔の品種が父母の品種と整合しません。",
             )
-    }
-
-private fun problem(
-    status: HttpStatus,
-    code: String,
-    title: String,
-    detail: String,
-): ProblemDetail =
-    ProblemDetail.forStatus(status).apply {
-        type = URI.create("urn:problem-type:$code")
-        this.title = title
-        this.detail = detail
-        setProperty("errorCode", code)
     }
