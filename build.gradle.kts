@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.springdoc.openapi.gradle)
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
 }
 
 group = "com.example"
@@ -66,5 +67,82 @@ tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
         checkstyle.required.set(true)
         sarif.required.set(true)
         markdown.required.set(true)
+    }
+}
+
+kover {
+    // 検証ゲート専用に total と同一内容の variant を複製する。
+    // Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てないため、
+    // 「全体を見せるレポート（total）」と「成熟パッケージだけを検証する variant（mature）」を分ける。
+    currentProject { copyVariant("mature", "jvm") }
+
+    reports {
+        // 全レポート共通の除外。カバレッジ対象として意味を持たないものだけを外す。
+        filters {
+            excludes {
+                // エントリーポイント（main / Spring ブートストラップ）はカバレッジ対象外
+                classes("com.example.api.ApiApplication*")
+            }
+        }
+
+        // total: コードの全体像を見せるレポート（穴の可視化が目的なので絞り込まない）。
+        total {
+            xml {
+                // CI で集計するため XML を常に生成する
+                onCheck = false
+            }
+            html {
+                title = "toy-box カバレッジ"
+                onCheck = false
+            }
+            // koverLog: CI の Job Summary に流すための 1 行集計（外部 Action 不要）
+            log {
+                groupBy = kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.APPLICATION
+                coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                aggregationForGroup =
+                    kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                format = "全体（探索領域含む）の行カバレッジ: <value>%"
+            }
+        }
+
+        // mature: 検証ゲートを「成熟パッケージのみ」に絞る。
+        // 探索段階のモデル（tennis / sakamichi / breeding / race / racehorse / stallion 等）は
+        // total レポートには出すが、ゲートからは外してノイズで CI を赤くしない。
+        variant("mature") {
+            // 共通の除外に加え、成熟＝レイヤーごとのテストが揃っている領域だけを includes で残す
+            filtersAppend {
+                includes {
+                    packages(
+                        "com.example.api.domain.shared",
+                        "com.example.api.domain.horseracing.model.jockey",
+                        "com.example.api.domain.horseracing.model.horse.bloodhorse",
+                        "com.example.api.domain.horseracing.service.horse",
+                        "com.example.api.application.horseracing",
+                        "com.example.api.controller",
+                    )
+                }
+            }
+            log {
+                groupBy = kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.APPLICATION
+                coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                aggregationForGroup =
+                    kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                format = "成熟ゲート対象の行カバレッジ: <value>%"
+            }
+            verify {
+                // check 実行時に検証も走らせる
+                onCheck = true
+                rule("成熟パッケージの行カバレッジ（リグレッション防止のラチェット）") {
+                    bound {
+                        // 現状実測 88.3%（302/342 行）を 85% に固定し、以後の低下を検出するラチェット。
+                        // 成熟領域に新コードを足すならテストも添えること、という圧をかける。
+                        minValue = 85
+                        coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                        aggregationForGroup =
+                            kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                    }
+                }
+            }
+        }
     }
 }

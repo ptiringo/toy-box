@@ -42,3 +42,19 @@ jobs:
 
       - name: Run API tests
         run: ./gradlew test --stacktrace
+
+      # 成熟パッケージの行カバレッジ下限（ラチェット）を検証する。下回るとここで失敗する。
+      - name: Verify coverage gate
+        run: ./gradlew koverVerifyMature --stacktrace
+
+      # 全体／成熟ゲートの行カバレッジを PR の Job Summary に出す（外部サービス不要）。
+      # ゲートが落ちても数値が見えるよう always() で実行する。
+      - name: Report coverage
+        if: always()
+        run: |
+          {
+            echo '## 🧪 テストカバレッジ'
+            echo ''
+            ./gradlew koverLog koverLogMature --console=plain 2>&1 \
+              | grep 'カバレッジ' | sed 's/^/- /'
+          } >> "$GITHUB_STEP_SUMMARY"
