@@ -8,6 +8,7 @@ spring-dependency-management = "1.1.7"
 springdoc-openapi-gradle = "1.9.0"
 ktfmt = "0.26.0"
 detekt = "2.0.0-alpha.3"
+kover = "0.9.8"
 
 # ライブラリのバージョン
 springdoc-openapi-bom = "3.0.3"
@@ -59,3 +60,6 @@ ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 
 # detekt プラグイン
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+
+# Kover プラグイン（Kotlin ネイティブのカバレッジ計測。inline value class を正しく数えられる）
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

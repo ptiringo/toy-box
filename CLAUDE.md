@@ -176,6 +176,8 @@ com.example.api/
 
 ### テスト規約
 
+テスト戦略（オニオン各リング × テストピラミッドの対応、どの層で何を・どうテストするか）とカバレッジハーネス（Kover の `total` / `mature` 2 variant 構成・成熟領域のみゲートするラチェット運用）は `.claude/rules/testing.md` を参照。本節は個別の記法（アノテーション・アサーション・命名）を定める。
+
 #### アノテーション
 
 - **JUnit 5 を使用**: `org.junit.jupiter.api.Test` アノテーションを使用

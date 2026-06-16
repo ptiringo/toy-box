@@ -44,8 +44,11 @@ jobs:
         with:
           languages: java-kotlin
 
+      # CodeQL は解析用に production コードがコンパイルできれば十分。
+      # assemble は check 配下（test / ktfmt / detekt / koverVerify）を一切呼ばないため、
+      # 検証タスクの個別除外が不要で、check に検証が増えてもメンテ不要。
       - name: Build with Gradle
-        run: ./gradlew build -x test -x ktfmtCheck -x detekt --stacktrace
+        run: ./gradlew assemble --stacktrace
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2

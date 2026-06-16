@@ -15,3 +15,4 @@
 | [0003](0003-consolidate-mcp-config-in-repo.md) | MCP サーバー設定をリポジトリ管理ファイルに集約する | Accepted |
 | [0004](0004-secrets-fnox-1password.md) | シークレット管理を fnox + 1Password（参照のみ）で行う | Accepted |
 | [0005](0005-time-based-uuid-generation.md) | エンティティ識別子をタイムベース UUID（UUIDv7 相当）に統一する | Accepted |
+| [0006](0006-kover-over-jacoco.md) | カバレッジ計測に Kover を採用し、成熟領域のみゲートする | Accepted |
