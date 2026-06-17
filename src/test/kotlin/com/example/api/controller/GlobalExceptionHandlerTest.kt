@@ -1,9 +1,13 @@
 package com.example.api.controller
 
+import com.example.api.application.horseracing.jockey.JockeyRegistrationError
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
 import com.example.api.controller.jockey.JockeyController
+import com.example.api.domain.horseracing.model.jockey.JockeyId
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.generateId
+import com.github.michaelbull.result.Err
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.Test
@@ -42,6 +46,26 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
             .bodyJson()
             .extractingPath("$.errorCode")
             .isEqualTo("bad-request")
+    }
+
+    @Test
+    fun `業務エラー由来の problem が funnel を通っても自前の errorCode を保持し status 由来コードで上書きされないこと`() {
+        // DuplicateJockey は problem() ＝ ConventionalProblemDetail で errorCode=duplicate-jockey を持つ。
+        // funnel は型で規約済みと判定して触らないため、status(409) 由来の "conflict" に上書きされない。
+        every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns
+            Err(JockeyRegistrationError.DuplicateJockey(JockeyId(generateId())))
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"firstName":"武","lastName":"豊"}""")
+            .assertThat()
+            .hasStatus(HttpStatus.CONFLICT)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.errorCode")
+            .isEqualTo("duplicate-jockey")
     }
 
     @Test
