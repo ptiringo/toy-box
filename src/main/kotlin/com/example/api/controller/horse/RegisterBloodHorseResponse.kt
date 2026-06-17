@@ -3,9 +3,6 @@ package com.example.api.controller.horse
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
-import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
 import java.time.LocalDate
 import java.util.UUID
@@ -32,9 +29,9 @@ import org.springframework.http.ProblemDetail
 data class RegisterBloodHorseResponse(
     val id: UUID,
     val registrationNumber: String,
-    val sex: Sex,
-    val coatColor: CoatColor,
-    val breedType: BreedType,
+    val sex: SexDto,
+    val coatColor: CoatColorDto,
+    val breedType: BreedTypeDto,
     val dateOfBirth: LocalDate,
     val breeder: String,
     val microchipNumber: String,
@@ -47,9 +44,9 @@ fun BloodHorse.toRegisterResponse(): RegisterBloodHorseResponse =
     RegisterBloodHorseResponse(
         id = id.value,
         registrationNumber = registrationNumber.value,
-        sex = sex,
-        coatColor = coatColor,
-        breedType = breedType,
+        sex = sex.toApi(),
+        coatColor = coatColor.toApi(),
+        breedType = breedType.toApi(),
         dateOfBirth = dateOfBirth.value,
         breeder = breeder.name,
         microchipNumber = microchipNumber.value,
