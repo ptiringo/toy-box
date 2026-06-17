@@ -1,7 +1,6 @@
 package com.example.api.domain.horseracing.model.breeding
 
-import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.Ok
+import com.example.api.domain.shared.createNonBlank
 import com.github.michaelbull.result.Result
 import org.jmolecules.ddd.annotation.ValueObject
 
@@ -24,10 +23,6 @@ value class BreedingRegistrationNumber private constructor(val value: String) {
         fun create(
             value: String
         ): Result<BreedingRegistrationNumber, BlankBreedingRegistrationNumber> =
-            if (value.isBlank()) {
-                Err(BlankBreedingRegistrationNumber)
-            } else {
-                Ok(BreedingRegistrationNumber(value.trim()))
-            }
+            createNonBlank(value, BlankBreedingRegistrationNumber, ::BreedingRegistrationNumber)
     }
 }
