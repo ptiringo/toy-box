@@ -166,6 +166,7 @@ com.example.api/
 - **コメントとドキュメント**: 日本語で記述
 - **変数名、関数名、クラス名**: 英語で記述（意味を明確に）
 - **コミットメッセージ**: 日本語で記述、Conventional Commits 形式に準拠。最初に Conventional Commits ヘッダー（例: `feat: 新機能を追加`）を記述し、その後ファイルごとの詳細な変更内容を記述
+- **PR のマージ方式**: 必ず **merge commit**（`gh pr merge --merge`）を使う。squash / rebase は使わない（個々のコミット履歴を main に残す方針）。CLI でマージする場合はセルフ PR の BLOCKED 表示回避のため `--admin` を付ける
 
 ### 命名規則
 
