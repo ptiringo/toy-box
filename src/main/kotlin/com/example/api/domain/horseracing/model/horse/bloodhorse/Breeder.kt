@@ -1,7 +1,6 @@
 package com.example.api.domain.horseracing.model.horse.bloodhorse
 
-import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.Ok
+import com.example.api.domain.shared.createNonBlank
 import com.github.michaelbull.result.Result
 import org.jmolecules.ddd.annotation.ValueObject
 
@@ -22,10 +21,6 @@ value class Breeder private constructor(val name: String) {
     companion object {
         /** ブランクでないことを検証して [Breeder] を生成する。 */
         fun create(name: String): Result<Breeder, BlankBreeder> =
-            if (name.isBlank()) {
-                Err(BlankBreeder)
-            } else {
-                Ok(Breeder(name.trim()))
-            }
+            createNonBlank(name, BlankBreeder, ::Breeder)
     }
 }
