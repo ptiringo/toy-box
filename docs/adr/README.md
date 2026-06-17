@@ -16,3 +16,4 @@
 | [0004](0004-secrets-fnox-1password.md) | シークレット管理を fnox + 1Password（参照のみ）で行う | Accepted |
 | [0005](0005-time-based-uuid-generation.md) | エンティティ識別子をタイムベース UUID（UUIDv7 相当）に統一する | Accepted |
 | [0006](0006-kover-over-jacoco.md) | カバレッジ計測に Kover を採用し、成熟領域のみゲートする | Accepted |
+| [0007](0007-wire-enum-dto-decoupling.md) | HTTP 契約の enum をドメインから分離し Dto enum + マッパーで往復する | Accepted |
