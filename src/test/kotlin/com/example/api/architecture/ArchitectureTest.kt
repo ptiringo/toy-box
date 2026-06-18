@@ -14,6 +14,7 @@ import com.tngtech.archunit.library.GeneralCodingRules
 import com.tngtech.archunit.library.dependencies.SliceAssignment
 import com.tngtech.archunit.library.dependencies.SliceIdentifier
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
+import java.util.UUID
 import org.jmolecules.archunit.JMoleculesDddRules
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Entity as DddEntity
@@ -164,4 +165,19 @@ class ArchitectureTest {
 
     /** フィールドインジェクションを使わずコンストラクタインジェクションを使うこと。 */
     @ArchTest val noFieldInjection = GeneralCodingRules.NO_CLASSES_SHOULD_USE_FIELD_INJECTION
+
+    /**
+     * ID は `UUID.randomUUID()` を直接呼ばず `domain.shared.generateId()`（UUIDv7 相当のタイムベース生成）経由で生成すること。
+     *
+     * 生成値が時刻順にソート可能で永続化時のインデックス局所性に優れるため、全 ID をタイムベース生成に統一する（ADR-0005）。
+     */
+    @ArchTest
+    val idsAreGeneratedViaGenerateId =
+        noClasses()
+            .should()
+            .callMethod(UUID::class.java, "randomUUID")
+            .because(
+                "ID は domain.shared.generateId()（UUIDv7 相当のタイムベース生成）経由で生成する。" +
+                    "永続化時のインデックス局所性のため UUID.randomUUID() の直接呼び出しは禁止（ADR-0005）"
+            )
 }
