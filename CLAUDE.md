@@ -110,6 +110,7 @@ class HelloController {
 - **ID による等価性**: `equals()` と `hashCode()` は ID のみで実装
 - **UUID 生成戦略**: タイムベース（UUIDv7 相当の `Generators.timeBasedEpochRandomGenerator()`、`java-uuid-generator` ライブラリ使用）に統一する。生成値が時刻順にソート可能で永続化時のインデックス局所性に優れるため、ランダム（`UUID.randomUUID()`）ではなくこちらを標準とする。生成ロジックは `domain.shared.generateId()` に集約しており、各 ID 値クラスは `JockeyId(generateId())` のようにこの関数を介して生成する（エンティティごとに生成方法を書き分けない）。選定理由（インデックス局所性）の詳細は [ADR-0005](docs/adr/0005-time-based-uuid-generation.md) を参照
 - **役割の表明**: 集約ルートには `@AggregateRoot`、識別子プロパティには `@field:Identity` を付与（`@Identity` は FIELD ターゲットのため use-site target の明示が必要）
+- **イミュータブル**: 集約はイミュータブルに保つ。プロパティは `val` のみとし `var` を持たせない。状態遷移は対象を書き換えず、同一性（ID）を引き継いだ新インスタンスを返すメソッドで表す（失敗しうるなら `Result<新インスタンス, エラー>`）。例: `BloodHorse.assignName()` は命名済みの新 `BloodHorse` を返す。`data class` は ID ベースの `final equals`/`hashCode` と衝突するため使わず、`private constructor` ＋ 手書き `copy` で写像する。詳細は [ADR-0009](docs/adr/0009-immutable-aggregates.md) を参照
 
 #### Command パターン
 
