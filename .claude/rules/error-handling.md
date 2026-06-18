@@ -49,7 +49,7 @@ fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyRespons
 
 > **Controller 境界に限った例外条項**: 「業務エラー＝`Result` / 例外＝インフラ」の原則は維持する。ただし**描画のためだけ**に、Controller 境界で業務エラーを `ErrorResponseException` へ再送出することを許す。ドメイン / アプリケーション層は一切例外を投げず、例外化は `orThrowProblem()` の一手に限定する（中央 funnel で problem 形を一元統制するための割り切り）。
 
-problem 形の統一は `GlobalExceptionHandler.handleExceptionInternal` が担い、`errorCode` 未設定の `ProblemDetail`（フレームワーク標準例外由来）に `type` / `errorCode` 規約を一律付与する。業務エラーは `toProblemDetail()` で既に規約済みのため二重付与しない。
+problem 形の統一は `GlobalExceptionHandler.handleExceptionInternal` が担い、規約未適用の `ProblemDetail`（フレームワーク標準例外由来）に `type` / `errorCode` 規約を一律付与する。規約済みかは `errorCode` プロパティ名の有無ではなく **`ConventionalProblemDetail` 型かどうか**で判定する（業務エラーは `problem()` ビルダ経由でこの型になり規約済み、二重付与しない）。プロパティ名一致を単一の弱点にしないための型ベース判定。
 
 ## 段階的導入
 

@@ -28,7 +28,20 @@ fun <T> Result<T, ProblemDetail>.orThrowProblem(): T = getOrElse { problem ->
 }
 
 /**
- * RFC 9457 規約に従って [ProblemDetail] を組み立てる唯一のビルダ。
+ * RFC 9457 規約（`type` / `errorCode`）が適用済みであることを **型で** 表明する [ProblemDetail]。
+ *
+ * [problem] ビルダだけがこの型を生成し、funnel（[GlobalExceptionHandler.handleExceptionInternal]）は
+ * 「この型かどうか」で規約付与済みかを判定する。 `errorCode` プロパティ名の有無に依存しないため、
+ * 業務エラーが偶然コードを付け忘れても（規約付与が補完として走る）、フレームワーク応答が偶然 `errorCode` を持っていても （型が異なるので規約付与される）、判定が崩れない。
+ *
+ * `ProblemDetail.forStatus()` は `ProblemDetail(rawStatusCode)` を呼ぶだけの薄いファクトリのため、
+ * 親コンストラクタを直接呼んでも生成結果は同じ（`type` の `about:blank` デフォルトはフィールド初期化子由来）。 Jackson のシリアライズも親
+ * [ProblemDetail] 向けの mixin が型階層を辿って適用されるため、出力 JSON の形は変わらない。
+ */
+internal class ConventionalProblemDetail(status: HttpStatus) : ProblemDetail(status.value())
+
+/**
+ * RFC 9457 規約に従って [ConventionalProblemDetail] を組み立てる唯一のビルダ。
  *
  * `type` は暫定の `urn:problem-type:{code}` 形式、拡張プロパティ `errorCode` にアプリ固有のエラーコードを持たせる。 各 Controller の
  * `toProblemDetail()` 群と [GlobalExceptionHandler] の 500 応答が共有し、problem の形を変えるときは ここだけを直せばよい（例:
@@ -45,7 +58,7 @@ internal fun problem(
     title: String,
     detail: String,
 ): ProblemDetail =
-    ProblemDetail.forStatus(status).apply {
+    ConventionalProblemDetail(status).apply {
         type = URI.create("urn:problem-type:$code")
         this.title = title
         this.detail = detail
