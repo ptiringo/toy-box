@@ -1,0 +1,58 @@
+// Dev Container 定義（仕様: https://containers.dev/）。
+//
+// 方針:
+// - ツールバージョンの唯一の出所は mise.toml。devcontainer 側ではバージョンを二重管理せず、
+//   mise feature で mise 本体だけを入れ、実体は postCreate の `mise install` が解決する。
+// - 主シナリオは IntelliJ IDEA（JetBrains Gateway / Dev Containers 連携）。VS Code /
+//   Codespaces からも開ける状態は維持する。
+// - Claude Code を同梱し、既存の SessionStart hook（.claude/hooks/session-start-mise.sh）で
+//   mise 管理ツールがセッションの PATH に載る。
+{
+  "name": "toy-box",
+  // Debian (bookworm) 系の Dev Containers 公式イメージ。非 root の vscode ユーザー、git、
+  // curl 等を同梱。Dockerfile を持たず features の合成で構成する。
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+
+  "features": {
+    // mise 本体を導入（実体のツールは postCreate の `mise install` が mise.toml に従って入れる）。
+    "ghcr.io/devcontainers-extra/features/mise:1": {},
+    // Claude Code CLI を導入（node 依存は feature 側が自動で解決する）。
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+
+  // mise 管理ツールを「mise exec --」プレフィックス無しで実行できるよう、shims を PATH に通す。
+  // 対話シェルでは post-create.sh が仕込む `mise activate` が JAVA_HOME 等も含めて注入するが、
+  // IntelliJ の Gradle 実行など非対話プロセスからも java/terraform を解決できるよう shims も足す。
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/share/mise/shims"
+  },
+
+  // コンテナ作成後に一度だけ実行: mise trust → mise install（全ツール）→ lefthook install。
+  "postCreateCommand": ".devcontainer/post-create.sh",
+
+  "remoteUser": "vscode",
+
+  "customizations": {
+    // 主対象。Kotlin/Gradle は IntelliJ に同梱のため、プロジェクトの品質ツールに対応する
+    // プラグインのみ宣言する。Gradle JVM はコンテナ内 JDK（mise 提供の temurin-21）を指す。
+    "jetbrains": {
+      "backend": "IntelliJ",
+      "plugins": [
+        // ktfmt（フォーマッタ）
+        "com.facebook.ktfmt_idea_plugin",
+        // detekt（静的解析）
+        "io.gitlab.arturbosch.detekt"
+      ]
+    },
+    // VS Code / Codespaces でも開ける状態を維持するため最小限の拡張を宣言する。
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "fwcd.kotlin",
+        "vscjava.vscode-gradle",
+        "EditorConfig.EditorConfig",
+        "hverlin.mise-vscode"
+      ]
+    }
+  }
+}

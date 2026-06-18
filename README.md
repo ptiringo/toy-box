@@ -41,6 +41,16 @@ lefthook install    # Git フックを有効化
 
 mise を活性化済みのシェル（または Claude Code セッション）では Gradle を直接実行できます。詳細は CLAUDE.md「ツール管理」を参照。
 
+### Dev Container（再現可能な開発環境）
+
+ローカルへの個別セットアップの代わりに、[Dev Container](https://containers.dev/)（`.devcontainer/`）でも開発環境を立ち上げられます。**IntelliJ IDEA（JetBrains Gateway / Dev Containers 連携）を主シナリオ**とし、VS Code / GitHub Codespaces からも利用できます。
+
+- JDK 21 + mise 管理ツール一式が揃った状態でコンテナが起動し、`./gradlew check` まで通ります。
+- ツールバージョンの出所は引き続き `mise.toml`（devcontainer 側で二重管理しません）。コンテナ作成時に `mise install` / `lefthook install` が自動実行されます。
+- Claude Code CLI を同梱しており、コンテナ内でもそのまま利用できます（mise 管理ツールは PATH に通ります）。
+
+詳細・既知の制約（terraform MCP の Docker 依存、シークレット連携など）は [.devcontainer/README.md](.devcontainer/README.md) を参照。
+
 ### ビルド・テスト・起動
 
 ```bash
