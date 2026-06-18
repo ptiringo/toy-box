@@ -2,12 +2,14 @@ package com.example.api.controller
 
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
+import com.example.api.config.ClockConfiguration
 import com.example.api.controller.jockey.JockeyController
 import com.example.api.domain.shared.Command
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestConstructor
@@ -21,6 +23,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
  * 業務ルール違反ではない例外（リクエストボディ不正・想定外例外）が RFC 9457 形式で返ることを、 [JockeyController] を踏み台にして確認する。
  */
 @WebMvcTest(JockeyController::class)
+@Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase

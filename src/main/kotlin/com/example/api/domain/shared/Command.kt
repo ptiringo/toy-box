@@ -1,5 +1,6 @@
 package com.example.api.domain.shared
 
+import java.time.Clock
 import java.time.Instant
 
 /**
@@ -12,4 +13,14 @@ import java.time.Instant
  * @property payload 実行したいドメインコマンド
  * @property issuedAt コマンドが発生した時刻。タイムゾーンに依存しないドメインイベント時刻として [Instant] で保持する
  */
-class Command<T>(val payload: T, val issuedAt: Instant)
+class Command<T>(val payload: T, val issuedAt: Instant) {
+    companion object {
+        /**
+         * 時刻源 [clock] から発生時刻を採取して [payload] を封筒に詰める。
+         *
+         * `Instant.now()` の直書きを各アダプターに散らさず、注入された [Clock] 経由に一元化するためのファクトリ。 テストでは固定 [Clock] を渡すことで
+         * [issuedAt] を決定的にできる。
+         */
+        fun <T> now(payload: T, clock: Clock): Command<T> = Command(payload, Instant.now(clock))
+    }
+}

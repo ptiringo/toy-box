@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import java.time.Instant
+import java.time.Clock
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
@@ -25,7 +25,10 @@ import org.springframework.web.bind.annotation.RestController
  * Details) 形式で返す。
  */
 @RestController
-class JockeyController(private val registerJockey: JockeyRegistrationUseCase) {
+class JockeyController(
+    private val registerJockey: JockeyRegistrationUseCase,
+    private val clock: Clock,
+) {
     @Operation(
         summary = "ジョッキーを登録する",
         description = "ジョッキーを新規登録する。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
@@ -70,8 +73,7 @@ class JockeyController(private val registerJockey: JockeyRegistrationUseCase) {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/jockeys")
     fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyResponse {
-        val command =
-            Command(RegisterJockeyCommand(request.firstName, request.lastName), Instant.now())
+        val command = Command.now(RegisterJockeyCommand(request.firstName, request.lastName), clock)
         val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
         return RegisterJockeyResponse(
             id = jockey.id.value,

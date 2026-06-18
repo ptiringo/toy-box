@@ -3,6 +3,7 @@ package com.example.api.controller.horse
 import com.example.api.application.horseracing.horse.RegisterInStudBookCommand
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
+import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
@@ -15,6 +16,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestConstructor
@@ -23,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.assertj.MockMvcTester
 
 @WebMvcTest(BloodHorseController::class)
+@Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerInStudBook: RegisterInStudBookUseCase
