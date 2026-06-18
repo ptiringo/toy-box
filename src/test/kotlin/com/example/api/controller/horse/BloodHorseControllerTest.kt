@@ -1,15 +1,20 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.horseracing.horse.NameHorseCommand
+import com.example.api.application.horseracing.horse.NameHorseUseCase
+import com.example.api.application.horseracing.horse.NameHorseUseCaseError
 import com.example.api.application.horseracing.horse.RegisterInStudBookCommand
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.horseracing.model.horse.bloodhorse.HorseName
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.unwrap
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.util.UUID
@@ -29,6 +34,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerInStudBook: RegisterInStudBookUseCase
+    @MockkBean private lateinit var nameHorse: NameHorseUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -130,6 +136,88 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.errorCode")
                 .isEqualTo("sire-not-male")
+        }
+    }
+
+    @Nested
+    inner class RegisterNameCase {
+        private val bloodHorseId = "33333333-3333-3333-3333-333333333333"
+        private val uri = "/api/blood_horses/$bloodHorseId:registerName"
+        private val body = """{ "name": "オグリキャップ" }"""
+
+        @Test
+        fun `正常な入力で 200 OK と命名結果が返ること`() {
+            val named =
+                BloodHorseFixture.bloodHorse()
+                    .assignName(HorseName.create("オグリキャップ").unwrap())
+                    .unwrap()
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns Ok(named)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                .extractingPath("$.name")
+                .isEqualTo("オグリキャップ")
+        }
+
+        @Test
+        fun `InvalidName で 400 と problem+json が返ること`() {
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.InvalidName)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.errorCode")
+                .isEqualTo("invalid-horse-name")
+        }
+
+        @Test
+        fun `HorseNotFound で 404 と bloodHorseId 付きの problem+json が返ること`() {
+            val id = UUID.fromString(bloodHorseId)
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.HorseNotFound(id))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.NOT_FOUND)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.bloodHorseId")
+                .isEqualTo(id.toString())
+        }
+
+        @Test
+        fun `AlreadyNamed で 409 と problem+json が返ること`() {
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.AlreadyNamed("トウカイテイオー"))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.errorCode")
+                .isEqualTo("horse-already-named")
         }
     }
 }

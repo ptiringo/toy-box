@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.horseracing.horse.NameHorseUseCase
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
@@ -9,9 +10,11 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
+import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -20,12 +23,14 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 軽種馬リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/blood_horses` に対する Create（血統登録）を提供する。 エラーレスポンスは RFC 9457
- * (Problem Details) 形式で返す。
+ * Google AIP のリソース指向設計に従い、コレクション `/api/blood_horses` に対する Create（血統登録）と、 個体への カスタムメソッド
+ * `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 エラーレスポンスは RFC 9457 (Problem
+ * Details) 形式で返す。
  */
 @RestController
 class BloodHorseController(
     private val registerInStudBook: RegisterInStudBookUseCase,
+    private val nameHorse: NameHorseUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -36,11 +41,11 @@ class BloodHorseController(
             [
                 ApiResponse(
                     responseCode = "201",
-                    description = "血統登録成功",
+                    description = "血統登録成功（登録された軽種馬リソースを返す）",
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = RegisterBloodHorseResponse::class),
+                                schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                             )
                         ],
@@ -71,9 +76,72 @@ class BloodHorseController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/blood_horses")
-    fun register(@RequestBody request: RegisterBloodHorseRequest): RegisterBloodHorseResponse =
+    fun register(@RequestBody request: RegisterBloodHorseRequest): BloodHorseResponse =
         registerInStudBook(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
-            .toRegisterResponse()
+            .toResponse()
+
+    @Operation(
+        summary = "軽種馬に馬名を登録する",
+        description = "血統登録済みの軽種馬に馬名を付与する。二重命名や対象不在などの業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+        tags = ["BloodHorse"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "馬名登録成功（更新後の軽種馬リソースを返す）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BloodHorseResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "400",
+                    description = "馬名が不正（カタカナ2〜9文字でない）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "命名対象の軽種馬が存在しない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "409",
+                    description = "対象が既に命名済み（二重命名）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/api/blood_horses/{bloodHorseId}:registerName")
+    fun registerName(
+        @PathVariable bloodHorseId: UUID,
+        @RequestBody request: RegisterHorseNameRequest,
+    ): BloodHorseResponse =
+        nameHorse(Command.now(request.toCommand(bloodHorseId), clock))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
 }
