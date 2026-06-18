@@ -103,6 +103,12 @@ kover {
                     kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
                 format = "全体（探索領域含む）の行カバレッジ: <value>%"
             }
+            // total はルールを持たない可視化専用レポート。検証ゲートは mature variant が担うため、
+            // total の verify を check から外す。これを残すと check 実行時に koverVerify(total) と
+            // koverVerifyMature が並列で走り、copyVariant で複製した両 variant が中間成果物を共有する
+            // 結果、total が先に走ると mature の検証がフィルタ前（全体）の値を掴んで誤検知する
+            // （Linux 等でタスク順が入れ替わると顕在化するレース）。
+            verify { onCheck = false }
         }
 
         // mature: 検証ゲートを「成熟パッケージのみ」に絞る。
