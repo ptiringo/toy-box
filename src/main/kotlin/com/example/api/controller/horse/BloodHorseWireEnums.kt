@@ -15,7 +15,7 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
  * 列挙子名は現状ドメインと同一だが、それは「現時点で wire 名とドメイン名が一致している」だけであり、両者の独立性は
  * このマッピング層で担保する。ドメイン enum をリネームしても、本ファイルの when 節を直せば wire 契約は不変に保てる。
  *
- * `toApi` は成功レスポンス [RegisterBloodHorseResponse] が露出する項目（性・毛色・品種）のみ用意する。DNA 判定は
+ * `toApi` は成功レスポンス [BloodHorseResponse] が露出する項目（性・毛色・品種）のみ用意する。DNA 判定は
  * リクエスト専用項目のためレスポンス変換を持たない。
  */
 

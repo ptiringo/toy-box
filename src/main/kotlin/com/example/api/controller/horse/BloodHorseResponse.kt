@@ -10,11 +10,13 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
 /**
- * `POST /api/blood_horses` の成功レスポンスボディ。
+ * 軽種馬リソースの表現（HTTP 契約）。
  *
- * 血統登録で誕生した軽種馬の全体を表す。父・母は登録済みの軽種馬IDで参照する。
+ * 軽種馬リソースに対する操作（血統登録の Create、馬名登録の `:registerName` カスタムメソッドなど）は、
+ * [AIP-133](https://google.aip.dev/133) / [AIP-136](https://google.aip.dev/136) に倣い
+ * 一律でこのリソース表現全体を返す。父・母は登録済みの軽種馬IDで参照する。
  *
- * @property id 登録された軽種馬の生 UUID
+ * @property id 軽種馬の生 UUID
  * @property registrationNumber 血統登録番号
  * @property sex 性
  * @property coatColor 毛色
@@ -24,9 +26,10 @@ import org.springframework.http.ProblemDetail
  * @property microchipNumber マイクロチップ番号
  * @property sireId 父（雄）の生 UUID
  * @property damId 母（雌）の生 UUID
+ * @property name 馬名。未命名なら null
  */
-@Suppress("LongParameterList") // 登録された resource 全体を返すため項目数が多いのは必然
-data class RegisterBloodHorseResponse(
+@Suppress("LongParameterList") // resource 全体を返すため項目数が多いのは必然
+data class BloodHorseResponse(
     val id: UUID,
     val registrationNumber: String,
     val sex: SexDto,
@@ -37,11 +40,12 @@ data class RegisterBloodHorseResponse(
     val microchipNumber: String,
     val sireId: UUID,
     val damId: UUID,
+    val name: String?,
 )
 
-/** [BloodHorse] を `POST /api/blood_horses` の成功レスポンスへ変換する。 */
-fun BloodHorse.toRegisterResponse(): RegisterBloodHorseResponse =
-    RegisterBloodHorseResponse(
+/** [BloodHorse] を軽種馬リソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */
+fun BloodHorse.toResponse(): BloodHorseResponse =
+    BloodHorseResponse(
         id = id.value,
         registrationNumber = registrationNumber.value,
         sex = sex.toApi(),
@@ -52,6 +56,7 @@ fun BloodHorse.toRegisterResponse(): RegisterBloodHorseResponse =
         microchipNumber = microchipNumber.value,
         sireId = sireId.value,
         damId = damId.value,
+        name = name?.value,
     )
 
 /**

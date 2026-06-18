@@ -16,6 +16,8 @@ REST API は以下のスタイルガイドに準拠する。
 - リソース名 / コレクション名は複数形・小文字スネークケース（[AIP-122](https://google.aip.dev/122)）
 - 標準メソッド `List / Get / Create / Update / Delete`（[AIP-131](https://google.aip.dev/131) ～ [AIP-135](https://google.aip.dev/135)）
 - Create は `POST /{collection}` でコレクションに対して行い、作成された resource 全体を `201 Created` で返す（[AIP-133](https://google.aip.dev/133)）
+- カスタムメソッドは `POST /{resource}:{verb}`（[AIP-136](https://google.aip.dev/136)）で表す。特定リソースを操作するカスタムメソッド（例: 馬名登録 `:registerName`）は、操作後の resource 全体を返す
+- **リソース操作の成功レスポンスは一律でリソース表現を返す**。操作ごとに別レスポンス DTO を作らず、リソース名ベースの単一 DTO（`〜Response`、例 `BloodHorseResponse`）を全操作（Create / カスタムメソッド等）で共用する。操作前は未設定になりうる属性（命名前の `name` 等）は nullable で表す。経緯は [ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md)
 
 ## リクエスト / レスポンス DTO とドメインの分離
 

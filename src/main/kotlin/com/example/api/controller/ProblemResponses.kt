@@ -20,7 +20,7 @@ import org.springframework.web.ErrorResponseException
  * registerInStudBook(command)
  *     .mapError { it.toProblemDetail() } // ドメイン/アプリエラー → ProblemDetail（アダプタの方針）
  *     .orThrowProblem()                  // Err なら funnel へ送出、Ok なら値を取り出す
- *     .toRegisterResponse()
+ *     .toResponse()
  * ```
  */
 fun <T> Result<T, ProblemDetail>.orThrowProblem(): T = getOrElse { problem ->
