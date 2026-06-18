@@ -3,6 +3,7 @@ package com.example.api.controller.jockey
 import com.example.api.application.horseracing.jockey.JockeyRegistrationError
 import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
+import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.jockey.Jockey
 import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.Command
@@ -14,6 +15,7 @@ import io.mockk.every
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestConstructor
@@ -22,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.assertj.MockMvcTester
 
 @WebMvcTest(JockeyController::class)
+@Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JockeyControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase

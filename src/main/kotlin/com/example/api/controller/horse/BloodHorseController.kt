@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import java.time.Instant
+import java.time.Clock
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
@@ -24,7 +24,10 @@ import org.springframework.web.bind.annotation.RestController
  * (Problem Details) 形式で返す。
  */
 @RestController
-class BloodHorseController(private val registerInStudBook: RegisterInStudBookUseCase) {
+class BloodHorseController(
+    private val registerInStudBook: RegisterInStudBookUseCase,
+    private val clock: Clock,
+) {
     @Operation(
         summary = "軽種馬を血統登録する",
         description = "父母を指定して血統登録を行い、誕生した軽種馬を返す。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
@@ -69,7 +72,7 @@ class BloodHorseController(private val registerInStudBook: RegisterInStudBookUse
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/blood_horses")
     fun register(@RequestBody request: RegisterBloodHorseRequest): RegisterBloodHorseResponse =
-        registerInStudBook(Command(request.toCommand(), Instant.now()))
+        registerInStudBook(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toRegisterResponse()
