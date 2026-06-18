@@ -91,6 +91,7 @@ domain/
 
 - 標準出力・標準エラーへの直接書き込み禁止（ロガーを使う）
 - フィールドインジェクション禁止（コンストラクタインジェクションを使う）
+- `UUID.randomUUID()` の直接呼び出し禁止。ID は `domain.shared.generateId()`（UUIDv7 相当のタイムベース生成）経由で生成する（永続化時のインデックス局所性のため。[ADR-0005](../../docs/adr/0005-time-based-uuid-generation.md)）。main コードのみ対象（テストの fixture は対象外）
 
 ## ルールの変更・追加
 
