@@ -17,7 +17,10 @@
     // mise 本体を導入（実体のツールは postCreate の `mise install` が mise.toml に従って入れる）。
     "ghcr.io/devcontainers-extra/features/mise:1": {},
     // Claude Code CLI を導入（node 依存は feature 側が自動で解決する）。
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    // Docker-in-Docker。`.mcp.json` の terraform MCP（`docker run hashicorp/terraform-mcp-server`）を
+    // コンテナ内からも起動できるようにする。
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
 
   // mise 管理ツールを「mise exec --」プレフィックス無しで実行できるよう、shims を PATH に通す。

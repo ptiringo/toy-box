@@ -13,6 +13,7 @@
 - **features**:
   - `ghcr.io/devcontainers-extra/features/mise:1` — [mise](https://mise.jdx.dev/) 本体
   - `ghcr.io/anthropics/devcontainer-features/claude-code:1.0` — Claude Code CLI（node 依存は feature が自動解決）
+  - `ghcr.io/devcontainers/features/docker-in-docker:2` — Docker-in-Docker（terraform MCP の `docker run` 用）
 
 ### ツールバージョンの出所は `mise.toml` のみ
 
@@ -46,6 +47,5 @@ mise list           # mise.toml のツールが解決されていること
 
 本 devcontainer は「Java/Gradle 開発 + Claude Code」の土台を優先しており、以下は別途検討する（[issue #302](https://github.com/ptiringo/toy-box/issues/302) のスコープ外）。
 
-- **terraform MCP サーバーの Docker 依存**: `.mcp.json` の `terraform` サーバーは `docker run hashicorp/terraform-mcp-server` を前提とするため、コンテナ内から使うには Docker-in-Docker / Docker-outside-of-Docker が必要。`context7`（http）はコンテナ内でもそのまま使える。
 - **ネットワーク firewall サンドボックス**（`init-firewall.sh` 相当）は導入しない。
 - **シークレット（fnox + 1Password）**: `op` のデスクトップアプリ連携はコンテナから到達できない。現状 `fnox.toml` の `[secrets]` は空のため当面の支障はない。
