@@ -8,6 +8,7 @@ import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures.onionArchitecture
 import com.tngtech.archunit.library.GeneralCodingRules
@@ -132,6 +133,26 @@ class ArchitectureTest {
             .areAnnotatedWith(DddRepository::class.java)
             .should()
             .resideInAPackage(DOMAIN_MODEL)
+
+    /**
+     * 集約（@AggregateRoot / @Entity）はイミュータブルに保つこと（val のみ・var 禁止）。
+     *
+     * 状態遷移は対象を書き換えず、同一性（ID）を引き継いだ新インスタンスを返すメソッドで表す（ADR-0009）。 Kotlin の `val` プロパティは final
+     * フィールドへ、`var` は非 final フィールド（＋ setter）へコンパイルされるため、 集約クラスが直接宣言するフィールドが全て final であることを検証することで
+     * `var` を排除する。
+     */
+    @ArchTest
+    val aggregatesAreImmutable =
+        fields()
+            .that()
+            .areDeclaredInClassesThat()
+            .areAnnotatedWith(AggregateRoot::class.java)
+            .or()
+            .areDeclaredInClassesThat()
+            .areAnnotatedWith(DddEntity::class.java)
+            .should()
+            .beFinal()
+            .because("集約はイミュータブルに保ち、状態遷移は新インスタンスで表す（ADR-0009）。var は禁止")
 
     /** HTTP アダプター（@RestController）は controller 層に置くこと。 */
     @ArchTest
