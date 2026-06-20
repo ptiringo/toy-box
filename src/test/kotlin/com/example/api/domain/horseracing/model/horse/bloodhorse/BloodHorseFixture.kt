@@ -29,6 +29,22 @@ object BloodHorseFixture {
             dnaParentage = dnaParentage,
         )
 
+    /** 既定値を持つ [FoalIdentity] を生成する。必要な属性のみ上書きする。 */
+    fun foalIdentity(
+        sex: Sex = Sex.MALE,
+        coatColor: CoatColor = CoatColor.BAY,
+        breedType: BreedType = BreedType.THOROUGHBRED,
+        dnaParentage: DnaParentageResult = DnaParentageResult.CONSISTENT,
+    ): FoalIdentity =
+        FoalIdentity(
+            sex = sex,
+            coatColor = coatColor,
+            breedType = breedType,
+            breeder = Breeder.create("ノーザンファーム").unwrap(),
+            microchipNumber = MicrochipNumber.create("392140000000001").unwrap(),
+            dnaParentage = dnaParentage,
+        )
+
     /** 既定値を持つ [BloodHorse] を生成する。性・品種など必要な属性のみ上書きする。 */
     fun bloodHorse(sex: Sex = Sex.MALE, breedType: BreedType = BreedType.THOROUGHBRED): BloodHorse =
         BloodHorse.of(
