@@ -72,14 +72,14 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                 status = HttpStatus.BAD_REQUEST,
                 code = "invalid-registration-number",
                 title = "Invalid registration number",
-                detail = "registrationNumber は空であってはいけません。",
+                detail = "registration_number は空であってはいけません。",
             )
         RegisterInStudBookUseCaseError.InvalidMicrochipNumber ->
             problem(
                 status = HttpStatus.BAD_REQUEST,
                 code = "invalid-microchip-number",
                 title = "Invalid microchip number",
-                detail = "microchipNumber は 15 桁の数字でなければなりません。",
+                detail = "microchip_number は 15 桁の数字でなければなりません。",
             )
         RegisterInStudBookUseCaseError.BlankBreeder ->
             problem(
@@ -95,7 +95,7 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Sire not found",
                     detail = "父として指定された軽種馬が存在しません。",
                 )
-                .apply { setProperty("sireId", sireId) }
+                .apply { setProperty("sire_id", sireId) }
         is RegisterInStudBookUseCaseError.DamNotFound ->
             problem(
                     status = HttpStatus.UNPROCESSABLE_ENTITY,
@@ -103,7 +103,7 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Dam not found",
                     detail = "母として指定された軽種馬が存在しません。",
                 )
-                .apply { setProperty("damId", damId) }
+                .apply { setProperty("dam_id", damId) }
         is RegisterInStudBookUseCaseError.PreconditionViolated -> cause.toProblemDetail()
     }
 

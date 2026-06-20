@@ -62,5 +62,5 @@ internal fun problem(
         type = URI.create("urn:problem-type:$code")
         this.title = title
         this.detail = detail
-        setProperty("errorCode", code)
+        setProperty("error_code", code)
     }

@@ -13,11 +13,25 @@ REST API は以下のスタイルガイドに準拠する。
 [Google AIP](https://google.aip.dev/) 準拠とする。
 
 - リソース指向設計（[AIP-121](https://google.aip.dev/121)）
-- リソース名 / コレクション名は複数形・小文字スネークケース（[AIP-122](https://google.aip.dev/122)）
+- リソース名 / コレクション名は複数形・**camelCase**（[AIP-122](https://google.aip.dev/122)）。例: `/api/bloodHorses`、`/api/breedingResults`
 - 標準メソッド `List / Get / Create / Update / Delete`（[AIP-131](https://google.aip.dev/131) ～ [AIP-135](https://google.aip.dev/135)）
 - Create は `POST /{collection}` でコレクションに対して行い、作成された resource 全体を `201 Created` で返す（[AIP-133](https://google.aip.dev/133)）
 - カスタムメソッドは `POST /{resource}:{verb}`（[AIP-136](https://google.aip.dev/136)）で表す。特定リソースを操作するカスタムメソッド（例: 馬名登録 `:registerName`）は、操作後の resource 全体を返す
 - **リソース操作の成功レスポンスは一律でリソース表現を返す**。操作ごとに別レスポンス DTO を作らず、リソース名ベースの単一 DTO（`〜Response`、例 `BloodHorseResponse`）を全操作（Create / カスタムメソッド等）で共用する。操作前は未設定になりうる属性（命名前の `name` 等）は nullable で表す。経緯は [ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md)
+
+## 命名規約（casing）
+
+URL とボディで casing を使い分ける。AIP の「URL はハードルール、ボディの JSON casing は自由」という非対称をそのまま反映したもの。経緯・却下案は [ADR-0012](../../docs/adr/0012-rest-naming-convention.md)。
+
+| 対象 | casing | 根拠 |
+|---|---|---|
+| URL コレクション識別子 | **camelCase** | [AIP-122](https://google.aip.dev/122) の must（`/api/bloodHorses`、`/api/breedingResults`）。アンダースコア・ハイフン不可 |
+| JSON ボディフィールド | **snake_case** | AIP は JSON casing を縛らない（[AIP-140](https://google.aip.dev/140) が must で縛るのは proto 定義 = snake_case）。意図的に snake_case を採用 |
+| カスタムメソッド動詞 | lowerCamelCase | [AIP-136](https://google.aip.dev/136)（`:registerName` 等） |
+
+- ボディの snake_case は `application.yml` の `spring.jackson.property-naming-strategy: SNAKE_CASE` で request/response bean に一括適用する。
+- **`ProblemDetail.properties` は `Map<String, Object>` で naming strategy が効かない**。problem+json の拡張キー（`error_code` / `sire_id` 等）は各 `toProblemDetail()` 群の `setProperty(...)` リテラルで直接 snake_case を書く。RFC 9457 の標準フィールド（`type` / `title` / `status` / `detail` / `instance`）は不変。
+- enum 値文字列（`MALE` 等）は naming strategy 非対象でそのまま。
 
 ## リクエスト / レスポンス DTO とドメインの分離
 
@@ -38,7 +52,7 @@ VO で表す項目（番号・名前など）は素の文字列で DTO に受け
 - `Content-Type: application/problem+json` で返す
 - Spring の `org.springframework.http.ProblemDetail` を使う
 - 標準フィールド: `type` (URI) / `title` / `status` / `detail` / `instance`
-- 業務エラー固有の追加情報は拡張プロパティで保持する（例: `errorCode` / `existingId` 等）
+- 業務エラー固有の追加情報は拡張プロパティで保持する（例: `error_code` / `existing_id` 等。拡張キーは snake_case。前述「命名規約」を参照）
 - `type` は当面 `urn:problem-type:{kebab-case-code}` 形式を用い、HTTP で公開する Resolvable URI ができたら差し替える
 
 > AIP-193 (Errors) はレスポンスボディの形（`google.rpc.Status`）を規定するが、本プロジェクトでは REST 寄りの RFC 9457 を採用する。リソース設計など構造系のみ AIP を適用する。

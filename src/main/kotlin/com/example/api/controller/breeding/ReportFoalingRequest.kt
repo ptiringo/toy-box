@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
 /**
- * `POST /api/breeding_results/{breedingResultId}:reportFoaling` のリクエストボディ。
+ * `POST /api/breedingResults/{breedingResultId}:reportFoaling` のリクエストボディ。
  *
  * 繁殖成績報告書の「分娩結果」欄に相当する。区分は HTTP 契約専用の [FoalingOutcomeDto] で受け取り（未知の値は Jackson のデシリアライズで弾かれ
  * 400）、ドメインの [FoalingOutcome] へは [toOutcome] で変換する。生産
@@ -36,7 +36,7 @@ fun ReportFoalingRequest.toOutcome(): Result<FoalingOutcome, ProblemDetail> =
                         status = HttpStatus.BAD_REQUEST,
                         code = "missing-foaling-date",
                         title = "Missing foaling date",
-                        detail = "生産（LIVE_FOAL）のときは foalingDate が必須です。",
+                        detail = "生産（LIVE_FOAL）のときは foaling_date が必須です。",
                     )
                 )
             } else {
