@@ -19,3 +19,4 @@
 | [0007](0007-wire-enum-dto-decoupling.md) | HTTP 契約の enum をドメインから分離し Dto enum + マッパーで往復する | Accepted |
 | [0008](0008-uniform-resource-representation-response.md) | REST リソース操作の成功レスポンスは一律でリソース表現を返す | Accepted |
 | [0009](0009-immutable-aggregates.md) | ドメイン集約はイミュータブルに保ち、状態遷移は新インスタンスで表す | Accepted |
+| [0010](0010-confine-aggregate-creation-to-domain-service.md) | 集約をまたぐ前提条件を持つ生成口はドメインサービスに封じ込める | Accepted |

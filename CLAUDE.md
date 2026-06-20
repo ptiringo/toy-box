@@ -111,6 +111,7 @@ class HelloController {
 - **UUID 生成戦略**: タイムベース（UUIDv7 相当の `Generators.timeBasedEpochRandomGenerator()`、`java-uuid-generator` ライブラリ使用）に統一する。生成値が時刻順にソート可能で永続化時のインデックス局所性に優れるため、ランダム（`UUID.randomUUID()`）ではなくこちらを標準とする。生成ロジックは `domain.shared.generateId()` に集約しており、各 ID 値クラスは `JockeyId(generateId())` のようにこの関数を介して生成する（エンティティごとに生成方法を書き分けない）。選定理由（インデックス局所性）の詳細は [ADR-0005](docs/adr/0005-time-based-uuid-generation.md) を参照
 - **役割の表明**: 集約ルートには `@AggregateRoot`、識別子プロパティには `@field:Identity` を付与（`@Identity` は FIELD ターゲットのため use-site target の明示が必要）
 - **イミュータブル**: 集約はイミュータブルに保つ。プロパティは `val` のみとし `var` を持たせない。状態遷移は対象を書き換えず、同一性（ID）を引き継いだ新インスタンスを返すメソッドで表す（失敗しうるなら `Result<新インスタンス, エラー>`）。例: `BloodHorse.assignName()` は命名済みの新 `BloodHorse` を返す。`data class` は ID ベースの `final equals`/`hashCode` と衝突するため使わず、`private constructor` ＋ 手書き `copy` で写像する。詳細は [ADR-0009](docs/adr/0009-immutable-aggregates.md) を参照
+- **生成口の可視性**: コンストラクタは `private` にし、生成は companion object のファクトリ経由に限る。ファクトリの可視性は不変条件の閉じ方で決める。不変条件が**集約内で完結**するなら検証ファクトリを `public` にする（例: `Jockey.create`）。**集約をまたぐ前提条件**を満たして初めて生成してよいなら生成口（`of` 等）を `internal` にし、前提を検証するドメインサービス（同一モジュールの `service/`）からのみ呼べるよう封じ込める（例: `BloodHorse.of` を `registerInStudBook` に封じ込め、迂回をコンパイル時に不能にする）。`internal` 生成口のテストは Object Mother（`〜Fixture`）に直接呼び出しを一点集約する。詳細は [ADR-0010](docs/adr/0010-confine-aggregate-creation-to-domain-service.md) を参照
 
 #### Command パターン
 
