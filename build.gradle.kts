@@ -43,7 +43,14 @@ dependencies {
 
 kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
 
-tasks.withType<Test> { useJUnitPlatform() }
+tasks.withType<Test> {
+    useJUnitPlatform()
+    // ユビキタス言語カタログの再生成フラグ（-DubiquitousLanguage.update=true）をフォークした JVM へ引き渡す。
+    // UbiquitousLanguageCatalogTest が docs/ubiquitous-language.md の自動生成ブロックを書き戻すために参照する。
+    System.getProperty("ubiquitousLanguage.update")?.let {
+        systemProperty("ubiquitousLanguage.update", it)
+    }
+}
 
 ktfmt {
     // Kotlin 公式コーディング規約準拠（4 space indent / 100 char limit）
