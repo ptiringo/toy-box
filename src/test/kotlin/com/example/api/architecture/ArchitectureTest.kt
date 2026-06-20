@@ -1,6 +1,7 @@
 package com.example.api.architecture
 
 import com.example.api.ApiApplication
+import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
@@ -10,6 +11,7 @@ import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods
 import com.tngtech.archunit.library.Architectures.onionArchitecture
 import com.tngtech.archunit.library.GeneralCodingRules
 import com.tngtech.archunit.library.dependencies.SliceAssignment
@@ -21,6 +23,7 @@ import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Entity as DddEntity
 import org.jmolecules.ddd.annotation.Repository as DddRepository
 import org.jmolecules.ddd.annotation.ValueObject
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.RestController
@@ -35,6 +38,18 @@ private const val DOMAIN_SERVICE = "com.example.api.domain..service.."
 private const val APPLICATION = "com.example.api.application.."
 private const val CONTROLLER = "com.example.api.controller.."
 private const val INFRASTRUCTURE = "com.example.api.infrastructure.."
+
+/**
+ * ドメインサービスの失敗バリアント型（`〜Error` の sealed interface とその variant）であること。
+ *
+ * サービスの戻り値（`Result<_, 〜Error>`）の失敗側を表す型はサービスと同じパッケージに同居させており、 これは `object` / `class`
+ * によるサービスのラップではないため [domainServicesAreTopLevelFunctions] の対象から除外する。ネストした variant も囲みクラスを辿って判定する。
+ */
+private val isFailureVariantType =
+    DescribedPredicate.describe<JavaClass>("ドメインサービスの失敗バリアント型（〜Error）") { javaClass ->
+        generateSequence(javaClass) { it.enclosingClass.orElse(null) }
+            .any { it.simpleName.endsWith("Error") }
+    }
 
 /**
  * 境界づけられたコンテキスト（horseracing / sakamichi / tennis 等）へのスライス割り当て。
@@ -93,6 +108,24 @@ class ArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage("org.springframework..", "jakarta..", "com.fasterxml.jackson..")
+
+    /**
+     * ドメインサービス（`domain.*.service`）は Kotlin のトップレベル関数で書くこと。
+     *
+     * `object` / `class` でラップせず、`service/` パッケージへの配置でドメインサービスを表現する
+     * （`.claude/rules/architecture.md`）。Kotlin のトップレベル関数はファイルごとのファサードクラス（`〜Kt`）へ コンパイルされるため、service
+     * パッケージ内のクラスが `Kt` で終わることを検証して `object` / `class` 宣言を排除する。
+     * ただしサービスの戻り値の失敗側を表す失敗バリアント型（`〜Error`）はサービスと同居させてよく、対象から除外する。
+     */
+    @ArchTest
+    val domainServicesAreTopLevelFunctions =
+        classes()
+            .that()
+            .resideInAPackage(DOMAIN_SERVICE)
+            .and(not(isFailureVariantType))
+            .should()
+            .haveSimpleNameEndingWith("Kt")
+            .because("ドメインサービスは object / class でラップせずトップレベル関数で書く。" + "service/ への配置でドメインサービスを表現する")
 
     /** application 層の Spring 依存は DI 用 stereotype アノテーションのみに留めること。 */
     @ArchTest
@@ -162,6 +195,23 @@ class ArchitectureTest {
             .areAnnotatedWith(RestController::class.java)
             .should()
             .resideInAPackage(CONTROLLER)
+
+    /**
+     * `@RestController` のハンドラは成功レスポンスで `ResponseEntity` を返さないこと。
+     *
+     * 成功レスポンスは `@ResponseStatus` ＋戻り値で resource を返す（`.claude/rules/error-handling.md` /
+     * `.claude/rules/api-design.md`）。エラー描画 funnel の `GlobalExceptionHandler` は `@RestController`
+     * ではない（`ResponseEntityExceptionHandler` 継承）ため、本ルールでは誤検出されない。
+     */
+    @ArchTest
+    val restControllersDoNotReturnResponseEntity =
+        noMethods()
+            .that()
+            .areDeclaredInClassesThat()
+            .areAnnotatedWith(RestController::class.java)
+            .should()
+            .haveRawReturnType(ResponseEntity::class.java)
+            .because("成功レスポンスは @ResponseStatus ＋戻り値で resource を返す。ResponseEntity は使わない")
 
     /** ユースケース（@Service）は application 層に置くこと。 */
     @ArchTest
