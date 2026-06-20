@@ -218,6 +218,27 @@ class HelloControllerTest(val mockMvc: MockMvc) {
 - `trim_trailing_whitespace = true`: 行末空白を削除（マークダウンを除く）
 - `charset = utf-8`: UTF-8 エンコーディング
 
+## 優先度管理
+
+Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority` single-select カスタムフィールド**で管理する。優先度ラベル（`P1〜P4`）は廃止済み（採否の経緯は [ADR-0011](docs/adr/0011-priority-via-projects-custom-field.md)）。
+
+- **出所は Project の Priority フィールド 1 つ**。ラベルとの併用はしない（二重管理を避ける）。
+- オプションは `P1: 今すぐ` / `P2: 近いうち` / `P3: いずれ` / `P4: 探索・保留` の 4 段階。
+- 優先度を付けたい Issue は **Project に追加してからフィールドを設定**する（Project に入れた Issue だけが優先度を持つ）。
+- 優先度順に眺める・束ねる・絞るときは Project のビューを使う（`gh issue list` のラベル列には優先度は出ない）。
+- CLI からの確認・設定:
+
+```bash
+# 優先度付きで一覧（Web ビューが基本だが CLI でも確認可）
+gh project item-list 4 --owner ptiringo
+
+# Issue を Project に追加して優先度を設定（field-id / option-id は field-list で確認）
+gh project item-add 4 --owner ptiringo --url <issue-url>
+gh project field-list 4 --owner ptiringo --format json   # フィールド/オプション ID の確認
+```
+
+- フィールド定義と既存ラベルからの移行はスクリプト化してある（`scripts/migrate-priority-to-project.sh`、`gh project` CLI で再現可能）。Project スコープが要るので事前に `gh auth refresh -s project`。
+
 ## ツール管理
 
 ### mise
