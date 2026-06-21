@@ -11,7 +11,8 @@ import com.github.michaelbull.result.Result
 /**
  * 血統登録済みの牝馬を繁殖の用に供するため繁殖登録する。
  *
- * 繁殖登録は牝馬のみが対象であり（種雄馬は種付証明書で扱う）、対象馬が種雌馬であることを検証してから [BreedingRegistration] を生成する。
+ * 繁殖登録（料金表上の「繁殖用 雌」）の雌側で、対象馬が種雌馬であることを検証してから [BreedingRegistration] を生成する。 雄側の繁殖登録（種牡馬= Stallion）は
+ * registerStallion が担う。
  *
  * @param broodmare 繁殖登録する繁殖牝馬（血統登録済みの [BloodHorse]）
  * @param registrationNumber 交付される繁殖登録番号

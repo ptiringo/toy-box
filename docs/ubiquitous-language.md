@@ -125,6 +125,7 @@ graph LR
 | BreedingResult | 集約ルート | domain.horseracing.model.breeding |
 | Jockey | 集約ルート | domain.horseracing.model.jockey |
 | Race | 集約ルート | domain.horseracing.model.race |
+| StallionRegistration | 集約ルート | domain.horseracing.model.breeding |
 | BloodHorseId | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | BreedType | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | Breeder | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
@@ -153,17 +154,20 @@ graph LR
 | OriginCountry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | PedigreeRegistrationNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | RaceId | 値オブジェクト | domain.horseracing.model.race |
+| StallionRegistrationId | 値オブジェクト | domain.horseracing.model.breeding |
 | StudBookEntry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | BloodHorseRepository | リポジトリポート | domain.horseracing.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.horseracing.model.breeding |
 | BreedingResultRepository | リポジトリポート | domain.horseracing.model.breeding |
 | JockeyRepository | リポジトリポート | domain.horseracing.model.jockey |
+| StallionRegistrationRepository | リポジトリポート | domain.horseracing.model.breeding |
 | confirmRaceResult | ドメインサービス | domain.horseracing.service.race |
 | recordCovering | ドメインサービス | domain.horseracing.service.breeding |
 | registerFoal | ドメインサービス | domain.horseracing.service.horse |
 | registerForBreeding | ドメインサービス | domain.horseracing.service.breeding |
 | registerImportedHorse | ドメインサービス | domain.horseracing.service.horse |
 | registerInStudBook | ドメインサービス | domain.horseracing.service.horse |
+| registerStallion | ドメインサービス | domain.horseracing.service.breeding |
 
 ### sakamichi
 

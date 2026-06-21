@@ -21,6 +21,15 @@ object BreedingFixture {
             broodmareId = broodmareId,
         )
 
+    /** 既定値を持つ [StallionRegistration] を生成する。必要な属性のみ上書きする。 */
+    fun stallionRegistration(
+        stallionId: BloodHorseId = BloodHorseId(generateId())
+    ): StallionRegistration =
+        StallionRegistration.of(
+            registrationNumber = BreedingRegistrationNumber.create("B-2024-0002").unwrap(),
+            stallionId = stallionId,
+        )
+
     /** 既定値を持つ [Covering] を生成する。必要な属性のみ上書きする。 */
     fun covering(
         stallionId: BloodHorseId = BloodHorseId(generateId()),
