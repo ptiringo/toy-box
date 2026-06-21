@@ -7,3 +7,7 @@ pluginManagement {
 }
 
 rootProject.name = "api"
+
+// detekt のカスタムルール（プロジェクト固有のアーキテクチャ規約強制）を提供するモジュール。
+// 本体 build の detektPlugins に組み込んで使う。
+include(":detekt-rules")

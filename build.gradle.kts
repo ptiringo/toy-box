@@ -39,6 +39,9 @@ dependencies {
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.jmolecules.archunit)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // プロジェクト固有の detekt カスタムルール（domain/application で throw しない 等）を detekt 実行時に組み込む
+    detektPlugins(project(":detekt-rules"))
 }
 
 kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }

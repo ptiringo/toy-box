@@ -18,6 +18,7 @@ mockk = "1.14.11"
 springmockk = "5.0.1"
 archunit = "1.4.2"
 jmolecules-bom = "2025.0.2"
+junit = "6.0.3"
 
 [libraries]
 # SpringDoc OpenAPI
@@ -41,6 +42,15 @@ jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 # ArchUnit（アーキテクチャテスト）
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 jmolecules-archunit = { module = "org.jmolecules.integrations:jmolecules-archunit" }
+
+# detekt カスタムルール開発（detekt-rules モジュール用）
+detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
+detekt-test = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
+
+# JUnit（detekt-rules モジュールのテスト用。本体は spring-boot-starter-test 経由で取得する）
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 [plugins]
 # Kotlin プラグイン

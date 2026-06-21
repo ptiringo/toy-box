@@ -29,3 +29,12 @@ style:
           'kotlin.test は使用禁止。テストには org.junit.jupiter.api.Test と
           Power Assert (kotlin.assert) を使用すること（CLAUDE.md テスト規約参照）。'
         value: 'kotlin.test.*'
+
+# toy-box プロジェクト固有のカスタムルールセット（detekt-rules モジュールで定義）。
+toy-box:
+  # ドメイン / アプリケーション層は Result-first を保ち throw しない（.claude/rules/error-handling.md）。
+  # Controller 境界（orThrowProblem）と infrastructure はルール側のパッケージ判定で対象外。
+  # テストコード（fixture 等で throw しうる）は path で除外する。
+  NoThrowInDomainAndApplication:
+    active: true
+    excludes: ['**/src/test/**', '**/src/testFixtures/**']
