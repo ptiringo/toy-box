@@ -11,6 +11,7 @@ import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods
 import com.tngtech.archunit.library.Architectures.onionArchitecture
 import com.tngtech.archunit.library.GeneralCodingRules
@@ -49,6 +50,17 @@ private val isFailureVariantType =
     DescribedPredicate.describe<JavaClass>("ドメインサービスの失敗バリアント型（〜Error）") { javaClass ->
         generateSequence(javaClass) { it.enclosingClass.orElse(null) }
             .any { it.simpleName.endsWith("Error") }
+    }
+
+/**
+ * ドメイン層（`com.example.api.domain..`）に属する enum であること。
+ *
+ * HTTP 契約の DTO がフィールド型にドメイン enum を持つことを禁じる [dtosDoNotExposeDomainEnums] で用いる。 enum
+ * かつドメインパッケージ配下のものだけを対象とし、`controller` 層の契約専用 enum（`〜Dto`）は対象外とする。
+ */
+private val isDomainEnum =
+    DescribedPredicate.describe<JavaClass>("ドメイン層の enum") { javaClass ->
+        javaClass.isEnum && javaClass.packageName.startsWith("com.example.api.domain.")
     }
 
 /**
@@ -212,6 +224,27 @@ class ArchitectureTest {
             .should()
             .haveRawReturnType(ResponseEntity::class.java)
             .because("成功レスポンスは @ResponseStatus ＋戻り値で resource を返す。ResponseEntity は使わない")
+
+    /**
+     * HTTP 契約（request / response DTO）はフィールド型にドメイン enum を持たないこと。
+     *
+     * ドメイン enum を wire に直接晒すと、ドメイン側の列挙子リネームが HTTP 契約（生成クライアント含む）を無言で破壊する。 これを断つため `controller`
+     * 層に契約専用の `〜Dto` enum を置き、`toDomain()` / `toApi()` の網羅 `when`
+     * で相互変換する（`.claude/rules/api-design.md` / ADR-0007）。マッパー関数はドメイン enum をメソッドの引数・戻り値で扱うが、
+     * 本ルールは**フィールド型**のみを対象とするため誤検出されない。
+     */
+    @ArchTest
+    val dtosDoNotExposeDomainEnums =
+        noFields()
+            .that()
+            .areDeclaredInClassesThat()
+            .resideInAPackage(CONTROLLER)
+            .should()
+            .haveRawType(isDomainEnum)
+            .because(
+                "HTTP 契約はドメイン enum を wire に直接晒さず、controller 層の 〜Dto enum へ" +
+                    "マッピングする（ADR-0007）。列挙子リネームによる契約破壊を防ぐ"
+            )
 
     /** ユースケース（@Service）は application 層に置くこと。 */
     @ArchTest
