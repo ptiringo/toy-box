@@ -47,7 +47,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             """
             {
                 "breeding_registration_id": "11111111-1111-1111-1111-111111111111",
-                "stallion_id": "22222222-2222-2222-2222-222222222222",
+                "stallion_registration_id": "22222222-2222-2222-2222-222222222222",
                 "covering_date": "2024-04-01",
                 "certificate_number": "C-2024-0001"
             }
@@ -109,10 +109,10 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         }
 
         @Test
-        fun `StallionNotFound で 422 と stallionId 付きの problem+json が返ること`() {
+        fun `StallionRegistrationNotFound で 422 と stallionRegistrationId 付きの problem+json が返ること`() {
             val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
             every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
-                Err(RecordCoveringUseCaseError.StallionNotFound(id))
+                Err(RecordCoveringUseCaseError.StallionRegistrationNotFound(id))
 
             tester
                 .post()
@@ -123,16 +123,36 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.stallion_id")
+                .extractingPath("$.stallion_registration_id")
                 .isEqualTo(id.toString())
         }
 
         @Test
-        fun `前提条件違反（StallionNotMale）が 422 と problem+json に変換されること`() {
+        fun `前提条件違反（NotStallion）が 422 と problem+json に変換されること`() {
+            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+                Err(
+                    RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("not-stallion")
+        }
+
+        @Test
+        fun `前提条件違反（NotBroodmare）が 422 と problem+json に変換されること`() {
             every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
-                        RecordCoveringError.StallionNotMale
+                        RecordCoveringError.NotBroodmare
                     )
                 )
 
@@ -146,7 +166,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
                 .extractingPath("$.error_code")
-                .isEqualTo("stallion-not-male")
+                .isEqualTo("not-broodmare")
         }
     }
 

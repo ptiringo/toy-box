@@ -12,23 +12,22 @@ import java.time.LocalDate
  * internal）。テストでは前提条件検証を経ずに任意の状態を用意したいため、internal 可視性がモジュール内（test も同一 モジュール）から見えることを利用してここで直接組み立てる。
  */
 object BreedingFixture {
-    /** 既定値を持つ [BreedingRegistration] を生成する。必要な属性のみ上書きする。 */
+    /** 既定値（ロールは繁殖牝馬）を持つ [BreedingRegistration] を生成する。必要な属性のみ上書きする。 */
     fun breedingRegistration(
-        broodmareId: BloodHorseId = BloodHorseId(generateId())
+        registeredHorseId: BloodHorseId = BloodHorseId(generateId()),
+        role: BreedingRole = BreedingRole.BROODMARE,
     ): BreedingRegistration =
         BreedingRegistration.of(
             registrationNumber = BreedingRegistrationNumber.create("B-2024-0001").unwrap(),
-            broodmareId = broodmareId,
+            registeredHorseId = registeredHorseId,
+            role = role,
         )
 
-    /** 既定値を持つ [StallionRegistration] を生成する。必要な属性のみ上書きする。 */
+    /** 既定値を持つ、ロールが種牡馬の [BreedingRegistration] を生成する。必要な属性のみ上書きする。 */
     fun stallionRegistration(
-        stallionId: BloodHorseId = BloodHorseId(generateId())
-    ): StallionRegistration =
-        StallionRegistration.of(
-            registrationNumber = BreedingRegistrationNumber.create("B-2024-0002").unwrap(),
-            stallionId = stallionId,
-        )
+        registeredHorseId: BloodHorseId = BloodHorseId(generateId())
+    ): BreedingRegistration =
+        breedingRegistration(registeredHorseId = registeredHorseId, role = BreedingRole.STALLION)
 
     /** 既定値を持つ [Covering] を生成する。必要な属性のみ上書きする。 */
     fun covering(

@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service
  *
  * 生産（分娩）された仔馬の血統登録申請に相当する境界の生入力。父・母・出生日は申請者が持ち込まず、報告済みの 繁殖成績（[breedingResultId]）から定まる:
  * - 父 = 種付（`covering.stallionId`）の種牡馬
- * - 母 = 繁殖登録（`breedingRegistration.broodmareId`）の繁殖牝馬
+ * - 母 = 繁殖登録（`breedingRegistration.registeredHorseId`、ロールは繁殖牝馬）の繁殖牝馬
  * - 出生日 = 分娩結果（`FoalingOutcome.LiveFoal.foalingDate`）
  *
  * よって本コマンドは繁殖成績IDと、仔馬自身の個体識別（生年月日・父母を除く）のみを受け取る。VO で表す項目（番号・ マイクロチップ・生産者）は素の文字列で受け取り、ユースケース内で各 VO の
@@ -142,7 +142,7 @@ class RegisterFoalUseCase(
                 .toResultOr { RegisterFoalUseCaseError.SireNotFound(sireId.value) }
                 .bind()
 
-        val damId = breedingRegistration.broodmareId
+        val damId = breedingRegistration.registeredHorseId
         val dam =
             bloodHorseRepository
                 .findById(damId)

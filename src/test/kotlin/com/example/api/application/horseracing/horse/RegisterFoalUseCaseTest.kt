@@ -59,7 +59,7 @@ class RegisterFoalUseCaseTest {
         val sire: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
         val dam: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         val breedingRegistration: BreedingRegistration =
-            BreedingFixture.breedingRegistration(broodmareId = dam.id)
+            BreedingFixture.breedingRegistration(registeredHorseId = dam.id)
         val breedingResult: BreedingResult =
             BreedingFixture.breedingResult(
                     breedingRegistrationId = breedingRegistration.id,

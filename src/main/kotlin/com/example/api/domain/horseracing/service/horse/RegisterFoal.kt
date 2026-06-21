@@ -16,7 +16,7 @@ import com.github.michaelbull.result.mapError
  * 繁殖成績（[BreedingResult]）の分娩結果が生産（[FoalingOutcome.LiveFoal]＝産駒あり）である場合に、その産駒を
  * 血統登録する入口。父・母は繁殖記録から定まり、registerInStudBook へ橋渡しする:
  * - 父（[sire]）= 種付（`covering.stallionId`）の種牡馬
- * - 母（[dam]）= 繁殖登録（`breedingRegistration.broodmareId`）の繁殖牝馬
+ * - 母（[dam]）= 繁殖登録（`breedingRegistration.registeredHorseId`、ロールは繁殖牝馬）の繁殖牝馬
  * - 出生日 = 分娩結果（[FoalingOutcome.LiveFoal.foalingDate]）。申請者入力ではなく繁殖記録から確定する
  *
  * 産駒が生まれていない帰結（不受胎・流産・死産など [FoalingOutcome.LiveFoal] 以外）からは登録できず [RegisterFoalError.NotLiveFoal]
@@ -26,7 +26,7 @@ import com.github.michaelbull.result.mapError
  *
  * @param breedingResult 産駒が生じた繁殖成績（分娩結果が報告済みであること）
  * @param sire 父（雄）の軽種馬。`breedingResult.covering.stallionId` に対応する個体を上位で解決して渡す
- * @param dam 母（雌）の軽種馬。繁殖登録の `broodmareId` に対応する個体を上位で解決して渡す
+ * @param dam 母（雌）の軽種馬。繁殖登録の `registeredHorseId` に対応する個体を上位で解決して渡す
  * @param foalIdentity 申請者が持ち込む仔馬自身の個体識別情報（生年月日を除く）
  * @param registrationNumber 交付される血統登録番号
  * @return 生成された [BloodHorse]、または前提条件違反を表す [RegisterFoalError]

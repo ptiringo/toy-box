@@ -4,10 +4,6 @@ import com.example.api.domain.horseracing.model.breeding.BreedingFixture
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationId
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.horseracing.model.breeding.BreedingResultRepository
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseId
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseRepository
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.breeding.RecordCoveringError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.getError
@@ -24,10 +20,10 @@ import org.junit.jupiter.api.Test
 class RecordCoveringUseCaseTest {
 
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
-    private fun validPayload(breedingRegistrationId: UUID, stallionId: UUID) =
+    private fun validPayload(breedingRegistrationId: UUID, stallionRegistrationId: UUID) =
         RecordCoveringCommand(
             breedingRegistrationId = breedingRegistrationId,
-            stallionId = stallionId,
+            stallionRegistrationId = stallionRegistrationId,
             coveringDate = LocalDate.of(2024, 4, 1),
             certificateNumber = "C-2024-0001",
         )
@@ -39,28 +35,30 @@ class RecordCoveringUseCaseTest {
     inner class SuccessCase {
         @Test
         fun `前提条件を満たすとき種付が記録され分娩結果未報告の繁殖成績が永続化される`() {
-            val registration = BreedingFixture.breedingRegistration()
-            val stallion = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+            val broodmareRegistration = BreedingFixture.breedingRegistration()
+            val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(registration.id) } returns registration
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(stallionRegistration.id) } returns stallionRegistration
                 }
-            val bloodHorseRepository =
-                mockk<BloodHorseRepository> { every { findById(stallion.id) } returns stallion }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> { every { save(any()) } answers { firstArg() } }
-            val useCase =
-                RecordCoveringUseCase(
-                    registrationRepository,
-                    bloodHorseRepository,
-                    breedingResultRepository,
-                )
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
-                useCase(command(validPayload(registration.id.value, stallion.id.value))).unwrap()
+                useCase(
+                        command(
+                            validPayload(
+                                broodmareRegistration.id.value,
+                                stallionRegistration.id.value,
+                            )
+                        )
+                    )
+                    .unwrap()
 
-            assert(result.breedingRegistrationId == registration.id)
-            assert(result.covering.stallionId == stallion.id)
+            assert(result.breedingRegistrationId == broodmareRegistration.id)
+            assert(result.covering.stallionId == stallionRegistration.registeredHorseId)
             assert(result.covering.coveringDate == LocalDate.of(2024, 4, 1))
             assert(result.covering.certificateNumber.value == "C-2024-0001")
             assert(result.outcome == null)
@@ -73,14 +71,8 @@ class RecordCoveringUseCaseTest {
         @Test
         fun `種付証明書番号がブランクのとき InvalidCertificateNumber を返し永続化されない`() {
             val registrationRepository = mockk<BreedingRegistrationRepository>()
-            val bloodHorseRepository = mockk<BloodHorseRepository>()
             val breedingResultRepository = mockk<BreedingResultRepository>()
-            val useCase =
-                RecordCoveringUseCase(
-                    registrationRepository,
-                    bloodHorseRepository,
-                    breedingResultRepository,
-                )
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
                 useCase(
@@ -95,20 +87,14 @@ class RecordCoveringUseCaseTest {
         }
 
         @Test
-        fun `繁殖登録が見つからないとき BreedingRegistrationNotFound を返し永続化されない`() {
+        fun `繁殖牝馬の繁殖登録が見つからないとき BreedingRegistrationNotFound を返し永続化されない`() {
             val breedingRegistrationId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
                     every { findById(BreedingRegistrationId(breedingRegistrationId)) } returns null
                 }
-            val bloodHorseRepository = mockk<BloodHorseRepository>()
             val breedingResultRepository = mockk<BreedingResultRepository>()
-            val useCase =
-                RecordCoveringUseCase(
-                    registrationRepository,
-                    bloodHorseRepository,
-                    breedingResultRepository,
-                )
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result = useCase(command(validPayload(breedingRegistrationId, UUID.randomUUID())))
 
@@ -120,56 +106,54 @@ class RecordCoveringUseCaseTest {
         }
 
         @Test
-        fun `種牡馬が見つからないとき StallionNotFound を返し永続化されない`() {
-            val registration = BreedingFixture.breedingRegistration()
-            val stallionId = UUID.randomUUID()
+        fun `種牡馬の繁殖登録が見つからないとき StallionRegistrationNotFound を返し永続化されない`() {
+            val broodmareRegistration = BreedingFixture.breedingRegistration()
+            val stallionRegistrationId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(registration.id) } returns registration
-                }
-            val bloodHorseRepository =
-                mockk<BloodHorseRepository> {
-                    every { findById(BloodHorseId(stallionId)) } returns null
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(BreedingRegistrationId(stallionRegistrationId)) } returns null
                 }
             val breedingResultRepository = mockk<BreedingResultRepository>()
-            val useCase =
-                RecordCoveringUseCase(
-                    registrationRepository,
-                    bloodHorseRepository,
-                    breedingResultRepository,
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
+
+            val result =
+                useCase(
+                    command(validPayload(broodmareRegistration.id.value, stallionRegistrationId))
                 )
 
-            val result = useCase(command(validPayload(registration.id.value, stallionId)))
-
-            assert(result.getError() == RecordCoveringUseCaseError.StallionNotFound(stallionId))
+            assert(
+                result.getError() ==
+                    RecordCoveringUseCaseError.StallionRegistrationNotFound(stallionRegistrationId)
+            )
             verify(exactly = 0) { breedingResultRepository.save(any()) }
         }
 
         @Test
-        fun `種牡馬が雄でないときドメイン検証違反を PreconditionViolated に wrap して返す`() {
-            val registration = BreedingFixture.breedingRegistration()
-            val stallion = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        fun `配合相手のロールが種牡馬でないときドメイン検証違反を PreconditionViolated に wrap して返す`() {
+            val broodmareRegistration = BreedingFixture.breedingRegistration()
+            val notStallionRegistration = BreedingFixture.breedingRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(registration.id) } returns registration
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(notStallionRegistration.id) } returns notStallionRegistration
                 }
-            val bloodHorseRepository =
-                mockk<BloodHorseRepository> { every { findById(stallion.id) } returns stallion }
             val breedingResultRepository = mockk<BreedingResultRepository>()
-            val useCase =
-                RecordCoveringUseCase(
-                    registrationRepository,
-                    bloodHorseRepository,
-                    breedingResultRepository,
-                )
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
-            val result = useCase(command(validPayload(registration.id.value, stallion.id.value)))
+            val result =
+                useCase(
+                    command(
+                        validPayload(
+                            broodmareRegistration.id.value,
+                            notStallionRegistration.id.value,
+                        )
+                    )
+                )
 
             assert(
                 result.getError() ==
-                    RecordCoveringUseCaseError.PreconditionViolated(
-                        RecordCoveringError.StallionNotMale
-                    )
+                    RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
             )
             verify(exactly = 0) { breedingResultRepository.save(any()) }
         }
