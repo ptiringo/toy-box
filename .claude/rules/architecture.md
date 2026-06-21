@@ -93,12 +93,17 @@ domain/
 - フィールドインジェクション禁止（コンストラクタインジェクションを使う）
 - `UUID.randomUUID()` の直接呼び出し禁止。ID は `domain.shared.generateId()`（UUIDv7 相当のタイムベース生成）経由で生成する（永続化時のインデックス局所性のため。[ADR-0005](../../docs/adr/0005-time-based-uuid-generation.md)）。main コードのみ対象（テストの fixture は対象外）
 - **集約（`@AggregateRoot` / `@Entity`）はイミュータブル**（`val` のみ・`var` 禁止）。状態遷移は対象を書き換えず、同一性（ID）を引き継いだ新インスタンスを返すメソッドで表す（[ADR-0009](../../docs/adr/0009-immutable-aggregates.md)）。`val` は final フィールド・`var` は非 final フィールドへコンパイルされるため、集約クラスが直接宣言するフィールドが全て final であることを ArchUnit で検証して `var` を排除する
+- **集約（`@AggregateRoot` / `@Entity`）は `data class` を使わない**（[ADR-0009](../../docs/adr/0009-immutable-aggregates.md)）。`data class` は全プロパティから `equals` / `hashCode` を生成し、ID ベースの `final equals` / `hashCode` と衝突するため、`private constructor` ＋手書き `copy` で写像する。`data class` は各プロパティに `componentN()` を生成するため、集約クラスが `componentN()` を持たないことを ArchUnit で検証して `data class` を排除する（手書き `copy` は `componentN()` を生成しないため誤検出されない。ルールが実際に違反を検出することは `AggregateNotDataClassRuleTest` で別途担保）
 - **ドメインサービス（`domain.*.service`）はトップレベル関数で書く**（`object` / `class` でラップしない）。トップレベル関数はファイルごとのファサードクラス（`〜Kt`）へコンパイルされるため、service パッケージ内のクラスが `Kt` で終わることを ArchUnit で検証して `object` / `class` 宣言を排除する。ただしサービスの戻り値（`Result<_, 〜Error>`）の失敗側を表す失敗バリアント型（`〜Error`）はサービスと同居させてよく、対象から除外する
 - **`@RestController` のハンドラは成功レスポンスで `ResponseEntity` を返さない**。成功は `@ResponseStatus` ＋戻り値で resource を返す（[error-handling.md](error-handling.md) / [api-design.md](api-design.md)）。エラー描画 funnel の `GlobalExceptionHandler` は `@RestController` ではない（`ResponseEntityExceptionHandler` 継承）ため誤検出されない
 - **HTTP 契約（request / response DTO）はフィールド型にドメイン enum を持たない**。`controller` 層に契約専用の `〜Dto` enum を置き、`toDomain()` / `toApi()` でマッピングする（[api-design.md](api-design.md) / [ADR-0007](../../docs/adr/0007-wire-enum-dto-decoupling.md)）。`controller` 配下のフィールドがドメイン（`domain..`）の enum を raw type に持たないことを ArchUnit で検証する。マッパー関数はドメイン enum を引数・戻り値で扱うが、フィールド型のみを対象とするため誤検出されない（ルールが実際に違反を検出することは `DtoDomainEnumRuleTest` で別途担保）
 - **ドメイン / アプリケーション層では `throw` しない**。業務エラーは `Result<V, E>` で返し、プログラミングエラーは `require` / `check` を使う（[error-handling.md](error-handling.md)）。`domain..` / `application..` 配下の明示的な `throw` 式を **detekt カスタムルール** `NoThrowInDomainAndApplication`（`:detekt-rules` モジュール）で検出してビルドを失敗させる。例外送出は `infrastructure`（インフラ障害）と Controller 境界の `orThrowProblem()` に限るため、両者はパッケージ判定で対象外。`require` / `check` / `error` は `throw` 式ではないため検出されない。テストコードは detekt 設定の `excludes` で対象外
 
 > 強制手段は ArchUnit（`src/test/.../architecture/`）に限らない。`throw` 文のような構文レベルの規約は ArchUnit では検出しづらいため、detekt のカスタムルールを `:detekt-rules` モジュール（`RuleSetProvider` を ServiceLoader 登録）に置き、本体 build の `detektPlugins` に組み込んで `./gradlew detekt` で強制する。ルール挙動の検証テストは同モジュール内（`detekt-test` 使用）に置く。
+
+### 機械強制しない規約（レビューで担保）
+
+- **REST リソース操作の成功レスポンスは一律でリソース表現を返す**（[ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md) / [api-design.md](api-design.md)）は**機械強制しない**。この規約の本質は「同一リソースの全操作が同一の単一表現 DTO（`〜Response`）を返す」という**リソース単位の意味的一貫性**であり、ハンドラを「どのリソースを操作するか」で束ねる必要がある。ArchUnit / detekt はパッケージ・型・アノテーション・構文は検査できるが、この「リソース帰属によるグルーピング」を表現できない。名前ベースの近似（`Register〜Response` の禁止等）は、AIP-136 がリソース外の付加情報返却に専用 `Response` を認める余地（ADR-0008 でも追補余地として明記）と衝突して誤検出を生むうえ、現に移行途上の `RegisterJockeyResponse`（ADR-0008 が単一 DTO へ寄せる対象とする既知の不整合）を機械的に「違反」と断ずるだけで規約の意味は捉えられない。したがって api-design.md のルール文＋レビューで担保する（#307 の調査結論）。
 
 ## ルールの変更・追加
 
