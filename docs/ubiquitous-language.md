@@ -146,8 +146,11 @@ graph LR
 | FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.horseracing.model.breeding |
 | FoalingOutcome.TwinStillbirth | 値オブジェクト | domain.horseracing.model.breeding |
 | HorseName | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| ImportedHorseEntry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | JockeyId | 値オブジェクト | domain.horseracing.model.jockey |
+| LandingDate | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | MicrochipNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| OriginCountry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | PedigreeRegistrationNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | RaceId | 値オブジェクト | domain.horseracing.model.race |
 | StudBookEntry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
@@ -159,6 +162,7 @@ graph LR
 | recordCovering | ドメインサービス | domain.horseracing.service.breeding |
 | registerFoal | ドメインサービス | domain.horseracing.service.horse |
 | registerForBreeding | ドメインサービス | domain.horseracing.service.breeding |
+| registerImportedHorse | ドメインサービス | domain.horseracing.service.horse |
 | registerInStudBook | ドメインサービス | domain.horseracing.service.horse |
 
 ### sakamichi

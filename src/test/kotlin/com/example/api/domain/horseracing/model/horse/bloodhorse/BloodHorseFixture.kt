@@ -53,4 +53,32 @@ object BloodHorseFixture {
             damId = BloodHorseId(generateId()),
             registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
         )
+
+    /** 既定値を持つ [ImportedHorseEntry]（輸入馬）を生成する。必要な属性のみ上書きする。 */
+    fun importedHorseEntry(
+        sex: Sex = Sex.MALE,
+        coatColor: CoatColor = CoatColor.BAY,
+        breedType: BreedType = BreedType.THOROUGHBRED,
+        originCountry: String = "アイルランド",
+    ): ImportedHorseEntry =
+        ImportedHorseEntry(
+            sex = sex,
+            coatColor = coatColor,
+            breedType = breedType,
+            dateOfBirth = DateOfBirth(LocalDate.of(2020, 4, 10)),
+            breeder = Breeder.create("Coolmore").unwrap(),
+            microchipNumber = MicrochipNumber.create("392140000000002").unwrap(),
+            originCountry = OriginCountry.create(originCountry).unwrap(),
+            landingDate = LandingDate(LocalDate.of(2024, 9, 1)),
+        )
+
+    /** 既定値を持つ父母不明の輸入馬 [BloodHorse] を生成する。性・品種など必要な属性のみ上書きする。 */
+    fun importedBloodHorse(
+        sex: Sex = Sex.MALE,
+        breedType: BreedType = BreedType.THOROUGHBRED,
+    ): BloodHorse =
+        BloodHorse.ofImported(
+            entry = importedHorseEntry(sex = sex, breedType = breedType),
+            registrationNumber = PedigreeRegistrationNumber.create("2020900001").unwrap(),
+        )
 }

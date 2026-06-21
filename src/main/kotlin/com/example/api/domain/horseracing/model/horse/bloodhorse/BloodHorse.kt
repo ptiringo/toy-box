@@ -41,6 +41,10 @@ enum class Sex {
  * registerInStudBook の責務とする。検証を経た生成のみを許すため、コンストラクタは private とし、生成口 [of] は同モジュールの ドメインサービスからのみ呼べるよう
  * internal とする。
  *
+ * 父母が当システムに存在しない個体（輸入馬・基礎輸入馬）もある。この場合 [sireId] / [damId] は null となり、 代わりに原産国
+ * （[originCountry]）と揚陸日（[landingDate]）を持つ。輸入馬の生成は registerImportedHorse（生成口
+ * [ofImported]）が担い、内国産馬とは経路を分ける。逆に内国産馬は [originCountry] / [landingDate] を持たない（null）。
+ *
  * 状態はイミュータブルに扱う。出生時は血統登録のみで馬名を持たず（[name] は null）、後日の「馬名登録」で一度だけ命名される。 命名は [assignName] が 馬名を持つ新しい
  * [BloodHorse] を返すことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
  *
@@ -52,8 +56,10 @@ enum class Sex {
  * @property dateOfBirth 生年月日
  * @property breeder 生産者
  * @property microchipNumber マイクロチップ番号
- * @property sireId 父（雄）の軽種馬ID
- * @property damId 母（雌）の軽種馬ID
+ * @property sireId 父（雄）の軽種馬ID。父母不明の輸入馬では null
+ * @property damId 母（雌）の軽種馬ID。父母不明の輸入馬では null
+ * @property originCountry 原産国。輸入馬のみ持ち、内国産馬では null
+ * @property landingDate 揚陸日。輸入馬のみ持ち、内国産馬では null
  * @property name 馬名。未命名なら null。命名は [assignName] でのみ行う
  */
 @AggregateRoot
@@ -67,8 +73,10 @@ private constructor(
     val dateOfBirth: DateOfBirth,
     val breeder: Breeder,
     val microchipNumber: MicrochipNumber,
-    val sireId: BloodHorseId,
-    val damId: BloodHorseId,
+    val sireId: BloodHorseId?,
+    val damId: BloodHorseId?,
+    val originCountry: OriginCountry?,
+    val landingDate: LandingDate?,
     val name: HorseName?,
 ) : Entity<BloodHorseId>() {
     /**
@@ -102,6 +110,8 @@ private constructor(
             microchipNumber = microchipNumber,
             sireId = sireId,
             damId = damId,
+            originCountry = originCountry,
+            landingDate = landingDate,
             name = name,
         )
 
@@ -129,6 +139,38 @@ private constructor(
                 microchipNumber = entry.microchipNumber,
                 sireId = sireId,
                 damId = damId,
+                originCountry = null,
+                landingDate = null,
+                name = null,
+            )
+
+        /**
+         * 父母不明の輸入馬・基礎輸入馬として [BloodHorse] を生成する。
+         *
+         * 父母が当システムに存在しないため父母 ID は持たず（[sireId] / [damId] は null）、代わりに原産国・揚陸日を持つ。
+         * 内国産馬の前提条件（父=雄・母=雌・DNA 親子整合・親仔の品種整合）は適用されない。輸入馬固有の審査（承認海外機関の血統書
+         * による品種確定、親子判定の血液型・海外機関フォールバック）は別途のモデリングに委ねる。
+         *
+         * 内国産馬の [of] と同様、検証を経た生成のみを許すため同モジュールのドメインサービス registerImportedHorse からのみ 呼べるよう internal
+         * とする。生成直後は未命名（[name] は null）。
+         */
+        internal fun ofImported(
+            entry: ImportedHorseEntry,
+            registrationNumber: PedigreeRegistrationNumber,
+        ): BloodHorse =
+            BloodHorse(
+                id = BloodHorseId(generateId()),
+                registrationNumber = registrationNumber,
+                sex = entry.sex,
+                coatColor = entry.coatColor,
+                breedType = entry.breedType,
+                dateOfBirth = entry.dateOfBirth,
+                breeder = entry.breeder,
+                microchipNumber = entry.microchipNumber,
+                sireId = null,
+                damId = null,
+                originCountry = entry.originCountry,
+                landingDate = entry.landingDate,
                 name = null,
             )
     }
