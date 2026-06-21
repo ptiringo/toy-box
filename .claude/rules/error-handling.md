@@ -19,6 +19,8 @@ paths:
 | プログラミングエラー（NPE、不正な前提条件等） | 例外。`@ControllerAdvice` で 500 |
 | Repository の単純な lookup（`findById` 等） | `T?` で可。Result を強制しない |
 
+> **機械強制**: ドメイン / アプリケーション層（`domain..` / `application..`）の明示的な `throw` 式は detekt カスタムルール `NoThrowInDomainAndApplication`（`:detekt-rules` モジュール）が検出してビルドを失敗させる。プログラミングエラーの表明は `throw` 式でない `require` / `check` / `error` に寄せる（これらは検出されない）。`infrastructure`（インフラ障害）と Controller 境界の `orThrowProblem()` は対象外。詳細は [architecture.md](architecture.md)「その他の強制ルール」。
+
 ## エラー型の設計
 
 - ドメイン操作の失敗のしかたが **1 種類** なら単一の `data class` をエラー型として持つ
