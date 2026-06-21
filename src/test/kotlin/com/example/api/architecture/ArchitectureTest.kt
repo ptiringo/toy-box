@@ -199,6 +199,31 @@ class ArchitectureTest {
             .beFinal()
             .because("集約はイミュータブルに保ち、状態遷移は新インスタンスで表す（ADR-0009）。var は禁止")
 
+    /**
+     * 集約（@AggregateRoot / @Entity）は `data class` を使わないこと。
+     *
+     * `data class` は全プロパティから `equals` / `hashCode` を生成するため、ID ベースの `final equals` / `hashCode`
+     * （[EntityTest] 参照）と衝突する。状態遷移は `private constructor` ＋手書き `copy` で同一性（ID）を引き継いだ新インスタンスとして
+     * 写像する（ADR-0009）。Kotlin の `data class` は各プロパティに `componentN()` を生成するため、集約クラスが
+     * `componentN()`（`component1` / `component2` …）を持たないことを検証して `data class` を排除する。手書き `copy` は
+     * `componentN()` を生成しないため誤検出されない。
+     */
+    @ArchTest
+    val aggregatesAreNotDataClasses =
+        noMethods()
+            .that()
+            .areDeclaredInClassesThat()
+            .areAnnotatedWith(AggregateRoot::class.java)
+            .or()
+            .areDeclaredInClassesThat()
+            .areAnnotatedWith(DddEntity::class.java)
+            .should()
+            .haveNameMatching("component\\d+")
+            .because(
+                "集約は data class を使わない。ID ベースの final equals / hashCode と衝突するため、" +
+                    "private constructor ＋手書き copy で同一性を引き継いだ新インスタンスへ写像する（ADR-0009）"
+            )
+
     /** HTTP アダプター（@RestController）は controller 層に置くこと。 */
     @ArchTest
     val restControllersResideInControllerLayer =
