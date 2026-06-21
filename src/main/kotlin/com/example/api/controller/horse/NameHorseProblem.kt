@@ -28,7 +28,7 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Horse not found",
                     detail = "命名対象として指定された軽種馬が存在しません。",
                 )
-                .apply { setProperty("bloodHorseId", bloodHorseId) }
+                .apply { setProperty("blood_horse_id", bloodHorseId) }
         is NameHorseUseCaseError.AlreadyNamed ->
             problem(
                     status = HttpStatus.CONFLICT,
@@ -36,5 +36,5 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Horse already named",
                     detail = "対象の軽種馬は既に命名済みのため、再命名はできません。",
                 )
-                .apply { setProperty("currentName", currentName) }
+                .apply { setProperty("current_name", currentName) }
     }

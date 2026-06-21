@@ -60,6 +60,6 @@ class FoalingOutcomeWireTest {
         val problem = ReportFoalingRequest(FoalingOutcomeDto.LIVE_FOAL, null).toOutcome().getError()
 
         assert(problem != null)
-        assert(problem?.properties?.get("errorCode") == "missing-foaling-date")
+        assert(problem?.properties?.get("error_code") == "missing-foaling-date")
     }
 }

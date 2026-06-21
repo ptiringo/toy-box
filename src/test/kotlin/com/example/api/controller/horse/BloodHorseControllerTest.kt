@@ -42,16 +42,16 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
     private val validBody =
         """
         {
-            "sireId": "11111111-1111-1111-1111-111111111111",
-            "damId": "22222222-2222-2222-2222-222222222222",
+            "sire_id": "11111111-1111-1111-1111-111111111111",
+            "dam_id": "22222222-2222-2222-2222-222222222222",
             "sex": "MALE",
-            "coatColor": "BAY",
-            "breedType": "THOROUGHBRED",
-            "dateOfBirth": "2023-03-15",
+            "coat_color": "BAY",
+            "breed_type": "THOROUGHBRED",
+            "date_of_birth": "2023-03-15",
             "breeder": "ノーザンファーム",
-            "microchipNumber": "392140000000001",
-            "dnaParentage": "CONSISTENT",
-            "registrationNumber": "2023104567"
+            "microchip_number": "392140000000001",
+            "dna_parentage": "CONSISTENT",
+            "registration_number": "2023104567"
         }
         """
             .trimIndent()
@@ -66,13 +66,13 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/blood_horses")
+                .uri("/api/bloodHorses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.registrationNumber")
+                .extractingPath("$.registration_number")
                 .isEqualTo("2023104567")
         }
     }
@@ -86,14 +86,14 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/blood_horses")
+                .uri("/api/bloodHorses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("invalid-microchip-number")
         }
 
@@ -105,14 +105,14 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/blood_horses")
+                .uri("/api/bloodHorses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.sireId")
+                .extractingPath("$.sire_id")
                 .isEqualTo(sireId.toString())
         }
 
@@ -127,14 +127,14 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/blood_horses")
+                .uri("/api/bloodHorses")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("sire-not-male")
         }
     }
@@ -142,7 +142,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
     @Nested
     inner class RegisterNameCase {
         private val bloodHorseId = "33333333-3333-3333-3333-333333333333"
-        private val uri = "/api/blood_horses/$bloodHorseId:registerName"
+        private val uri = "/api/bloodHorses/$bloodHorseId:registerName"
         private val body = """{ "name": "オグリキャップ" }"""
 
         @Test
@@ -179,7 +179,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("invalid-horse-name")
         }
 
@@ -198,7 +198,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.bloodHorseId")
+                .extractingPath("$.blood_horse_id")
                 .isEqualTo(id.toString())
         }
 
@@ -216,7 +216,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("horse-already-named")
         }
     }

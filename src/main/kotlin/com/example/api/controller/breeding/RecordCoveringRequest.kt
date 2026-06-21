@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 /**
- * `POST /api/breeding_results` のリクエストボディ。
+ * `POST /api/breedingResults` のリクエストボディ。
  *
  * 繁殖成績報告書の「種付」欄に相当する。繁殖登録・種牡馬は登録済みのIDで参照する。VO で表す種付証明書番号は 素の文字列で受け取り、ユースケースで検証する。
  *

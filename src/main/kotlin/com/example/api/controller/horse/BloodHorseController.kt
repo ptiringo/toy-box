@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 軽種馬リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/blood_horses` に対する Create（血統登録）と、 個体への カスタムメソッド
+ * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する Create（血統登録）と、 個体への カスタムメソッド
  * `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 エラーレスポンスは RFC 9457 (Problem
  * Details) 形式で返す。
  */
@@ -75,7 +75,7 @@ class BloodHorseController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/blood_horses")
+    @PostMapping("/api/bloodHorses")
     fun register(@RequestBody request: RegisterBloodHorseRequest): BloodHorseResponse =
         registerInStudBook(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
@@ -135,7 +135,7 @@ class BloodHorseController(
             ],
     )
     @ResponseStatus(HttpStatus.OK)
-    @PostMapping("/api/blood_horses/{bloodHorseId}:registerName")
+    @PostMapping("/api/bloodHorses/{bloodHorseId}:registerName")
     fun registerName(
         @PathVariable bloodHorseId: UUID,
         @RequestBody request: RegisterHorseNameRequest,

@@ -36,18 +36,18 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `必須フィールド欠落のリクエストボディで 400 と規約付与済みの problem+json が返ること`() {
-        // lastName が欠落しており Jackson のデシリアライズに失敗する。
-        // フレームワーク標準例外由来でも funnel で errorCode 規約が付与される。
+        // last_name が欠落しており Jackson のデシリアライズに失敗する。
+        // フレームワーク標準例外由来でも funnel で error_code 規約が付与される。
         tester
             .post()
             .uri("/api/jockeys")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("""{"firstName":"武"}""")
+            .content("""{"first_name":"武"}""")
             .assertThat()
             .hasStatus(HttpStatus.BAD_REQUEST)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
             .bodyJson()
-            .extractingPath("$.errorCode")
+            .extractingPath("$.error_code")
             .isEqualTo("bad-request")
     }
 
@@ -62,12 +62,12 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
             .post()
             .uri("/api/jockeys")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("""{"firstName":"武","lastName":"豊"}""")
+            .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
             .hasStatus(HttpStatus.CONFLICT)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
             .bodyJson()
-            .extractingPath("$.errorCode")
+            .extractingPath("$.error_code")
             .isEqualTo("duplicate-jockey")
     }
 
@@ -80,12 +80,12 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
             .post()
             .uri("/api/jockeys")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("""{"firstName":"武","lastName":"豊"}""")
+            .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
             .hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
             .bodyJson()
-            .extractingPath("$.errorCode")
+            .extractingPath("$.error_code")
             .isEqualTo("internal-server-error")
     }
 }

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 繁殖成績リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/breeding_results` に対する Create（種付記録による年次 レコードの起票）と、個体への
+ * Google AIP のリソース指向設計に従い、コレクション `/api/breedingResults` に対する Create（種付記録による年次 レコードの起票）と、個体への
  * カスタムメソッド `:reportFoaling`（分娩結果報告、[AIP-136](https://google.aip.dev/136)） を提供する。エラーレスポンスは RFC 9457
  * (Problem Details) 形式で返す。
  */
@@ -77,7 +77,7 @@ class BreedingResultController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/breeding_results")
+    @PostMapping("/api/breedingResults")
     fun record(@RequestBody request: RecordCoveringRequest): BreedingResultResponse =
         recordCovering(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
@@ -139,7 +139,7 @@ class BreedingResultController(
             ],
     )
     @ResponseStatus(HttpStatus.OK)
-    @PostMapping("/api/breeding_results/{breedingResultId}:reportFoaling")
+    @PostMapping("/api/breedingResults/{breedingResultId}:reportFoaling")
     fun reportFoaling(
         @PathVariable breedingResultId: UUID,
         @RequestBody request: ReportFoalingRequest,

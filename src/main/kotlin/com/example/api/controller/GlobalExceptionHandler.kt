@@ -72,7 +72,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         if (problem.type == BLANK_TYPE) {
             problem.type = URI.create("urn:problem-type:$code")
         }
-        problem.setProperty("errorCode", code)
+        problem.setProperty("error_code", code)
     }
 
     companion object {

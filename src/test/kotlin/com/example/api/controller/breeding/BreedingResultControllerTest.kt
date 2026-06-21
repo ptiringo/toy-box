@@ -40,16 +40,16 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
     @Nested
     inner class RecordCoveringCase {
-        private val uri = "/api/breeding_results"
+        private val uri = "/api/breedingResults"
 
         /** デシリアライズに通る正しいリクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
         private val validBody =
             """
             {
-                "breedingRegistrationId": "11111111-1111-1111-1111-111111111111",
-                "stallionId": "22222222-2222-2222-2222-222222222222",
-                "coveringDate": "2024-04-01",
-                "certificateNumber": "C-2024-0001"
+                "breeding_registration_id": "11111111-1111-1111-1111-111111111111",
+                "stallion_id": "22222222-2222-2222-2222-222222222222",
+                "covering_date": "2024-04-01",
+                "certificate_number": "C-2024-0001"
             }
             """
                 .trimIndent()
@@ -67,7 +67,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.coveringYear")
+                .extractingPath("$.covering_year")
                 .isEqualTo(2024)
         }
 
@@ -85,7 +85,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("invalid-covering-certificate-number")
         }
 
@@ -104,7 +104,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.breedingRegistrationId")
+                .extractingPath("$.breeding_registration_id")
                 .isEqualTo(id.toString())
         }
 
@@ -123,7 +123,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.stallionId")
+                .extractingPath("$.stallion_id")
                 .isEqualTo(id.toString())
         }
 
@@ -145,7 +145,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("stallion-not-male")
         }
     }
@@ -153,8 +153,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @Nested
     inner class ReportFoalingCase {
         private val breedingResultId = "33333333-3333-3333-3333-333333333333"
-        private val uri = "/api/breeding_results/$breedingResultId:reportFoaling"
-        private val liveFoalBody = """{ "outcome": "LIVE_FOAL", "foalingDate": "2025-03-20" }"""
+        private val uri = "/api/breedingResults/$breedingResultId:reportFoaling"
+        private val liveFoalBody = """{ "outcome": "LIVE_FOAL", "foaling_date": "2025-03-20" }"""
 
         @Test
         fun `正常な入力で 200 OK と更新後の繁殖成績が返ること`() {
@@ -187,7 +187,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("missing-foaling-date")
         }
 
@@ -206,7 +206,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.breedingResultId")
+                .extractingPath("$.breeding_result_id")
                 .isEqualTo(id.toString())
         }
 
@@ -228,7 +228,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("foaling-already-recorded")
         }
     }
