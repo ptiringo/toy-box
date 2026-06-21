@@ -35,7 +35,7 @@ fun JockeyRegistrationError.toProblemDetail(): ProblemDetail =
                     title = "Duplicate jockey",
                     detail = "同姓同名のジョッキーが既に登録されています。",
                 )
-                .apply { setProperty("existingId", existingId.value) }
+                .apply { setProperty("existing_id", existingId.value) }
     }
 
 private fun JockeyValidationError.toProblemDetail(): ProblemDetail =
@@ -45,13 +45,13 @@ private fun JockeyValidationError.toProblemDetail(): ProblemDetail =
                 status = HttpStatus.BAD_REQUEST,
                 code = "blank-first-name",
                 title = "First name is blank",
-                detail = "firstName は空であってはいけません。",
+                detail = "first_name は空であってはいけません。",
             )
         JockeyValidationError.BlankLastName ->
             problem(
                 status = HttpStatus.BAD_REQUEST,
                 code = "blank-last-name",
                 title = "Last name is blank",
-                detail = "lastName は空であってはいけません。",
+                detail = "last_name は空であってはいけません。",
             )
     }

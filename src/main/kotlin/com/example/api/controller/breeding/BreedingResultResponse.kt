@@ -60,7 +60,7 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
                 status = HttpStatus.BAD_REQUEST,
                 code = "invalid-covering-certificate-number",
                 title = "Invalid covering certificate number",
-                detail = "certificateNumber は空であってはいけません。",
+                detail = "certificate_number は空であってはいけません。",
             )
         is RecordCoveringUseCaseError.BreedingRegistrationNotFound ->
             problem(
@@ -69,7 +69,7 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Breeding registration not found",
                     detail = "種付対象として指定された繁殖登録が存在しません。",
                 )
-                .apply { setProperty("breedingRegistrationId", breedingRegistrationId) }
+                .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
         is RecordCoveringUseCaseError.StallionNotFound ->
             problem(
                     status = HttpStatus.UNPROCESSABLE_ENTITY,
@@ -77,7 +77,7 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Stallion not found",
                     detail = "配合相手として指定された種牡馬が存在しません。",
                 )
-                .apply { setProperty("stallionId", stallionId) }
+                .apply { setProperty("stallion_id", stallionId) }
         is RecordCoveringUseCaseError.PreconditionViolated -> cause.toProblemDetail()
     }
 
@@ -107,7 +107,7 @@ fun ReportFoalingUseCaseError.toProblemDetail(): ProblemDetail =
                     title = "Breeding result not found",
                     detail = "報告対象として指定された繁殖成績が存在しません。",
                 )
-                .apply { setProperty("breedingResultId", breedingResultId) }
+                .apply { setProperty("breeding_result_id", breedingResultId) }
         is ReportFoalingUseCaseError.AlreadyReported ->
             problem(
                 status = HttpStatus.CONFLICT,

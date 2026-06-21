@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 /**
- * `POST /api/blood_horses` のリクエストボディ。
+ * `POST /api/bloodHorses` のリクエストボディ。
  *
  * 登録申請フォームに相当する。enum 項目（性・毛色・品種・DNA 判定）は HTTP 契約専用の `〜Dto` enum で受け取り、列挙子名で デシリアライズする。未知の値は Jackson
  * のデシリアライズで弾かれ `GlobalExceptionHandler` が 400 を返す。ドメイン enum への 変換は [toCommand] が [toDomain]

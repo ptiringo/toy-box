@@ -224,7 +224,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 - **出所は Project の Priority フィールド 1 つ**。ラベルとの併用はしない（二重管理を避ける）。
 - オプションは `P1: 今すぐ` / `P2: 近いうち` / `P3: いずれ` / `P4: 探索・保留` の 4 段階。
-- 優先度を付けたい Issue は **Project に追加してからフィールドを設定**する（Project に入れた Issue だけが優先度を持つ）。
+- **作成した Issue は必ず Project（#4）に追加する**。Project に入れた Issue だけが `Priority` フィールドを持てるため、issue を立てたら「Project へ追加 → `Priority` 設定」までを 1 セットで行う（優先度が即決でなくても Project には必ず入れ、未定なら後から設定する）。
 - 優先度順に眺める・束ねる・絞るときは Project のビューを使う（`gh issue list` のラベル列には優先度は出ない）。
 - CLI からの確認・設定:
 

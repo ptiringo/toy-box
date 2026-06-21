@@ -42,11 +42,11 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .post()
                 .uri("/api/jockeys")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"firstName":"武","lastName":"豊"}""")
+                .content("""{"first_name":"武","last_name":"豊"}""")
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.firstName")
+                .extractingPath("$.first_name")
                 .isEqualTo("武")
         }
     }
@@ -62,12 +62,12 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .post()
                 .uri("/api/jockeys")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"firstName":"","lastName":"豊"}""")
+                .content("""{"first_name":"","last_name":"豊"}""")
                 .assertThat()
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("blank-first-name")
         }
 
@@ -80,12 +80,12 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .post()
                 .uri("/api/jockeys")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"firstName":"武","lastName":""}""")
+                .content("""{"first_name":"武","last_name":""}""")
                 .assertThat()
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.errorCode")
+                .extractingPath("$.error_code")
                 .isEqualTo("blank-last-name")
         }
 
@@ -99,12 +99,12 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .post()
                 .uri("/api/jockeys")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"firstName":"武","lastName":"豊"}""")
+                .content("""{"first_name":"武","last_name":"豊"}""")
                 .assertThat()
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
-                .extractingPath("$.existingId")
+                .extractingPath("$.existing_id")
                 .isEqualTo(existing.id.value.toString())
         }
     }
