@@ -1,6 +1,7 @@
 package com.example.api.controller.horse
 
 import com.example.api.application.horseracing.horse.NameHorseUseCase
+import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCase
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
@@ -23,13 +24,15 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 軽種馬リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する Create（血統登録）と、 個体への カスタムメソッド
- * `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 エラーレスポンスは RFC 9457 (Problem
- * Details) 形式で返す。
+ * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する Create（内国産馬の血統登録）と、 個体への カスタムメソッド
+ * `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 父母不明の輸入馬は前提条件が
+ * 大きく異なるため、コレクションへのカスタムメソッド `:registerImported`（[AIP-136](https://google.aip.dev/136)）として
+ * 登録経路を分ける。エラーレスポンスは RFC 9457 (Problem Details) 形式で返す。
  */
 @RestController
 class BloodHorseController(
     private val registerInStudBook: RegisterInStudBookUseCase,
+    private val registerImportedHorse: RegisterImportedHorseUseCase,
     private val nameHorse: NameHorseUseCase,
     private val clock: Clock,
 ) {
@@ -78,6 +81,46 @@ class BloodHorseController(
     @PostMapping("/api/bloodHorses")
     fun register(@RequestBody request: RegisterBloodHorseRequest): BloodHorseResponse =
         registerInStudBook(Command.now(request.toCommand(), clock))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
+
+    @Operation(
+        summary = "父母不明の輸入馬を血統登録する",
+        description =
+            "父母が当システムに存在しない輸入馬・基礎輸入馬を、原産国・揚陸日とともに血統登録し、誕生した軽種馬を返す。" +
+                "業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+        tags = ["BloodHorse"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "201",
+                    description = "血統登録成功（登録された軽種馬リソースを返す）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BloodHorseResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "400",
+                    description = "入力値が不正（登録番号・マイクロチップ・生産者・原産国など）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/api/bloodHorses:registerImported")
+    fun registerImported(@RequestBody request: RegisterImportedHorseRequest): BloodHorseResponse =
+        registerImportedHorse(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

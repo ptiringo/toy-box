@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCaseError
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
@@ -16,6 +17,9 @@ import org.springframework.http.ProblemDetail
  * [AIP-133](https://google.aip.dev/133) / [AIP-136](https://google.aip.dev/136) に倣い
  * 一律でこのリソース表現全体を返す。父・母は登録済みの軽種馬IDで参照する。
  *
+ * 父母不明の輸入馬では [sireId] / [damId] が null となり、代わりに原産国（[originCountry]）と揚陸日（[landingDate]）を持つ。
+ * 内国産馬ではその逆で、[originCountry] / [landingDate] が null となる。
+ *
  * @property id 軽種馬の生 UUID
  * @property registrationNumber 血統登録番号
  * @property sex 性
@@ -24,8 +28,10 @@ import org.springframework.http.ProblemDetail
  * @property dateOfBirth 生年月日
  * @property breeder 生産者名
  * @property microchipNumber マイクロチップ番号
- * @property sireId 父（雄）の生 UUID
- * @property damId 母（雌）の生 UUID
+ * @property sireId 父（雄）の生 UUID。父母不明の輸入馬では null
+ * @property damId 母（雌）の生 UUID。父母不明の輸入馬では null
+ * @property originCountry 原産国名。輸入馬のみ。内国産馬では null
+ * @property landingDate 揚陸日。輸入馬のみ。内国産馬では null
  * @property name 馬名。未命名なら null
  */
 @Suppress("LongParameterList") // resource 全体を返すため項目数が多いのは必然
@@ -38,8 +44,10 @@ data class BloodHorseResponse(
     val dateOfBirth: LocalDate,
     val breeder: String,
     val microchipNumber: String,
-    val sireId: UUID,
-    val damId: UUID,
+    val sireId: UUID?,
+    val damId: UUID?,
+    val originCountry: String?,
+    val landingDate: LocalDate?,
     val name: String?,
 )
 
@@ -54,8 +62,10 @@ fun BloodHorse.toResponse(): BloodHorseResponse =
         dateOfBirth = dateOfBirth.value,
         breeder = breeder.name,
         microchipNumber = microchipNumber.value,
-        sireId = sireId.value,
-        damId = damId.value,
+        sireId = sireId?.value,
+        damId = damId?.value,
+        originCountry = originCountry?.name,
+        landingDate = landingDate?.value,
         name = name?.value,
     )
 
@@ -136,5 +146,43 @@ private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
                 code = "breed-mismatch",
                 title = "Breed mismatch",
                 detail = "仔の品種が父母の品種と整合しません。",
+            )
+    }
+
+/**
+ * [RegisterImportedHorseUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に
+ * 変換する。
+ *
+ * 輸入馬登録は父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）のみで、すべて 400 Bad Request とする。
+ */
+fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        RegisterImportedHorseUseCaseError.InvalidRegistrationNumber ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-registration-number",
+                title = "Invalid registration number",
+                detail = "registration_number は空であってはいけません。",
+            )
+        RegisterImportedHorseUseCaseError.InvalidMicrochipNumber ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-microchip-number",
+                title = "Invalid microchip number",
+                detail = "microchip_number は 15 桁の数字でなければなりません。",
+            )
+        RegisterImportedHorseUseCaseError.BlankBreeder ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "blank-breeder",
+                title = "Breeder is blank",
+                detail = "breeder は空であってはいけません。",
+            )
+        RegisterImportedHorseUseCaseError.BlankOriginCountry ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "blank-origin-country",
+                title = "Origin country is blank",
+                detail = "origin_country は空であってはいけません。",
             )
     }

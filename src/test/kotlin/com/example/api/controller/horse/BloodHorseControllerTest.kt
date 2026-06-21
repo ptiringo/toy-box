@@ -3,6 +3,9 @@ package com.example.api.controller.horse
 import com.example.api.application.horseracing.horse.NameHorseCommand
 import com.example.api.application.horseracing.horse.NameHorseUseCase
 import com.example.api.application.horseracing.horse.NameHorseUseCaseError
+import com.example.api.application.horseracing.horse.RegisterImportedHorseCommand
+import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCase
+import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCaseError
 import com.example.api.application.horseracing.horse.RegisterInStudBookCommand
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
@@ -34,6 +37,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerInStudBook: RegisterInStudBookUseCase
+    @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
@@ -218,6 +222,64 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("horse-already-named")
+        }
+    }
+
+    @Nested
+    inner class RegisterImportedCase {
+        private val uri = "/api/bloodHorses:registerImported"
+
+        /** 父母 ID・DNA を持たず、原産国・揚陸日を持つ輸入馬のリクエストボディ。 */
+        private val validBody =
+            """
+            {
+                "sex": "MALE",
+                "coat_color": "BAY",
+                "breed_type": "THOROUGHBRED",
+                "date_of_birth": "2020-04-10",
+                "breeder": "Coolmore",
+                "microchip_number": "392140000000002",
+                "origin_country": "アイルランド",
+                "landing_date": "2024-09-01",
+                "registration_number": "2020900001"
+            }
+            """
+                .trimIndent()
+
+        @Test
+        fun `正常な入力で 201 Created と父母不明の登録結果が返ること`() {
+            val saved = BloodHorseFixture.importedBloodHorse()
+            every { registerImportedHorse(any<Command<RegisterImportedHorseCommand>>()) } returns
+                Ok(saved)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .extractingPath("$.origin_country")
+                .isEqualTo("アイルランド")
+        }
+
+        @Test
+        fun `BlankOriginCountry で 400 と problem+json が返ること`() {
+            every { registerImportedHorse(any<Command<RegisterImportedHorseCommand>>()) } returns
+                Err(RegisterImportedHorseUseCaseError.BlankOriginCountry)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("blank-origin-country")
         }
     }
 }
