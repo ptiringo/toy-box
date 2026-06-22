@@ -20,7 +20,11 @@
 | `org.gradle.parallel` | assemble 6.0s vs 6.1s（差なし） | 見送り |
 | `maxParallelForks`（テスト並列フォーク） | forks=1/2/4 で 42s→61s→97s（逆効果） | 見送り |
 
-`maxParallelForks` が逆効果になるのは、Spring の `ApplicationContext` キャッシュが JVM 単位であるため。テスト JVM をフォークすると重い `@SpringBootTest` のコンテキスト初期化が各フォークで重複し、JVM 起動コストも加わって、単一モジュール・小規模スイートでは並列化の利得を上回る。公式ガイドが一般論として勧める「テストフォークの並列化」が、本プロジェクトの規模・構成では成立しないことを実証した。
+`maxParallelForks` が逆効果になる理由は、コンテキストキャッシュ統計の実測で裏づけた。本スイートは 38 テストクラス中コンテキストを要するのは 8 のみ（@SpringBootTest 3 + @WebMvcTest 5）で、実際に構築される distinct な `ApplicationContext` は **6 個**（`missCount=6` / `hitCount=525` / `failureCount=0`、`@DirtiesContext` ゼロ）。**コンテキスト再利用は単一 JVM 内で既にヒット率 ~99%** と最適に近い。構築コストの内訳は MOCK 環境のフル `@SpringBootTest` が 6.6s、RANDOM_PORT が 2.0s（Tomcat 起動は全体で 1 回のみ）、各 @WebMvcTest スライスが 0.4〜0.9s、加えて JVM+クラスロードのウォームアップが約 7.8s。つまり `:test` の時間は「**一度きりの 6 コンテキスト構築 + JVM ウォームアップ + テスト実行**」であって、フォークで削れる "繰り返しのコンテキスト起動" は存在しない。テスト JVM をフォークすると、Spring のコンテキストキャッシュは **JVM 単位**のため 6 コンテキストが複数 JVM に分散・重複構築され、約 7.8s の JVM ウォームアップも N 倍になる。これが forks=1/2/4 の 42s→61s→97s（単調悪化）の正体である。
+
+JVM 内スレッド並列（JUnit 5 `junit.jupiter.execution.parallel`、単一キャッシュ共有）も本プロジェクトでは採れない。Spring Framework リファレンス「Parallel Test Execution」は、`@DirtiesContext` / `@MockitoBean`・`@MockitoSpyBean` / Spring Boot の `@MockBean`・`@SpyBean` / `@TestMethodOrder` を使うテスト、および DB・メッセージブローカ・ファイルシステム等の共有状態を変更するテストを並列実行しないよう求めている。本スイートは 5 つの @WebMvcTest 中 4 つで `@MockkBean`（springmockk）を使用しており、これは Spring Boot の `@MockBean` と同じ仕組み（context customizer 登録 + メソッドごとの mock リセットで singleton mock を共有）であるため、機構として上記制約に該当する（`MockMvc`/`MockMvcTester` も並行共有想定でない）。並列化が現実的に効くのは、#338 の永続化層導入後にテスト隔離（トランザクションロールバックやフォークごとの独立 DB/Testcontainers）を整えるか、互いに独立した重い統合テストが多数になりクラスレベル並列を共有キャッシュで回せる段になってから。
+
+`org.gradle.parallel` が無効果なのは、プロジェクトが root + 極小の `:detekt-rules` の2つしかなく、並列プロジェクト実行で重ねられる仕事が無いため。
 
 `org.gradle.parallel` が無効果なのは、プロジェクトが root + 極小の `:detekt-rules` の2つしかなく、並列プロジェクト実行で重ねられる仕事が無いため。
 
