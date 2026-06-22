@@ -24,10 +24,12 @@ class BreedingResultCreateTest {
                 )
                 .unwrap()
 
+        val covering = result.covering
+        assert(covering != null)
         assert(result.breedingRegistrationId == broodmareRegistration.id)
-        assert(result.covering.stallionId == stallionRegistration.registeredHorseId)
-        assert(result.covering.coveringDate == coveringDate)
-        assert(result.covering.certificateNumber == certificateNumber)
+        assert(covering?.stallionId == stallionRegistration.registeredHorseId)
+        assert(covering?.coveringDate == coveringDate)
+        assert(covering?.certificateNumber == certificateNumber)
         assert(result.outcome == null)
     }
 

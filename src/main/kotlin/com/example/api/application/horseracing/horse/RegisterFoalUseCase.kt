@@ -1,6 +1,7 @@
 package com.example.api.application.horseracing.horse
 
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationRepository
+import com.example.api.domain.horseracing.model.breeding.BreedingResult
 import com.example.api.domain.horseracing.model.breeding.BreedingResultId
 import com.example.api.domain.horseracing.model.breeding.BreedingResultRepository
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
@@ -135,12 +136,7 @@ class RegisterFoalUseCase(
                 }
                 .bind()
 
-        val sireId = breedingResult.covering.stallionId
-        val sire =
-            bloodHorseRepository
-                .findById(sireId)
-                .toResultOr { RegisterFoalUseCaseError.SireNotFound(sireId.value) }
-                .bind()
+        val sire = resolveSire(breedingResult).bind()
 
         val damId = breedingRegistration.registeredHorseId
         val dam =
@@ -165,5 +161,30 @@ class RegisterFoalUseCase(
                 .bind()
 
         bloodHorseRepository.save(bloodHorse)
+    }
+
+    /**
+     * 繁殖成績から父（種付の種牡馬）を解決する。
+     *
+     * 種付せず（covering が無い）の年次成績からは産駒が生じず父も定まらないため、父の解決前に、ドメインサービスと
+     * 同じ「生産でない」前提条件違反（[RegisterFoalError.NotLiveFoal]）へ寄せて短絡する。種付がある場合のみ種牡馬を [BloodHorseRepository]
+     * で引き当てる。
+     */
+    private fun resolveSire(
+        breedingResult: BreedingResult
+    ): Result<BloodHorse, RegisterFoalUseCaseError> = binding {
+        val covering =
+            breedingResult.covering
+                .toResultOr {
+                    RegisterFoalUseCaseError.PreconditionViolated(
+                        RegisterFoalError.NotLiveFoal(breedingResult.outcome)
+                    )
+                }
+                .bind()
+        val sireId = covering.stallionId
+        bloodHorseRepository
+            .findById(sireId)
+            .toResultOr { RegisterFoalUseCaseError.SireNotFound(sireId.value) }
+            .bind()
     }
 }

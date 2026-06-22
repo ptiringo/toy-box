@@ -25,3 +25,4 @@
 | [0013](0013-racehorse-registration-as-separate-context.md) | 競走馬登録(JRA)を JAIRS 中心ドメインから別の境界づけられたコンテキストとして分離する | Accepted |
 | [0014](0014-self-validating-factory-over-confinement.md) | 集約をまたぐ前提条件は自己検証ファクトリで検証し、生成口の封じ込めを行わない | Accepted |
 | [0015](0015-gradle-build-performance-tuning.md) | Gradle ビルド性能チューニング（build cache 採用・並列フォーク見送り）を実測で決める | Accepted |
+| [0016](0016-not-covered-as-foaling-outcome-variant.md) | 「種付せず」を FoalingOutcome の区分として表し covering を nullable 化する | Accepted |

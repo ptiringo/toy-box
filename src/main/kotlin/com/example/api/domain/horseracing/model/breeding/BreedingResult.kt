@@ -39,45 +39,78 @@ sealed interface RecordCoveringError {
 }
 
 /**
- * 繁殖成績を表す集約ルート。種付年ごとの「種付〜分娩」の年次レコード。
+ * 種付せず（年次成績）の記録（[BreedingResult.createUncovered]）の前提条件違反。
  *
- * 繁殖登録済みの牝馬（[BreedingRegistration]）について、その年の種付（[Covering]）と分娩結果
- * （[FoalingOutcome]）を記録する。「繁殖成績報告書」（様式第14号）が報告する 1 行ぶんの年次成績に対応する。 繁殖登録は別集約であり、参照は
- * [BreedingRegistrationId] 経由で表す。種付年は種付日から導出する。
+ * 種付せずも繁殖牝馬の年次成績であり、対象の繁殖登録のロールが繁殖牝馬であることを前提とする。失敗のしかたは この1種類のみのため単一型とする（種付記録と異なり配合相手の検証はない）。
  *
- * 状態はイミュータブルに扱う。種付の記録で生成され（[outcome] は null＝分娩結果は未報告）、後日の分娩結果報告 で一度だけ [outcome] が確定する。報告は
- * [recordFoaling] が分娩結果を持つ新しい [BreedingResult] を返す ことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
+ * @property registration 種付せずの記録対象として渡された繁殖登録
+ */
+data class NotBroodmareForUncovered(val registration: BreedingRegistration)
+
+/**
+ * 繁殖成績を表す集約ルート。繁殖年ごとの年次レコード。
  *
- * 両者の登録ロール（繁殖牝馬・種牡馬）の検証など集約をまたぐ前提条件は、繁殖登録を引数で受け取る生成ファクトリ [create] がその場で自己検証する。コンストラクタは private
- * とし、生成は [create] のみに限る。
+ * 繁殖登録済みの牝馬（[BreedingRegistration]）について、その年の繁殖成績を記録する。「繁殖成績報告書」 （様式第14号）が報告する 1
+ * 行ぶんの年次成績に対応する。繁殖登録は別集約であり、参照は [BreedingRegistrationId] 経由で表す。
+ *
+ * 年次成績は2種類ある。**種付した年**は種付（[Covering]）を持ち、後日その年の分娩結果（[FoalingOutcome]
+ * の種付後7区分のいずれか）が確定する。**種付しなかった年**（種付せず）は [Covering] を持たず、[outcome] は 生成時に
+ * [FoalingOutcome.NotCovered] で確定する終端レコードとなる。繁殖年（[breedingYear]）は両者を通じて
+ * 成績の集計・報告の単位であり、種付した年は種付日の年と一致する。
+ *
+ * 状態はイミュータブルに扱う。種付の記録（[create]）で生成された成績は [outcome] が null（分娩結果は未報告）で 始まり、後日の分娩結果報告で一度だけ [outcome]
+ * が確定する。報告は [recordFoaling] が分娩結果を持つ新しい [BreedingResult]
+ * を返すことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。種付せずの記録 （[createUncovered]）は最初から終端のため [recordFoaling]
+ * の対象にならない。
+ *
+ * 登録ロール（繁殖牝馬・種牡馬）の検証など集約をまたぐ前提条件は、繁殖登録を引数で受け取る生成ファクトリ （[create] /
+ * [createUncovered]）がその場で自己検証する。コンストラクタは private とし、生成はこれらの ファクトリのみに限る。「種付した年は covering を持ち outcome
+ * は NotCovered でない」「種付せずの年は covering を 持たず outcome は NotCovered」という covering
+ * と区分の整合は本クラスの不変条件として強制する。
  *
  * @property id 繁殖成績ID（生成時に自動採番し、以後の写像でも引き継ぐ）
  * @property breedingRegistrationId この成績が紐づく繁殖登録（繁殖牝馬のロール）のID
- * @property covering その年の種付
- * @property outcome その年の分娩結果。未報告なら null。報告は [recordFoaling] でのみ行う
+ * @property breedingYear 繁殖年（この成績を集計・報告する年単位）。種付した年は種付日の年と一致する
+ * @property covering その年の種付。種付せずの年は null
+ * @property outcome その年の分娩結果。種付した年は未報告なら null・報告は [recordFoaling] で行う。種付せずの年は
+ *   [FoalingOutcome.NotCovered]
  */
 @AggregateRoot
 class BreedingResult
 private constructor(
     @field:Identity override val id: BreedingResultId,
     val breedingRegistrationId: BreedingRegistrationId,
-    val covering: Covering,
+    val breedingYear: Year,
+    val covering: Covering?,
     val outcome: FoalingOutcome?,
 ) : Entity<BreedingResultId>() {
-    /** 種付年。種付日から導出する（繁殖成績はこの年単位で集計・報告される）。 */
-    val coveringYear: Year
-        get() = Year.of(covering.coveringDate.year)
+    init {
+        if (covering == null) {
+            require(outcome == FoalingOutcome.NotCovered) {
+                "種付せずの繁殖成績（covering が無い）の区分は NotCovered でなければならない。"
+            }
+        } else {
+            require(breedingYear.value == covering.coveringDate.year) {
+                "種付した年の繁殖年は種付日の年と一致しなければならない。"
+            }
+            require(outcome != FoalingOutcome.NotCovered) { "種付した繁殖成績の区分は NotCovered であってはならない。" }
+        }
+    }
 
     /**
      * 分娩結果を報告した新しい [BreedingResult] を返す。
      *
-     * 分娩結果の報告は種付年ごとに一度だけ行えるドメインイベント。既に報告済みの成績への再報告は 不変条件違反として [FoalingAlreadyRecorded]
+     * 分娩結果の報告は繁殖年ごとに一度だけ行えるドメインイベント。既に報告済みの成績（種付せずを含む）への 再報告は不変条件違反として [FoalingAlreadyRecorded]
      * を返し、写像を行わない（元の [BreedingResult] も不変）。 成功時は [outcome] のみ差し替え、[id] を含む他の属性は引き継ぐ。
+     *
+     * 種付せず（[FoalingOutcome.NotCovered]）は種付を伴わない年次成績の区分であり分娩結果ではないため、報告区分 として渡してはならない（生成は
+     * [createUncovered] に限る）。
      *
      * @param outcome 報告する分娩結果
      * @return 報告済みの新しい [BreedingResult]、既に報告済みなら [FoalingAlreadyRecorded]
      */
     fun recordFoaling(outcome: FoalingOutcome): Result<BreedingResult, FoalingAlreadyRecorded> {
+        require(outcome != FoalingOutcome.NotCovered) { "種付せず（NotCovered）は分娩結果として報告できない。" }
         val current = this.outcome
         return if (current != null) {
             Err(FoalingAlreadyRecorded(current))
@@ -91,6 +124,7 @@ private constructor(
         BreedingResult(
             id = id,
             breedingRegistrationId = breedingRegistrationId,
+            breedingYear = breedingYear,
             covering = covering,
             outcome = outcome,
         )
@@ -126,6 +160,7 @@ private constructor(
                         BreedingResult(
                             id = BreedingResultId(generateId()),
                             breedingRegistrationId = broodmareRegistration.id,
+                            breedingYear = Year.of(coveringDate.year),
                             covering =
                                 Covering(
                                     stallionRegistration.registeredHorseId,
@@ -135,6 +170,35 @@ private constructor(
                             outcome = null,
                         )
                     )
+            }
+
+        /**
+         * 繁殖牝馬のその年の「種付せず」（種付しなかった年次成績）を記録し、終端の [BreedingResult] を生成する。
+         *
+         * 種付せずも繁殖牝馬の年次成績であり、対象の繁殖登録のロールが繁殖牝馬であることを前提とする。本ファクトリは その前提を自己検証してから生成する。満たさなければ生成せず
+         * [NotBroodmareForUncovered] を返す。生成物は種付 （[covering]）を持たず、[outcome] は
+         * [FoalingOutcome.NotCovered] で確定する終端レコードであり、分娩結果報告 （[recordFoaling]）の対象にはならない。
+         *
+         * @param broodmareRegistration 種付せずの記録対象の繁殖牝馬の繁殖登録（ロールが繁殖牝馬であること）
+         * @param breedingYear 種付しなかった繁殖年
+         * @return 種付せずを記録した [BreedingResult]、または前提条件違反を表す [NotBroodmareForUncovered]
+         */
+        fun createUncovered(
+            broodmareRegistration: BreedingRegistration,
+            breedingYear: Year,
+        ): Result<BreedingResult, NotBroodmareForUncovered> =
+            if (broodmareRegistration.role != BreedingRole.BROODMARE) {
+                Err(NotBroodmareForUncovered(broodmareRegistration))
+            } else {
+                Ok(
+                    BreedingResult(
+                        id = BreedingResultId(generateId()),
+                        breedingRegistrationId = broodmareRegistration.id,
+                        breedingYear = breedingYear,
+                        covering = null,
+                        outcome = FoalingOutcome.NotCovered,
+                    )
+                )
             }
     }
 }

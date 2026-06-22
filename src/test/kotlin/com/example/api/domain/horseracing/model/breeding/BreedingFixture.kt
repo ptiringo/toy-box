@@ -5,6 +5,7 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixtu
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
+import java.time.Year
 
 /**
  * テスト用に繁殖コンテキストの集約・値オブジェクトを組み立てる Object Mother。
@@ -46,4 +47,10 @@ object BreedingFixture {
                 certificateNumber,
             )
             .unwrap()
+
+    /** 既定値を持つ、種付せず（種付しなかった年次成績）の [BreedingResult] を生成する。 */
+    fun uncoveredBreedingResult(
+        broodmareRegistration: BreedingRegistration = breedingRegistration(),
+        breedingYear: Year = Year.of(2024),
+    ): BreedingResult = BreedingResult.createUncovered(broodmareRegistration, breedingYear).unwrap()
 }

@@ -222,6 +222,26 @@ class RegisterFoalUseCaseTest {
         }
 
         @Test
+        fun `種付せずの繁殖成績だと PreconditionViolated(NotLiveFoal) を返し永続化されない`() {
+            val w = Wiring()
+            val uncovered =
+                BreedingFixture.uncoveredBreedingResult(
+                    broodmareRegistration = w.breedingRegistration
+                )
+            every { w.breedingResultRepository.findById(uncovered.id) } returns uncovered
+
+            val result = w.useCase()(command(uncovered.id.value))
+
+            assert(
+                result.getError() ==
+                    RegisterFoalUseCaseError.PreconditionViolated(
+                        RegisterFoalError.NotLiveFoal(FoalingOutcome.NotCovered)
+                    )
+            )
+            verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
+        }
+
+        @Test
         fun `委譲先の前提条件違反は PreconditionViolated(RegistrationFailed) に wrap される`() {
             // 父が雌のため registerInStudBook が SireNotMale を返す
             val w = Wiring()

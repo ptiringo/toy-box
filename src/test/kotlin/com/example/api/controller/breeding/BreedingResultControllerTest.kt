@@ -67,7 +67,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.covering_year")
+                .extractingPath("$.breeding_year")
                 .isEqualTo(2024)
         }
 

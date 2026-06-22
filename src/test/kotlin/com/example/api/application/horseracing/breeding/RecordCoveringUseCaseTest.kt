@@ -57,10 +57,12 @@ class RecordCoveringUseCaseTest {
                     )
                     .unwrap()
 
+            val covering = result.covering
+            assert(covering != null)
             assert(result.breedingRegistrationId == broodmareRegistration.id)
-            assert(result.covering.stallionId == stallionRegistration.registeredHorseId)
-            assert(result.covering.coveringDate == LocalDate.of(2024, 4, 1))
-            assert(result.covering.certificateNumber.value == "C-2024-0001")
+            assert(covering?.stallionId == stallionRegistration.registeredHorseId)
+            assert(covering?.coveringDate == LocalDate.of(2024, 4, 1))
+            assert(covering?.certificateNumber?.value == "C-2024-0001")
             assert(result.outcome == null)
             verify(exactly = 1) { breedingResultRepository.save(any()) }
         }
