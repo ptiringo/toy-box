@@ -154,6 +154,7 @@ graph LR
 | FoalingOutcome.LiveFoal | 値オブジェクト | domain.horseracing.model.breeding |
 | FoalingOutcome.NeonatalDeath | 値オブジェクト | domain.horseracing.model.breeding |
 | FoalingOutcome.NotConceived | 値オブジェクト | domain.horseracing.model.breeding |
+| FoalingOutcome.NotCovered | 値オブジェクト | domain.horseracing.model.breeding |
 | FoalingOutcome.Stillbirth | 値オブジェクト | domain.horseracing.model.breeding |
 | FoalingOutcome.TwinAbortion | 値オブジェクト | domain.horseracing.model.breeding |
 | FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.horseracing.model.breeding |

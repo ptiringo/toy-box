@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test
 /** BreedingResult 集約のユニットテスト */
 class BreedingResultTest {
     @Test
-    fun `種付日からその年が種付年として導出されること`() {
+    fun `種付した年の繁殖年は種付日の年と一致すること`() {
         val result = BreedingFixture.breedingResult(coveringDate = LocalDate.of(2024, 4, 1))
 
-        assert(result.coveringYear == Year.of(2024))
+        assert(result.breedingYear == Year.of(2024))
     }
 
     @Test
@@ -52,5 +52,33 @@ class BreedingResultTest {
         val error = reported.recordFoaling(FoalingOutcome.NotConceived).getError()
 
         assert(error == FoalingAlreadyRecorded(first))
+    }
+
+    @Test
+    fun `種付せずの成績は covering を持たず NotCovered で終端すること`() {
+        val result = BreedingFixture.uncoveredBreedingResult(breedingYear = Year.of(2024))
+
+        assert(result.covering == null)
+        assert(result.breedingYear == Year.of(2024))
+        assert(result.outcome == FoalingOutcome.NotCovered)
+    }
+
+    @Test
+    fun `種付せずの成績へ分娩結果を報告すると FoalingAlreadyRecorded を返すこと`() {
+        val result = BreedingFixture.uncoveredBreedingResult()
+
+        val error = result.recordFoaling(FoalingOutcome.NotConceived).getError()
+
+        assert(error == FoalingAlreadyRecorded(FoalingOutcome.NotCovered))
+    }
+
+    @Test
+    fun `NotCovered を分娩結果として報告しようとすると拒否されること`() {
+        val result = BreedingFixture.breedingResult()
+
+        val error =
+            runCatching { result.recordFoaling(FoalingOutcome.NotCovered) }.exceptionOrNull()
+
+        assert(error is IllegalArgumentException)
     }
 }

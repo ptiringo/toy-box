@@ -25,10 +25,20 @@ data class ReportFoalingRequest(val outcome: FoalingOutcomeDto, val foalingDate:
  * リクエストボディをドメインの分娩結果へ変換する。
  *
  * 生産（[FoalingOutcomeDto.LIVE_FOAL]）は分娩日が必須であり、欠けている場合は入力不正として 400 を表す [ProblemDetail]
- * を返す。産駒なしの各区分は分娩日を持たない（指定されても無視する）。
+ * を返す。産駒なしの各区分は分娩日を持たない（指定されても無視する）。種付せず （[FoalingOutcomeDto.NOT_COVERED]）は種付を伴わない年次成績の区分であり分娩結果報告
+ * （`:reportFoaling`）では 受け付けない（別経路で記録する）。入力不正として 400 を返す。
  */
 fun ReportFoalingRequest.toOutcome(): Result<FoalingOutcome, ProblemDetail> =
     when (outcome) {
+        FoalingOutcomeDto.NOT_COVERED ->
+            Err(
+                problem(
+                    status = HttpStatus.BAD_REQUEST,
+                    code = "foaling-outcome-not-reportable",
+                    title = "Foaling outcome not reportable",
+                    detail = "種付せず（NOT_COVERED）は分娩結果として報告できません。",
+                )
+            )
         FoalingOutcomeDto.LIVE_FOAL ->
             if (foalingDate == null) {
                 Err(

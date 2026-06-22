@@ -38,6 +38,9 @@ enum class FoalingOutcomeDto {
 
     /** 双子生後直死。 */
     TWIN_NEONATAL_DEATH,
+
+    /** 種付せず（その年に種付しなかった）。種付を伴わない年次成績の区分。 */
+    NOT_COVERED,
 }
 
 /**
@@ -63,4 +66,5 @@ fun FoalingOutcome.toResponse(): FoalingOutcomeResponse =
             FoalingOutcomeResponse(FoalingOutcomeDto.NEONATAL_DEATH, null)
         FoalingOutcome.TwinNeonatalDeath ->
             FoalingOutcomeResponse(FoalingOutcomeDto.TWIN_NEONATAL_DEATH, null)
+        FoalingOutcome.NotCovered -> FoalingOutcomeResponse(FoalingOutcomeDto.NOT_COVERED, null)
     }

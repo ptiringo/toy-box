@@ -29,6 +29,8 @@ class FoalingOutcomeWireTest {
                     FoalingOutcomeResponse(FoalingOutcomeDto.NEONATAL_DEATH, null),
                 FoalingOutcome.TwinNeonatalDeath to
                     FoalingOutcomeResponse(FoalingOutcomeDto.TWIN_NEONATAL_DEATH, null),
+                FoalingOutcome.NotCovered to
+                    FoalingOutcomeResponse(FoalingOutcomeDto.NOT_COVERED, null),
             )
 
         cases.forEach { (domain, expected) -> assert(domain.toResponse() == expected) }
@@ -61,5 +63,14 @@ class FoalingOutcomeWireTest {
 
         assert(problem != null)
         assert(problem?.properties?.get("error_code") == "missing-foaling-date")
+    }
+
+    @Test
+    fun `種付せずは分娩結果報告では受け付けず入力不正の ProblemDetail を返すこと`() {
+        val problem =
+            ReportFoalingRequest(FoalingOutcomeDto.NOT_COVERED, null).toOutcome().getError()
+
+        assert(problem != null)
+        assert(problem?.properties?.get("error_code") == "foaling-outcome-not-reportable")
     }
 }

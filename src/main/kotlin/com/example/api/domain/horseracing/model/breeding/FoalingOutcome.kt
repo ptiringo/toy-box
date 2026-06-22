@@ -4,15 +4,17 @@ import java.time.LocalDate
 import org.jmolecules.ddd.annotation.ValueObject
 
 /**
- * 分娩結果。種付を行った繁殖牝馬がその年に迎えた帰結を表す。
+ * 年次の繁殖成績区分。繁殖牝馬がその年に迎えた帰結を表す。
  *
- * 「繁殖成績報告書」（様式第14号）が報告する分娩の帰結を sealed なドメイン語彙として表す。生産（産駒あり） の [LiveFoal]
- * と、産駒なしに終わった各区分（様式第14号裏「子馬のない母の繁殖成績」のうち**種付後に生じる もの**）に分かれる。帰結は相互排他であり、`when` の網羅性で漏れを防ぐため sealed
- * interface とする。
+ * 「繁殖成績報告書」（様式第14号）が報告する年次の繁殖成績を sealed なドメイン語彙として表す。生産（産駒あり） の [LiveFoal]
+ * と、産駒なしに終わった各区分（様式第14号裏「子馬のない母の繁殖成績」の8区分）に分かれる。区分は相互排他であり、`when` の網羅性で漏れを防ぐため sealed interface
+ * とする。
  *
- * 「種付せず」（その年に種付しなかった区分）は種付（[Covering]）が存在しない帰結であり、種付を起点とする本モデル
- * の対象外として今回は表現しない（別途モデル化を検討）。妊娠期間・生後日数の閾値（例: 流産と死産の境、生後直死 の判定日数）は様式の OCR
- * が不鮮明なため数値としては保持せず、報告者の区分判断をそのまま受け取る分類として扱う。
+ * 8区分のうち7区分（[NotConceived] / [Abortion] / [TwinAbortion] / [Stillbirth] / [TwinStillbirth] /
+ * [NeonatalDeath] / [TwinNeonatalDeath]）は**種付後に生じる**帰結だが、8区分目の [NotCovered]（種付せず）だけは
+ * 種付（[Covering]）が存在しない年次成績を表す。このため [NotCovered] は [BreedingResult] において covering を 伴わない唯一の区分であり、整合は
+ * [BreedingResult] のファクトリと不変条件が強制する（経緯は ADR-0016）。妊娠期間・ 生後日数の閾値（例: 流産と死産の境、生後直死の判定日数）は様式の OCR
+ * が不鮮明なため数値としては保持せず、報告者の 区分判断をそのまま受け取る分類として扱う。
  */
 sealed interface FoalingOutcome {
     /**
@@ -46,4 +48,12 @@ sealed interface FoalingOutcome {
 
     /** 双子生後直死。双子の生後直死。 */
     @ValueObject data object TwinNeonatalDeath : FoalingOutcome
+
+    /**
+     * 種付せず。その年に種付しなかった（種付が存在しない）年次成績。
+     *
+     * 様式第14号裏「子馬のない母の繁殖成績」の8区分目。他の7区分が種付を起点とするのに対し、本区分は種付 （[Covering]）を伴わない。[BreedingResult]
+     * ではこの区分のみ covering を持たず、生成は専用ファクトリ [BreedingResult.createUncovered] に限る。
+     */
+    @ValueObject data object NotCovered : FoalingOutcome
 }
