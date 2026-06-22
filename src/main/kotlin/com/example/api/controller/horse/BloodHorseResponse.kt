@@ -64,7 +64,8 @@ fun BloodHorse.toResponse(): BloodHorseResponse =
  * [RegisterInStudBookUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
  *
  * - VO 検証エラーは入力不正として 400 Bad Request
- * - 父母の不在・ドメイン前提条件違反は、整った入力だが意味的に処理できないため 422 Unprocessable Entity
+ * - 父母の不在（ボディ内 sire_id / dam_id の参照先不在）・ドメイン前提条件違反は、整った入力だが意味的に 処理できないため 422 Unprocessable
+ *   Entity（判断基準は ADR-0018 / ADR-0021、api-design.md「404 vs 422」）
  */
 fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {

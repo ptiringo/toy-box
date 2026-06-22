@@ -56,4 +56,16 @@ VO で表す項目（番号・名前など）は素の文字列で DTO に受け
 - 業務エラー固有の追加情報は拡張プロパティで保持する（例: `error_code` / `existing_id` 等。拡張キーは snake_case。前述「命名規約」を参照）
 - `type` は当面 `urn:problem-type:{kebab-case-code}` 形式を用い、HTTP で公開する Resolvable URI ができたら差し替える
 
+### リソース不在のステータス（404 vs 422）
+
+参照先リソースが存在しない場合のステータスは、その参照が **URL パスにあるかリクエストボディにあるか** で一貫して切り分ける。
+
+| 参照の位置 | ステータス | 根拠 | 例 |
+|---|---|---|---|
+| URL パス上の操作対象が不在 | **404 Not Found** | パスで識別される対象そのものが無い | `/api/bloodHorses/{id}:registerName` の対象馬不在（`HorseNotFound`）、`BreedingResultNotFound` |
+| リクエストボディ内で参照する別リソースが不在 | **422 Unprocessable Entity** | リクエストは構文的に正しく処理されたが、ボディ内参照先が無く意味的に処理できない | `SireNotFound` / `DamNotFound`（`sire_id` / `dam_id`）、`BreedingRegistrationNotFound` |
+
+- VO 検証エラー（形式不正）は入力不正として **400 Bad Request**、状態の競合（二重登録等）は **409 Conflict** とする。
+- 経緯は [ADR-0018](../../docs/adr/0018-record-uncovered-status-and-422.md)（基準の確立）と [ADR-0021](../../docs/adr/0021-parent-not-found-unprocessable-entity.md)（父母不在への適用）を参照。
+
 > AIP-193 (Errors) はレスポンスボディの形（`google.rpc.Status`）を規定するが、本プロジェクトでは REST 寄りの RFC 9457 を採用する。リソース設計など構造系のみ AIP を適用する。
