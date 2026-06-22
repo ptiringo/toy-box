@@ -29,3 +29,4 @@
 | [0017](0017-terraform-quality-gates-tflint-trivy-defer-opa.md) | Terraform 品質ゲートに tflint と Trivy を採用し policy-as-code（OPA）は当面見送る | Accepted |
 | [0018](0018-uncovered-via-discriminated-single-create.md) | 「種付せず」の記録入口を covering 有無で判別する単一 Create にする | Accepted |
 | [0019](0019-compiler-warnings-as-errors.md) | コンパイラ警告をエラー化して警告ゼロ運用を強制する（allWarningsAsErrors） | Accepted |
+| [0020](0020-sealed-origin-and-discriminated-origin-subobject.md) | 出自を sealed Origin に統合し、リソース表現に discriminated 部分オブジェクトを許す | Accepted |

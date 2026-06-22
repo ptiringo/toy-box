@@ -13,10 +13,9 @@ class BloodHorseCreateImportedTest {
 
         val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
 
-        assert(bloodHorse.sireId == null)
-        assert(bloodHorse.damId == null)
-        assert(bloodHorse.originCountry == entry.originCountry)
-        assert(bloodHorse.landingDate == entry.landingDate)
+        val expected =
+            Origin.Imported(originCountry = entry.originCountry, landingDate = entry.landingDate)
+        assert(bloodHorse.origin == expected)
         assert(bloodHorse.registrationNumber == registrationNumber)
     }
 

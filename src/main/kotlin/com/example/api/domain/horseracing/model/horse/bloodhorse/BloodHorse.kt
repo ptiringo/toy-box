@@ -60,9 +60,9 @@ sealed interface RegisterInStudBookError {
  * 父・母を引数で受け取る生成ファクトリ [create] がその場で自己検証する（Jockey.create と同じく、検証を満たさなければ生成しない）。 コンストラクタは private
  * とし、生成は [create] / [createImported] のみに限る。
  *
- * 父母が当システムに存在しない個体（輸入馬・基礎輸入馬）もある。この場合 [sireId] / [damId] は null となり、 代わりに原産国
- * （[originCountry]）と揚陸日（[landingDate]）を持つ。輸入馬の生成は [createImported] が担い、内国産馬とは経路を分ける。 逆に内国産馬は
- * [originCountry] / [landingDate] を持たない（null）。
+ * 出自（内国産か輸入か）は [origin] に集約する。内国産馬は父・母の軽種馬ID（[Origin.Domestic]）を、 父母が当システムに存在しない個体
+ * （輸入馬・基礎輸入馬）は原産国・揚陸日（[Origin.Imported]）を持つ。両者は相互排他であり、sealed [Origin] で型として強制する（ADR-0020）。
+ * 内国産馬の生成は [create]、輸入馬の生成は [createImported] が担い、経路を分ける。
  *
  * 状態はイミュータブルに扱う。出生時は血統登録のみで馬名を持たず（[name] は null）、後日の「馬名登録」で一度だけ命名される。 命名は [assignName] が 馬名を持つ新しい
  * [BloodHorse] を返すことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
@@ -75,10 +75,7 @@ sealed interface RegisterInStudBookError {
  * @property dateOfBirth 生年月日
  * @property breeder 生産者
  * @property microchipNumber マイクロチップ番号
- * @property sireId 父（雄）の軽種馬ID。父母不明の輸入馬では null
- * @property damId 母（雌）の軽種馬ID。父母不明の輸入馬では null
- * @property originCountry 原産国。輸入馬のみ持ち、内国産馬では null
- * @property landingDate 揚陸日。輸入馬のみ持ち、内国産馬では null
+ * @property origin 出自（内国産＝父母ID／輸入＝原産国・揚陸日）。相互排他を [Origin] で型強制する
  * @property name 馬名。未命名なら null。命名は [assignName] でのみ行う
  */
 @AggregateRoot
@@ -92,10 +89,7 @@ private constructor(
     val dateOfBirth: DateOfBirth,
     val breeder: Breeder,
     val microchipNumber: MicrochipNumber,
-    val sireId: BloodHorseId?,
-    val damId: BloodHorseId?,
-    val originCountry: OriginCountry?,
-    val landingDate: LandingDate?,
+    val origin: Origin,
     val name: HorseName?,
 ) : Entity<BloodHorseId>() {
     /**
@@ -127,10 +121,7 @@ private constructor(
             dateOfBirth = dateOfBirth,
             breeder = breeder,
             microchipNumber = microchipNumber,
-            sireId = sireId,
-            damId = damId,
-            originCountry = originCountry,
-            landingDate = landingDate,
+            origin = origin,
             name = name,
         )
 
@@ -177,10 +168,7 @@ private constructor(
                             dateOfBirth = entry.dateOfBirth,
                             breeder = entry.breeder,
                             microchipNumber = entry.microchipNumber,
-                            sireId = sire.id,
-                            damId = dam.id,
-                            originCountry = null,
-                            landingDate = null,
+                            origin = Origin.Domestic(sireId = sire.id, damId = dam.id),
                             name = null,
                         )
                     )
@@ -189,8 +177,8 @@ private constructor(
         /**
          * 父母不明の輸入馬・基礎輸入馬として [BloodHorse] を生成する。
          *
-         * 父母が当システムに存在しないため父母 ID は持たず（[sireId] / [damId] は null）、代わりに原産国・揚陸日を持つ。
-         * 内国産馬の前提条件（父=雄・母=雌・DNA 親子整合・親仔の品種整合）は適用されないため、本ファクトリは検証を持たず生成する。
+         * 父母が当システムに存在しないため父母 ID は持たず（出自は [Origin.Imported]）、代わりに原産国・揚陸日を持つ。 内国産馬の前提条件（父=雄・母=雌・DNA
+         * 親子整合・親仔の品種整合）は適用されないため、本ファクトリは検証を持たず生成する。
          * 輸入馬固有の審査（承認海外機関の血統書による品種確定、親子判定の血液型・海外機関フォールバック）は別途のモデリングに委ねる。 生成直後は未命名（[name] は null）。
          */
         fun createImported(
@@ -206,10 +194,11 @@ private constructor(
                 dateOfBirth = entry.dateOfBirth,
                 breeder = entry.breeder,
                 microchipNumber = entry.microchipNumber,
-                sireId = null,
-                damId = null,
-                originCountry = entry.originCountry,
-                landingDate = entry.landingDate,
+                origin =
+                    Origin.Imported(
+                        originCountry = entry.originCountry,
+                        landingDate = entry.landingDate,
+                    ),
                 name = null,
             )
     }

@@ -18,6 +18,7 @@ REST API は以下のスタイルガイドに準拠する。
 - Create は `POST /{collection}` でコレクションに対して行い、作成された resource 全体を `201 Created` で返す（[AIP-133](https://google.aip.dev/133)）
 - カスタムメソッドは `POST /{resource}:{verb}`（[AIP-136](https://google.aip.dev/136)）で表す。特定リソースを操作するカスタムメソッド（例: 馬名登録 `:registerName`）は、操作後の resource 全体を返す
 - **リソース操作の成功レスポンスは一律でリソース表現を返す**。操作ごとに別レスポンス DTO を作らず、リソース名ベースの単一 DTO（`〜Response`、例 `BloodHorseResponse`）を全操作（Create / カスタムメソッド等）で共用する。操作前は未設定になりうる属性（命名前の `name` 等）は nullable で表す。経緯は [ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md)
+- 単一リソース表現を維持したまま、**相互排他な属性集合だけ**は discriminated な入れ子オブジェクト（`oneOf` ＋判別子 `type`）にしてよい（例: 軽種馬の出自 `origin` ＝ 内国産 `DOMESTIC` / 輸入 `IMPORTED`）。リソース全体を `oneOf` に割ることは依然採らず、共通項は平置きを保つ。Jackson は `@JsonTypeInfo(use = NAME, property = "type")` ＋ `@JsonSubTypes`、springdoc は `@Schema(oneOf = […], discriminatorProperty = "type")`。経緯は [ADR-0020](../../docs/adr/0020-sealed-origin-and-discriminated-origin-subobject.md)
 
 ## 命名規約（casing）
 

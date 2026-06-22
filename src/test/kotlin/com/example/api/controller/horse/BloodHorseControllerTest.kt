@@ -13,7 +13,6 @@ import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.horseracing.model.horse.bloodhorse.HorseName
 import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -63,8 +62,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
     @Nested
     inner class SuccessCase {
         @Test
-        fun `正常な入力で 201 Created と登録結果が返ること`() {
-            val saved = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+        fun `正常な入力で 201 Created と内国産の出自を持つ登録結果が返ること`() {
+            val saved = BloodHorseFixture.domesticBloodHorse()
             every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
                 Ok(saved)
 
@@ -76,8 +75,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.registration_number")
-                .isEqualTo("2023104567")
+                .extractingPath("$.origin.type")
+                .isEqualTo("DOMESTIC")
         }
     }
 
@@ -260,7 +259,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc) {
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.origin_country")
+                .extractingPath("$.origin.country")
                 .isEqualTo("アイルランド")
         }
 

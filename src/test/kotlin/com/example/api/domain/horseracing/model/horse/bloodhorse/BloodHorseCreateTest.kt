@@ -20,8 +20,7 @@ class BloodHorseCreateTest {
 
         val bloodHorse = BloodHorse.create(sire, dam, entry, registrationNumber).unwrap()
 
-        assert(bloodHorse.sireId == sire.id)
-        assert(bloodHorse.damId == dam.id)
+        assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
         assert(bloodHorse.breedType == BreedType.THOROUGHBRED)
         assert(bloodHorse.registrationNumber == registrationNumber)
     }
