@@ -51,3 +51,8 @@ jobs:
 
     - name: Terraform Validation
       run: terraform validate
+
+    # tflint による lint（ADR-0017 / #377 フェーズ1: recommended preset、--init 不要）。
+    # mise 管理の tflint を使う。GCP ruleset を足すフェーズ2 で --init + キャッシュを導入する。
+    - name: Run tflint
+      run: tflint --recursive
