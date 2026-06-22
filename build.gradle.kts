@@ -44,7 +44,15 @@ dependencies {
     detektPlugins(project(":detekt-rules"))
 }
 
-kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xjsr305=strict")
+        // コンパイラ警告をエラー扱いにして混入をビルドで止める（警告ゼロ運用）。
+        // detekt / ArchUnit / kover と同列の機械強制ゲート。個別に許容する場合は
+        // @Suppress か -Xwarning-level=<ID>:warning で逃がす。
+        allWarningsAsErrors = true
+    }
+}
 
 tasks.withType<Test> {
     useJUnitPlatform()

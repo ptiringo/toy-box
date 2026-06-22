@@ -18,7 +18,7 @@ import org.springframework.http.ProblemDetail
  * 一律でこのリソース表現全体を返す。父・母は登録済みの軽種馬IDで参照する。
  *
  * 出自（内国産か輸入か）は相互排他なので、入れ子オブジェクト [origin] に discriminated union（`type` 判別子つき）として
- * まとめる。リソース全体は単一表現（ADR-0008）を維持し、相互排他な部分だけを `oneOf` にする（ADR-0019）。
+ * まとめる。リソース全体は単一表現（ADR-0008）を維持し、相互排他な部分だけを `oneOf` にする（ADR-0020）。
  *
  * @property id 軽種馬の生 UUID
  * @property registrationNumber 血統登録番号

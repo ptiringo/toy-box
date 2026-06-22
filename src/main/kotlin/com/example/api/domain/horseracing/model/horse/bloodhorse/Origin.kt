@@ -10,7 +10,7 @@ import org.jmolecules.ddd.annotation.ValueObject
  * や混在といった無効状態を型で防げなかった。 これを sealed interface に統合し、相互排他をコンパイル時に強制する（[Domestic] か [Imported]
  * のどちらか一方のみ）。
  *
- * 父・母は別集約（別個体）であり、[Domestic] は集約直接参照ではなく [BloodHorseId] 経由の ID 参照で保持する。 経緯は ADR-0019 を参照。
+ * 父・母は別集約（別個体）であり、[Domestic] は集約直接参照ではなく [BloodHorseId] 経由の ID 参照で保持する。 経緯は ADR-0020 を参照。
  */
 @ValueObject
 sealed interface Origin {

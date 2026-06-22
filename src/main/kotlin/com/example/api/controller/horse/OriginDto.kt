@@ -12,7 +12,7 @@ import java.util.UUID
  *
  * 内国産（父母 ID あり）／輸入（原産国・揚陸日あり）の相互排他を、判別子 `type` を持つ discriminated union として表す。
  * リソース全体は単一表現（[ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md)）を維持し、
- * 共通項は平置きのまま、相互排他な部分（出自）だけを入れ子オブジェクト `origin` の `oneOf` にする（ADR-0019）。 ドメインの sealed [Origin]
+ * 共通項は平置きのまま、相互排他な部分（出自）だけを入れ子オブジェクト `origin` の `oneOf` にする（ADR-0020）。 ドメインの sealed [Origin]
  * と表裏一体だが、wire 契約として独立させ [toApi] で往復する（[ADR-0007] と整合）。
  *
  * Jackson は [JsonTypeInfo] により `type`（`DOMESTIC` / `IMPORTED`）を出力し、springdoc は [Schema] の `oneOf` ＋

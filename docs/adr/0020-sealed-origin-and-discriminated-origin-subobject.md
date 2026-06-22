@@ -1,4 +1,4 @@
-# 0019. 出自を sealed Origin に統合し、リソース表現に discriminated 部分オブジェクトを許す
+# 0020. 出自を sealed Origin に統合し、リソース表現に discriminated 部分オブジェクトを許す
 
 - Status: Accepted
 - Date: 2026-06-23
