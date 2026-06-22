@@ -1,7 +1,5 @@
 package com.example.api.domain.horseracing.model.breeding
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -13,27 +11,55 @@ class BreedingResultCreateTest {
     private val certificateNumber = CoveringCertificateNumber.create("C-2024-0001").unwrap()
 
     @Test
-    fun `配合相手が種牡馬なら種付が記録され種牡馬を ID で参照する繁殖成績が生成されること`() {
-        val registration = BreedingFixture.breedingRegistration()
-        val stallion = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+    fun `繁殖牝馬と種牡馬の登録なら種付が記録され種牡馬を ID で参照する繁殖成績が生成されること`() {
+        val broodmareRegistration = BreedingFixture.breedingRegistration()
+        val stallionRegistration = BreedingFixture.stallionRegistration()
 
         val result =
-            BreedingResult.create(registration, stallion, coveringDate, certificateNumber).unwrap()
+            BreedingResult.create(
+                    broodmareRegistration,
+                    stallionRegistration,
+                    coveringDate,
+                    certificateNumber,
+                )
+                .unwrap()
 
-        assert(result.breedingRegistrationId == registration.id)
-        assert(result.covering.stallionId == stallion.id)
+        assert(result.breedingRegistrationId == broodmareRegistration.id)
+        assert(result.covering.stallionId == stallionRegistration.registeredHorseId)
         assert(result.covering.coveringDate == coveringDate)
         assert(result.covering.certificateNumber == certificateNumber)
         assert(result.outcome == null)
     }
 
     @Test
-    fun `配合相手が雄でないと StallionNotMale を返すこと`() {
-        val registration = BreedingFixture.breedingRegistration()
-        val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+    fun `種付対象の登録ロールが繁殖牝馬でないと NotBroodmare を返すこと`() {
+        val broodmareRegistration = BreedingFixture.stallionRegistration()
+        val stallionRegistration = BreedingFixture.stallionRegistration()
 
-        val result = BreedingResult.create(registration, mare, coveringDate, certificateNumber)
+        val result =
+            BreedingResult.create(
+                broodmareRegistration,
+                stallionRegistration,
+                coveringDate,
+                certificateNumber,
+            )
 
-        assert(result.getError() == RecordCoveringError.StallionNotMale)
+        assert(result.getError() == RecordCoveringError.NotBroodmare)
+    }
+
+    @Test
+    fun `配合相手の登録ロールが種牡馬でないと NotStallion を返すこと`() {
+        val broodmareRegistration = BreedingFixture.breedingRegistration()
+        val stallionRegistration = BreedingFixture.breedingRegistration()
+
+        val result =
+            BreedingResult.create(
+                broodmareRegistration,
+                stallionRegistration,
+                coveringDate,
+                certificateNumber,
+            )
+
+        assert(result.getError() == RecordCoveringError.NotStallion)
     }
 }

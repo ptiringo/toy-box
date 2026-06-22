@@ -62,8 +62,8 @@ class RegisterFoalUseCaseTest {
             BreedingFixture.breedingRegistration(broodmare = dam)
         val breedingResult: BreedingResult =
             BreedingFixture.breedingResult(
-                    breedingRegistration = breedingRegistration,
-                    stallion = sire,
+                    broodmareRegistration = breedingRegistration,
+                    stallionRegistration = BreedingFixture.stallionRegistration(stallion = sire),
                 )
                 .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2024, 3, 20)))
                 .unwrap()
@@ -205,8 +205,8 @@ class RegisterFoalUseCaseTest {
             val w = Wiring()
             val notReported =
                 BreedingFixture.breedingResult(
-                    breedingRegistration = w.breedingRegistration,
-                    stallion = w.sire,
+                    broodmareRegistration = w.breedingRegistration,
+                    stallionRegistration = BreedingFixture.stallionRegistration(stallion = w.sire),
                 )
             every { w.breedingResultRepository.findById(notReported.id) } returns notReported
 

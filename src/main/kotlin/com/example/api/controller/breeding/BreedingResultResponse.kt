@@ -70,25 +70,32 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "種付対象として指定された繁殖登録が存在しません。",
                 )
                 .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
-        is RecordCoveringUseCaseError.StallionNotFound ->
+        is RecordCoveringUseCaseError.StallionRegistrationNotFound ->
             problem(
                     status = HttpStatus.UNPROCESSABLE_ENTITY,
-                    code = "stallion-not-found",
-                    title = "Stallion not found",
-                    detail = "配合相手として指定された種牡馬が存在しません。",
+                    code = "stallion-registration-not-found",
+                    title = "Stallion registration not found",
+                    detail = "配合相手として指定された種牡馬の繁殖登録が存在しません。",
                 )
-                .apply { setProperty("stallion_id", stallionId) }
+                .apply { setProperty("stallion_registration_id", stallionRegistrationId) }
         is RecordCoveringUseCaseError.PreconditionViolated -> cause.toProblemDetail()
     }
 
 private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
     when (this) {
-        RecordCoveringError.StallionNotMale ->
+        RecordCoveringError.NotBroodmare ->
             problem(
                 status = HttpStatus.UNPROCESSABLE_ENTITY,
-                code = "stallion-not-male",
-                title = "Stallion is not male",
-                detail = "配合相手として指定された軽種馬が雄ではありません。",
+                code = "not-broodmare",
+                title = "Registration is not a broodmare",
+                detail = "種付対象として指定された繁殖登録のロールが繁殖牝馬ではありません。",
+            )
+        RecordCoveringError.NotStallion ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                code = "not-stallion",
+                title = "Registration is not a stallion",
+                detail = "配合相手として指定された繁殖登録のロールが種牡馬ではありません。",
             )
     }
 

@@ -65,7 +65,7 @@ class BreedingResultController(
                 ),
                 ApiResponse(
                     responseCode = "422",
-                    description = "繁殖登録・種牡馬が存在しない、または前提条件（種牡馬が雄）を満たさない",
+                    description = "繁殖牝馬・種牡馬の繁殖登録が存在しない、または前提条件（登録ロール）を満たさない",
                     content =
                         [
                             Content(

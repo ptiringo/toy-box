@@ -9,28 +9,41 @@ import java.time.LocalDate
 /**
  * テスト用に繁殖コンテキストの集約・値オブジェクトを組み立てる Object Mother。
  *
- * [BreedingRegistration] / [BreedingResult] の生成ファクトリ（`create`）は前提条件（繁殖牝馬が雌・種牡馬が雄）を
- * 自己検証する。ここでは検証を通すため、適切な性の馬を [BloodHorseFixture] で用意してから組み立てる（`unwrap` で成功を取り出す）。
+ * 繁殖登録は雄雌共通の単一の登録で、性からロール（種牡馬／繁殖牝馬）が定まる。[breedingRegistration] は繁殖牝馬、 [stallionRegistration]
+ * は種牡馬のロールを持つ登録を組む。[BreedingResult.create] は両登録のロールを自己検証するため、 適切な登録を渡して `unwrap` で成功を取り出す。
  */
 object BreedingFixture {
-    /** 既定値を持つ [BreedingRegistration] を生成する。繁殖牝馬は必要に応じて上書きする。 */
+    /** ロールが繁殖牝馬の [BreedingRegistration] を生成する。繁殖牝馬は必要に応じて上書きする。 */
     fun breedingRegistration(
         broodmare: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
     ): BreedingRegistration =
         BreedingRegistration.create(
-                registrationNumber = BreedingRegistrationNumber.create("B-2024-0001").unwrap(),
-                broodmare = broodmare,
-            )
-            .unwrap()
+            registrationNumber = BreedingRegistrationNumber.create("B-2024-0001").unwrap(),
+            horse = broodmare,
+        )
+
+    /** ロールが種牡馬の [BreedingRegistration] を生成する。種牡馬は必要に応じて上書きする。 */
+    fun stallionRegistration(
+        stallion: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+    ): BreedingRegistration =
+        BreedingRegistration.create(
+            registrationNumber = BreedingRegistrationNumber.create("B-2024-0002").unwrap(),
+            horse = stallion,
+        )
 
     /** 既定値を持つ、分娩結果未報告の [BreedingResult] を生成する。必要な属性のみ上書きする。 */
     fun breedingResult(
-        breedingRegistration: BreedingRegistration = breedingRegistration(),
-        stallion: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE),
+        broodmareRegistration: BreedingRegistration = breedingRegistration(),
+        stallionRegistration: BreedingRegistration = stallionRegistration(),
         coveringDate: LocalDate = LocalDate.of(2024, 4, 1),
         certificateNumber: CoveringCertificateNumber =
             CoveringCertificateNumber.create("C-2024-0001").unwrap(),
     ): BreedingResult =
-        BreedingResult.create(breedingRegistration, stallion, coveringDate, certificateNumber)
+        BreedingResult.create(
+                broodmareRegistration,
+                stallionRegistration,
+                coveringDate,
+                certificateNumber,
+            )
             .unwrap()
 }
