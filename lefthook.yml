@@ -50,6 +50,13 @@ pre-commit:
       run: cd infra && terraform init -backend=false && terraform validate
       tags: lint
 
+    # tflint による Terraform の lint（ADR-0017 / #377 フェーズ1: recommended preset）
+    # mise 管理ツールの解決を確実にするため mise exec 経由で呼ぶ（gitleaks/actionlint/zizmor と同様）。
+    tflint:
+      glob: "infra/*.tf"
+      run: cd infra && mise exec -- tflint --recursive
+      tags: lint
+
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行
