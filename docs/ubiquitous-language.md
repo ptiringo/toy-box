@@ -58,7 +58,7 @@ JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-
 | Covering | 種付 | 値オブジェクト | 種牡馬を繁殖牝馬に交配したという事実。種牡馬は `BloodHorseId` 参照。 | — |
 | CoveringCertificateNumber | 種付証明書番号 | 値オブジェクト | 種付の事実を証明する種付証明書の番号。 | — |
 | FoalingOutcome | 分娩結果 | 値オブジェクト（sealed） | 種付した繁殖牝馬がその年に迎えた帰結。生産（`LiveFoal`）と産駒なし各区分の sealed 語彙。 | sealed 親型自体は jMolecules 非付与（カタログには variant のみ出る） |
-| FoalingOutcome.LiveFoal | 生産（産駒あり） | 値オブジェクト | 分娩により生存産駒を得た帰結。血統登録（`registerInStudBook`）の入力に接続する。 | — |
+| FoalingOutcome.LiveFoal | 生産（産駒あり） | 値オブジェクト | 分娩により生存産駒を得た帰結。血統登録（`BloodHorse.create`）の入力に接続する。 | — |
 | BreedingRegistrationNumber | 繁殖登録番号 | 値オブジェクト | 繁殖登録に交付される番号。 | — |
 
 > **ロール用語の注意**: `Stallion`（種牡馬）/ `Broodmare`（繁殖牝馬）は独立した馬ではなく、繁殖登録
@@ -83,12 +83,17 @@ JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-
 
 #### ドメインサービス（複数集約をまたぐ操作）
 
+集約をまたぐ前提条件のうち、協力集約を**引数で受け取れば構築時に自己検証できる**ものは集約の `create` ファクトリへ移した（[ADR-0014](adr/0014-self-validating-factory-over-confinement.md)）。したがって血統登録・繁殖登録・種付記録は**ドメインサービスではなくファクトリ**である:
+
+- 血統登録 = `BloodHorse.create`（父=雄・母=雌・DNA 親子整合・品種整合を検証）／輸入馬は `BloodHorse.createImported`
+- 繁殖登録 = `BreedingRegistration.create`（雄雌共通、性から `BreedingRole` を決定）
+- 種付記録 = `BreedingResult.create`（繁殖牝馬×種牡馬の登録ロールを検証）
+
+ドメインサービスとして残るのは、複数の集約・ファクトリを束ねるオーケストレーションのみ:
+
 | 用語（関数） | 和名 | 定義 |
 | --- | --- | --- |
-| registerInStudBook | 血統登録する | 父母の前提（父=雄・母=雌・DNA 親子整合・品種整合）を検証して `BloodHorse` を誕生させる。 |
-| registerFoal | 生産産駒を登録する | 生産（`LiveFoal`）を起点に、父母を解決して `registerInStudBook` へ接続する。 |
-| recordCovering | 種付を記録する | 繁殖登録済みの牝馬についてその年の種付を記録し `BreedingResult` を生成する。 |
-| registerForBreeding | 繁殖登録する | 牝馬を繁殖に供する登録を行う。 |
+| registerFoal | 生産産駒を登録する | 生産（`LiveFoal`）を起点に、父母を解決して `BloodHorse.create` へ接続する。 |
 | confirmRaceResult | 競走結果を確定する | 競走の結果を確定する。 |
 
 ### sakamichi コンテキスト（エンターテイメント）
@@ -167,11 +172,7 @@ graph LR
 | BreedingResultRepository | リポジトリポート | domain.horseracing.model.breeding |
 | JockeyRepository | リポジトリポート | domain.horseracing.model.jockey |
 | confirmRaceResult | ドメインサービス | domain.horseracing.service.race |
-| recordCovering | ドメインサービス | domain.horseracing.service.breeding |
 | registerFoal | ドメインサービス | domain.horseracing.service.horse |
-| registerForBreeding | ドメインサービス | domain.horseracing.service.breeding |
-| registerImportedHorse | ドメインサービス | domain.horseracing.service.horse |
-| registerInStudBook | ドメインサービス | domain.horseracing.service.horse |
 
 ### sakamichi
 

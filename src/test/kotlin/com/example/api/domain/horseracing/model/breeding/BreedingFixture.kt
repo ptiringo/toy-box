@@ -1,49 +1,49 @@
 package com.example.api.domain.horseracing.model.breeding
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseId
-import com.example.api.domain.shared.generateId
+import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
+import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 
 /**
  * テスト用に繁殖コンテキストの集約・値オブジェクトを組み立てる Object Mother。
  *
- * [BreedingRegistration] / [BreedingResult] の生成口は本番ではドメインサービスに封じ込められている（`of` は
- * internal）。テストでは前提条件検証を経ずに任意の状態を用意したいため、internal 可視性がモジュール内（test も同一 モジュール）から見えることを利用してここで直接組み立てる。
+ * 繁殖登録は雄雌共通の単一の登録で、性からロール（種牡馬／繁殖牝馬）が定まる。[breedingRegistration] は繁殖牝馬、 [stallionRegistration]
+ * は種牡馬のロールを持つ登録を組む。[BreedingResult.create] は両登録のロールを自己検証するため、 適切な登録を渡して `unwrap` で成功を取り出す。
  */
 object BreedingFixture {
-    /** 既定値（ロールは繁殖牝馬）を持つ [BreedingRegistration] を生成する。必要な属性のみ上書きする。 */
+    /** ロールが繁殖牝馬の [BreedingRegistration] を生成する。繁殖牝馬は必要に応じて上書きする。 */
     fun breedingRegistration(
-        registeredHorseId: BloodHorseId = BloodHorseId(generateId()),
-        role: BreedingRole = BreedingRole.BROODMARE,
+        broodmare: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
     ): BreedingRegistration =
-        BreedingRegistration.of(
+        BreedingRegistration.create(
             registrationNumber = BreedingRegistrationNumber.create("B-2024-0001").unwrap(),
-            registeredHorseId = registeredHorseId,
-            role = role,
+            horse = broodmare,
         )
 
-    /** 既定値を持つ、ロールが種牡馬の [BreedingRegistration] を生成する。必要な属性のみ上書きする。 */
+    /** ロールが種牡馬の [BreedingRegistration] を生成する。種牡馬は必要に応じて上書きする。 */
     fun stallionRegistration(
-        registeredHorseId: BloodHorseId = BloodHorseId(generateId())
+        stallion: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
     ): BreedingRegistration =
-        breedingRegistration(registeredHorseId = registeredHorseId, role = BreedingRole.STALLION)
-
-    /** 既定値を持つ [Covering] を生成する。必要な属性のみ上書きする。 */
-    fun covering(
-        stallionId: BloodHorseId = BloodHorseId(generateId()),
-        coveringDate: LocalDate = LocalDate.of(2024, 4, 1),
-    ): Covering =
-        Covering(
-            stallionId = stallionId,
-            coveringDate = coveringDate,
-            certificateNumber = CoveringCertificateNumber.create("C-2024-0001").unwrap(),
+        BreedingRegistration.create(
+            registrationNumber = BreedingRegistrationNumber.create("B-2024-0002").unwrap(),
+            horse = stallion,
         )
 
     /** 既定値を持つ、分娩結果未報告の [BreedingResult] を生成する。必要な属性のみ上書きする。 */
     fun breedingResult(
-        breedingRegistrationId: BreedingRegistrationId = breedingRegistration().id,
-        covering: Covering = covering(),
+        broodmareRegistration: BreedingRegistration = breedingRegistration(),
+        stallionRegistration: BreedingRegistration = stallionRegistration(),
+        coveringDate: LocalDate = LocalDate.of(2024, 4, 1),
+        certificateNumber: CoveringCertificateNumber =
+            CoveringCertificateNumber.create("C-2024-0001").unwrap(),
     ): BreedingResult =
-        BreedingResult.of(breedingRegistrationId = breedingRegistrationId, covering = covering)
+        BreedingResult.create(
+                broodmareRegistration,
+                stallionRegistration,
+                coveringDate,
+                certificateNumber,
+            )
+            .unwrap()
 }

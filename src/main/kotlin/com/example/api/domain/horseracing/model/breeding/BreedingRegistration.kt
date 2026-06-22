@@ -1,5 +1,6 @@
 package com.example.api.domain.horseracing.model.breeding
 
+import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.generateId
@@ -18,8 +19,8 @@ import org.jmolecules.ddd.annotation.ValueObject
  * 行う追加登録（繁殖登録のながれの準備物に「その馬の血統登録証明書」がある）。**雄雌共通の単一の登録**で、繁殖登録証明書の `性` によって担う [BreedingRole]（雄=種牡馬
  * STALLION／雌=繁殖牝馬 BROODMARE）が決まる。これにより `BloodHorse` の繁殖ロールを実体化する。
  *
- * 繁殖供用する個体は別集約であり、参照は [BloodHorseId] 経由で表す。前提条件（血統登録済み等）の検証は集約をまたぐため、 ドメインサービス registerForBreeding
- * の責務とする。
+ * 繁殖供用する個体は別集約であり、参照は [BloodHorseId] 経由で表す。生成は登録対象の [BloodHorse] を引数で受け取る 生成ファクトリ [create]
+ * に限り、ロールはその個体の性から定める。
  *
  * @property registrationNumber 繁殖登録番号
  * @property registeredHorseId 繁殖登録した個体（血統登録済み）の軽種馬ID
@@ -38,15 +39,19 @@ private constructor(
 
     companion object {
         /**
-         * [BreedingRegistration] を生成する。
+         * 血統登録済みの馬を繁殖の用に供するため繁殖登録し、[BreedingRegistration] を生成する。
          *
-         * 繁殖登録の前提条件（血統登録済み等）はドメインサービス registerForBreeding が検証済みである前提のため、
-         * この生成口は同モジュールのドメインサービスからのみ呼べるよう internal とする。
+         * 繁殖登録は雄雌どちらも対象で、付与される [BreedingRole]（雄=種牡馬／雌=繁殖牝馬）は対象個体の性から定まる。 制度上の前提条件（②馬名登録済み
+         * ③競走馬登録があれば抹消済み 等）は対応する集約が未モデル化のため現時点では 検証しない。検証すべき前提条件が増えたら戻り値を `Result` に変える。
+         *
+         * @param registrationNumber 交付される繁殖登録番号
+         * @param horse 繁殖登録する馬（血統登録済みの [BloodHorse]）
+         * @return 生成された [BreedingRegistration]
          */
-        internal fun of(
+        fun create(
             registrationNumber: BreedingRegistrationNumber,
-            registeredHorseId: BloodHorseId,
-            role: BreedingRole,
-        ): BreedingRegistration = BreedingRegistration(registrationNumber, registeredHorseId, role)
+            horse: BloodHorse,
+        ): BreedingRegistration =
+            BreedingRegistration(registrationNumber, horse.id, BreedingRole.from(horse.sex))
     }
 }

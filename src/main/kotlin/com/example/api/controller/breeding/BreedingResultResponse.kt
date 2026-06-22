@@ -4,7 +4,7 @@ import com.example.api.application.horseracing.breeding.RecordCoveringUseCaseErr
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.breeding.BreedingResult
-import com.example.api.domain.horseracing.service.breeding.RecordCoveringError
+import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus

@@ -4,7 +4,7 @@ import com.example.api.domain.horseracing.model.breeding.BreedingFixture
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationId
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.horseracing.model.breeding.BreedingResultRepository
-import com.example.api.domain.horseracing.service.breeding.RecordCoveringError
+import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap

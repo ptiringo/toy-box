@@ -1,14 +1,12 @@
-package com.example.api.domain.horseracing.service.breeding
+package com.example.api.domain.horseracing.model.breeding
 
-import com.example.api.domain.horseracing.model.breeding.BreedingFixture
-import com.example.api.domain.horseracing.model.breeding.CoveringCertificateNumber
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import org.junit.jupiter.api.Test
 
-/** recordCovering ドメインサービスのユニットテスト */
-class RecordCoveringTest {
+/** [BreedingResult.create]（種付記録）のユニットテスト */
+class BreedingResultCreateTest {
     private val coveringDate = LocalDate.of(2024, 4, 1)
     private val certificateNumber = CoveringCertificateNumber.create("C-2024-0001").unwrap()
 
@@ -18,7 +16,7 @@ class RecordCoveringTest {
         val stallionRegistration = BreedingFixture.stallionRegistration()
 
         val result =
-            recordCovering(
+            BreedingResult.create(
                     broodmareRegistration,
                     stallionRegistration,
                     coveringDate,
@@ -39,7 +37,7 @@ class RecordCoveringTest {
         val stallionRegistration = BreedingFixture.stallionRegistration()
 
         val result =
-            recordCovering(
+            BreedingResult.create(
                 broodmareRegistration,
                 stallionRegistration,
                 coveringDate,
@@ -55,7 +53,7 @@ class RecordCoveringTest {
         val stallionRegistration = BreedingFixture.breedingRegistration()
 
         val result =
-            recordCovering(
+            BreedingResult.create(
                 broodmareRegistration,
                 stallionRegistration,
                 coveringDate,

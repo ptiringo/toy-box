@@ -35,8 +35,8 @@
 
 各コンテキストの配下を `model/` と `service/` に分割する（パッケージ構造を参照）。
 
-- **model**: Entity / Value Object / Repository ポート（interface）/ 集約内で完結するロジック
-- **service**: 複数の集約やモデルをまたぐドメインロジック。**Kotlin のトップレベル関数で書く**（`object` でラップしない）。jMolecules の `@Service` は付けない（パッケージ配置で表現し、`service/` に居ることがドメインサービスの証）
+- **model**: Entity / Value Object / Repository ポート（interface）/ 集約のロジック。**生成は集約の `public` 自己検証ファクトリ（`create` 等）に集約**し、不変条件を検証して `Result` を返す。集約をまたぐ前提条件でも、**協力集約を引数で受け取って構築時に検証できるものはファクトリの責務**とする（例: `BloodHorse.create(sire, dam, …)` が父=雄・母=雌・DNA・品種整合を自己検証）。生成口の封じ込め（`internal` 化等）は行わない（[ADR-0014](../../docs/adr/0014-self-validating-factory-over-confinement.md)）。集約が**フィールドで**他集約を参照する場合は ID のみ（jMolecules ルール）
+- **service**: **単一集約の構築ではない、複数集約をまたぐオーケストレーション／手続き**のドメインロジック（例: `registerFoal` は分娩結果の判定→`BloodHorse.create` へ橋渡し、`confirmRaceResult`）。**Kotlin のトップレベル関数で書く**（`object` でラップしない）。jMolecules の `@Service` は付けない（パッケージ配置で表現し、`service/` に居ることがドメインサービスの証）。リポジトリからの引き当て（coordination）はアプリケーション層、構築時バリデーションはファクトリ、と役割を分ける
 - 1 ファイルにモデルとサービスを混在させない（例: `confirmRaceResult` は `service/race/` に、入力 VO の `RaceResult` は `model/race/` に置く）
 
 ## パッケージ構造

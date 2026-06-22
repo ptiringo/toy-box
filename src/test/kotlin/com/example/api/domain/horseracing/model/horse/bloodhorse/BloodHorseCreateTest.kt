@@ -1,16 +1,11 @@
-package com.example.api.domain.horseracing.service.horse
+package com.example.api.domain.horseracing.model.horse.bloodhorse
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
-import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
-import com.example.api.domain.horseracing.model.horse.bloodhorse.PedigreeRegistrationNumber
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import org.junit.jupiter.api.Test
 
-/** registerInStudBook ドメインサービスのユニットテスト */
-class RegisterInStudBookTest {
+/** [BloodHorse.create]（内国産馬の血統登録）のユニットテスト */
+class BloodHorseCreateTest {
     private val registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap()
 
     @Test
@@ -23,7 +18,7 @@ class RegisterInStudBookTest {
                 dnaParentage = DnaParentageResult.CONSISTENT,
             )
 
-        val bloodHorse = registerInStudBook(sire, dam, entry, registrationNumber).unwrap()
+        val bloodHorse = BloodHorse.create(sire, dam, entry, registrationNumber).unwrap()
 
         assert(bloodHorse.sireId == sire.id)
         assert(bloodHorse.damId == dam.id)
@@ -37,7 +32,7 @@ class RegisterInStudBookTest {
         val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         val entry = BloodHorseFixture.studBookEntry()
 
-        val result = registerInStudBook(sire, dam, entry, registrationNumber)
+        val result = BloodHorse.create(sire, dam, entry, registrationNumber)
 
         assert(result.getError() == RegisterInStudBookError.SireNotMale)
     }
@@ -48,7 +43,7 @@ class RegisterInStudBookTest {
         val dam = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
         val entry = BloodHorseFixture.studBookEntry()
 
-        val result = registerInStudBook(sire, dam, entry, registrationNumber)
+        val result = BloodHorse.create(sire, dam, entry, registrationNumber)
 
         assert(result.getError() == RegisterInStudBookError.DamNotFemale)
     }
@@ -59,7 +54,7 @@ class RegisterInStudBookTest {
         val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         val entry = BloodHorseFixture.studBookEntry(dnaParentage = DnaParentageResult.UNTESTED)
 
-        val result = registerInStudBook(sire, dam, entry, registrationNumber)
+        val result = BloodHorse.create(sire, dam, entry, registrationNumber)
 
         assert(result.getError() == RegisterInStudBookError.ParentageNotConfirmed)
     }
@@ -70,7 +65,7 @@ class RegisterInStudBookTest {
         val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE, breedType = BreedType.THOROUGHBRED)
         val entry = BloodHorseFixture.studBookEntry(breedType = BreedType.THOROUGHBRED)
 
-        val result = registerInStudBook(sire, dam, entry, registrationNumber)
+        val result = BloodHorse.create(sire, dam, entry, registrationNumber)
 
         assert(result.getError() == RegisterInStudBookError.BreedMismatch)
     }

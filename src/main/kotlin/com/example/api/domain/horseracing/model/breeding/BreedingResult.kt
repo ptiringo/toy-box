@@ -5,6 +5,7 @@ import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
@@ -24,6 +25,20 @@ import org.jmolecules.ddd.annotation.ValueObject
 data class FoalingAlreadyRecorded(val current: FoalingOutcome)
 
 /**
+ * 種付記録（[BreedingResult.create]）の前提条件違反。
+ *
+ * 種付は「繁殖牝馬の繁殖登録 × 種牡馬の繁殖登録」の配合であり、両者の登録ロールを検証する。制度上は他の前提条件も ありうる（例:
+ * 同一種付年の重複記録の禁止）。集約が揃い次第バリアントを追加できるよう sealed interface としておく。
+ */
+sealed interface RecordCoveringError {
+    /** 種付対象の繁殖登録のロールが繁殖牝馬（BROODMARE）でない。 */
+    data object NotBroodmare : RecordCoveringError
+
+    /** 配合相手の繁殖登録のロールが種牡馬（STALLION）でない。 */
+    data object NotStallion : RecordCoveringError
+}
+
+/**
  * 繁殖成績を表す集約ルート。種付年ごとの「種付〜分娩」の年次レコード。
  *
  * 繁殖登録済みの牝馬（[BreedingRegistration]）について、その年の種付（[Covering]）と分娩結果
@@ -33,8 +48,8 @@ data class FoalingAlreadyRecorded(val current: FoalingOutcome)
  * 状態はイミュータブルに扱う。種付の記録で生成され（[outcome] は null＝分娩結果は未報告）、後日の分娩結果報告 で一度だけ [outcome] が確定する。報告は
  * [recordFoaling] が分娩結果を持つ新しい [BreedingResult] を返す ことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
  *
- * 種牡馬が雄であることなど集約をまたぐ前提条件の検証はドメインサービス recordCovering の責務とする。検証を経た 生成のみを許すため、コンストラクタは private とし、生成口
- * [of] は同モジュールのドメインサービスからのみ呼べる よう internal とする。
+ * 両者の登録ロール（繁殖牝馬・種牡馬）の検証など集約をまたぐ前提条件は、繁殖登録を引数で受け取る生成ファクトリ [create] がその場で自己検証する。コンストラクタは private
+ * とし、生成は [create] のみに限る。
  *
  * @property id 繁殖成績ID（生成時に自動採番し、以後の写像でも引き継ぐ）
  * @property breedingRegistrationId この成績が紐づく繁殖登録（繁殖牝馬のロール）のID
@@ -82,20 +97,44 @@ private constructor(
 
     companion object {
         /**
-         * 種付を記録した [BreedingResult] を生成する。
+         * 繁殖牝馬に対するその年の種付を記録し、[BreedingResult] の年次レコードを生成する。
          *
-         * 種牡馬が雄であることなどの前提条件はドメインサービス recordCovering が検証済みである前提のため、 この生成口は同モジュールのドメインサービスからのみ呼べるよう
-         * internal とする。生成直後は分娩結果が 未報告（[outcome] は null）。
+         * 種付は「繁殖登録済みの繁殖牝馬」と「繁殖登録済みの種牡馬」の配合であり、両者が繁殖登録（[BreedingRegistration]）
+         * を持つことを前提とする（種牡馬も繁殖登録の対象＝繁殖登録証明書の `性` が雄）。本ファクトリは集約をまたぐ前提条件
+         * として、牝側の登録ロールが繁殖牝馬・雄側の登録ロールが種牡馬であることを自己検証してから生成する。検証を満たさなければ 生成せず [RecordCoveringError]
+         * を返す。生成物は種牡馬を `BloodHorseId` 経由で参照する。生成直後は分娩結果が 未報告（[outcome] は null）。
+         *
+         * @param broodmareRegistration 種付対象の繁殖牝馬の繁殖登録（ロールが繁殖牝馬であること）
+         * @param stallionRegistration 配合相手の種牡馬の繁殖登録（ロールが種牡馬であること）
+         * @param coveringDate 種付日
+         * @param certificateNumber 種付の事実を証明する種付証明書の番号
+         * @return 種付を記録した [BreedingResult]、または前提条件違反を表す [RecordCoveringError]
          */
-        internal fun of(
-            breedingRegistrationId: BreedingRegistrationId,
-            covering: Covering,
-        ): BreedingResult =
-            BreedingResult(
-                id = BreedingResultId(generateId()),
-                breedingRegistrationId = breedingRegistrationId,
-                covering = covering,
-                outcome = null,
-            )
+        fun create(
+            broodmareRegistration: BreedingRegistration,
+            stallionRegistration: BreedingRegistration,
+            coveringDate: LocalDate,
+            certificateNumber: CoveringCertificateNumber,
+        ): Result<BreedingResult, RecordCoveringError> =
+            when {
+                broodmareRegistration.role != BreedingRole.BROODMARE ->
+                    Err(RecordCoveringError.NotBroodmare)
+                stallionRegistration.role != BreedingRole.STALLION ->
+                    Err(RecordCoveringError.NotStallion)
+                else ->
+                    Ok(
+                        BreedingResult(
+                            id = BreedingResultId(generateId()),
+                            breedingRegistrationId = broodmareRegistration.id,
+                            covering =
+                                Covering(
+                                    stallionRegistration.registeredHorseId,
+                                    coveringDate,
+                                    certificateNumber,
+                                ),
+                            outcome = null,
+                        )
+                    )
+            }
     }
 }

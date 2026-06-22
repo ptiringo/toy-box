@@ -15,7 +15,7 @@
 方針:
 
 - **モックは applicationService の Repository ポート境界に限る**。ドメイン層は Fixture で実物を組み、モックしない（純粋関数なので隔離コスト不要）。
-- ドメインサービスのテスト用 Fixture は対象コンテキストの `model` パッケージ配下にテストコードとして置く（例: `BloodHorseFixture`）。
+- テスト用 Object Mother（`〜Fixture`）は対象コンテキストの `model` パッケージ配下に **`src/test`** のテストコードとして置く（例: `BloodHorseFixture`）。`java-test-fixtures`（`src/testFixtures` ソースセット）は採らない（本体は単一モジュールで共有需要が無い。issue #326）。前提条件検証を経ずに任意の馬を用意したいときは、前提条件を持たない `public` ファクトリ（例: `BloodHorse.createImported`）で組み立てる（自己検証する `create` を避ける）。生成口は `public` 自己検証ファクトリに統一されており封じ込めは無い（[ADR-0014](../../docs/adr/0014-self-validating-factory-over-confinement.md)）。
 - 統合テスト（`@SpringBootTest`）は配線確認の最小限に留める。ロジックの網羅は内側のリングで済ませる（ピラミッドの底を厚く）。
 - テスト規約（JUnit 5 / Power Assert / `@WebMvcTest` / 日本語ケース名）の詳細は CLAUDE.md「テスト規約」を参照。
 
