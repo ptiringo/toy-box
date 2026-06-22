@@ -13,9 +13,9 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseRepos
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
+import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.horse.RegisterFoalError
-import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
@@ -59,11 +59,11 @@ class RegisterFoalUseCaseTest {
         val sire: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
         val dam: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         val breedingRegistration: BreedingRegistration =
-            BreedingFixture.breedingRegistration(broodmareId = dam.id)
+            BreedingFixture.breedingRegistration(broodmare = dam)
         val breedingResult: BreedingResult =
             BreedingFixture.breedingResult(
-                    breedingRegistrationId = breedingRegistration.id,
-                    covering = BreedingFixture.covering(stallionId = sire.id),
+                    breedingRegistration = breedingRegistration,
+                    stallion = sire,
                 )
                 .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2024, 3, 20)))
                 .unwrap()
@@ -205,8 +205,8 @@ class RegisterFoalUseCaseTest {
             val w = Wiring()
             val notReported =
                 BreedingFixture.breedingResult(
-                    breedingRegistrationId = w.breedingRegistration.id,
-                    covering = BreedingFixture.covering(stallionId = w.sire.id),
+                    breedingRegistration = w.breedingRegistration,
+                    stallion = w.sire,
                 )
             every { w.breedingResultRepository.findById(notReported.id) } returns notReported
 

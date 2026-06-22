@@ -6,8 +6,8 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseRepos
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
+import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
-import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap

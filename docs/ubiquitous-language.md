@@ -159,11 +159,7 @@ graph LR
 | BreedingResultRepository | リポジトリポート | domain.horseracing.model.breeding |
 | JockeyRepository | リポジトリポート | domain.horseracing.model.jockey |
 | confirmRaceResult | ドメインサービス | domain.horseracing.service.race |
-| recordCovering | ドメインサービス | domain.horseracing.service.breeding |
 | registerFoal | ドメインサービス | domain.horseracing.service.horse |
-| registerForBreeding | ドメインサービス | domain.horseracing.service.breeding |
-| registerImportedHorse | ドメインサービス | domain.horseracing.service.horse |
-| registerInStudBook | ドメインサービス | domain.horseracing.service.horse |
 
 ### sakamichi
 

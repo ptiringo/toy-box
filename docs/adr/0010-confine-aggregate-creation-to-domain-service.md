@@ -1,8 +1,10 @@
 # 0010. 集約をまたぐ前提条件を持つ生成口はドメインサービスに封じ込める（of は internal、テストは Object Mother）
 
-- Status: Accepted
+- Status: Superseded by [ADR-0014](0014-self-validating-factory-over-confinement.md)
 - Date: 2026-06-20
 - Deciders: Matsui
+
+> **注記（2026-06-22）**: 本 ADR の「生成口をドメインサービスに封じ込める（`internal` 化）」という決定は [ADR-0014](0014-self-validating-factory-over-confinement.md) で覆された。前提条件は父・母を引数で受け取れば集約自身の `public` 生成ファクトリで自己検証でき（`Jockey.create` と同じ）、検証専用サービスも封じ込めも不要になるため。以下は当初（封じ込め方式）の記録としてそのまま残す。
 
 ## Context（背景・課題）
 

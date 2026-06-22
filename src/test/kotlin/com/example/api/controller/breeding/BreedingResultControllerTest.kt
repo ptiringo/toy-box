@@ -9,7 +9,7 @@ import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseErro
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.breeding.BreedingFixture
 import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
-import com.example.api.domain.horseracing.service.breeding.RecordCoveringError
+import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

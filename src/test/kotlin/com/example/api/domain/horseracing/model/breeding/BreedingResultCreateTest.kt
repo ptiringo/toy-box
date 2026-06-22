@@ -1,7 +1,5 @@
-package com.example.api.domain.horseracing.service.breeding
+package com.example.api.domain.horseracing.model.breeding
 
-import com.example.api.domain.horseracing.model.breeding.BreedingFixture
-import com.example.api.domain.horseracing.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.getError
@@ -9,8 +7,8 @@ import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import org.junit.jupiter.api.Test
 
-/** recordCovering ドメインサービスのユニットテスト */
-class RecordCoveringTest {
+/** [BreedingResult.create]（種付記録）のユニットテスト */
+class BreedingResultCreateTest {
     private val coveringDate = LocalDate.of(2024, 4, 1)
     private val certificateNumber = CoveringCertificateNumber.create("C-2024-0001").unwrap()
 
@@ -20,7 +18,7 @@ class RecordCoveringTest {
         val stallion = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
 
         val result =
-            recordCovering(registration, stallion, coveringDate, certificateNumber).unwrap()
+            BreedingResult.create(registration, stallion, coveringDate, certificateNumber).unwrap()
 
         assert(result.breedingRegistrationId == registration.id)
         assert(result.covering.stallionId == stallion.id)
@@ -34,7 +32,7 @@ class RecordCoveringTest {
         val registration = BreedingFixture.breedingRegistration()
         val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
 
-        val result = recordCovering(registration, mare, coveringDate, certificateNumber)
+        val result = BreedingResult.create(registration, mare, coveringDate, certificateNumber)
 
         assert(result.getError() == RecordCoveringError.StallionNotMale)
     }

@@ -12,7 +12,6 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.MicrochipNumber
 import com.example.api.domain.horseracing.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.horseracing.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
-import com.example.api.domain.horseracing.service.horse.registerImportedHorse
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -67,9 +66,9 @@ sealed interface RegisterImportedHorseUseCaseError {
 /**
  * 輸入馬血統登録ユースケース。
  *
- * 境界の生入力を VO に変換し（不正なら検証エラー）、ドメインサービス registerImportedHorse で輸入馬の [BloodHorse] を生成して
+ * 境界の生入力を VO に変換し（不正なら検証エラー）、生成ファクトリ [BloodHorse.createImported] で輸入馬の [BloodHorse] を生成して
  * 永続化する。父母が当システムに存在しないため、内国産馬の登録（[RegisterInStudBookUseCase]）のような父母の引き当て・前提条件検証は 行わない。Controller
- * 層は本クラスのみに依存し、ポートやドメインサービスは知らない。
+ * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
  * @return 登録された [BloodHorse]、または業務ルール違反を表す [RegisterImportedHorseUseCaseError]
  */
@@ -109,7 +108,7 @@ class RegisterImportedHorseUseCase(private val bloodHorseRepository: BloodHorseR
                 landingDate = LandingDate(input.landingDate),
             )
 
-        val bloodHorse = registerImportedHorse(entry, registrationNumber)
+        val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
 
         bloodHorseRepository.save(bloodHorse)
     }

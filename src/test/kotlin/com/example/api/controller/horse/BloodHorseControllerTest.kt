@@ -12,8 +12,8 @@ import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseEr
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.horseracing.model.horse.bloodhorse.HorseName
+import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
-import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

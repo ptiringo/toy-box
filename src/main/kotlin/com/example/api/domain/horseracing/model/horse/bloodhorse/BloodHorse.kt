@@ -32,18 +32,37 @@ enum class Sex {
 }
 
 /**
+ * 血統登録（[BloodHorse.create]）の前提条件違反。
+ *
+ * 失敗のしかたが複数あるため sealed interface とし、`when` の網羅性で漏れを防ぐ。
+ */
+sealed interface RegisterInStudBookError {
+    /** 父として指定された馬が雄でない。 */
+    data object SireNotMale : RegisterInStudBookError
+
+    /** 母として指定された馬が雌でない。 */
+    data object DamNotFemale : RegisterInStudBookError
+
+    /** 申告された父母との DNA 型による親子判定に矛盾がある、または未検査である。 */
+    data object ParentageNotConfirmed : RegisterInStudBookError
+
+    /** 仔の品種が父母の品種と整合しない。 */
+    data object BreedMismatch : RegisterInStudBookError
+}
+
+/**
  * 軽種馬を表す集約ルート。
  *
  * 血統登録（血統及び個体識別を明らかにする登録）の成立によって誕生する個体であり、ライフサイクル全体（繁殖登録・競走馬登録など）を通じて 同一の [BloodHorse]
  * が各ロール（繁殖牝馬・種牡馬・競走馬）を担う。
  *
- * 父・母は別個体（別集約）であり、参照は [BloodHorseId] 経由で表す。父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件の検証は集約をまたぐため、 ドメインサービス
- * registerInStudBook の責務とする。検証を経た生成のみを許すため、コンストラクタは private とし、生成口 [of] は同モジュールの ドメインサービスからのみ呼べるよう
- * internal とする。
+ * 父・母は別個体（別集約）であり、参照は [BloodHorseId] 経由で表す。父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件は集約をまたぐが、
+ * 父・母を引数で受け取る生成ファクトリ [create] がその場で自己検証する（Jockey.create と同じく、検証を満たさなければ生成しない）。 コンストラクタは private
+ * とし、生成は [create] / [createImported] のみに限る。
  *
  * 父母が当システムに存在しない個体（輸入馬・基礎輸入馬）もある。この場合 [sireId] / [damId] は null となり、 代わりに原産国
- * （[originCountry]）と揚陸日（[landingDate]）を持つ。輸入馬の生成は registerImportedHorse（生成口
- * [ofImported]）が担い、内国産馬とは経路を分ける。逆に内国産馬は [originCountry] / [landingDate] を持たない（null）。
+ * （[originCountry]）と揚陸日（[landingDate]）を持つ。輸入馬の生成は [createImported] が担い、内国産馬とは経路を分ける。 逆に内国産馬は
+ * [originCountry] / [landingDate] を持たない（null）。
  *
  * 状態はイミュータブルに扱う。出生時は血統登録のみで馬名を持たず（[name] は null）、後日の「馬名登録」で一度だけ命名される。 命名は [assignName] が 馬名を持つ新しい
  * [BloodHorse] を返すことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
@@ -117,44 +136,64 @@ private constructor(
 
     companion object {
         /**
-         * [BloodHorse] を生成する。
+         * 血統及び個体識別を明らかにする血統登録を行い、[BloodHorse] を生成する。
          *
-         * 父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件はドメインサービス registerInStudBook が
-         * 検証済みである前提のため、この生成口は同モジュールのドメインサービスからのみ呼べるよう internal とする。 生成直後は未命名（[name] は null）。
+         * 父・母は既に血統登録済みの [BloodHorse] であり、本ファクトリは集約をまたぐ前提条件を自己検証してから生成する。 検証する前提条件:
+         * - 父が雄であること
+         * - 母が雌であること
+         * - 申告された父母との DNA 型による親子判定に矛盾がないこと
+         * - 仔の品種が父母の品種と整合すること
+         *
+         * 検証を満たさなければ生成せず [RegisterInStudBookError] を返す。生成された [BloodHorse] は父母を ID
+         * （[BloodHorseId]）経由で参照する。生成直後は未命名（[name] は null）。
+         *
+         * @param sire 父（雄）の軽種馬
+         * @param dam 母（雌）の軽種馬
+         * @param entry 仔馬自身の個体識別情報と DNA 親子判定結果
+         * @param registrationNumber 交付される血統登録番号
+         * @return 生成された [BloodHorse]、または前提条件違反を表す [RegisterInStudBookError]
          */
-        internal fun of(
+        fun create(
+            sire: BloodHorse,
+            dam: BloodHorse,
             entry: StudBookEntry,
-            sireId: BloodHorseId,
-            damId: BloodHorseId,
             registrationNumber: PedigreeRegistrationNumber,
-        ): BloodHorse =
-            BloodHorse(
-                id = BloodHorseId(generateId()),
-                registrationNumber = registrationNumber,
-                sex = entry.sex,
-                coatColor = entry.coatColor,
-                breedType = entry.breedType,
-                dateOfBirth = entry.dateOfBirth,
-                breeder = entry.breeder,
-                microchipNumber = entry.microchipNumber,
-                sireId = sireId,
-                damId = damId,
-                originCountry = null,
-                landingDate = null,
-                name = null,
-            )
+        ): Result<BloodHorse, RegisterInStudBookError> =
+            when {
+                sire.sex != Sex.MALE -> Err(RegisterInStudBookError.SireNotMale)
+                dam.sex != Sex.FEMALE -> Err(RegisterInStudBookError.DamNotFemale)
+                entry.dnaParentage != DnaParentageResult.CONSISTENT ->
+                    Err(RegisterInStudBookError.ParentageNotConfirmed)
+                !entry.breedType.isConsistentWith(sire.breedType, dam.breedType) ->
+                    Err(RegisterInStudBookError.BreedMismatch)
+                else ->
+                    Ok(
+                        BloodHorse(
+                            id = BloodHorseId(generateId()),
+                            registrationNumber = registrationNumber,
+                            sex = entry.sex,
+                            coatColor = entry.coatColor,
+                            breedType = entry.breedType,
+                            dateOfBirth = entry.dateOfBirth,
+                            breeder = entry.breeder,
+                            microchipNumber = entry.microchipNumber,
+                            sireId = sire.id,
+                            damId = dam.id,
+                            originCountry = null,
+                            landingDate = null,
+                            name = null,
+                        )
+                    )
+            }
 
         /**
          * 父母不明の輸入馬・基礎輸入馬として [BloodHorse] を生成する。
          *
          * 父母が当システムに存在しないため父母 ID は持たず（[sireId] / [damId] は null）、代わりに原産国・揚陸日を持つ。
-         * 内国産馬の前提条件（父=雄・母=雌・DNA 親子整合・親仔の品種整合）は適用されない。輸入馬固有の審査（承認海外機関の血統書
-         * による品種確定、親子判定の血液型・海外機関フォールバック）は別途のモデリングに委ねる。
-         *
-         * 内国産馬の [of] と同様、検証を経た生成のみを許すため同モジュールのドメインサービス registerImportedHorse からのみ 呼べるよう internal
-         * とする。生成直後は未命名（[name] は null）。
+         * 内国産馬の前提条件（父=雄・母=雌・DNA 親子整合・親仔の品種整合）は適用されないため、本ファクトリは検証を持たず生成する。
+         * 輸入馬固有の審査（承認海外機関の血統書による品種確定、親子判定の血液型・海外機関フォールバック）は別途のモデリングに委ねる。 生成直後は未命名（[name] は null）。
          */
-        internal fun ofImported(
+        fun createImported(
             entry: ImportedHorseEntry,
             registrationNumber: PedigreeRegistrationNumber,
         ): BloodHorse =

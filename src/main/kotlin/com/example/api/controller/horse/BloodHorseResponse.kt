@@ -4,7 +4,7 @@ import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCas
 import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
-import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
+import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus

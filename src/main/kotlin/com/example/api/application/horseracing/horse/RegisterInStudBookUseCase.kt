@@ -10,10 +10,9 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.DateOfBirth
 import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
 import com.example.api.domain.horseracing.model.horse.bloodhorse.MicrochipNumber
 import com.example.api.domain.horseracing.model.horse.bloodhorse.PedigreeRegistrationNumber
+import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.model.horse.bloodhorse.StudBookEntry
-import com.example.api.domain.horseracing.service.horse.RegisterInStudBookError
-import com.example.api.domain.horseracing.service.horse.registerInStudBook
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -72,7 +71,7 @@ sealed interface RegisterInStudBookUseCaseError {
     data class DamNotFound(val damId: UUID) : RegisterInStudBookUseCaseError
 
     /**
-     * ドメインサービス registerInStudBook の前提条件違反を application 層エラーに wrap したもの。
+     * 生成ファクトリ [BloodHorse.create] の前提条件違反を application 層エラーに wrap したもの。
      *
      * 個別バリアント（父が雄でない・品種不整合など）は [RegisterInStudBookError] を参照する。
      */
@@ -83,9 +82,9 @@ sealed interface RegisterInStudBookUseCaseError {
 /**
  * 血統登録ユースケース。
  *
- * 境界の生入力を VO に変換し（不正なら検証エラー）、父・母を [BloodHorseRepository] で引き当て、ドメインサービス registerInStudBook
+ * 境界の生入力を VO に変換し（不正なら検証エラー）、父・母を [BloodHorseRepository] で引き当て、生成ファクトリ [BloodHorse.create]
  * で前提条件（父=雄・母=雌・DNA 親子整合・品種整合）を検証してから、誕生した [BloodHorse] を 永続化する。Controller
- * 層は本クラスのみに依存し、ポートやドメインサービスは知らない。
+ * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
  * @return 登録された [BloodHorse]、または業務ルール違反を表す [RegisterInStudBookUseCaseError]
  */
@@ -132,7 +131,7 @@ class RegisterInStudBookUseCase(private val bloodHorseRepository: BloodHorseRepo
             )
 
         val bloodHorse =
-            registerInStudBook(sire, dam, entry, registrationNumber)
+            BloodHorse.create(sire, dam, entry, registrationNumber)
                 .mapError { RegisterInStudBookUseCaseError.PreconditionViolated(it) }
                 .bind()
 

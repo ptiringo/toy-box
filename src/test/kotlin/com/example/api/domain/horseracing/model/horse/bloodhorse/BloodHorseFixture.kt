@@ -1,15 +1,14 @@
 package com.example.api.domain.horseracing.model.horse.bloodhorse
 
-import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 
 /**
  * テスト用に [BloodHorse] / [StudBookEntry] を組み立てる Object Mother。
  *
- * [BloodHorse] の生成口は本番では registerInStudBook に封じ込められている（[BloodHorse.of] は internal）。
- * テストでは前提条件検証を経ずに任意の馬を用意したい（例: registerInStudBook へ渡す父・母）。 internal 可視性は モジュール内（test
- * も同一モジュール）から見えるため、ここで [BloodHorse.of] を直接呼んで生成する。
+ * 前提条件検証（父=雄・母=雌等）を経ずに任意の性・品種の馬を用意したい（例: [BloodHorse.create] へ渡す父・母、 種付の種牡馬・繁殖牝馬）。父母不明の輸入馬の生成口
+ * [BloodHorse.createImported] は前提条件を持たず公開されているため、
+ * これを使えば検証を通さずに任意の馬を組み立てられる（テスト上は原産国・揚陸日が付くだけで、性・品種・ID は自由に指定できる）。
  */
 object BloodHorseFixture {
     /** 既定値を持つ [StudBookEntry] を生成する。必要な属性のみ上書きする。 */
@@ -45,12 +44,15 @@ object BloodHorseFixture {
             dnaParentage = dnaParentage,
         )
 
-    /** 既定値を持つ [BloodHorse] を生成する。性・品種など必要な属性のみ上書きする。 */
+    /**
+     * 既定値を持つ [BloodHorse] を生成する。性・品種など必要な属性のみ上書きする。
+     *
+     * テストで父・母や種牡馬・繁殖牝馬として使う「既に登録済みの馬」を、前提条件検証を経ずに用意するためのもの。 検証を持たない [BloodHorse.createImported]
+     * を経由するため、性・品種・ID は自由に指定できる。
+     */
     fun bloodHorse(sex: Sex = Sex.MALE, breedType: BreedType = BreedType.THOROUGHBRED): BloodHorse =
-        BloodHorse.of(
-            entry = studBookEntry(sex = sex, breedType = breedType),
-            sireId = BloodHorseId(generateId()),
-            damId = BloodHorseId(generateId()),
+        BloodHorse.createImported(
+            entry = importedHorseEntry(sex = sex, breedType = breedType),
             registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
         )
 
@@ -77,7 +79,7 @@ object BloodHorseFixture {
         sex: Sex = Sex.MALE,
         breedType: BreedType = BreedType.THOROUGHBRED,
     ): BloodHorse =
-        BloodHorse.ofImported(
+        BloodHorse.createImported(
             entry = importedHorseEntry(sex = sex, breedType = breedType),
             registrationNumber = PedigreeRegistrationNumber.create("2020900001").unwrap(),
         )
