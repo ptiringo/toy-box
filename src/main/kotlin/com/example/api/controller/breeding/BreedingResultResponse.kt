@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.horseracing.breeding.RecordCoveringUseCaseError
+import com.example.api.application.horseracing.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.breeding.BreedingResult
@@ -98,6 +99,31 @@ private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
                 code = "not-stallion",
                 title = "Registration is not a stallion",
                 detail = "配合相手として指定された繁殖登録のロールが種牡馬ではありません。",
+            )
+    }
+
+/**
+ * [RecordUncoveredUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
+ *
+ * 種付記録（[RecordCoveringUseCaseError]）と対称に、繁殖登録の不在・前提条件違反はいずれも整った入力だが意味的に 処理できないため 422 Unprocessable
+ * Entity とする。種付せずは配合相手を伴わないため、前提条件違反は登録ロールが 繁殖牝馬でない（not-broodmare）の1種類のみ。
+ */
+fun RecordUncoveredUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        is RecordUncoveredUseCaseError.BreedingRegistrationNotFound ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    code = "breeding-registration-not-found",
+                    title = "Breeding registration not found",
+                    detail = "種付せずの記録対象として指定された繁殖登録が存在しません。",
+                )
+                .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
+        is RecordUncoveredUseCaseError.PreconditionViolated ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                code = "not-broodmare",
+                title = "Registration is not a broodmare",
+                detail = "種付せずの記録対象として指定された繁殖登録のロールが繁殖牝馬ではありません。",
             )
     }
 

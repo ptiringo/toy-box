@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.horseracing.breeding.RecordCoveringUseCase
+import com.example.api.application.horseracing.breeding.RecordUncoveredUseCase
 import com.example.api.application.horseracing.breeding.ReportFoalingCommand
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCase
 import com.example.api.controller.orThrowProblem
@@ -24,26 +25,29 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 繁殖成績リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/breedingResults` に対する Create（種付記録による年次 レコードの起票）と、個体への
- * カスタムメソッド `:reportFoaling`（分娩結果報告、[AIP-136](https://google.aip.dev/136)） を提供する。エラーレスポンスは RFC 9457
+ * Google AIP のリソース指向設計に従い、コレクション `/api/breedingResults` に対する Create（年次レコードの起票）と、 個体へのカスタムメソッド
+ * `:reportFoaling`（分娩結果報告、[AIP-136](https://google.aip.dev/136)）を提供する。Create は
+ * 様式第14号の年次成績の2種類（種付した年・種付しなかった年）を、リクエストの `covering` の有無で判別する単一の Create として受ける。エラーレスポンスは RFC 9457
  * (Problem Details) 形式で返す。
  */
 @RestController
 class BreedingResultController(
     private val recordCovering: RecordCoveringUseCase,
+    private val recordUncovered: RecordUncoveredUseCase,
     private val reportFoaling: ReportFoalingUseCase,
     private val clock: Clock,
 ) {
     @Operation(
-        summary = "種付を記録して繁殖成績を起こす",
+        summary = "繁殖成績の年次レコードを起こす（種付記録／種付せず）",
         description =
-            "繁殖登録済みの牝馬への種付を記録し、その年の繁殖成績（分娩結果は未報告）を返す。" + "業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+            "繁殖登録済みの牝馬の年次成績を起こす。リクエストの covering が非 null なら種付を記録し（分娩結果は未報告）、" +
+                "null なら種付せず（その年に種付しなかった）を記録する。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
         tags = ["BreedingResult"],
         responses =
             [
                 ApiResponse(
                     responseCode = "201",
-                    description = "種付記録成功（起票された繁殖成績リソースを返す）",
+                    description = "記録成功（起票された繁殖成績リソースを返す）",
                     content =
                         [
                             Content(
@@ -54,7 +58,7 @@ class BreedingResultController(
                 ),
                 ApiResponse(
                     responseCode = "400",
-                    description = "入力値が不正（種付証明書番号がブランクなど）",
+                    description = "入力値が不正（種付証明書番号がブランク、種付せずなのに breeding_year が欠けるなど）",
                     content =
                         [
                             Content(
@@ -78,11 +82,21 @@ class BreedingResultController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/breedingResults")
-    fun record(@RequestBody request: RecordCoveringRequest): BreedingResultResponse =
-        recordCovering(Command.now(request.toCommand(), clock))
-            .mapError { it.toProblemDetail() }
-            .orThrowProblem()
-            .toResponse()
+    fun record(@RequestBody request: RecordBreedingResultRequest): BreedingResultResponse {
+        val covering = request.covering
+        return if (covering != null) {
+            recordCovering(Command.now(request.toCoveringCommand(covering), clock))
+                .mapError { it.toProblemDetail() }
+                .orThrowProblem()
+                .toResponse()
+        } else {
+            val command = request.toUncoveredCommand().orThrowProblem()
+            recordUncovered(Command.now(command, clock))
+                .mapError { it.toProblemDetail() }
+                .orThrowProblem()
+                .toResponse()
+        }
+    }
 
     @Operation(
         summary = "分娩結果を報告する",
