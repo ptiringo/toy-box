@@ -1,10 +1,13 @@
 package com.example.api.domain.horseracing.model.breeding
 
+import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
+import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
@@ -24,6 +27,17 @@ import org.jmolecules.ddd.annotation.ValueObject
 data class FoalingAlreadyRecorded(val current: FoalingOutcome)
 
 /**
+ * 種付記録（[BreedingResult.create]）の前提条件違反。
+ *
+ * 現時点では種牡馬が雄であることのみを検証するが、制度上は他の前提条件もありうる（例: 同一種付年の重複記録の禁止、 種牡馬の種牡馬登録の確認）。集約が揃い次第バリアントを追加できるよう
+ * sealed interface としておく。
+ */
+sealed interface RecordCoveringError {
+    /** 配合相手は種牡馬（雄）に限られるが、指定された馬が雄でない。 */
+    data object StallionNotMale : RecordCoveringError
+}
+
+/**
  * 繁殖成績を表す集約ルート。種付年ごとの「種付〜分娩」の年次レコード。
  *
  * 繁殖登録済みの牝馬（[BreedingRegistration]）について、その年の種付（[Covering]）と分娩結果
@@ -33,8 +47,8 @@ data class FoalingAlreadyRecorded(val current: FoalingOutcome)
  * 状態はイミュータブルに扱う。種付の記録で生成され（[outcome] は null＝分娩結果は未報告）、後日の分娩結果報告 で一度だけ [outcome] が確定する。報告は
  * [recordFoaling] が分娩結果を持つ新しい [BreedingResult] を返す ことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
  *
- * 種牡馬が雄であることなど集約をまたぐ前提条件の検証はドメインサービス recordCovering の責務とする。検証を経た 生成のみを許すため、コンストラクタは private とし、生成口
- * [of] は同モジュールのドメインサービスからのみ呼べる よう internal とする。
+ * 種牡馬が雄であることなど集約をまたぐ前提条件は集約をまたぐが、種牡馬を引数で受け取る生成ファクトリ [create] がその場で 自己検証する。コンストラクタは private とし、生成は
+ * [create] のみに限る。
  *
  * @property id 繁殖成績ID（生成時に自動採番し、以後の写像でも引き継ぐ）
  * @property breedingRegistrationId この成績が紐づく繁殖登録（繁殖牝馬のロール）のID
@@ -82,20 +96,35 @@ private constructor(
 
     companion object {
         /**
-         * 種付を記録した [BreedingResult] を生成する。
+         * 繁殖牝馬に対するその年の種付を記録し、[BreedingResult] の年次レコードを生成する。
          *
-         * 種牡馬が雄であることなどの前提条件はドメインサービス recordCovering が検証済みである前提のため、 この生成口は同モジュールのドメインサービスからのみ呼べるよう
-         * internal とする。生成直後は分娩結果が 未報告（[outcome] は null）。
+         * 繁殖登録（[BreedingRegistration]）により対象が繁殖牝馬であることは担保される。本ファクトリは集約をまたぐ前提条件 として、配合相手の種牡馬が雄であることを
+         * 自己検証してから生成する。検証を満たさなければ生成せず [RecordCoveringError] を返す。種牡馬は別個体（別集約）であり、生成物は種牡馬を
+         * `BloodHorseId` 経由で参照する。生成直後は分娩結果が未報告（[outcome] は null）。
+         *
+         * @param breedingRegistration 種付対象の繁殖牝馬の繁殖登録
+         * @param stallion 配合相手の種牡馬（雄の [BloodHorse]）
+         * @param coveringDate 種付日
+         * @param certificateNumber 種付の事実を証明する種付証明書の番号
+         * @return 種付を記録した [BreedingResult]、または前提条件違反を表す [RecordCoveringError]
          */
-        internal fun of(
-            breedingRegistrationId: BreedingRegistrationId,
-            covering: Covering,
-        ): BreedingResult =
-            BreedingResult(
-                id = BreedingResultId(generateId()),
-                breedingRegistrationId = breedingRegistrationId,
-                covering = covering,
-                outcome = null,
-            )
+        fun create(
+            breedingRegistration: BreedingRegistration,
+            stallion: BloodHorse,
+            coveringDate: LocalDate,
+            certificateNumber: CoveringCertificateNumber,
+        ): Result<BreedingResult, RecordCoveringError> =
+            if (stallion.sex != Sex.MALE) {
+                Err(RecordCoveringError.StallionNotMale)
+            } else {
+                Ok(
+                    BreedingResult(
+                        id = BreedingResultId(generateId()),
+                        breedingRegistrationId = breedingRegistration.id,
+                        covering = Covering(stallion.id, coveringDate, certificateNumber),
+                        outcome = null,
+                    )
+                )
+            }
     }
 }

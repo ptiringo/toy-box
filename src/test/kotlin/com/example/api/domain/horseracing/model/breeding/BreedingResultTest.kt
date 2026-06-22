@@ -10,10 +10,7 @@ import org.junit.jupiter.api.Test
 class BreedingResultTest {
     @Test
     fun `種付日からその年が種付年として導出されること`() {
-        val result =
-            BreedingFixture.breedingResult(
-                covering = BreedingFixture.covering(coveringDate = LocalDate.of(2024, 4, 1))
-            )
+        val result = BreedingFixture.breedingResult(coveringDate = LocalDate.of(2024, 4, 1))
 
         assert(result.coveringYear == Year.of(2024))
     }

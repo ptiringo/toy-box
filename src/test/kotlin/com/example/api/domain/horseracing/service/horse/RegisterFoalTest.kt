@@ -5,6 +5,7 @@ import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.PedigreeRegistrationNumber
+import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap

@@ -1,21 +1,17 @@
-package com.example.api.domain.horseracing.service.horse
+package com.example.api.domain.horseracing.model.horse.bloodhorse
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
-import com.example.api.domain.horseracing.model.horse.bloodhorse.PedigreeRegistrationNumber
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.unwrap
 import org.junit.jupiter.api.Test
 
-/** registerImportedHorse ドメインサービスのユニットテスト */
-class RegisterImportedHorseTest {
+/** [BloodHorse.createImported]（父母不明の輸入馬の血統登録）のユニットテスト */
+class BloodHorseCreateImportedTest {
     private val registrationNumber = PedigreeRegistrationNumber.create("2020900001").unwrap()
 
     @Test
     fun `父母不明の輸入馬が血統登録され父母 ID を持たず原産国と揚陸日を持つこと`() {
         val entry = BloodHorseFixture.importedHorseEntry(originCountry = "アイルランド")
 
-        val bloodHorse = registerImportedHorse(entry, registrationNumber)
+        val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
 
         assert(bloodHorse.sireId == null)
         assert(bloodHorse.damId == null)
@@ -33,7 +29,7 @@ class RegisterImportedHorseTest {
                 breedType = BreedType.THOROUGHBRED,
             )
 
-        val bloodHorse = registerImportedHorse(entry, registrationNumber)
+        val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
 
         assert(bloodHorse.sex == Sex.FEMALE)
         assert(bloodHorse.breedType == BreedType.THOROUGHBRED)
