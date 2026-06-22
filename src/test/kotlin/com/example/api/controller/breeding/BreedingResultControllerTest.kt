@@ -3,12 +3,16 @@ package com.example.api.controller.breeding
 import com.example.api.application.horseracing.breeding.RecordCoveringCommand
 import com.example.api.application.horseracing.breeding.RecordCoveringUseCase
 import com.example.api.application.horseracing.breeding.RecordCoveringUseCaseError
+import com.example.api.application.horseracing.breeding.RecordUncoveredCommand
+import com.example.api.application.horseracing.breeding.RecordUncoveredUseCase
+import com.example.api.application.horseracing.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.horseracing.breeding.ReportFoalingCommand
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCase
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseError
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.breeding.BreedingFixture
 import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
+import com.example.api.domain.horseracing.model.breeding.NotBroodmareForUncovered
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
@@ -34,6 +38,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var recordCovering: RecordCoveringUseCase
+    @MockkBean private lateinit var recordUncovered: RecordUncoveredUseCase
     @MockkBean private lateinit var reportFoaling: ReportFoalingUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
@@ -42,14 +47,16 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     inner class RecordCoveringCase {
         private val uri = "/api/breedingResults"
 
-        /** デシリアライズに通る正しいリクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
+        /** デシリアライズに通る正しい種付記録リクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
         private val validBody =
             """
             {
                 "breeding_registration_id": "11111111-1111-1111-1111-111111111111",
-                "stallion_registration_id": "22222222-2222-2222-2222-222222222222",
-                "covering_date": "2024-04-01",
-                "certificate_number": "C-2024-0001"
+                "covering": {
+                    "stallion_registration_id": "22222222-2222-2222-2222-222222222222",
+                    "covering_date": "2024-04-01",
+                    "certificate_number": "C-2024-0001"
+                }
             }
             """
                 .trimIndent()
@@ -153,6 +160,96 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
                         RecordCoveringError.NotBroodmare
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("not-broodmare")
+        }
+    }
+
+    @Nested
+    inner class RecordUncoveredCase {
+        private val uri = "/api/breedingResults"
+
+        /** covering を持たない（種付せず）正しいリクエストボディ。 */
+        private val validBody =
+            """
+            {
+                "breeding_registration_id": "11111111-1111-1111-1111-111111111111",
+                "breeding_year": 2024
+            }
+            """
+                .trimIndent()
+
+        @Test
+        fun `covering 無しの入力で 201 Created と種付せずの繁殖成績が返ること`() {
+            val saved = BreedingFixture.uncoveredBreedingResult()
+            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns Ok(saved)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .extractingPath("$.outcome.kind")
+                .isEqualTo("NOT_COVERED")
+        }
+
+        @Test
+        fun `covering 無しなのに breeding_year が欠けると 400 と problem+json が返ること`() {
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """{ "breeding_registration_id": "11111111-1111-1111-1111-111111111111" }"""
+                )
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("missing-breeding-year")
+        }
+
+        @Test
+        fun `BreedingRegistrationNotFound で 422 と breedingRegistrationId 付きの problem+json が返ること`() {
+            val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
+            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
+                Err(RecordUncoveredUseCaseError.BreedingRegistrationNotFound(id))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.breeding_registration_id")
+                .isEqualTo(id.toString())
+        }
+
+        @Test
+        fun `前提条件違反（NotBroodmare）が 422 と problem+json に変換されること`() {
+            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
+                Err(
+                    RecordUncoveredUseCaseError.PreconditionViolated(
+                        NotBroodmareForUncovered(BreedingFixture.stallionRegistration())
                     )
                 )
 
