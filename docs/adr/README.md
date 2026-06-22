@@ -26,3 +26,4 @@
 | [0014](0014-self-validating-factory-over-confinement.md) | 集約をまたぐ前提条件は自己検証ファクトリで検証し、生成口の封じ込めを行わない | Accepted |
 | [0015](0015-gradle-build-performance-tuning.md) | Gradle ビルド性能チューニング（build cache 採用・並列フォーク見送り）を実測で決める | Accepted |
 | [0016](0016-not-covered-as-foaling-outcome-variant.md) | 「種付せず」を FoalingOutcome の区分として表し covering を nullable 化する | Accepted |
+| [0017](0017-terraform-quality-gates-tflint-trivy-defer-opa.md) | Terraform 品質ゲートに tflint と Trivy を採用し policy-as-code（OPA）は当面見送る | Accepted |
