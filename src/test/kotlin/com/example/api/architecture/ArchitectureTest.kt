@@ -1,10 +1,14 @@
 package com.example.api.architecture
 
 import com.example.api.ApiApplication
+import com.example.api.domain.horseracing.model.breeding.BreedingRegistration
+import com.example.api.domain.horseracing.model.breeding.BreedingResult
+import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
 import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
+import com.tngtech.archunit.core.domain.JavaMethodCall
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
@@ -40,6 +44,11 @@ private const val APPLICATION = "com.example.api.application.."
 private const val CONTROLLER = "com.example.api.controller.."
 private const val INFRASTRUCTURE = "com.example.api.infrastructure.."
 
+// 封じ込め対象の生成口を呼び出してよいドメインサービスのサブパッケージ（コンテキスト内の領域単位）。
+private const val HORSERACING_HORSE_SERVICE = "com.example.api.domain.horseracing.service.horse.."
+private const val HORSERACING_BREEDING_SERVICE =
+    "com.example.api.domain.horseracing.service.breeding.."
+
 /**
  * ドメインサービスの失敗バリアント型（`〜Error` の sealed interface とその variant）であること。
  *
@@ -61,6 +70,27 @@ private val isFailureVariantType =
 private val isDomainEnum =
     DescribedPredicate.describe<JavaClass>("ドメイン層の enum") { javaClass ->
         javaClass.isEnum && javaClass.packageName.startsWith("com.example.api.domain.")
+    }
+
+/**
+ * 集約の封じ込め対象生成口（[owner] が宣言する [methodNames] のいずれか）への呼び出しであること。
+ *
+ * 集約をまたぐ前提条件を検証するドメインサービスからのみ生成を許す封じ込め（ADR-0010）を、可視性ではなく ArchUnit で 強制する
+ * [ArchitectureTest.bloodHorseCreationConfinedToHorseService] /
+ * [ArchitectureTest.breedingCreationConfinedToBreedingService] で用いる。
+ *
+ * 2 点の Kotlin 由来の差異を吸収する:
+ * - companion object のメソッドは呼び出しターゲットの owner が `〜$Companion` になるため、囲みクラスを辿って集約本体と突き合わせる。
+ * - 生成口は引数に inline value class（ID 等）を取るため、JVM メソッド名が `of-Havw-KM` のようにマングルされる。 ハッシュ手前のベース名（`-`
+ *   の前）で比較し、署名変更でハッシュが変わっても壊れないようにする。
+ */
+private fun callsConfinedFactory(owner: Class<*>, vararg methodNames: String) =
+    DescribedPredicate.describe<JavaMethodCall>(
+        "${owner.simpleName} の生成口（${methodNames.joinToString(" / ")}）の呼び出し"
+    ) { call ->
+        val declaringAggregate = call.target.owner.enclosingClass.orElse(call.target.owner)
+        val baseName = call.target.name.substringBefore('-')
+        declaringAggregate.isEquivalentTo(owner) && baseName in methodNames
     }
 
 /**
@@ -308,5 +338,48 @@ class ArchitectureTest {
             .because(
                 "ID は domain.shared.generateId()（UUIDv7 相当のタイムベース生成）経由で生成する。" +
                     "永続化時のインデックス局所性のため UUID.randomUUID() の直接呼び出しは禁止（ADR-0005）"
+            )
+
+    /**
+     * 軽種馬集約 [BloodHorse] の生成口（[BloodHorse.of] /
+     * [BloodHorse.ofImported]）は、`horseracing.service.horse` のドメインサービスからのみ呼び出すこと。
+     *
+     * 父=雄・母=雌・DNA 親子整合・品種整合（内国産馬）や輸入馬固有の前提条件は単一集約で完結せず、検証は registerInStudBook /
+     * registerImportedHorse の責務である。生成口を検証済みサービスに封じ込めることで「血統登録済み」という不変条件を担保する（ADR-0010）。
+     * 封じ込めは可視性（internal）ではなく本ルールで強制し、生成口は public のまま保つ（テストは [ImportOption.DoNotIncludeTests]
+     * で除外されるため Object Mother からの呼び出しは縛られない）。
+     */
+    @ArchTest
+    val bloodHorseCreationConfinedToHorseService =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage(HORSERACING_HORSE_SERVICE)
+            .should()
+            .callMethodWhere(callsConfinedFactory(BloodHorse::class.java, "of", "ofImported"))
+            .because(
+                "集約をまたぐ前提条件を検証する registerInStudBook / registerImportedHorse からのみ" +
+                    "BloodHorse を生成できるよう封じ込める（ADR-0010）。検証を迂回した直接生成を禁止する"
+            )
+
+    /**
+     * 繁殖系集約の生成口（[BreedingRegistration.of] / [BreedingResult.of]）は、`horseracing.service.breeding`
+     * のドメインサービスからのみ呼び出すこと。
+     *
+     * 繁殖登録の前提（繁殖牝馬であること）や種付記録の前提（種牡馬が雄であること）は集約をまたいで検証され、 registerForBreeding / recordCovering
+     * の責務である。[bloodHorseCreationConfinedToHorseService] と同じく、検証済みサービスへの 封じ込めを ArchUnit で強制し、生成口は
+     * public のまま保つ（ADR-0010）。
+     */
+    @ArchTest
+    val breedingCreationConfinedToBreedingService =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage(HORSERACING_BREEDING_SERVICE)
+            .should()
+            .callMethodWhere(callsConfinedFactory(BreedingRegistration::class.java, "of"))
+            .orShould()
+            .callMethodWhere(callsConfinedFactory(BreedingResult::class.java, "of"))
+            .because(
+                "集約をまたぐ前提条件を検証する registerForBreeding / recordCovering からのみ繁殖系集約を" +
+                    "生成できるよう封じ込める（ADR-0010）。検証を迂回した直接生成を禁止する"
             )
 }

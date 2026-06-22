@@ -119,10 +119,11 @@ private constructor(
         /**
          * [BloodHorse] を生成する。
          *
-         * 父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件はドメインサービス registerInStudBook が
-         * 検証済みである前提のため、この生成口は同モジュールのドメインサービスからのみ呼べるよう internal とする。 生成直後は未命名（[name] は null）。
+         * 父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件はドメインサービス registerInStudBook が 検証済みである前提のため、この生成口は
+         * registerInStudBook からのみ呼んでよい。検証を経ない直接生成は ArchUnit ルールで禁止する（`service.horse`
+         * 以外からの呼び出しを違反とする。ADR-0010）。生成直後は未命名（[name] は null）。
          */
-        internal fun of(
+        fun of(
             entry: StudBookEntry,
             sireId: BloodHorseId,
             damId: BloodHorseId,
@@ -151,10 +152,10 @@ private constructor(
          * 内国産馬の前提条件（父=雄・母=雌・DNA 親子整合・親仔の品種整合）は適用されない。輸入馬固有の審査（承認海外機関の血統書
          * による品種確定、親子判定の血液型・海外機関フォールバック）は別途のモデリングに委ねる。
          *
-         * 内国産馬の [of] と同様、検証を経た生成のみを許すため同モジュールのドメインサービス registerImportedHorse からのみ 呼べるよう internal
-         * とする。生成直後は未命名（[name] は null）。
+         * 内国産馬の [of] と同様、検証を経た生成のみを許すため、この生成口はドメインサービス registerImportedHorse からのみ 呼んでよい。封じ込めは
+         * ArchUnit ルールで強制する（`service.horse` 以外からの呼び出しを違反とする。ADR-0010）。 生成直後は未命名（[name] は null）。
          */
-        internal fun ofImported(
+        fun ofImported(
             entry: ImportedHorseEntry,
             registrationNumber: PedigreeRegistrationNumber,
         ): BloodHorse =

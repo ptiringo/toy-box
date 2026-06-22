@@ -37,10 +37,11 @@ private constructor(
         /**
          * [BreedingRegistration] を生成する。
          *
-         * 繁殖牝馬としての前提条件（種雌馬であること等）はドメインサービス registerForBreeding が
-         * 検証済みである前提のため、この生成口は同モジュールのドメインサービスからのみ呼べるよう internal とする。
+         * 繁殖牝馬としての前提条件（種雌馬であること等）はドメインサービス registerForBreeding が 検証済みである前提のため、この生成口は
+         * registerForBreeding からのみ呼んでよい。封じ込めは ArchUnit ルールで 強制する（`service.breeding`
+         * 以外からの呼び出しを違反とする。ADR-0010）。
          */
-        internal fun of(
+        fun of(
             registrationNumber: BreedingRegistrationNumber,
             broodmareId: BloodHorseId,
         ): BreedingRegistration = BreedingRegistration(registrationNumber, broodmareId)

@@ -84,13 +84,11 @@ private constructor(
         /**
          * 種付を記録した [BreedingResult] を生成する。
          *
-         * 種牡馬が雄であることなどの前提条件はドメインサービス recordCovering が検証済みである前提のため、 この生成口は同モジュールのドメインサービスからのみ呼べるよう
-         * internal とする。生成直後は分娩結果が 未報告（[outcome] は null）。
+         * 種牡馬が雄であることなどの前提条件はドメインサービス recordCovering が検証済みである前提のため、 この生成口は recordCovering
+         * からのみ呼んでよい。封じ込めは ArchUnit ルールで強制する（`service.breeding` 以外からの
+         * 呼び出しを違反とする。ADR-0010）。生成直後は分娩結果が未報告（[outcome] は null）。
          */
-        internal fun of(
-            breedingRegistrationId: BreedingRegistrationId,
-            covering: Covering,
-        ): BreedingResult =
+        fun of(breedingRegistrationId: BreedingRegistrationId, covering: Covering): BreedingResult =
             BreedingResult(
                 id = BreedingResultId(generateId()),
                 breedingRegistrationId = breedingRegistrationId,
