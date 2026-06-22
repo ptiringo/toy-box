@@ -63,7 +63,7 @@ commit-msg:
     # コミットメッセージのフォーマットチェック（オプション）
     commitizen-check:
       run: |
-        if ! echo "$(head -n1 {1})" | grep -E "^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .{1,50}" > /dev/null; then
+        if ! echo "$(head -n1 {1})" | grep -E "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,50}" > /dev/null; then
           echo "コミットメッセージは conventional commit 形式で記述してください"
           echo "例: feat: 新機能を追加"
           echo "例: fix: バグを修正"

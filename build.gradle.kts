@@ -48,6 +48,11 @@ kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // maxParallelForks（テスト JVM の並列フォーク）は意図的に既定（1）のまま据え置く。
+    // 計測上、単一モジュール・小規模スイートの本プロジェクトでは forks を増やすと逆に遅くなる
+    // （42s→97s @ forks=4）。Spring の ApplicationContext キャッシュは JVM 単位のため、
+    // フォークすると重い @SpringBootTest のコンテキスト初期化が各 JVM で重複し、JVM 起動コストも嵩む。
+    // 採否の根拠は ADR-0015 / #349。テスト規模が増えフォーク間でコンテキスト起動を償却できるようになったら再評価する。
     // ユビキタス言語カタログの再生成フラグ（-DubiquitousLanguage.update=true）をフォークした JVM へ引き渡す。
     // UbiquitousLanguageCatalogTest が docs/ubiquitous-language.md の自動生成ブロックを書き戻すために参照する。
     System.getProperty("ubiquitousLanguage.update")?.let {
