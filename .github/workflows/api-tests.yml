@@ -30,6 +30,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Gradle
+        # cache-provider: basic は Gradle User Home（依存・wrapper・ローカル build cache の
+        # ~/.gradle/caches/build-cache-1 を含む）を actions/cache で runner 間に持ち越す。
+        # gradle.properties の org.gradle.caching=true と組み合わせ、PR では読み取り・main では
+        # 書き込み（setup-gradle 既定）で compile/test 出力を再利用する（#349）。
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           cache-provider: basic

@@ -24,3 +24,4 @@
 | [0012](0012-rest-naming-convention.md) | REST 命名規約を URL=camelCase / ボディ=snake_case に確定する | Accepted |
 | [0013](0013-racehorse-registration-as-separate-context.md) | 競走馬登録(JRA)を JAIRS 中心ドメインから別の境界づけられたコンテキストとして分離する | Accepted |
 | [0014](0014-self-validating-factory-over-confinement.md) | 集約をまたぐ前提条件は自己検証ファクトリで検証し、生成口の封じ込めを行わない | Accepted |
+| [0015](0015-gradle-build-performance-tuning.md) | Gradle ビルド性能チューニング（build cache 採用・並列フォーク見送り）を実測で決める | Accepted |
