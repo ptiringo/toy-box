@@ -164,6 +164,9 @@ graph LR
 | JockeyId | 値オブジェクト | domain.horseracing.model.jockey |
 | LandingDate | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | MicrochipNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| Origin | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| Origin.Domestic | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| Origin.Imported | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | OriginCountry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | PedigreeRegistrationNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | RaceId | 値オブジェクト | domain.horseracing.model.race |

@@ -18,7 +18,7 @@ class BloodHorseTest {
         assert(named.id == unnamed.id)
         // 他の属性も引き継がれる
         assert(named.registrationNumber == unnamed.registrationNumber)
-        assert(named.sireId == unnamed.sireId)
+        assert(named.origin == unnamed.origin)
     }
 
     @Test

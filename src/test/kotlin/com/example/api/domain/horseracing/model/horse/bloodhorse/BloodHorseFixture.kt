@@ -83,4 +83,14 @@ object BloodHorseFixture {
             entry = importedHorseEntry(sex = sex, breedType = breedType),
             registrationNumber = PedigreeRegistrationNumber.create("2020900001").unwrap(),
         )
+
+    /** 既定値を持つ内国産の [BloodHorse]（父母を ID 参照する [Origin.Domestic]）を生成する。 */
+    fun domesticBloodHorse(): BloodHorse =
+        BloodHorse.create(
+                sire = bloodHorse(sex = Sex.MALE),
+                dam = bloodHorse(sex = Sex.FEMALE),
+                entry = studBookEntry(),
+                registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
+            )
+            .unwrap()
 }

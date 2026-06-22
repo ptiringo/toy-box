@@ -13,6 +13,7 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseRepos
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
+import com.example.api.domain.horseracing.model.horse.bloodhorse.Origin
 import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.horseracing.service.horse.RegisterFoalError
@@ -99,8 +100,7 @@ class RegisterFoalUseCaseTest {
 
             val bloodHorse = w.useCase()(command(w.breedingResult.id.value)).unwrap()
 
-            assert(bloodHorse.sireId == w.sire.id)
-            assert(bloodHorse.damId == w.dam.id)
+            assert(bloodHorse.origin == Origin.Domestic(sireId = w.sire.id, damId = w.dam.id))
             assert(bloodHorse.dateOfBirth.value == foalingDate)
             verify(exactly = 1) { w.bloodHorseRepository.save(any()) }
         }

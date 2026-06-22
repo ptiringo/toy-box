@@ -6,6 +6,7 @@ import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseRepos
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
+import com.example.api.domain.horseracing.model.horse.bloodhorse.Origin
 import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.shared.Command
@@ -56,8 +57,7 @@ class RegisterInStudBookUseCaseTest {
 
             val bloodHorse = useCase(command(validPayload(sire.id.value, dam.id.value))).unwrap()
 
-            assert(bloodHorse.sireId == sire.id)
-            assert(bloodHorse.damId == dam.id)
+            assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
             assert(bloodHorse.breedType == BreedType.THOROUGHBRED)
             assert(bloodHorse.registrationNumber.value == "2023104567")
             verify(exactly = 1) { repository.save(any()) }

@@ -4,6 +4,7 @@ import com.example.api.domain.horseracing.model.breeding.BreedingFixture
 import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
+import com.example.api.domain.horseracing.model.horse.bloodhorse.Origin
 import com.example.api.domain.horseracing.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
@@ -31,8 +32,7 @@ class RegisterFoalTest {
         val bloodHorse =
             registerFoal(liveFoalResult(), sire, dam, foalIdentity, registrationNumber).unwrap()
 
-        assert(bloodHorse.sireId == sire.id)
-        assert(bloodHorse.damId == dam.id)
+        assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
         assert(bloodHorse.dateOfBirth.value == foalingDate)
         assert(bloodHorse.registrationNumber == registrationNumber)
     }

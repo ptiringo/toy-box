@@ -3,6 +3,7 @@ package com.example.api.application.horseracing.horse
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
 import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.horseracing.model.horse.bloodhorse.Origin
 import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.getError
@@ -45,10 +46,10 @@ class RegisterImportedHorseUseCaseTest {
 
             val bloodHorse = useCase(command(validPayload())).unwrap()
 
-            assert(bloodHorse.sireId == null)
-            assert(bloodHorse.damId == null)
-            assert(bloodHorse.originCountry?.name == "アイルランド")
-            assert(bloodHorse.landingDate?.value == LocalDate.of(2024, 9, 1))
+            val origin = bloodHorse.origin
+            assert(origin is Origin.Imported)
+            assert((origin as Origin.Imported).originCountry.name == "アイルランド")
+            assert(origin.landingDate.value == LocalDate.of(2024, 9, 1))
             assert(bloodHorse.registrationNumber.value == "2020900001")
             verify(exactly = 1) { repository.save(any()) }
         }
