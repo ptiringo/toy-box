@@ -40,81 +40,81 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 provenance = "github-attestations"
 
 [[tools.editorconfig-checker]]
-version = "3.3.0"
+version = "3.7.0"
 backend = "aqua:editorconfig-checker/editorconfig-checker"
 
 [tools.editorconfig-checker."platforms.linux-arm64"]
-checksum = "sha256:9cfc3ae7aee4d441cc6d7eb59d2727edc672642d7d0990fa40d464803d4f0862"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-linux-arm64.tar.gz"
+checksum = "sha256:e978f3f0940469989930311af8e101dd9ce8c2ee4da69264f3d76a3787e961ad"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-arm64.tar.gz"
 
 [tools.editorconfig-checker."platforms.linux-arm64-musl"]
-checksum = "sha256:9cfc3ae7aee4d441cc6d7eb59d2727edc672642d7d0990fa40d464803d4f0862"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-linux-arm64.tar.gz"
+checksum = "sha256:e978f3f0940469989930311af8e101dd9ce8c2ee4da69264f3d76a3787e961ad"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-arm64.tar.gz"
 
 [tools.editorconfig-checker."platforms.linux-x64"]
-checksum = "sha256:923b80494b09b362d4fdb0d706913b67da0d60b4e2d34e5e346aa7e4118d6ab3"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-linux-amd64.tar.gz"
+checksum = "sha256:9a0c3a5170bffa24f9e5f0def53d285777b6c5284a95367f40d399d0b76af552"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-amd64.tar.gz"
 
 [tools.editorconfig-checker."platforms.linux-x64-musl"]
-checksum = "sha256:923b80494b09b362d4fdb0d706913b67da0d60b4e2d34e5e346aa7e4118d6ab3"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-linux-amd64.tar.gz"
+checksum = "sha256:9a0c3a5170bffa24f9e5f0def53d285777b6c5284a95367f40d399d0b76af552"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-amd64.tar.gz"
 
 [tools.editorconfig-checker."platforms.macos-arm64"]
-checksum = "sha256:b39d1320ee6794c942a97e3be457e6b7ab50b1ac2f60e1a50a1aff2ab48c6588"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-darwin-arm64.tar.gz"
+checksum = "sha256:727e6ef506c6fbe7719cc29c69b495715b64514a00059f3f179077bfad0580e5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-darwin-arm64.tar.gz"
 
 [tools.editorconfig-checker."platforms.macos-x64"]
-checksum = "sha256:64d1898a53332f45c427222814357a8ce4ad89370dc57e4e43945e69558230c3"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-darwin-amd64.tar.gz"
+checksum = "sha256:6cd2e4aa2a374d391e3baeaae43fc28906fd15b09490f5669eee206a63eef00a"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-darwin-amd64.tar.gz"
 
 [tools.editorconfig-checker."platforms.windows-x64"]
-checksum = "sha256:6234197229170c9b956c244c821e09082a95c507e22159e0b2bce6562fd82a22"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.3.0/ec-windows-amd64.zip"
+checksum = "sha256:9c6b8a4cd7ccc5826ab96d34c460f37ab18b9cb50607d3ee9eb743fc47335da7"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-windows-amd64.zip"
 
 [[tools.fnox]]
-version = "1.26.0"
+version = "1.27.1"
 backend = "github:jdx/fnox"
 
 [tools.fnox."platforms.linux-arm64"]
-checksum = "sha256:25f2628f54113685338322fc6c485d3f899ce0e1a926046c641a323a81806879"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847393"
+checksum = "sha256:5f18410dd9a777386d9dbdd4029e13436195dcfaa55f594a99ff6a4bc1b3ca03"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745507"
 provenance = "github-attestations"
 
 [tools.fnox."platforms.linux-arm64-musl"]
-checksum = "sha256:dca289095fcd009094a745e2e6c664e3691087d0e02e0c305abef59c3903ef61"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847389"
+checksum = "sha256:b9307bc65ae2c4b2178175876034b3ad04a7fded5aea89818141a7b05e6c43aa"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745503"
 provenance = "github-attestations"
 
 [tools.fnox."platforms.linux-x64"]
-checksum = "sha256:6e2a359357223d83f235523eb21e7402c5a84b5471aeff6d4d0ea6cb4bc6abc2"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847488"
+checksum = "sha256:fe272bebbb0825ba1df0c7502054979815fae8251b4a90c61c28cd13d64887bf"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745538"
 provenance = "github-attestations"
 
 [tools.fnox."platforms.linux-x64-musl"]
-checksum = "sha256:c6d3d8efeb942b6d3ee4383c6c68c53bd7e625bd1a6f632def203bfaac98089c"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847496"
+checksum = "sha256:5d5ba5f6779c398b4fb23b06fc82c303fcc281f56bc0ed849f23403acaa0e413"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745537"
 provenance = "github-attestations"
 
 [tools.fnox."platforms.macos-arm64"]
-checksum = "sha256:65295b6cf9a345240967f3fd73db4645d7e4ec3ef4f20f735bd41802c92896f7"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847391"
+checksum = "sha256:0f82d0346872bc98843c8428bfd05e72ca9f8ac9eb699be4549e7a21d2cf0a7f"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745511"
 provenance = "github-attestations"
 
 [tools.fnox."platforms.macos-x64"]
-checksum = "sha256:6a621920c16ee27dd32a7063664082f321cb9362369e96c40098eba5769532df"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847388"
+checksum = "sha256:7aafc5e8fea5dea4471f2a92abc6d8211f5b1f8fcbdbfac611ea6a52101483e1"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745508"
 provenance = "github-attestations"
 
 [tools.fnox."platforms.windows-x64"]
-checksum = "sha256:ba7ac2eb4ce18178f711d40428431ff20da334c8d61302bca1edae5980e151c8"
-url = "https://github.com/jdx/fnox/releases/download/v1.26.0/fnox-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/445847435"
+checksum = "sha256:6373ee5457e8c36941f688aeff9ac630923c588fd78faff14e0548a1d1dbd89a"
+url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745535"
 provenance = "github-attestations"
 
 [[tools.gitleaks]]
@@ -150,132 +150,139 @@ checksum = "sha256:d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332af
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip"
 
 [[tools.java]]
-version = "temurin-21.0.0+35.0.LTS"
+version = "temurin-21.0.11+10.0.LTS"
 backend = "core:java"
 
 [tools.java."platforms.linux-arm64"]
-checksum = "sha256:33e440c237438aa2e3866d84ead8d4e00dc0992d98d9fd0ee2fe48192f2dbc4b"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_aarch64_linux_hotspot_21_35.tar.gz"
+checksum = "sha256:8d498ec88e1c1989fab95c6784240ab92d011e29c54d20a3f9c324b13476f9ad"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.11_10.tar.gz"
 
 [tools.java."platforms.linux-arm64-musl"]
-checksum = "sha256:3f8e5b0447d2dd711f12edda611ed1cf9aab4ca53c8fe32fca8fb1e6fee41c12"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_aarch64_alpine-linux_hotspot_21_35.tar.gz"
+checksum = "sha256:c8d63598d1dc0a656033515ed258bd6db37506a05407d9f65cd23b95c21027b5"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_aarch64_alpine-linux_hotspot_21.0.11_10.tar.gz"
 
 [tools.java."platforms.linux-x64"]
-checksum = "sha256:82f64c53acaa045370d6762ebd7441b74e6fda14b464d54d1ff8ca941ec069e6"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_x64_linux_hotspot_21_35.tar.gz"
+checksum = "sha256:4b2220e232a97997b436ca6ab15cbf70171ecff52958a46159dfa5a8c44ca4de"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_linux_hotspot_21.0.11_10.tar.gz"
 
 [tools.java."platforms.linux-x64-musl"]
-checksum = "sha256:4fd74f93f0b1a94d8471e0ed801fe9d938f7471f6efe8791880c85e7716c943f"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_x64_alpine-linux_hotspot_21_35.tar.gz"
+checksum = "sha256:38bfdcef1e4b45de2ec222047ac79c76bea75d4d7406a310e26cfa236763f05f"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_alpine-linux_hotspot_21.0.11_10.tar.gz"
 
 [tools.java."platforms.macos-arm64"]
-checksum = "sha256:107d1b16cda1da20d2f7aa45b1bfb8574bbfca2e15bb0ff720ce2678473b00d5"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_aarch64_mac_hotspot_21_35.tar.gz"
+checksum = "sha256:6ebcf221c9b41507b14c098e93c6ead6440b8d9bd154f8ec666c4c73abbdb201"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.11_10.tar.gz"
 
 [tools.java."platforms.macos-x64"]
-checksum = "sha256:25f3d8c875255362a3e31a0783f9f0422de01f8e4b515c45bd68e43ef3812a9d"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_x64_mac_hotspot_21_35.tar.gz"
+checksum = "sha256:34180eb03e6d207c388cce3da668f6cc7cd7508c185c24782fadac2c9c0e66f9"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_mac_hotspot_21.0.11_10.tar.gz"
 
 [tools.java."platforms.windows-x64"]
-checksum = "sha256:653dc46f31dd0e8c5c13dfefe72754615dc0fdc123a03390e71e2cff2f1f17e1"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21%2B35/OpenJDK21U-jdk_x64_windows_hotspot_21_35.zip"
+checksum = "sha256:d3625e7cadf23787ea540229544b6e2ab494b3b54da1801879e583e1dfee0a64"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_windows_hotspot_21.0.11_10.zip"
 
 [[tools.lefthook]]
-version = "1.12.2"
+version = "2.1.9"
 backend = "aqua:evilmartians/lefthook"
 
 [tools.lefthook."platforms.linux-arm64"]
-checksum = "sha256:e20a5b99aabcccc33fa52d24e4d81bebc7f2ce243a1977847ca531fbd13e9a33"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_Linux_aarch64.gz"
+checksum = "sha256:d1bae1c9c26b35270dd675c93c33cecead885368ed078b3976ec23cdcedd28e8"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_Linux_aarch64.gz"
+provenance = "github-attestations"
 
 [tools.lefthook."platforms.linux-arm64-musl"]
-checksum = "sha256:e20a5b99aabcccc33fa52d24e4d81bebc7f2ce243a1977847ca531fbd13e9a33"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_Linux_aarch64.gz"
+checksum = "sha256:d1bae1c9c26b35270dd675c93c33cecead885368ed078b3976ec23cdcedd28e8"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_Linux_aarch64.gz"
+provenance = "github-attestations"
 
 [tools.lefthook."platforms.linux-x64"]
-checksum = "sha256:f750d88b24b6c2402b531da6a3f23df645fe4abefec2ddb1b897692a7abdf0a1"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_Linux_x86_64.gz"
+checksum = "sha256:e938f34bd05bafe1155888879a045ef4ee8cf5b4a56c9e5e9b0c2649f295636e"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_Linux_x86_64.gz"
+provenance = "github-attestations"
 
 [tools.lefthook."platforms.linux-x64-musl"]
-checksum = "sha256:f750d88b24b6c2402b531da6a3f23df645fe4abefec2ddb1b897692a7abdf0a1"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_Linux_x86_64.gz"
+checksum = "sha256:e938f34bd05bafe1155888879a045ef4ee8cf5b4a56c9e5e9b0c2649f295636e"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_Linux_x86_64.gz"
+provenance = "github-attestations"
 
 [tools.lefthook."platforms.macos-arm64"]
-checksum = "sha256:b7c9be24179dddcea9438940bbea9dc3a8c7891a07f8a747c04e552e757a9972"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_MacOS_arm64.gz"
+checksum = "sha256:808f8ef81a61e01eb41c1a2951e5639804f2372dc6a484bbeff726406745c77f"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_MacOS_arm64.gz"
+provenance = "github-attestations"
 
 [tools.lefthook."platforms.macos-x64"]
-checksum = "sha256:8d8644283b8c40db09af76685b97e97e78cae3574af7c1ea0d50ec6464f3a59f"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_MacOS_x86_64.gz"
+checksum = "sha256:371c3c75cb07a8cdf41295596d3981adc1f92dee7795001f7d471e1f36fe2a0e"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_MacOS_x86_64.gz"
+provenance = "github-attestations"
 
 [tools.lefthook."platforms.windows-x64"]
-checksum = "sha256:28cd6cc5bb1f2fb97d0720aa9b13cae94a8a02c263b5d9c56db8495f27990418"
-url = "https://github.com/evilmartians/lefthook/releases/download/v1.12.2/lefthook_1.12.2_Windows_x86_64.gz"
+checksum = "sha256:1f29681dfbc36b9bdde52139cca6c4668ea4d51fd81e9127a3b78f49369db67e"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.9/lefthook_2.1.9_Windows_x86_64.gz"
+provenance = "github-attestations"
 
 [[tools.terraform]]
-version = "1.12.2"
+version = "1.15.6"
 backend = "aqua:hashicorp/terraform"
 
 [tools.terraform."platforms.linux-arm64"]
-checksum = "sha256:f8a0347dc5e68e6d60a9fa2db361762e7943ed084a773f28a981d988ceb6fdc9"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_arm64.zip"
+checksum = "sha256:404c9cfa43728d31005f6e7a848b8a7cc701320067d9d87d8850031a5beb37b0"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_linux_arm64.zip"
 
 [tools.terraform."platforms.linux-arm64-musl"]
-checksum = "sha256:f8a0347dc5e68e6d60a9fa2db361762e7943ed084a773f28a981d988ceb6fdc9"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_arm64.zip"
+checksum = "sha256:404c9cfa43728d31005f6e7a848b8a7cc701320067d9d87d8850031a5beb37b0"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_linux_arm64.zip"
 
 [tools.terraform."platforms.linux-x64"]
-checksum = "sha256:1eaed12ca41fcfe094da3d76a7e9aa0639ad3409c43be0103ee9f5a1ff4b7437"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip"
+checksum = "sha256:a7150d3b0e1b5c466ad42e8c499954a3c54645f8b56b385fa025d34f7e88faa9"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_linux_amd64.zip"
 
 [tools.terraform."platforms.linux-x64-musl"]
-checksum = "sha256:1eaed12ca41fcfe094da3d76a7e9aa0639ad3409c43be0103ee9f5a1ff4b7437"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip"
+checksum = "sha256:a7150d3b0e1b5c466ad42e8c499954a3c54645f8b56b385fa025d34f7e88faa9"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_linux_amd64.zip"
 
 [tools.terraform."platforms.macos-arm64"]
-checksum = "sha256:1ca02f336ff4f993d6441806d38a0bcc0bbca0e3c877b84c9c2dc80cfcd0dc8b"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_darwin_arm64.zip"
+checksum = "sha256:8d4c6791a744332bc7ca3962c61ab2ed8e5d25a7299f176f5edffb9cb525e85f"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_darwin_arm64.zip"
 
 [tools.terraform."platforms.macos-x64"]
-checksum = "sha256:c65aa74bed1dbb1c48ba4bbab11f08e7f7eeb54a422146561490275340468f19"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_darwin_amd64.zip"
+checksum = "sha256:ec7e3c2d314b5b0c975b6f7f8c6094d1806cb98f64f79e6f971cc87f786eb6e0"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_darwin_amd64.zip"
 
 [tools.terraform."platforms.windows-x64"]
-checksum = "sha256:0a1565ace9da37c2778868c2e97452d8fc25e40e530bafbbab97231e69b0a201"
-url = "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_windows_amd64.zip"
+checksum = "sha256:56b4d3a157e346f8fc1e94254d0a944e6fec81f58ddd43eb274b8e0ebb56e334"
+url = "https://releases.hashicorp.com/terraform/1.15.6/terraform_1.15.6_windows_amd64.zip"
 
 [[tools.zizmor]]
-version = "1.25.2"
+version = "1.26.1"
 backend = "aqua:zizmorcore/zizmor"
 
 [tools.zizmor."platforms.linux-arm64"]
-checksum = "sha256:4b4b9491112c2a09b318101c0d3349b73af1c4f532e097dd6d0164f2abda760d"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:711f5af366b299128f9a04b1470e37d990b41fbd21f14a1a4148d25004a83762"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.26.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
 provenance = "github-attestations"
 
 [tools.zizmor."platforms.linux-arm64-musl"]
 provenance = "github-attestations"
 
 [tools.zizmor."platforms.linux-x64"]
-checksum = "sha256:aa1facd105f0d83fe5c55b1adcd9d7417de5d83aa27471f91dc0b66cf3803577"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:8556289a64e7aaf2400cd516f61a471aa91c5902cc56ad96a82fd12f90c2ef73"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.26.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
 provenance = "github-attestations"
 
 [tools.zizmor."platforms.linux-x64-musl"]
 provenance = "github-attestations"
 
 [tools.zizmor."platforms.macos-arm64"]
-checksum = "sha256:624ef0e09521aecd862126be0f6d7754669af2646750d68ac48a114be33c3146"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:68ab2b37836bbd44f6cfffcc102b9ffffbc20c5d67d84293dafb63bd2775a1da"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.26.1/zizmor-aarch64-apple-darwin.tar.gz"
 provenance = "github-attestations"
 
 [tools.zizmor."platforms.macos-x64"]
-checksum = "sha256:353271b9ec301dd4ba158af481323c831c6e9b494d5ac3f5aa58cf4b207699cc"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-apple-darwin.tar.gz"
+checksum = "sha256:2967414a561f8c1264121e8f723c3b5abcf3d1bf7ce5063114df99985dd75801"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.26.1/zizmor-x86_64-apple-darwin.tar.gz"
 provenance = "github-attestations"
 
 [tools.zizmor."platforms.windows-x64"]
-checksum = "sha256:65d46a8144f701200621b580f632076d80d082d60856de9f88793a95fb5882d7"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:c6cea156935e3b9d36faeca4fd8f622d23f7a7578da26adb34e6456abd9beb9a"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.26.1/zizmor-x86_64-pc-windows-msvc.zip"
 provenance = "github-attestations"
