@@ -41,6 +41,11 @@ jobs:
       - name: Run ktfmt check
         run: ./gradlew ktfmtCheck --stacktrace
 
+      # コンパイラ警告をエラー化するゲート（allWarningsAsErrors, ADR-0019）。
+      # detekt / test 内のコンパイルでも効くが、警告で落ちたとき原因が明確になるよう専用ステップで明示する。
+      - name: Compile (warnings as errors)
+        run: ./gradlew compileKotlin compileTestKotlin :detekt-rules:compileKotlin :detekt-rules:compileTestKotlin --stacktrace
+
       - name: Run detekt
         run: ./gradlew detekt --stacktrace
 

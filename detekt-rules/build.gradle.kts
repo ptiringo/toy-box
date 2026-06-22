@@ -9,6 +9,9 @@ repositories { mavenCentral() }
 
 java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 
+// 本体（root）と同じく、コンパイラ警告をエラー扱いにして警告ゼロ運用を強制する。
+kotlin { compilerOptions { allWarningsAsErrors = true } }
+
 dependencies {
     // detekt のルール API（PSI は kotlin-compiler 経由で推移的に入る）。実行時は detekt 本体が供給するため compileOnly。
     compileOnly(libs.detekt.api)
