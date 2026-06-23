@@ -66,6 +66,7 @@ VO で表す項目（番号・名前など）は素の文字列で DTO に受け
 | リクエストボディ内で参照する別リソースが不在 | **422 Unprocessable Entity** | リクエストは構文的に正しく処理されたが、ボディ内参照先が無く意味的に処理できない | `SireNotFound` / `DamNotFound`（`sire_id` / `dam_id`）、`BreedingRegistrationNotFound` |
 
 - VO 検証エラー（形式不正）は入力不正として **400 Bad Request**、状態の競合（二重登録等）は **409 Conflict** とする。
-- 経緯は [ADR-0018](../../docs/adr/0018-record-uncovered-status-and-422.md)（基準の確立）と [ADR-0021](../../docs/adr/0021-parent-not-found-unprocessable-entity.md)（父母不在への適用）を参照。
+- なお [AIP-193](https://google.aip.dev/193) は参照先/親の不在に `NOT_FOUND`（404）を must とし、その error code 体系に 422 は存在しない。本プロジェクトはエラーのステータス選択を AIP の管轄外とし、RFC 9457 側で 422 を採る（リソース設計は AIP / エラー描画は RFC 9457 の二系統使い分け）。詳細は ADR-0021。
+- 経緯は [ADR-0018](../../docs/adr/0018-record-uncovered-status-and-422.md)（基準の確立）と [ADR-0021](../../docs/adr/0021-parent-not-found-unprocessable-entity.md)（父母不在への適用・AIP との対比）を参照。
 
 > AIP-193 (Errors) はレスポンスボディの形（`google.rpc.Status`）を規定するが、本プロジェクトでは REST 寄りの RFC 9457 を採用する。リソース設計など構造系のみ AIP を適用する。

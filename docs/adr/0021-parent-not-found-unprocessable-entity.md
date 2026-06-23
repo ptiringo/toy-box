@@ -34,6 +34,15 @@ ADR-0018 で確立した判断軸をそのまま踏襲する。
 
 「父というリソースが存在しない」という見方から 404 を採る余地はあるが、それを採ると ADR-0018 で確立した「ボディ内参照の不在＝422」と矛盾し、`BreedingRegistrationNotFound`（422）との一貫性も崩れる。リソース参照の不在に対するステータスは、参照が URL パスにあるかボディにあるかで一貫して切り分ける方が、横断的に判断がぶれない。
 
+### AIP との対比（AIP は 404 を MUST とするが採らない）
+
+本プロジェクトのリソース設計は [Google AIP](https://google.aip.dev/) 準拠（[api-design.md](../../.claude/rules/api-design.md)）だが、エラーステータスの選択については AIP に**従わない**。
+
+- [AIP-193 (Errors)](https://google.aip.dev/193) は「権限はあるが要求された resource または parent が存在しない場合は `NOT_FOUND`（HTTP 404）を返さなければならない（must）」と規定する。AIP のエラーモデルは gRPC の canonical error codes（`google.rpc.Code`）であり、**HTTP 422 にマップされるコードがそもそも存在しない**（参照先不在は一律 `NOT_FOUND` → 404、前提条件違反は `FAILED_PRECONDITION` → 400）。
+- したがって AIP に厳密に従えば、本ケースは 404（ないし 400）であって 422 ではない。
+
+それでも 422 を採るのは、本プロジェクトが**エラーのレスポンス形・ステータス選択を AIP の管轄外と切り分けている**ためである。`api-design.md` の注記どおり「AIP-193 はレスポンスボディの形（`google.rpc.Status`）を規定するが、本プロジェクトでは REST 寄りの RFC 9457 を採用し、リソース設計など構造系のみ AIP を適用する」。422（RFC 9457 / RFC 4918 由来の「構文は正しいが意味的に処理できない」）は AIP のコード体系には無いが、REST API では広く使われる。リソース設計（URL・命名・単一表現）は AIP に、エラー描画は RFC 9457 に従う、という**二系統の使い分けを明示的に選択している**。
+
 ## 影響
 
 - `RegisterInStudBookUseCaseError.SireNotFound` / `DamNotFound`、`RegisterFoalUseCase` の同等バリアントは 422 にマッピングする（既存実装どおり。挙動の変更はない）。
