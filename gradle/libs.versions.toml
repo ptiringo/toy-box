@@ -18,7 +18,7 @@ mockk = "1.14.11"
 springmockk = "5.0.1"
 archunit = "1.4.2"
 jmolecules-bom = "2025.0.2"
-junit = "6.0.3"
+junit = "6.1.0"
 
 [libraries]
 # SpringDoc OpenAPI
