@@ -226,17 +226,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 - オプションは `P1: 今すぐ` / `P2: 近いうち` / `P3: いずれ` / `P4: 探索・保留` の 4 段階。
 - **作成した Issue は必ず Project（#4）に追加する**。Project に入れた Issue だけが `Priority` フィールドを持てるため、issue を立てたら「Project へ追加 → `Priority` 設定」までを 1 セットで行う（優先度が即決でなくても Project には必ず入れ、未定なら後から設定する）。
 - 優先度順に眺める・束ねる・絞るときは Project のビューを使う（`gh issue list` のラベル列には優先度は出ない）。
-- CLI からの確認・設定:
-
-```bash
-# 優先度付きで一覧（Web ビューが基本だが CLI でも確認可）
-gh project item-list 4 --owner ptiringo
-
-# Issue を Project に追加して優先度を設定（field-id / option-id は field-list で確認）
-gh project item-add 4 --owner ptiringo --url <issue-url>
-gh project field-list 4 --owner ptiringo --format json   # フィールド/オプション ID の確認
-```
-
+- **Issue の操作は `/issue-ops` スキルに集約**。次にやる Issue を選ぶ・候補を一覧する／新規作成して Project 追加＋優先度設定／優先度変更の手順（jq・操作 ID・実装済み確認）はそこを使う。とくに候補選びは、`gh project item-list` がクローズ済みも含み出力に open/closed が無いため priority だけで拾うとクローズ済み・実装済みを「未対応」として提案してしまう（再発実績あり）。`.status != "Done"` で絞る手順がスキルにある。
 - フィールド定義と既存ラベルからの移行はスクリプト化してある（`scripts/migrate-priority-to-project.sh`、`gh project` CLI で再現可能）。Project スコープが要るので事前に `gh auth refresh -s project`。
 
 ## ツール管理
