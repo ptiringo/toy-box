@@ -27,8 +27,8 @@ data class FoalingAlreadyRecorded(val current: FoalingOutcome)
 /**
  * 種付記録（[BreedingResult.create]）の前提条件違反。
  *
- * 種付は「繁殖牝馬の繁殖登録 × 種牡馬の繁殖登録」の配合であり、両者の登録ロールを検証する。制度上は他の前提条件も ありうる（例:
- * 同一種付年の重複記録の禁止）。集約が揃い次第バリアントを追加できるよう sealed interface としておく。
+ * 種付は「繁殖牝馬の繁殖登録 × 種牡馬の繁殖登録」の配合であり、両者の登録ロールを検証する。あわせて、繁殖成績は 「繁殖牝馬 × 繁殖年」で一意（繁殖成績報告書
+ * 様式第14号が報告する年次成績は種付年ごとに1行）であり、同一年への 重複記録を [AlreadyRecordedForYear] で拒む。
  */
 sealed interface RecordCoveringError {
     /** 種付対象の繁殖登録のロールが繁殖牝馬（BROODMARE）でない。 */
@@ -36,6 +36,20 @@ sealed interface RecordCoveringError {
 
     /** 配合相手の繁殖登録のロールが種牡馬（STALLION）でない。 */
     data object NotStallion : RecordCoveringError
+
+    /**
+     * 同一繁殖牝馬・同一繁殖年に既に年次の繁殖成績が存在する（種付した年・種付せずの年を問わない）。
+     *
+     * 繁殖成績は「繁殖牝馬 × 繁殖年」で一意であり、同一年への重複記録は不変条件違反。既存レコードの引き当ては アプリケーション層の責務（coordination）で、その結果を
+     * [BreedingResult.create] に渡して検証する。
+     *
+     * @property year 重複した繁殖年
+     * @property existingBreedingResultId 既に存在する同年の繁殖成績のID
+     */
+    data class AlreadyRecordedForYear(
+        val year: Year,
+        val existingBreedingResultId: BreedingResultId,
+    ) : RecordCoveringError
 }
 
 /**
@@ -138,10 +152,16 @@ private constructor(
          * として、牝側の登録ロールが繁殖牝馬・雄側の登録ロールが種牡馬であることを自己検証してから生成する。検証を満たさなければ 生成せず [RecordCoveringError]
          * を返す。生成物は種牡馬を `BloodHorseId` 経由で参照する。生成直後は分娩結果が 未報告（[outcome] は null）。
          *
+         * あわせて、繁殖成績は「繁殖牝馬 × 繁殖年」で一意であり、同一年の重複記録を拒む。既存レコードの引き当ては
+         * リポジトリを参照するアプリケーション層の責務（coordination）であり、本ファクトリは引き当て済みの同年の既存レコード [existingForYear]
+         * を引数で受け取って「同年の成績が存在しないこと」を自己検証する。存在すれば生成せず [RecordCoveringError.AlreadyRecordedForYear]
+         * を返す。
+         *
          * @param broodmareRegistration 種付対象の繁殖牝馬の繁殖登録（ロールが繁殖牝馬であること）
          * @param stallionRegistration 配合相手の種牡馬の繁殖登録（ロールが種牡馬であること）
          * @param coveringDate 種付日
          * @param certificateNumber 種付の事実を証明する種付証明書の番号
+         * @param existingForYear 同一繁殖牝馬・同一繁殖年に既に存在する年次成績。アプリケーション層が引き当てて渡す。 重複が無ければ null
          * @return 種付を記録した [BreedingResult]、または前提条件違反を表す [RecordCoveringError]
          */
         fun create(
@@ -149,12 +169,20 @@ private constructor(
             stallionRegistration: BreedingRegistration,
             coveringDate: LocalDate,
             certificateNumber: CoveringCertificateNumber,
+            existingForYear: BreedingResult? = null,
         ): Result<BreedingResult, RecordCoveringError> =
             when {
                 broodmareRegistration.role != BreedingRole.BROODMARE ->
                     Err(RecordCoveringError.NotBroodmare)
                 stallionRegistration.role != BreedingRole.STALLION ->
                     Err(RecordCoveringError.NotStallion)
+                existingForYear != null ->
+                    Err(
+                        RecordCoveringError.AlreadyRecordedForYear(
+                            Year.of(coveringDate.year),
+                            existingForYear.id,
+                        )
+                    )
                 else ->
                     Ok(
                         BreedingResult(

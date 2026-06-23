@@ -13,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Year
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -43,7 +44,10 @@ class RecordCoveringUseCaseTest {
                     every { findById(stallionRegistration.id) } returns stallionRegistration
                 }
             val breedingResultRepository =
-                mockk<BreedingResultRepository> { every { save(any()) } answers { firstArg() } }
+                mockk<BreedingResultRepository> {
+                    every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                    every { save(any()) } answers { firstArg() }
+                }
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
@@ -140,7 +144,10 @@ class RecordCoveringUseCaseTest {
                     every { findById(broodmareRegistration.id) } returns broodmareRegistration
                     every { findById(notStallionRegistration.id) } returns notStallionRegistration
                 }
-            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val breedingResultRepository =
+                mockk<BreedingResultRepository> {
+                    every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                }
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
@@ -156,6 +163,44 @@ class RecordCoveringUseCaseTest {
             assert(
                 result.getError() ==
                     RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
+            )
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `同一繁殖牝馬の同一繁殖年に既に成績があるとき AlreadyRecordedForYear を wrap して返し永続化されない`() {
+            val broodmareRegistration = BreedingFixture.breedingRegistration()
+            val stallionRegistration = BreedingFixture.stallionRegistration()
+            val existing =
+                BreedingFixture.breedingResult(broodmareRegistration = broodmareRegistration)
+            val registrationRepository =
+                mockk<BreedingRegistrationRepository> {
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                }
+            val breedingResultRepository =
+                mockk<BreedingResultRepository> {
+                    every {
+                        findByBreedingRegistrationIdAndBreedingYear(
+                            broodmareRegistration.id,
+                            Year.of(2024),
+                        )
+                    } returns existing
+                }
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
+
+            val result =
+                useCase(
+                    command(
+                        validPayload(broodmareRegistration.id.value, stallionRegistration.id.value)
+                    )
+                )
+
+            assert(
+                result.getError() ==
+                    RecordCoveringUseCaseError.PreconditionViolated(
+                        RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
+                    )
             )
             verify(exactly = 0) { breedingResultRepository.save(any()) }
         }
