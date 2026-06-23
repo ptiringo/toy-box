@@ -30,3 +30,5 @@
 | [0018](0018-uncovered-via-discriminated-single-create.md) | 「種付せず」の記録入口を covering 有無で判別する単一 Create にする | Accepted |
 | [0019](0019-compiler-warnings-as-errors.md) | コンパイラ警告をエラー化して警告ゼロ運用を強制する（allWarningsAsErrors） | Accepted |
 | [0020](0020-sealed-origin-and-discriminated-origin-subobject.md) | 出自を sealed Origin に統合し、リソース表現に discriminated 部分オブジェクトを許す | Accepted |
+| [0021](0021-parent-not-found-unprocessable-entity.md) | 父母不在（sire/dam 参照先不在）を 422 Unprocessable Entity で確定する | Accepted |
+| [0022](0022-domain-service-repository-for-set-invariants.md) | ドメインサービスは集合制約の検証に限りリポジトリポートを受け取ってよい | Accepted |

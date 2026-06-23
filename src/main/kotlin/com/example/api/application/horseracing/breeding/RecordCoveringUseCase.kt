@@ -13,7 +13,6 @@ import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.time.LocalDate
-import java.time.Year
 import java.util.UUID
 import org.springframework.stereotype.Service
 
@@ -59,10 +58,10 @@ sealed interface RecordCoveringUseCaseError {
 /**
  * 種付記録ユースケース。
  *
- * 境界の生入力を VO に変換し（不正なら検証エラー）、繁殖牝馬・種牡馬の繁殖登録を Repository で引き当てる。あわせて 「繁殖牝馬 ×
- * 繁殖年」で一意という前提条件の検証材料として、同年の既存成績を Repository で引き当て（coordination）、 ドメインサービス recordCovering
- * に渡す。サービスは前提条件（登録ロール・同年の重複が ないこと）を検証してから繁殖成績 （[BreedingResult]）の年次レコードを起こし、本ユースケースがそれを永続化する。
- * Controller 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
+ * 境界の生入力を VO に変換し（不正なら検証エラー）、繁殖牝馬・種牡馬の繁殖登録を Repository で引き当てて、 ドメインサービス recordCovering
+ * を呼ぶ。サービスは前提条件（登録ロール・「繁殖牝馬 × 繁殖年」で一意であること）を
+ * 検証してから繁殖成績（[BreedingResult]）の年次レコードを起こす。一意性の判定に要する同年の既存成績の引き当ては
+ * サービスが繁殖成績ポートを介して行うため、本ユースケースは生成された成績を永続化するだけでよい。 Controller 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
  * @return 起こされた [BreedingResult]、または業務ルール違反を表す [RecordCoveringUseCaseError]
  */
@@ -101,19 +100,13 @@ class RecordCoveringUseCase(
                 }
                 .bind()
 
-        val existingForYear =
-            breedingResultRepository.findByBreedingRegistrationIdAndBreedingYear(
-                broodmareRegistration.id,
-                Year.of(input.coveringDate.year),
-            )
-
         val breedingResult =
             recordCovering(
                     broodmareRegistration,
                     stallionRegistration,
                     input.coveringDate,
                     certificateNumber,
-                    existingForYear,
+                    breedingResultRepository,
                 )
                 .mapError { RecordCoveringUseCaseError.PreconditionViolated(it) }
                 .bind()
