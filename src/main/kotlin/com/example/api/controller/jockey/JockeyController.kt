@@ -41,7 +41,7 @@ class JockeyController(
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = RegisterJockeyResponse::class),
+                                schema = Schema(implementation = JockeyResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                             )
                         ],
@@ -72,13 +72,9 @@ class JockeyController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/jockeys")
-    fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyResponse {
+    fun register(@RequestBody request: RegisterJockeyRequest): JockeyResponse {
         val command = Command.now(RegisterJockeyCommand(request.firstName, request.lastName), clock)
         val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
-        return RegisterJockeyResponse(
-            id = jockey.id.value,
-            firstName = jockey.firstName,
-            lastName = jockey.lastName,
-        )
+        return jockey.toResponse()
     }
 }

@@ -3,18 +3,8 @@ package com.example.api.controller.jockey
 import com.example.api.application.horseracing.jockey.JockeyRegistrationError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
-import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
-
-/**
- * `POST /api/jockeys` の成功レスポンスボディ。
- *
- * @property id 登録された [com.example.api.domain.horseracing.model.jockey.JockeyId] の生 UUID
- * @property firstName 名
- * @property lastName 姓
- */
-data class RegisterJockeyResponse(val id: UUID, val firstName: String, val lastName: String)
 
 /**
  * [JockeyRegistrationError] を RFC 9457 (`application/problem+json`) 形式の [ProblemDetail] に 変換する。
