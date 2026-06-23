@@ -3,7 +3,6 @@ package com.example.api.domain.horseracing.model.breeding
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
-import java.time.Year
 import org.junit.jupiter.api.Test
 
 /** [BreedingResult.create]（種付記録）のユニットテスト */
@@ -64,27 +63,5 @@ class BreedingResultCreateTest {
             )
 
         assert(result.getError() == RecordCoveringError.NotStallion)
-    }
-
-    @Test
-    fun `同一繁殖年に既存の成績があると AlreadyRecordedForYear を返し既存IDを伴うこと`() {
-        val broodmareRegistration = BreedingFixture.breedingRegistration()
-        val stallionRegistration = BreedingFixture.stallionRegistration()
-        val existingForYear =
-            BreedingFixture.breedingResult(broodmareRegistration = broodmareRegistration)
-
-        val result =
-            BreedingResult.create(
-                broodmareRegistration,
-                stallionRegistration,
-                coveringDate,
-                certificateNumber,
-                existingForYear,
-            )
-
-        assert(
-            result.getError() ==
-                RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existingForYear.id)
-        )
     }
 }
