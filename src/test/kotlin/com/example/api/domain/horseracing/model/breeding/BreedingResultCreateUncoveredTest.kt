@@ -20,11 +20,11 @@ class BreedingResultCreateUncoveredTest {
     }
 
     @Test
-    fun `登録ロールが繁殖牝馬でないと NotBroodmareForUncovered を返すこと`() {
+    fun `登録ロールが繁殖牝馬でないと NotBroodmare を返すこと`() {
         val stallionRegistration = BreedingFixture.stallionRegistration()
 
         val result = BreedingResult.createUncovered(stallionRegistration, Year.of(2024))
 
-        assert(result.getError() == NotBroodmareForUncovered(stallionRegistration))
+        assert(result.getError() == RecordUncoveredError.NotBroodmare)
     }
 }

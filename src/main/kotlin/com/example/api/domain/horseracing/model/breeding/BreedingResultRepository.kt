@@ -16,7 +16,7 @@ interface BreedingResultRepository {
     /**
      * 同一繁殖牝馬（繁殖登録）・同一繁殖年の既存の年次成績を検索する。存在しなければ null。
      *
-     * 繁殖成績は「繁殖牝馬 × 繁殖年」で一意であり、種付記録の重複（同一年の二重記録）検出に用いる。
+     * 繁殖成績は「繁殖牝馬 × 繁殖年」で一意であり、種付記録・種付せず記録の重複（同一年の二重記録）検出に用いる。
      */
     fun findByBreedingRegistrationIdAndBreedingYear(
         breedingRegistrationId: BreedingRegistrationId,

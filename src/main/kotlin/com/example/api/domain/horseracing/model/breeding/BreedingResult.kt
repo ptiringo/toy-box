@@ -55,13 +55,32 @@ sealed interface RecordCoveringError {
 }
 
 /**
- * 種付せず（年次成績）の記録（[BreedingResult.createUncovered]）の前提条件違反。
+ * 種付せず（年次成績）記録（ドメインサービス recordUncovered）の前提条件違反。
  *
- * 種付せずも繁殖牝馬の年次成績であり、対象の繁殖登録のロールが繁殖牝馬であることを前提とする。失敗のしかたは この1種類のみのため単一型とする（種付記録と異なり配合相手の検証はない）。
- *
- * @property registration 種付せずの記録対象として渡された繁殖登録
+ * 種付せずも繁殖牝馬の年次成績であり、前提は2系統ある。(1) 対象の繁殖登録のロールが繁殖牝馬であること ＝単一インスタンスの構築時不変条件で、ファクトリ
+ * [BreedingResult.createUncovered] が検証する（[NotBroodmare]）。 (2)「繁殖牝馬 × 繁殖年」で 一意
+ * （同一年への重複記録の禁止。種付した年・種付せずの年を問わない）という集合制約で、既存成績群をまたぐため ドメインサービス recordUncovered が検証する
+ * （[AlreadyRecordedForYear]）。種付記録の [RecordCoveringError] と対称に、 共通の語彙として 1 つの sealed にまとめ、Controller
+ * 境界で一括して problem へ写す。
  */
-data class NotBroodmareForUncovered(val registration: BreedingRegistration)
+sealed interface RecordUncoveredError {
+    /** 種付せずの記録対象の繁殖登録のロールが繁殖牝馬（BROODMARE）でない。ファクトリ [BreedingResult.createUncovered] が検証する。 */
+    data object NotBroodmare : RecordUncoveredError
+
+    /**
+     * 同一繁殖牝馬・同一繁殖年に既に年次の繁殖成績が存在する（種付した年・種付せずの年を問わない）。
+     *
+     * 繁殖成績は「繁殖牝馬 × 繁殖年」で一意であり、同一年への重複記録は不変条件違反。これは単一インスタンスの構築では 完結しない集合制約のため、ドメインサービス
+     * recordUncovered が検証する。既存レコードの引き当て（coordination）は アプリケーション層が行い、その結果をサービスへ渡す。
+     *
+     * @property year 重複した繁殖年
+     * @property existingBreedingResultId 既に存在する同年の繁殖成績のID
+     */
+    data class AlreadyRecordedForYear(
+        val year: Year,
+        val existingBreedingResultId: BreedingResultId,
+    ) : RecordUncoveredError
+}
 
 /**
  * 繁殖成績を表す集約ルート。繁殖年ごとの年次レコード。
@@ -196,19 +215,23 @@ private constructor(
          * 繁殖牝馬のその年の「種付せず」（種付しなかった年次成績）を記録し、終端の [BreedingResult] を生成する。
          *
          * 種付せずも繁殖牝馬の年次成績であり、対象の繁殖登録のロールが繁殖牝馬であることを前提とする。本ファクトリは その前提を自己検証してから生成する。満たさなければ生成せず
-         * [NotBroodmareForUncovered] を返す。生成物は種付 （[covering]）を持たず、[outcome] は
+         * [RecordUncoveredError.NotBroodmare] を返す。生成物は種付 （[covering]）を持たず、[outcome] は
          * [FoalingOutcome.NotCovered] で確定する終端レコードであり、分娩結果報告 （[recordFoaling]）の対象にはならない。
+         *
+         * 本ファクトリが守るのは「単一の繁殖成績インスタンスの構築時不変条件」（登録ロール）に限る。「繁殖牝馬 × 繁殖年」で
+         * 一意という集合制約（同一年の重複記録の禁止）は単一インスタンスの構築では完結しないため、既存成績群をまたぐ ドメインサービス recordUncovered
+         * が担い、本ファクトリはその検証を経た上で呼び出される（種付記録の [create] と対称）。
          *
          * @param broodmareRegistration 種付せずの記録対象の繁殖牝馬の繁殖登録（ロールが繁殖牝馬であること）
          * @param breedingYear 種付しなかった繁殖年
-         * @return 種付せずを記録した [BreedingResult]、または前提条件違反を表す [NotBroodmareForUncovered]
+         * @return 種付せずを記録した [BreedingResult]、または登録ロールの前提条件違反を表す [RecordUncoveredError.NotBroodmare]
          */
         fun createUncovered(
             broodmareRegistration: BreedingRegistration,
             breedingYear: Year,
-        ): Result<BreedingResult, NotBroodmareForUncovered> =
+        ): Result<BreedingResult, RecordUncoveredError> =
             if (broodmareRegistration.role != BreedingRole.BROODMARE) {
-                Err(NotBroodmareForUncovered(broodmareRegistration))
+                Err(RecordUncoveredError.NotBroodmare)
             } else {
                 Ok(
                     BreedingResult(

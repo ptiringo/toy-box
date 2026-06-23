@@ -6,6 +6,7 @@ import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseErro
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.breeding.BreedingResult
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
+import com.example.api.domain.horseracing.model.breeding.RecordUncoveredError
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -116,8 +117,9 @@ private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
 /**
  * [RecordUncoveredUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
  *
- * 種付記録（[RecordCoveringUseCaseError]）と対称に、繁殖登録の不在・前提条件違反はいずれも整った入力だが意味的に 処理できないため 422 Unprocessable
- * Entity とする。種付せずは配合相手を伴わないため、前提条件違反は登録ロールが 繁殖牝馬でない（not-broodmare）の1種類のみ。
+ * 種付記録（[RecordCoveringUseCaseError]）と対称に、繁殖登録の不在・前提条件違反（登録ロール）はいずれも整った 入力だが意味的に処理できないため 422
+ * Unprocessable Entity、同一繁殖年の重複記録は状態の競合として 409 Conflict
+ * とする。種付せずは配合相手を伴わないため、登録ロールの前提条件違反は繁殖牝馬でない（not-broodmare）の1種類のみ。
  */
 fun RecordUncoveredUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -129,13 +131,29 @@ fun RecordUncoveredUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "種付せずの記録対象として指定された繁殖登録が存在しません。",
                 )
                 .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
-        is RecordUncoveredUseCaseError.PreconditionViolated ->
+        is RecordUncoveredUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+    }
+
+private fun RecordUncoveredError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        RecordUncoveredError.NotBroodmare ->
             problem(
                 status = HttpStatus.UNPROCESSABLE_ENTITY,
                 code = "not-broodmare",
                 title = "Registration is not a broodmare",
                 detail = "種付せずの記録対象として指定された繁殖登録のロールが繁殖牝馬ではありません。",
             )
+        is RecordUncoveredError.AlreadyRecordedForYear ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "breeding-result-already-recorded-for-year",
+                    title = "Breeding result already recorded for the year",
+                    detail = "この繁殖牝馬には指定された繁殖年の繁殖成績が既に記録されています。",
+                )
+                .apply {
+                    setProperty("breeding_year", year.value)
+                    setProperty("existing_breeding_result_id", existingBreedingResultId.value)
+                }
     }
 
 /**
