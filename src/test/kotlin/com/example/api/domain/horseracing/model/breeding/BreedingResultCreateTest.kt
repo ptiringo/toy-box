@@ -64,4 +64,73 @@ class BreedingResultCreateTest {
 
         assert(result.getError() == RecordCoveringError.NotStallion)
     }
+
+    @Test
+    fun `種畜証明書を渡すと有効区域内かつ有効期間内の種付が記録され場所を保持すること`() {
+        val place = BreedingRegion.create("北海道").unwrap()
+        val studCertificate = BreedingFixture.studCertificate(validRegions = setOf(place))
+
+        val result =
+            BreedingResult.create(
+                    BreedingFixture.breedingRegistration(),
+                    BreedingFixture.stallionRegistration(),
+                    coveringDate,
+                    certificateNumber,
+                    studCertificate,
+                    place,
+                )
+                .unwrap()
+
+        assert(result.covering?.coveringPlace == place)
+    }
+
+    @Test
+    fun `種付日が種畜証明書の有効期間外だと InvalidCovering(OutsideValidPeriod) を返すこと`() {
+        val place = BreedingRegion.create("北海道").unwrap()
+        val period =
+            ValidityPeriod.create(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)).unwrap()
+        val studCertificate =
+            BreedingFixture.studCertificate(validRegions = setOf(place), validPeriod = period)
+
+        val result =
+            BreedingResult.create(
+                BreedingFixture.breedingRegistration(),
+                BreedingFixture.stallionRegistration(),
+                coveringDate, // 2024-04-01 は 3/31 までの有効期間外
+                certificateNumber,
+                studCertificate,
+                place,
+            )
+
+        val error = result.getError()
+        assert(error is RecordCoveringError.InvalidCovering)
+        assert(
+            (error as RecordCoveringError.InvalidCovering).cause
+                is CoveringValidityError.OutsideValidPeriod
+        )
+    }
+
+    @Test
+    fun `種付場所が種畜証明書の有効区域外だと InvalidCovering(OutsideValidRegion) を返すこと`() {
+        val validRegion = BreedingRegion.create("北海道").unwrap()
+        val otherPlace = BreedingRegion.create("青森").unwrap()
+        val studCertificate = BreedingFixture.studCertificate(validRegions = setOf(validRegion))
+
+        val result =
+            BreedingResult.create(
+                BreedingFixture.breedingRegistration(),
+                BreedingFixture.stallionRegistration(),
+                coveringDate,
+                certificateNumber,
+                studCertificate,
+                otherPlace,
+            )
+
+        val error = result.getError()
+        assert(error is RecordCoveringError.InvalidCovering)
+        assert(
+            (error as RecordCoveringError.InvalidCovering).cause
+                is CoveringValidityError.OutsideValidRegion
+        )
+    }
 }

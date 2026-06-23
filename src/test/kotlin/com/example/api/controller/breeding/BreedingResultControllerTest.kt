@@ -11,9 +11,12 @@ import com.example.api.application.horseracing.breeding.ReportFoalingUseCase
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseError
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.breeding.BreedingFixture
+import com.example.api.domain.horseracing.model.breeding.BreedingRegion
+import com.example.api.domain.horseracing.model.breeding.CoveringValidityError
 import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import com.example.api.domain.horseracing.model.breeding.RecordUncoveredError
+import com.example.api.domain.horseracing.model.breeding.ValidityPeriod
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -175,6 +178,61 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("not-broodmare")
+        }
+
+        @Test
+        fun `有効期間外（InvalidCovering OutsideValidPeriod）が 422 と problem+json に変換されること`() {
+            val period =
+                ValidityPeriod.create(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)).unwrap()
+            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+                Err(
+                    RecordCoveringUseCaseError.PreconditionViolated(
+                        RecordCoveringError.InvalidCovering(
+                            CoveringValidityError.OutsideValidPeriod(
+                                LocalDate.of(2024, 4, 1),
+                                period,
+                            )
+                        )
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("covering-outside-valid-period")
+        }
+
+        @Test
+        fun `有効区域外（InvalidCovering OutsideValidRegion）が 422 と problem+json に変換されること`() {
+            val hokkaido = BreedingRegion.create("北海道").unwrap()
+            val aomori = BreedingRegion.create("青森").unwrap()
+            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+                Err(
+                    RecordCoveringUseCaseError.PreconditionViolated(
+                        RecordCoveringError.InvalidCovering(
+                            CoveringValidityError.OutsideValidRegion(aomori, setOf(hokkaido))
+                        )
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("covering-outside-valid-region")
         }
 
         @Test

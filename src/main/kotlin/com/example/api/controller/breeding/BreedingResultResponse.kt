@@ -5,6 +5,7 @@ import com.example.api.application.horseracing.breeding.RecordUncoveredUseCaseEr
 import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.horseracing.model.breeding.BreedingResult
+import com.example.api.domain.horseracing.model.breeding.CoveringValidityError
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import com.example.api.domain.horseracing.model.breeding.RecordUncoveredError
 import java.time.LocalDate
@@ -111,6 +112,40 @@ private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
                 .apply {
                     setProperty("breeding_year", year.value)
                     setProperty("existing_breeding_result_id", existingBreedingResultId.value)
+                }
+        is RecordCoveringError.InvalidCovering -> cause.toProblemDetail()
+    }
+
+/**
+ * 種付の有効性検証の失敗（[CoveringValidityError]）を [ProblemDetail] に変換する。
+ *
+ * いずれも入力は整っているが種畜証明書の有効区域・有効期間を外れて意味的に処理できないため 422 Unprocessable Entity とする
+ * （登録ロール違反と同じ扱い。api-design.md）。
+ */
+private fun CoveringValidityError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        is CoveringValidityError.OutsideValidPeriod ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    code = "covering-outside-valid-period",
+                    title = "Covering outside the stud certificate's valid period",
+                    detail = "種付日が種畜証明書の有効期間外です。",
+                )
+                .apply {
+                    setProperty("covering_date", coveringDate)
+                    setProperty("valid_period_start", validPeriod.start)
+                    setProperty("valid_period_end", validPeriod.end)
+                }
+        is CoveringValidityError.OutsideValidRegion ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    code = "covering-outside-valid-region",
+                    title = "Covering outside the stud certificate's valid region",
+                    detail = "種付場所が種畜証明書の有効区域外です。",
+                )
+                .apply {
+                    setProperty("covering_place", coveringPlace.value)
+                    setProperty("valid_regions", validRegions.map { it.value })
                 }
     }
 

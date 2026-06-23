@@ -55,8 +55,13 @@ JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-
 | BreedingRegistration | 繁殖登録 | 集約ルート | 馬を繁殖に供するための登録（JAIRS）。**雄雌共通の単一の登録**で、繁殖登録証明書の `性` によって担うロール（種牡馬／繁殖牝馬）が決まる。 | 雄雌で別集約にしない（種牡馬も繁殖登録の対象） |
 | BreedingRole | 繁殖ロール | （enum） | 繁殖登録で付与されるロール。雄=種牡馬（`STALLION`）／雌=繁殖牝馬（`BROODMARE`）。性から定まる。 | jMolecules 非付与のためカタログには出ない。Stallion/Broodmare は別個体でなくこのロール |
 | BreedingResult | 繁殖成績 | 集約ルート | 種付年ごとの「種付〜分娩」の年次レコード。「繁殖成績報告書」（様式第14号）1 行に対応。 | — |
-| Covering | 種付 | 値オブジェクト | 種牡馬を繁殖牝馬に交配したという事実。種牡馬は `BloodHorseId` 参照。 | — |
-| CoveringCertificateNumber | 種付証明書番号 | 値オブジェクト | 種付の事実を証明する種付証明書の番号。 | — |
+| Covering | 種付 | 値オブジェクト | 種牡馬を繁殖牝馬に交配したという事実。種牡馬は `BloodHorseId` 参照。種付日・種付場所（`coveringPlace`）を持つ。 | — |
+| CoveringCertificateNumber | 種付証明書番号 | 値オブジェクト | 種付の**事実**を証明する種付証明書の番号。 | 禁止: 種畜証明書（`StudCertificate`）と混同しない。別書面 |
+| StudCertificate | 種畜証明書 | 値オブジェクト | 種雄馬が繁殖に供されることを証する書面。有効区域（`validRegions`）と有効期間（`validPeriod`）を持ち、種付がその内側で行われたかを `authorizes` で検証する（第9条第1項(1)）。 | 禁止: 種付証明書（`CoveringCertificateNumber`）と混同しない |
+| StudCertificateNumber | 種畜証明書番号 | 値オブジェクト | 種畜証明書の番号。 | — |
+| ValidityPeriod | 有効期間 | 値オブジェクト | 種畜証明書の有効期間（起点・終点を含む暦日の閉区間）。`contains` で種付日が内側かを判定。 | — |
+| BreedingRegion | 区域（有効区域／種付場所） | 値オブジェクト | 種畜証明書の有効区域、および種付が行われた場所を表す名前付きの値。有効性は集合メンバーシップで判定（区域の包含関係はモデル対象外）。 | — |
+| CoveringValidityError | 種付有効性違反 | 値オブジェクト（sealed） | 種付が種畜証明書の有効区域外（`OutsideValidRegion`）／有効期間外（`OutsideValidPeriod`）であることを表す。 | sealed 親型は jMolecules 非付与のためカタログには出ない |
 | FoalingOutcome | 分娩結果 | 値オブジェクト（sealed） | 種付した繁殖牝馬がその年に迎えた帰結。生産（`LiveFoal`）と産駒なし各区分の sealed 語彙。 | sealed 親型自体は jMolecules 非付与（カタログには variant のみ出る） |
 | FoalingOutcome.LiveFoal | 生産（産駒あり） | 値オブジェクト | 分娩により生存産駒を得た帰結。血統登録（`BloodHorse.create`）の入力に接続する。 | — |
 | BreedingRegistrationNumber | 繁殖登録番号 | 値オブジェクト | 繁殖登録に交付される番号。 | — |
@@ -141,6 +146,7 @@ graph LR
 | BloodHorseId | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | BreedType | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | Breeder | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| BreedingRegion | 値オブジェクト | domain.horseracing.model.breeding |
 | BreedingRegistrationId | 値オブジェクト | domain.horseracing.model.breeding |
 | BreedingRegistrationNumber | 値オブジェクト | domain.horseracing.model.breeding |
 | BreedingResultId | 値オブジェクト | domain.horseracing.model.breeding |
@@ -171,6 +177,9 @@ graph LR
 | PedigreeRegistrationNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | RaceId | 値オブジェクト | domain.horseracing.model.race |
 | StudBookEntry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
+| StudCertificate | 値オブジェクト | domain.horseracing.model.breeding |
+| StudCertificateNumber | 値オブジェクト | domain.horseracing.model.breeding |
+| ValidityPeriod | 値オブジェクト | domain.horseracing.model.breeding |
 | BloodHorseRepository | リポジトリポート | domain.horseracing.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.horseracing.model.breeding |
 | BreedingResultRepository | リポジトリポート | domain.horseracing.model.breeding |
