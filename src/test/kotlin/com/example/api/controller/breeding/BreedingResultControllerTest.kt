@@ -21,6 +21,7 @@ import com.github.michaelbull.result.unwrap
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.time.LocalDate
+import java.time.Year
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -174,6 +175,29 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("not-broodmare")
+        }
+
+        @Test
+        fun `重複記録（AlreadyRecordedForYear）が 409 と繁殖年つきの problem+json に変換されること`() {
+            val existing = BreedingFixture.breedingResult()
+            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+                Err(
+                    RecordCoveringUseCaseError.PreconditionViolated(
+                        RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.breeding_year")
+                .isEqualTo(2024)
         }
     }
 

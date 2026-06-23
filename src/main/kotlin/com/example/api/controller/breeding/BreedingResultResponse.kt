@@ -100,6 +100,17 @@ private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
                 title = "Registration is not a stallion",
                 detail = "配合相手として指定された繁殖登録のロールが種牡馬ではありません。",
             )
+        is RecordCoveringError.AlreadyRecordedForYear ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "breeding-result-already-recorded-for-year",
+                    title = "Breeding result already recorded for the year",
+                    detail = "この繁殖牝馬には指定された繁殖年の繁殖成績が既に記録されています。",
+                )
+                .apply {
+                    setProperty("breeding_year", year.value)
+                    setProperty("existing_breeding_result_id", existingBreedingResultId.value)
+                }
     }
 
 /**

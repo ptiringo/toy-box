@@ -78,6 +78,17 @@ class BreedingResultController(
                             )
                         ],
                 ),
+                ApiResponse(
+                    responseCode = "409",
+                    description = "同一繁殖牝馬・同一繁殖年に繁殖成績が既に記録されている（重複記録）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
