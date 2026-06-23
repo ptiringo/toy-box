@@ -38,16 +38,20 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
             val savedJockey = Jockey.create("武", "豊").unwrap()
             every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns Ok(savedJockey)
 
-            tester
-                .post()
-                .uri("/api/jockeys")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"first_name":"武","last_name":"豊"}""")
-                .assertThat()
-                .hasStatus(HttpStatus.CREATED)
-                .bodyJson()
-                .extractingPath("$.first_name")
-                .isEqualTo("武")
+            val response =
+                tester
+                    .post()
+                    .uri("/api/jockeys")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"first_name":"武","last_name":"豊"}""")
+                    .assertThat()
+                    .hasStatus(HttpStatus.CREATED)
+                    .bodyJson()
+
+            // リソース表現（JockeyResponse）の全項目が返ること（ADR-0008）
+            response.extractingPath("$.id").isEqualTo(savedJockey.id.value.toString())
+            response.extractingPath("$.first_name").isEqualTo("武")
+            response.extractingPath("$.last_name").isEqualTo("豊")
         }
     }
 
