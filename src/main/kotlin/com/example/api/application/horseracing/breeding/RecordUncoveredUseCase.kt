@@ -4,7 +4,8 @@ import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationId
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.horseracing.model.breeding.BreedingResult
 import com.example.api.domain.horseracing.model.breeding.BreedingResultRepository
-import com.example.api.domain.horseracing.model.breeding.NotBroodmareForUncovered
+import com.example.api.domain.horseracing.model.breeding.RecordUncoveredError
+import com.example.api.domain.horseracing.service.breeding.recordUncovered
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -32,20 +33,20 @@ sealed interface RecordUncoveredUseCaseError {
         RecordUncoveredUseCaseError
 
     /**
-     * 生成ファクトリ [BreedingResult.createUncovered] の前提条件違反を application 層エラーに wrap したもの。
+     * ドメインサービス recordUncovered の前提条件違反を application 層エラーに wrap したもの。
      *
-     * 種付せずの記録は対象の登録ロールが繁殖牝馬であることを前提とする（[NotBroodmareForUncovered]）。
+     * 個別バリアント（登録ロールが繁殖牝馬でない・同一繁殖年の重複）は [RecordUncoveredError] を参照する。
      */
-    data class PreconditionViolated(val cause: NotBroodmareForUncovered) :
-        RecordUncoveredUseCaseError
+    data class PreconditionViolated(val cause: RecordUncoveredError) : RecordUncoveredUseCaseError
 }
 
 /**
  * 種付せず（種付しなかった年次成績）記録ユースケース。
  *
- * 対象の繁殖牝馬の繁殖登録を Repository で引き当て、生成ファクトリ [BreedingResult.createUncovered] で前提条件
- * （登録ロールが繁殖牝馬であること）を検証してから、その年の終端の繁殖成績（[BreedingResult]）を永続化する。
- * 種付記録（[RecordCoveringUseCase]）と対称だが、配合相手の種牡馬は伴わない。Controller 層は本クラスのみに依存し、 ドメインの生成経路の詳細は知らない。
+ * 対象の繁殖牝馬の繁殖登録を Repository で引き当て、ドメインサービス recordUncovered を呼ぶ。サービスは前提条件 （登録ロールが繁殖牝馬であること・「繁殖牝馬 ×
+ * 繁殖年」で一意であること）を検証してから、その年の終端の繁殖成績 （[BreedingResult]）を起こす。一意性の判定に要する同年の既存成績の引き当てはサービスが繁殖成績ポートを介して
+ * 行うため、本ユースケースは生成された成績を永続化するだけでよい。種付記録（[RecordCoveringUseCase]）と対称だが、 配合相手の種牡馬は伴わない。Controller
+ * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
  * @return 起こされた種付せずの [BreedingResult]、または業務ルール違反を表す [RecordUncoveredUseCaseError]
  */
@@ -70,7 +71,7 @@ class RecordUncoveredUseCase(
                 .bind()
 
         val breedingResult =
-            BreedingResult.createUncovered(broodmareRegistration, input.breedingYear)
+            recordUncovered(broodmareRegistration, input.breedingYear, breedingResultRepository)
                 .mapError { RecordUncoveredUseCaseError.PreconditionViolated(it) }
                 .bind()
 

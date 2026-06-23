@@ -12,8 +12,8 @@ import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseErro
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.horseracing.model.breeding.BreedingFixture
 import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
-import com.example.api.domain.horseracing.model.breeding.NotBroodmareForUncovered
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
+import com.example.api.domain.horseracing.model.breeding.RecordUncoveredError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -273,7 +273,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
                 Err(
                     RecordUncoveredUseCaseError.PreconditionViolated(
-                        NotBroodmareForUncovered(BreedingFixture.stallionRegistration())
+                        RecordUncoveredError.NotBroodmare
                     )
                 )
 
@@ -288,6 +288,29 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("not-broodmare")
+        }
+
+        @Test
+        fun `重複記録（AlreadyRecordedForYear）が 409 と繁殖年つきの problem+json に変換されること`() {
+            val existing = BreedingFixture.uncoveredBreedingResult()
+            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
+                Err(
+                    RecordUncoveredUseCaseError.PreconditionViolated(
+                        RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id)
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.breeding_year")
+                .isEqualTo(2024)
         }
     }
 
