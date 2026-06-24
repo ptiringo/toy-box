@@ -218,6 +218,14 @@ class HelloControllerTest(val mockMvc: MockMvc) {
 - `trim_trailing_whitespace = true`: 行末空白を削除（マークダウンを除く）
 - `charset = utf-8`: UTF-8 エンコーディング
 
+## Claude 指示ファイル・スキルの記述方針
+
+`CLAUDE.md` / `.claude/rules/` / `.claude/skills/` など **Claude への指示ファイルはリポジトリ管理（クローンすれば誰でも同じ構成になる共有物）**である。したがって **環境依存の内容を書かず、ポータブルに保つ**。
+
+- **書かない例**: 個人マシンの sandbox 設定・許可ホスト・絶対パス・`PATH`、特定セッションのメモリへの参照（`[[...]]`）、自分の環境でしか成り立たない前提手順。
+- **環境依存の設定そのもの**は各自のローカル設定（`.claude/settings.local.json` 等）や各自のメモリに置き、共有ファイルからは出所をリンクで指すに留める。
+- **手順は self-contained に**書く。「なぜ・何を」を本文で完結させ、特定環境固有の前提（「この環境では X が PATH に無い」等）は一般化した表現にする。
+
 ## 優先度管理
 
 Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority` single-select カスタムフィールド**で管理する。優先度ラベル（`P1〜P4`）は廃止済み（採否の経緯は [ADR-0011](docs/adr/0011-priority-via-projects-custom-field.md)）。
