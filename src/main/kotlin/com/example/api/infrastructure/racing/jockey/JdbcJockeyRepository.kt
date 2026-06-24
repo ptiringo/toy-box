@@ -5,11 +5,11 @@ import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.racing.model.jockey.JockeyRepository
 
 /**
- * [#338 spike] ドメインポート [JockeyRepository] の Spring Data JDBC 実装（ADR-0025）。
+ * [#338 spike] ドメインポート [JockeyRepository] の Spring Data JDBC 実装（ADR-0027）。
  *
  * ドメイン集約 [Jockey] と永続化モデル [JockeyRow] を手書きマッパーで相互変換し、CRUD は [JockeySpringDataRepository]
  * へ委譲する。value class の `JockeyId` ↔ DB `uuid` 列の変換も、別途の Spring Data カスタムコンバータではなく本マッパーが
- * `JockeyId(uuid)` / `id.value` で担う（永続化モデルを分離した帰結。ADR-0025）。
+ * `JockeyId(uuid)` / `id.value` で担う（永続化モデルを分離した帰結。ADR-0027）。
  *
  * spike のため Spring Bean 化（`@Repository`）はしない（既存の `InMemoryJockeyRepository` と DI 衝突するため）。
  * 本番配線（プロファイル分け等）は別イシューに切り出す。
@@ -30,7 +30,7 @@ class JdbcJockeyRepository(private val rows: JockeySpringDataRepository) : Jocke
      *
      * ドメイン側は楽観ロックの version を持たない（オニオン規約上 Spring 依存を載せられず、永続化メタデータを ドメインへ漏らさない方針）。そのため version は常に
      * null となり Spring Data JDBC は insert と判定する。 既存行の update（version を進める）は本 spike の範囲外（対処方針は
-     * ADR-0025 を参照）。
+     * ADR-0027 を参照）。
      */
     private fun Jockey.toRow(): JockeyRow =
         JockeyRow(id = id.value, firstName = firstName, lastName = lastName)

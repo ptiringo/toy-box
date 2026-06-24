@@ -1,4 +1,4 @@
-# 0025. 永続化アクセスに Spring Data JDBC を主軸採用し、PostgreSQL / Flyway / Testcontainers で構成する
+# 0027. 永続化アクセスに Spring Data JDBC を主軸採用し、PostgreSQL / Flyway / Testcontainers で構成する
 
 - Status: Accepted
 - Date: 2026-06-24

@@ -12,7 +12,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.jdbc.Sql
 
 /**
- * [#338 spike] Spring Data JDBC + H2（インメモリ）による永続化の素振り（ADR-0025）。
+ * [#338 spike] Spring Data JDBC + H2（インメモリ）による永続化の素振り（ADR-0027）。
  *
  * 検証する学び:
  * 1. value class の `JockeyId` ↔ DB `uuid` 列を、永続化モデル分離＋手書きマッパーで橋渡しできること
@@ -22,7 +22,7 @@ import org.springframework.test.context.jdbc.Sql
  *
  * スキーマは本番マイグレーション SQL（`db/migration/V1__create_jockey.sql`）を [Sql] で適用して用意し、 DB は本テスト専用の H2
  * インメモリに隔離する。Flyway の自動実行は本テストでは無効化している（Spring Boot 4.1 + Flyway 12 では autoconfig がマイグレーションを実行せず DB
- * が空になる事象を確認済み。配線は別途の追検証事項。 ADR-0025）。本番は PostgreSQL + Testcontainers を前提とする。H2 は Docker 不要で spike
+ * が空になる事象を確認済み。配線は別途の追検証事項。 ADR-0027）。本番は PostgreSQL + Testcontainers を前提とする。H2 は Docker 不要で spike
  * を走らせるための暫定。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)

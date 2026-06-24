@@ -4,7 +4,7 @@ import java.util.UUID
 import org.springframework.data.repository.CrudRepository
 
 /**
- * [#338 spike] Spring Data JDBC が実装を生成する [JockeyRow] の CRUD リポジトリ（ADR-0025）。
+ * [#338 spike] Spring Data JDBC が実装を生成する [JockeyRow] の CRUD リポジトリ（ADR-0027）。
  *
  * これは infrastructure 内部の永続化詳細であり、ドメインポート
  * [com.example.api.domain.racing.model.jockey.JockeyRepository] とは別物。 ドメインポートの実装は本リポジトリを 委譲先に持つアダプタ

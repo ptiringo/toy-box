@@ -7,7 +7,7 @@ spring:
   threads:
     virtual:
       enabled: true
-  # [#338 spike] 永続化アクセスの素振り用データソース（ADR-0025）。
+  # [#338 spike] 永続化アクセスの素振り用データソース（ADR-0027）。
   # 本番化時は PostgreSQL（Testcontainers でテスト）へ差し替える。spike では Docker 不要の
   # 組み込み H2 を PostgreSQL 互換モード（識別子は小文字へ畳む）で使い、本番 DB の挙動へ寄せる。
   datasource:
