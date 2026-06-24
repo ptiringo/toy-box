@@ -7,9 +7,11 @@ spring:
   threads:
     virtual:
       enabled: true
-  # [#338 spike] 永続化アクセスの素振り用データソース（ADR-0027）。
-  # 本番化時は PostgreSQL（Testcontainers でテスト）へ差し替える。spike では Docker 不要の
-  # 組み込み H2 を PostgreSQL 互換モード（識別子は小文字へ畳む）で使い、本番 DB の挙動へ寄せる。
+  # ランタイムの永続化データソース。実リポジトリはまだ InMemory Bean のため、datasource/Flyway は
+  # 付随的に初期化されるだけで実永続化には使っていない。当面は Docker 不要の組み込み H2 を PostgreSQL
+  # 互換モード（識別子は小文字へ畳む）で使い、本番ターゲット DB（PostgreSQL）の挙動へ寄せる。実永続化を
+  # 使う本番 PostgreSQL 化（Cloud SQL 配線）は #423 / インフラ作業へ。永続化の契約テストは本番ターゲットの
+  # PostgreSQL を Testcontainers で用意して検証する（PostgresContainerSupport が datasource を上書きする）。
   datasource:
     url: jdbc:h2:mem:toybox;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
