@@ -57,17 +57,20 @@ enum class CoatColorDto {
 
 /** 品種（HTTP 契約）。 */
 enum class BreedTypeDto {
-    /** サラブレッド種 */
+    /** サラブレッド */
     THOROUGHBRED,
 
-    /** アングロアラブ種 */
-    ANGLO_ARAB,
-
-    /** アラブ種 */
+    /** アラブ */
     ARAB,
 
-    /** 準サラブレッド種 */
-    HALF_BRED,
+    /** アングロアラブ */
+    ANGLO_ARAB,
+
+    /** サラブレッド系種 */
+    THOROUGHBRED_TYPE,
+
+    /** アラブ系種 */
+    ARAB_TYPE,
 }
 
 /** DNA 型による親子判定の結果（HTTP 契約）。 */
@@ -126,18 +129,20 @@ fun CoatColor.toApi(): CoatColorDto =
 fun BreedTypeDto.toDomain(): BreedType =
     when (this) {
         BreedTypeDto.THOROUGHBRED -> BreedType.THOROUGHBRED
-        BreedTypeDto.ANGLO_ARAB -> BreedType.ANGLO_ARAB
         BreedTypeDto.ARAB -> BreedType.ARAB
-        BreedTypeDto.HALF_BRED -> BreedType.HALF_BRED
+        BreedTypeDto.ANGLO_ARAB -> BreedType.ANGLO_ARAB
+        BreedTypeDto.THOROUGHBRED_TYPE -> BreedType.THOROUGHBRED_TYPE
+        BreedTypeDto.ARAB_TYPE -> BreedType.ARAB_TYPE
     }
 
 /** ドメインの品種を HTTP 契約の品種へ変換する。 */
 fun BreedType.toApi(): BreedTypeDto =
     when (this) {
         BreedType.THOROUGHBRED -> BreedTypeDto.THOROUGHBRED
-        BreedType.ANGLO_ARAB -> BreedTypeDto.ANGLO_ARAB
         BreedType.ARAB -> BreedTypeDto.ARAB
-        BreedType.HALF_BRED -> BreedTypeDto.HALF_BRED
+        BreedType.ANGLO_ARAB -> BreedTypeDto.ANGLO_ARAB
+        BreedType.THOROUGHBRED_TYPE -> BreedTypeDto.THOROUGHBRED_TYPE
+        BreedType.ARAB_TYPE -> BreedTypeDto.ARAB_TYPE
     }
 
 /** HTTP 契約の DNA 判定結果をドメインの判定結果へ変換する。 */
