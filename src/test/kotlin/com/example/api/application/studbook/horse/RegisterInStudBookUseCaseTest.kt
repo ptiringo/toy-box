@@ -49,8 +49,8 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(sire.id) } returns sire
-                    every { findById(dam.id) } returns dam
+                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                        mapOf(sire.id to sire, dam.id to dam)
                     every { save(any()) } answers { firstArg() }
                 }
             val useCase = RegisterInStudBookUseCase(repository)
@@ -60,6 +60,8 @@ class RegisterInStudBookUseCaseTest {
             assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
             assert(bloodHorse.breedType == BreedType.THOROUGHBRED)
             assert(bloodHorse.registrationNumber.value == "2023104567")
+            // 父・母の引き当ては逐次 findById ではなく 1 回の一括 lookup で行う。
+            verify(exactly = 1) { repository.findAllById(setOf(sire.id, dam.id)) }
             verify(exactly = 1) { repository.save(any()) }
         }
     }
@@ -104,9 +106,11 @@ class RegisterInStudBookUseCaseTest {
         fun `父が見つからないとき SireNotFound を返し永続化されない`() {
             val sireId = UUID.randomUUID()
             val damId = UUID.randomUUID()
+            val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(BloodHorseId(sireId)) } returns null
+                    every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
+                        mapOf(BloodHorseId(damId) to dam)
                 }
             val useCase = RegisterInStudBookUseCase(repository)
 
@@ -117,13 +121,31 @@ class RegisterInStudBookUseCaseTest {
         }
 
         @Test
+        fun `母が見つからないとき DamNotFound を返し永続化されない`() {
+            val sireId = UUID.randomUUID()
+            val damId = UUID.randomUUID()
+            val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
+                        mapOf(BloodHorseId(sireId) to sire)
+                }
+            val useCase = RegisterInStudBookUseCase(repository)
+
+            val result = useCase(command(validPayload(sireId, damId)))
+
+            assert(result.getError() == RegisterInStudBookUseCaseError.DamNotFound(damId))
+            verify(exactly = 0) { repository.save(any()) }
+        }
+
+        @Test
         fun `父が雄でないときドメイン検証違反を PreconditionViolated に wrap して返す`() {
             val sire = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(sire.id) } returns sire
-                    every { findById(dam.id) } returns dam
+                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                        mapOf(sire.id to sire, dam.id to dam)
                 }
             val useCase = RegisterInStudBookUseCase(repository)
 

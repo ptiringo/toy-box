@@ -12,6 +12,14 @@ interface BloodHorseRepository {
     /** 軽種馬IDで検索する。存在しなければ null。 */
     fun findById(id: BloodHorseId): BloodHorse?
 
+    /**
+     * 複数の軽種馬IDをまとめて検索する。
+     *
+     * 父・母の存在確認のように複数IDを引き当てる場面で、1件ずつの逐次 lookup（永続化層では直列往復になる）を 1 回にまとめるためのポート。見つかった分だけを ID をキーにした
+     * [Map] で返す（存在しないIDはキーに現れない）。
+     */
+    fun findAllById(ids: Set<BloodHorseId>): Map<BloodHorseId, BloodHorse>
+
     /** 軽種馬を永続化する。 */
     fun save(bloodHorse: BloodHorse): BloodHorse
 }
