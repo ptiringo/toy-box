@@ -35,3 +35,4 @@
 | [0023](0023-covering-validity-via-stud-certificate.md) | 種付の有効性（種畜証明書の有効区域・有効期間）をファクトリの段階導入前提条件として検証する | Accepted |
 | [0024](0024-split-studbook-and-racing-contexts.md) | horseracing を studbook（JAIRS 登録）と racing（JRA 騎手・競走）の 2 コンテキストへ分割する | Accepted |
 | [0025](0025-defer-spring-modulith-adoption.md) | Spring Modulith は現時点では採用せず、永続化とコンテキスト間連携の実需要が出た時点で再評価する | Accepted |
+| [0026](0026-request-validation-vo-centric-defer-bean-validation.md) | API リクエストバリデーションは VO 中心を維持し Bean Validation を当面採らない | Accepted |
