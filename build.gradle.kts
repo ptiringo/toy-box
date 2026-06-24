@@ -29,7 +29,13 @@ dependencies {
     // PostgreSQL（Testcontainers でテスト）へ寄せる想定。H2 は Docker 不要で spike を走らせるための
     // 暫定の組み込み DB（PostgreSQL 互換モードで使用）。詳細は ADR-0027。
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
-    implementation("org.flywaydb:flyway-core")
+    // Flyway は starter で引く。Spring Boot 4 は autoconfig を機能別モジュールに分割しており、
+    // FlywayAutoConfiguration は spring-boot-autoconfigure ではなく専用モジュール spring-boot-flyway
+    // に移った。素の flyway-core だけだと autoconfig が classpath に無く、エラーも出さず migrate が
+    // 走らない（#421）。starter-flyway が spring-boot-flyway(autoconfig) + spring-boot-jdbc +
+    // flyway-core を引き込む。H2 等の組み込み DB は starter だけで足り、PostgreSQL 化（#422）で
+    // flyway-database-postgresql を追加する。
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     runtimeOnly("com.h2database:h2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)

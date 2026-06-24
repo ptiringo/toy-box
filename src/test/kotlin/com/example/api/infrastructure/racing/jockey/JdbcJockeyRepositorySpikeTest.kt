@@ -9,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 import org.springframework.test.context.TestPropertySource
-import org.springframework.test.context.jdbc.Sql
 
 /**
  * [#338 spike] Spring Data JDBC + H2（インメモリ）による永続化の素振り（ADR-0027）。
@@ -20,23 +19,16 @@ import org.springframework.test.context.jdbc.Sql
  * 3. 既存行の update で `@Version` がインクリメントされること（楽観ロック兼用。落とし穴③）
  * 4. イミュータブル集約 [Jockey] を ID を保ったまま再構成（reconstitute）して往復できること
  *
- * スキーマは本番マイグレーション SQL（`db/migration/V1__create_jockey.sql`）を [Sql] で適用して用意し、 DB は本テスト専用の H2
- * インメモリに隔離する。Flyway の自動実行は本テストでは無効化している（Spring Boot 4.1 + Flyway 12 では autoconfig がマイグレーションを実行せず DB
- * が空になる事象を確認済み。配線は別途の追検証事項。 ADR-0027）。本番は PostgreSQL + Testcontainers を前提とする。H2 は Docker 不要で spike
- * を走らせるための暫定。
+ * スキーマは本番マイグレーション SQL（`db/migration/V*.sql`）を Flyway が起動時に適用して用意する（#421 で配線。 旧 spike では Boot 4.1 +
+ * Flyway 12 で autoconfig がマイグレーションを実行せず `@Sql` で回避していたが、 専用 autoconfig モジュール
+ * `spring-boot-flyway`（starter-flyway 経由）を classpath に入れて解消した）。 DB は本テスト専用の H2 インメモリに隔離する。本番は
+ * PostgreSQL + Testcontainers を前提とする（#422）。 H2 は Docker 不要で spike を走らせるための暫定。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @TestPropertySource(
     properties =
-        [
-            "spring.datasource.url=jdbc:h2:mem:spike;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
-            "spring.flyway.enabled=false",
-        ]
-)
-@Sql(
-    scripts = ["classpath:db/migration/V1__create_jockey.sql"],
-    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
+        ["spring.datasource.url=jdbc:h2:mem:spike;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"]
 )
 class JdbcJockeyRepositorySpikeTest(private val rows: JockeySpringDataRepository) {
 
