@@ -1,10 +1,10 @@
 package com.example.api.controller.horse
 
-import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCaseError
-import com.example.api.application.horseracing.horse.RegisterInStudBookUseCaseError
+import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseError
+import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BloodHorse
-import com.example.api.domain.horseracing.model.horse.bloodhorse.RegisterInStudBookError
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
+import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus

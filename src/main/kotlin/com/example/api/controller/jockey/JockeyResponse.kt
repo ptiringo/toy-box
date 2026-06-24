@@ -1,6 +1,6 @@
 package com.example.api.controller.jockey
 
-import com.example.api.domain.horseracing.model.jockey.Jockey
+import com.example.api.domain.racing.model.jockey.Jockey
 import java.util.UUID
 
 /**

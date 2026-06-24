@@ -1,8 +1,8 @@
 package com.example.api.controller.horse
 
-import com.example.api.application.horseracing.horse.NameHorseUseCase
-import com.example.api.application.horseracing.horse.RegisterImportedHorseUseCase
-import com.example.api.application.horseracing.horse.RegisterInStudBookUseCase
+import com.example.api.application.studbook.horse.NameHorseUseCase
+import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
+import com.example.api.application.studbook.horse.RegisterInStudBookUseCase
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError

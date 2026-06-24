@@ -1,6 +1,6 @@
 package com.example.api.controller.horse
 
-import com.example.api.application.horseracing.horse.NameHorseUseCaseError
+import com.example.api.application.studbook.horse.NameHorseUseCaseError
 import com.example.api.controller.problem
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail

@@ -1,9 +1,9 @@
 package com.example.api.controller.breeding
 
-import com.example.api.application.horseracing.breeding.RecordCoveringUseCase
-import com.example.api.application.horseracing.breeding.RecordUncoveredUseCase
-import com.example.api.application.horseracing.breeding.ReportFoalingCommand
-import com.example.api.application.horseracing.breeding.ReportFoalingUseCase
+import com.example.api.application.studbook.breeding.RecordCoveringUseCase
+import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
+import com.example.api.application.studbook.breeding.ReportFoalingCommand
+import com.example.api.application.studbook.breeding.ReportFoalingUseCase
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError

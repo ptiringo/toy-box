@@ -1,11 +1,11 @@
 package com.example.api.controller.jockey
 
-import com.example.api.application.horseracing.jockey.JockeyRegistrationError
-import com.example.api.application.horseracing.jockey.JockeyRegistrationUseCase
-import com.example.api.application.horseracing.jockey.RegisterJockeyCommand
+import com.example.api.application.racing.jockey.JockeyRegistrationError
+import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
+import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.config.ClockConfiguration
-import com.example.api.domain.horseracing.model.jockey.Jockey
-import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
+import com.example.api.domain.racing.model.jockey.Jockey
+import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

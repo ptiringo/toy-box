@@ -82,7 +82,7 @@ adapter (controller / infrastructure)
 - **applicationService**: ユースケース。`@Service` / `@Component` のみ Spring 依存を許容。
 - **adapter**: `controller`（HTTP）と `infrastructure`（ポート実装）。
 
-`domain` / `application` / `infrastructure` 直下のコンテキスト（`horseracing` / `sakamichi` / `tennis`）は境界づけられたコンテキストで、コンテキスト間の依存は禁止。これらレイヤー依存・コンテキスト分離・DDD ビルディングブロックの整合性は ArchUnit で強制され、`./gradlew test` で検証されます。詳細は [.claude/rules/architecture.md](.claude/rules/architecture.md) を参照。
+`domain` / `application` / `infrastructure` 直下のコンテキスト（`studbook` / `racing` / `sakamichi` / `tennis`）は境界づけられたコンテキストで、コンテキスト間の依存は禁止。これらレイヤー依存・コンテキスト分離・DDD ビルディングブロックの整合性は ArchUnit で強制され、`./gradlew test` で検証されます。詳細は [.claude/rules/architecture.md](.claude/rules/architecture.md) を参照。
 
 ## ドキュメント索引
 

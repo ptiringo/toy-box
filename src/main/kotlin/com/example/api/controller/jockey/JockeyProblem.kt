@@ -1,8 +1,8 @@
 package com.example.api.controller.jockey
 
-import com.example.api.application.horseracing.jockey.JockeyRegistrationError
+import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.controller.problem
-import com.example.api.domain.horseracing.model.jockey.JockeyValidationError
+import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 

@@ -1,7 +1,7 @@
 package com.example.api.architecture
 
 import com.example.api.controller.archfixture.DomainEnumFieldDtoFixture
-import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.core.importer.ImportOption
 import org.junit.jupiter.api.Test

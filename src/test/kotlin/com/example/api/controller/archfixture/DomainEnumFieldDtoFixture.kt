@@ -1,6 +1,6 @@
 package com.example.api.controller.archfixture
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 
 /**
  * `dtosDoNotExposeDomainEnums` ルールが違反を検出することを確認するためのフィクスチャ。
