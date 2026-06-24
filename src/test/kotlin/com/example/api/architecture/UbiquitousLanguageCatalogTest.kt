@@ -12,14 +12,16 @@ import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Entity as DddEntity
 import org.jmolecules.ddd.annotation.Repository as DddRepository
 import org.jmolecules.ddd.annotation.ValueObject
+import org.jmolecules.event.annotation.DomainEvent
 import org.junit.jupiter.api.Test
 
 /**
  * ユビキタス言語の「型レベル用語カタログ」を `docs/ubiquitous-language.md` の自動生成ブロックと突き合わせるテスト。
  *
  * 用語集は手書き（定義・別名・禁止語などコードに出ない知識）と、コードからの自動抽出（型レベルの実体）を 組み合わせて陳腐化を防ぐ方針（issue #346）。本テストは後者を担う:
- * jMolecules のビルディングブロック（`@AggregateRoot` / `@Entity` / `@ValueObject` / `@Repository`）と
- * ドメインサービス（`service/` のトップレベル関数）をバイトコードから走査し、コンテキスト別の用語カタログを生成して、 ドキュメントにコミットされた生成ブロックと一致することを検証する。
+ * jMolecules のビルディングブロック（`@AggregateRoot` / `@Entity` / `@ValueObject` / `@Repository` /
+ * `@DomainEvent`）と ドメインサービス（`service/` のトップレベル関数）をバイトコードから走査し、コンテキスト別の用語カタログを生成して、
+ * ドキュメントにコミットされた生成ブロックと一致することを検証する。
  *
  * コードが唯一の出所であり、ビルディングブロックを足し引きするとカタログが乖離してこのテストが落ちる。 再生成するには次を実行してドキュメントを更新し、差分をコミットする:
  * ```
@@ -81,6 +83,7 @@ class UbiquitousLanguageCatalogTest {
                 javaClass.isAnnotatedWith(DddEntity::class.java) -> Kind.ENTITY
                 javaClass.isAnnotatedWith(ValueObject::class.java) -> Kind.VALUE_OBJECT
                 javaClass.isAnnotatedWith(DddRepository::class.java) -> Kind.REPOSITORY
+                javaClass.isAnnotatedWith(DomainEvent::class.java) -> Kind.DOMAIN_EVENT
                 else -> return@mapNotNull null
             }
         Term(context, kind, displayName(javaClass), relativePackage(javaClass.packageName))
@@ -135,7 +138,8 @@ class UbiquitousLanguageCatalogTest {
         ENTITY(1, "エンティティ"),
         VALUE_OBJECT(2, "値オブジェクト"),
         REPOSITORY(3, "リポジトリポート"),
-        DOMAIN_SERVICE(4, "ドメインサービス"),
+        DOMAIN_EVENT(4, "ドメインイベント"),
+        DOMAIN_SERVICE(5, "ドメインサービス"),
     }
 
     private companion object {

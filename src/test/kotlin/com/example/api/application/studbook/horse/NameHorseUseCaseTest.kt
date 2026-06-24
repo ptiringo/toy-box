@@ -73,6 +73,7 @@ class NameHorseUseCaseTest {
                 BloodHorseFixture.bloodHorse()
                     .assignName(HorseName.create("オグリキャップ").unwrap())
                     .unwrap()
+                    .aggregate
             val repository =
                 mockk<BloodHorseRepository> { every { findById(named.id) } returns named }
             val useCase = NameHorseUseCase(repository)

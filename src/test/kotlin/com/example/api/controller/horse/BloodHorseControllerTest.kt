@@ -162,6 +162,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 BloodHorseFixture.bloodHorse()
                     .assignName(HorseName.create("オグリキャップ").unwrap())
                     .unwrap()
+                    .aggregate
             every { nameHorse(any<Command<NameHorseCommand>>()) } returns Ok(named)
 
             tester

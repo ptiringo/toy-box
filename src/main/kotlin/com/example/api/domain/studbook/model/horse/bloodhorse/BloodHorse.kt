@@ -1,6 +1,7 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
 import com.example.api.domain.shared.Entity
+import com.example.api.domain.shared.StateTransition
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -93,20 +94,26 @@ private constructor(
     val name: HorseName?,
 ) : Entity<BloodHorseId>() {
     /**
-     * 馬名を登録した新しい [BloodHorse] を返す。
+     * 馬名を登録し、命名済みの新しい [BloodHorse] と発生した [HorseNamed] イベントを同梱して返す。
      *
-     * 馬名登録は血統登録済みの個体に一度だけ行えるドメインイベント。既に命名済みの個体への再命名は 不変条件違反として [HorseAlreadyNamed] を返し、写像を行わない（元の
-     * [BloodHorse] も不変）。成功時は [name] のみ差し替え、[id] を含む他の属性は引き継ぐ。
+     * 馬名登録は血統登録済みの個体に一度だけ行える状態遷移。成功時は [name] のみ差し替えた新インスタンスを作り （[id] を含む他の属性は引き継ぐ）、その遷移で「起きたこと」を表す
+     * [HorseNamed] を併せて [StateTransition] で返す。イベントの発行は application 層に委ね、集約は純粋に保つ（収集・発行方式は
+     * ADR-0029）。既に命名済みの個体への再命名は不変条件違反として [HorseAlreadyNamed] を返し、写像も イベント生成も行わない（元の [BloodHorse]
+     * も不変）。
      *
      * @param horseName 付与する馬名
-     * @return 命名済みの新しい [BloodHorse]、既に命名済みなら [HorseAlreadyNamed]
+     * @return 命名済みの新しい [BloodHorse] と [HorseNamed] を同梱した [StateTransition]、既に命名済みなら
+     *   [HorseAlreadyNamed]
      */
-    fun assignName(horseName: HorseName): Result<BloodHorse, HorseAlreadyNamed> {
+    fun assignName(
+        horseName: HorseName
+    ): Result<StateTransition<BloodHorse, HorseNamed>, HorseAlreadyNamed> {
         val current = name
         return if (current != null) {
             Err(HorseAlreadyNamed(current))
         } else {
-            Ok(copy(name = horseName))
+            val named = copy(name = horseName)
+            Ok(StateTransition(named, HorseNamed(named.id, horseName)))
         }
     }
 
