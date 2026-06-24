@@ -150,6 +150,7 @@ graph LR
 | BreedingRegistrationId | 値オブジェクト | domain.horseracing.model.breeding |
 | BreedingRegistrationNumber | 値オブジェクト | domain.horseracing.model.breeding |
 | BreedingResultId | 値オブジェクト | domain.horseracing.model.breeding |
+| BreedingRetirement | 値オブジェクト | domain.horseracing.model.breeding |
 | CoatColor | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
 | Covering | 値オブジェクト | domain.horseracing.model.breeding |
 | CoveringCertificateNumber | 値オブジェクト | domain.horseracing.model.breeding |
