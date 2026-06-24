@@ -1,6 +1,10 @@
-package com.example.api.controller.horse
+package com.example.api.controller.horse.request
 
 import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
+import com.example.api.controller.horse.BreedTypeDto
+import com.example.api.controller.horse.CoatColorDto
+import com.example.api.controller.horse.SexDto
+import com.example.api.controller.horse.toDomain
 import java.time.LocalDate
 
 /**

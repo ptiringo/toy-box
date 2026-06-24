@@ -37,3 +37,4 @@
 | [0025](0025-defer-spring-modulith-adoption.md) | Spring Modulith は現時点では採用せず、永続化とコンテキスト間連携の実需要が出た時点で再評価する | Accepted |
 | [0026](0026-request-validation-vo-centric-defer-bean-validation.md) | API リクエストバリデーションは VO 中心を維持し Bean Validation を当面採らない | Accepted |
 | [0027](0027-persistence-spring-data-jdbc.md) | 永続化アクセスに Spring Data JDBC を主軸採用し PostgreSQL / Flyway / Testcontainers で構成する | Accepted |
+| [0028](0028-controller-adapter-dto-packaging.md) | controller アダプターの DTO を役割別サブパッケージ（request/ + problem/）へ整理する | Accepted |

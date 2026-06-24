@@ -10,6 +10,8 @@ import com.example.api.application.studbook.horse.RegisterInStudBookCommand
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCase
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.controller.horse.request.RegisterBloodHorseRequest
+import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName

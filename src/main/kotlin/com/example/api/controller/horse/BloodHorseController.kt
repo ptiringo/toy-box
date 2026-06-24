@@ -3,6 +3,11 @@ package com.example.api.controller.horse
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCase
+import com.example.api.controller.horse.problem.toProblemDetail
+import com.example.api.controller.horse.request.RegisterBloodHorseRequest
+import com.example.api.controller.horse.request.RegisterHorseNameRequest
+import com.example.api.controller.horse.request.RegisterImportedHorseRequest
+import com.example.api.controller.horse.request.toCommand
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError

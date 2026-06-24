@@ -1,5 +1,6 @@
-package com.example.api.controller.breeding
+package com.example.api.controller.breeding.request
 
+import com.example.api.controller.breeding.FoalingOutcomeDto
 import com.example.api.controller.problem
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.github.michaelbull.result.Err

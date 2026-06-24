@@ -1,4 +1,4 @@
-package com.example.api.controller.breeding
+package com.example.api.controller.breeding.request
 
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
 import com.example.api.application.studbook.breeding.RecordUncoveredCommand

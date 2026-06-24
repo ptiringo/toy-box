@@ -4,6 +4,12 @@ import com.example.api.application.studbook.breeding.RecordCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
 import com.example.api.application.studbook.breeding.ReportFoalingUseCase
+import com.example.api.controller.breeding.problem.toProblemDetail
+import com.example.api.controller.breeding.request.RecordBreedingResultRequest
+import com.example.api.controller.breeding.request.ReportFoalingRequest
+import com.example.api.controller.breeding.request.toCoveringCommand
+import com.example.api.controller.breeding.request.toOutcome
+import com.example.api.controller.breeding.request.toUncoveredCommand
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError

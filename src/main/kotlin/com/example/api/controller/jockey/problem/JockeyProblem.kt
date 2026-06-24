@@ -1,4 +1,4 @@
-package com.example.api.controller.jockey
+package com.example.api.controller.jockey.problem
 
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.controller.problem

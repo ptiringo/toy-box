@@ -1,4 +1,4 @@
-package com.example.api.controller.jockey
+package com.example.api.controller.jockey.request
 
 /**
  * `POST /api/jockeys` のリクエストボディ。
