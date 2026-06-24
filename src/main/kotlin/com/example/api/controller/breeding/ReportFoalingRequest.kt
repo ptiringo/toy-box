@@ -1,7 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.controller.problem
-import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result

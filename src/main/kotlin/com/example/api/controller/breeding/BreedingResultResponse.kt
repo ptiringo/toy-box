@@ -1,13 +1,13 @@
 package com.example.api.controller.breeding
 
-import com.example.api.application.horseracing.breeding.RecordCoveringUseCaseError
-import com.example.api.application.horseracing.breeding.RecordUncoveredUseCaseError
-import com.example.api.application.horseracing.breeding.ReportFoalingUseCaseError
+import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
+import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
+import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
 import com.example.api.controller.problem
-import com.example.api.domain.horseracing.model.breeding.BreedingResult
-import com.example.api.domain.horseracing.model.breeding.CoveringValidityError
-import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
-import com.example.api.domain.horseracing.model.breeding.RecordUncoveredError
+import com.example.api.domain.studbook.model.breeding.BreedingResult
+import com.example.api.domain.studbook.model.breeding.CoveringValidityError
+import com.example.api.domain.studbook.model.breeding.RecordCoveringError
+import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus

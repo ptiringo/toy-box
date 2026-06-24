@@ -1,9 +1,9 @@
 package com.example.api.controller.horse
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.BreedType
-import com.example.api.domain.horseracing.model.horse.bloodhorse.CoatColor
-import com.example.api.domain.horseracing.model.horse.bloodhorse.DnaParentageResult
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Sex
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.DnaParentageResult
+import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 
 /*
  * 軽種馬リソースの HTTP 契約で用いる enum 群と、ドメイン enum との相互変換。

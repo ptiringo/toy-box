@@ -64,7 +64,7 @@ private val isDomainEnum =
     }
 
 /**
- * 境界づけられたコンテキスト（horseracing / sakamichi / tennis 等）へのスライス割り当て。
+ * 境界づけられたコンテキスト（studbook / racing / sakamichi / tennis 等）へのスライス割り当て。
  *
  * application / domain / infrastructure 各層の直下のパッケージ名をコンテキスト名とみなす。 domain
  * 直下の共有カーネル（`shared`、[com.example.api.domain.shared.Command] 等）、controller、

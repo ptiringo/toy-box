@@ -1,6 +1,6 @@
 package com.example.api.controller.horse
 
-import com.example.api.application.horseracing.horse.RegisterInStudBookCommand
+import com.example.api.application.studbook.horse.RegisterInStudBookCommand
 import java.time.LocalDate
 import java.util.UUID
 

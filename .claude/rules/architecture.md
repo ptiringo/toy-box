@@ -44,22 +44,26 @@
 ```
 domain/
 ├── shared/                      # 共有カーネル（Command / Entity 基底）。全コンテキストから参照可
-├── horseracing/
+├── studbook/                    # 軽種馬登録コンテキスト（JAIRS: 血統登録・繁殖登録）
 │   ├── model/                   # ドメインモデルリング
-│   │   ├── jockey/              #   Jockey, JockeyId, JockeyRepository
-│   │   ├── race/                #   Race, RaceResult, ...
 │   │   ├── breeding/
 │   │   └── horse/...
 │   └── service/                 # ドメインサービスリング
-│       ├── race/                #   confirmRaceResult
-│       └── horse/               #   registerInStudBook
+│       ├── breeding/            #   recordCovering, recordUncovered
+│       └── horse/               #   registerFoal
+├── racing/                      # 競馬コンテキスト（JRA: 騎手・競走）
+│   ├── model/                   # ドメインモデルリング
+│   │   ├── jockey/              #   Jockey, JockeyId, JockeyRepository
+│   │   └── race/                #   Race, RaceResult, ...
+│   └── service/                 # ドメインサービスリング
+│       └── race/                #   confirmRaceResult
 ├── sakamichi/model/
 └── tennis/model/
 ```
 
 ## 境界づけられたコンテキストの分離
 
-`application` / `domain` / `infrastructure` 各層の直下のパッケージ名（`horseracing` / `sakamichi` / `tennis`）を境界づけられたコンテキストとみなし、**コンテキスト間の依存は層やリングをまたぐ場合も含めて一切禁止**する（例: `application.horseracing` → `domain.tennis.model` は違反）。`model` / `service` のサブ階層はコンテキスト名の判定に影響しない。
+`application` / `domain` / `infrastructure` 各層の直下のパッケージ名（`studbook` / `racing` / `sakamichi` / `tennis`）を境界づけられたコンテキストとみなし、**コンテキスト間の依存は層やリングをまたぐ場合も含めて一切禁止**する（例: `application.studbook` → `domain.tennis.model` は違反）。`model` / `service` のサブ階層はコンテキスト名の判定に影響しない。
 
 - `domain.shared` は共有カーネルであり、コンテキスト分離の対象外（どのコンテキストからも参照可）
 - 新しいコンテキストを追加する場合、`<context>/model/`（必要なら `service/`）を切るだけで自動的に分離ルールの対象になる

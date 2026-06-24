@@ -1,8 +1,8 @@
 package com.example.api.controller.breeding
 
-import com.example.api.application.horseracing.breeding.RecordCoveringCommand
-import com.example.api.application.horseracing.breeding.RecordUncoveredCommand
-import com.example.api.application.horseracing.breeding.StudCertificateInput
+import com.example.api.application.studbook.breeding.RecordCoveringCommand
+import com.example.api.application.studbook.breeding.RecordUncoveredCommand
+import com.example.api.application.studbook.breeding.StudCertificateInput
 import com.example.api.controller.problem
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

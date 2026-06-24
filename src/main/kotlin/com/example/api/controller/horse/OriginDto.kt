@@ -1,6 +1,6 @@
 package com.example.api.controller.horse
 
-import com.example.api.domain.horseracing.model.horse.bloodhorse.Origin
+import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.swagger.v3.oas.annotations.media.Schema

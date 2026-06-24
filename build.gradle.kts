@@ -146,10 +146,11 @@ kover {
                 includes {
                     packages(
                         "com.example.api.domain.shared",
-                        "com.example.api.domain.horseracing.model.jockey",
-                        "com.example.api.domain.horseracing.model.horse.bloodhorse",
-                        "com.example.api.domain.horseracing.service.horse",
-                        "com.example.api.application.horseracing",
+                        "com.example.api.domain.racing.model.jockey",
+                        "com.example.api.domain.studbook.model.horse.bloodhorse",
+                        "com.example.api.domain.studbook.service.horse",
+                        "com.example.api.application.studbook",
+                        "com.example.api.application.racing.jockey",
                         "com.example.api.controller",
                     )
                 }

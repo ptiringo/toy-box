@@ -1,6 +1,6 @@
 package com.example.api.controller.breeding
 
-import com.example.api.domain.horseracing.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
 import java.time.LocalDate

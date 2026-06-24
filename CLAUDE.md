@@ -136,16 +136,21 @@ com.example.api/
 ├── ApiApplication.kt    # エントリーポイント（@OpenAPIDefinition もここ）
 ├── controller/          # adapter (rest): @RestController（HTTP エンドポイント）
 ├── application/         # applicationService: ユースケース
-│   └── horseracing/
+│   ├── studbook/
+│   └── racing/
 ├── domain/              # ドメイン（フレームワーク非依存）
 │   ├── shared/          # 共有カーネル（Command / Entity 基底）。全コンテキストから参照可
-│   ├── horseracing/     # 競馬コンテキスト
+│   ├── studbook/        # 軽種馬登録コンテキスト（JAIRS: 血統登録・繁殖登録）
 │   │   ├── model/       #   domainModel: Entity / VO / Repository ポート
 │   │   └── service/     #   domainService: トップレベル関数のドメインロジック
+│   ├── racing/          # 競馬コンテキスト（JRA: 騎手・競走）
+│   │   ├── model/
+│   │   └── service/
 │   ├── sakamichi/model/ # エンターテイメントコンテキスト
 │   └── tennis/model/    # スポーツコンテキスト
 └── infrastructure/      # adapter (persistence): ポートの具象実装（Spring 依存可）
-    └── horseracing/
+    ├── studbook/
+    └── racing/
 ```
 
 **設計原則**（ArchUnit で強制。詳細は `.claude/rules/architecture.md`）:
@@ -159,7 +164,7 @@ com.example.api/
 
 ユースケース関数の命名は `動詞 + リソース名` を基本とし、入力 DTO は `〜Command`（書き込み系）／ `〜Query`（読み取り系）サフィックスを付ける。
 
-`domain` / `application` / `infrastructure` 配下のコンテキスト（`horseracing` / `sakamichi` / `tennis`）は境界づけられたコンテキストであり、コンテキスト間の依存は層やリングをまたぐ場合も含めて禁止（ArchUnit で強制）。`domain.shared` は対象外。
+`domain` / `application` / `infrastructure` 配下のコンテキスト（`studbook` / `racing` / `sakamichi` / `tennis`）は境界づけられたコンテキストであり、コンテキスト間の依存は層やリングをまたぐ場合も含めて禁止（ArchUnit で強制）。`domain.shared` は対象外。
 
 ## コーディング規約
 

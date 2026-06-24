@@ -1,6 +1,6 @@
 # ユビキタス言語
 
-ドメインで用いる用語を、境界づけられたコンテキスト（`horseracing` / `sakamichi` / `tennis`）ごとに一覧化する。
+ドメインで用いる用語を、境界づけられたコンテキスト（`studbook` / `racing` / `sakamichi` / `tennis`）ごとに一覧化する。
 同じ単語でもコンテキストや文脈で意味がずれる点を明示し、コードのリネームと用語の乖離を防ぐことを目的とする。
 
 この文書は **2 層構成** で陳腐化を防ぐ（issue #346）:
@@ -25,11 +25,12 @@
 凡例 — **種別**: 集約ルート / エンティティ / 値オブジェクト / リポジトリポート / ドメインサービス。
 **禁止語**は「使うと誤解を生むため避ける言い回し」を表す。
 
-### horseracing コンテキスト（競馬）
+### studbook コンテキスト（軽種馬登録）
 
 軽種馬（サラブレッド等）の JAIRS 管掌の登録（血統登録・馬名登録・繁殖登録）を扱う。中核は「血統登録の成立で
-軽種馬が誕生し、同一個体が繁殖登録で繁殖ロール（繁殖牝馬・種牡馬）を担う」という捉え方。競走馬（Racehorse）は
-JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-as-separate-context.md)、当面スコープ外）。
+軽種馬が誕生し、同一個体が繁殖登録で繁殖ロール（繁殖牝馬・種牡馬）を担う」という捉え方。騎手・競走（JRA 管掌）は
+別コンテキスト `racing` へ分離した（[ADR-0024](adr/0024-split-studbook-and-racing-contexts.md)）。競走馬（Racehorse）の
+登録自体も JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-as-separate-context.md)、当面スコープ外）。
 
 #### 馬・個体（horse / bloodhorse サブドメイン）
 
@@ -78,14 +79,6 @@ JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-
 > 種付予約）・研修・せり市場を担う（運用側であり登録機関ではない）。**JRA/NAR** ＝競走馬登録（出走資格）の管掌。
 > 「種牡馬の繁殖登録」は JAIRS、JBBA の「種牡馬」は自協会で繋養・供用する商用的な意味で、別レイヤーである。
 
-#### 騎手・競走（jockey / race サブドメイン）
-
-| 用語（英） | 和名 | 種別 | 定義 | 別名・禁止語 |
-| --- | --- | --- | --- | --- |
-| Jockey | 騎手 | 集約ルート | 競走で騎乗する者。 | — |
-| Race | 競走 | 集約ルート | 競走（レース）。 | — |
-| RaceResult | 競走結果 | 値オブジェクト | 競走の確定結果。 | — |
-
 #### ドメインサービス（複数集約をまたぐ操作）
 
 集約をまたぐ前提条件のうち、協力集約を**引数で受け取れば構築時に自己検証できる**ものは集約の `create` ファクトリへ移した（[ADR-0014](adr/0014-self-validating-factory-over-confinement.md)）。したがって血統登録・繁殖登録・種付記録は**ドメインサービスではなくファクトリ**である:
@@ -99,6 +92,24 @@ JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-
 | 用語（関数） | 和名 | 定義 |
 | --- | --- | --- |
 | registerFoal | 生産産駒を登録する | 生産（`LiveFoal`）を起点に、父母を解決して `BloodHorse.create` へ接続する。 |
+
+### racing コンテキスト（競馬・JRA）
+
+JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管掌し、競走（レース）・成績も JAIRS の登録原簿とは無関係なため、
+`studbook` から分離した（[ADR-0024](adr/0024-split-studbook-and-racing-contexts.md)）。現状は探索段階のスタブ。
+
+#### 騎手・競走（jockey / race サブドメイン）
+
+| 用語（英） | 和名 | 種別 | 定義 | 別名・禁止語 |
+| --- | --- | --- | --- | --- |
+| Jockey | 騎手 | 集約ルート | 競走で騎乗する者。 | — |
+| Race | 競走 | 集約ルート | 競走（レース）。 | — |
+| RaceResult | 競走結果 | 値オブジェクト | 競走の確定結果。 | — |
+
+#### ドメインサービス（複数集約をまたぐ操作）
+
+| 用語（関数） | 和名 | 定義 |
+| --- | --- | --- |
 | confirmRaceResult | 競走結果を確定する | 競走の結果を確定する。 |
 
 ### sakamichi コンテキスト（エンターテイメント）
@@ -111,7 +122,7 @@ JRA 管掌で別コンテキスト（[ADR-0013](adr/0013-racehorse-registration-
 
 ---
 
-## 集約と参照関係（horseracing）
+## 集約と参照関係（studbook）
 
 集約間の参照は ID 値クラス経由（ArchUnit で強制）。主要な参照関係を図示する。
 
@@ -134,61 +145,16 @@ graph LR
 
 <!-- BEGIN GENERATED:ubiquitous-language -->
 
-### horseracing
+### racing
 
 | 用語 | 種別 | パッケージ |
 | --- | --- | --- |
-| BloodHorse | 集約ルート | domain.horseracing.model.horse.bloodhorse |
-| BreedingRegistration | 集約ルート | domain.horseracing.model.breeding |
-| BreedingResult | 集約ルート | domain.horseracing.model.breeding |
-| Jockey | 集約ルート | domain.horseracing.model.jockey |
-| Race | 集約ルート | domain.horseracing.model.race |
-| BloodHorseId | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| BreedType | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| Breeder | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| BreedingRegion | 値オブジェクト | domain.horseracing.model.breeding |
-| BreedingRegistrationId | 値オブジェクト | domain.horseracing.model.breeding |
-| BreedingRegistrationNumber | 値オブジェクト | domain.horseracing.model.breeding |
-| BreedingResultId | 値オブジェクト | domain.horseracing.model.breeding |
-| BreedingRetirement | 値オブジェクト | domain.horseracing.model.breeding |
-| CoatColor | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| Covering | 値オブジェクト | domain.horseracing.model.breeding |
-| CoveringCertificateNumber | 値オブジェクト | domain.horseracing.model.breeding |
-| DateOfBirth | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| DnaParentageResult | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| FoalIdentity | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| FoalingOutcome.Abortion | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.LiveFoal | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.NeonatalDeath | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.NotConceived | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.NotCovered | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.Stillbirth | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.TwinAbortion | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.horseracing.model.breeding |
-| FoalingOutcome.TwinStillbirth | 値オブジェクト | domain.horseracing.model.breeding |
-| HorseName | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| ImportedHorseEntry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| JockeyId | 値オブジェクト | domain.horseracing.model.jockey |
-| LandingDate | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| MicrochipNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| Origin | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| Origin.Domestic | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| Origin.Imported | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| OriginCountry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| PedigreeRegistrationNumber | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| RaceId | 値オブジェクト | domain.horseracing.model.race |
-| StudBookEntry | 値オブジェクト | domain.horseracing.model.horse.bloodhorse |
-| StudCertificate | 値オブジェクト | domain.horseracing.model.breeding |
-| StudCertificateNumber | 値オブジェクト | domain.horseracing.model.breeding |
-| ValidityPeriod | 値オブジェクト | domain.horseracing.model.breeding |
-| BloodHorseRepository | リポジトリポート | domain.horseracing.model.horse.bloodhorse |
-| BreedingRegistrationRepository | リポジトリポート | domain.horseracing.model.breeding |
-| BreedingResultRepository | リポジトリポート | domain.horseracing.model.breeding |
-| JockeyRepository | リポジトリポート | domain.horseracing.model.jockey |
-| confirmRaceResult | ドメインサービス | domain.horseracing.service.race |
-| recordCovering | ドメインサービス | domain.horseracing.service.breeding |
-| recordUncovered | ドメインサービス | domain.horseracing.service.breeding |
-| registerFoal | ドメインサービス | domain.horseracing.service.horse |
+| Jockey | 集約ルート | domain.racing.model.jockey |
+| Race | 集約ルート | domain.racing.model.race |
+| JockeyId | 値オブジェクト | domain.racing.model.jockey |
+| RaceId | 値オブジェクト | domain.racing.model.race |
+| JockeyRepository | リポジトリポート | domain.racing.model.jockey |
+| confirmRaceResult | ドメインサービス | domain.racing.service.race |
 
 ### sakamichi
 
@@ -196,6 +162,56 @@ graph LR
 | --- | --- | --- |
 | Member | 集約ルート | domain.sakamichi.model |
 | MemberId | 値オブジェクト | domain.sakamichi.model |
+
+### studbook
+
+| 用語 | 種別 | パッケージ |
+| --- | --- | --- |
+| BloodHorse | 集約ルート | domain.studbook.model.horse.bloodhorse |
+| BreedingRegistration | 集約ルート | domain.studbook.model.breeding |
+| BreedingResult | 集約ルート | domain.studbook.model.breeding |
+| BloodHorseId | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| BreedType | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Breeder | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| BreedingRegion | 値オブジェクト | domain.studbook.model.breeding |
+| BreedingRegistrationId | 値オブジェクト | domain.studbook.model.breeding |
+| BreedingRegistrationNumber | 値オブジェクト | domain.studbook.model.breeding |
+| BreedingResultId | 値オブジェクト | domain.studbook.model.breeding |
+| BreedingRetirement | 値オブジェクト | domain.studbook.model.breeding |
+| CoatColor | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Covering | 値オブジェクト | domain.studbook.model.breeding |
+| CoveringCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
+| DateOfBirth | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| DnaParentageResult | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| FoalIdentity | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| FoalingOutcome.Abortion | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.LiveFoal | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.NeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.NotConceived | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.NotCovered | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.Stillbirth | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.TwinAbortion | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
+| FoalingOutcome.TwinStillbirth | 値オブジェクト | domain.studbook.model.breeding |
+| HorseName | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| ImportedHorseEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| LandingDate | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| MicrochipNumber | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Origin | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Origin.Domestic | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Origin.Imported | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| OriginCountry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| PedigreeRegistrationNumber | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| StudBookEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| StudCertificate | 値オブジェクト | domain.studbook.model.breeding |
+| StudCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
+| ValidityPeriod | 値オブジェクト | domain.studbook.model.breeding |
+| BloodHorseRepository | リポジトリポート | domain.studbook.model.horse.bloodhorse |
+| BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
+| BreedingResultRepository | リポジトリポート | domain.studbook.model.breeding |
+| recordCovering | ドメインサービス | domain.studbook.service.breeding |
+| recordUncovered | ドメインサービス | domain.studbook.service.breeding |
+| registerFoal | ドメインサービス | domain.studbook.service.horse |
 
 ### tennis
 
