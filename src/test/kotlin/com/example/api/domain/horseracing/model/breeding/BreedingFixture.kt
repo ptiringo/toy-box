@@ -7,6 +7,9 @@ import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.time.Year
 
+/** テスト用の有効区域（種付場所）。 */
+private val DEFAULT_REGION = BreedingRegion.create("北海道").unwrap()
+
 /**
  * テスト用に繁殖コンテキストの集約・値オブジェクトを組み立てる Object Mother。
  *
@@ -32,6 +35,18 @@ object BreedingFixture {
             horse = stallion,
         )
 
+    /**
+     * 既定で [coveringDate]（2024-04-01）・[validRegions]（北海道）を覆う種畜証明書を生成する。
+     *
+     * 有効性検証（有効区域・有効期間）のテストで、種付日・場所を覆う／外れる証明書を組むのに使う。
+     */
+    fun studCertificate(
+        number: StudCertificateNumber = StudCertificateNumber.create("S-2024-0001").unwrap(),
+        validRegions: Set<BreedingRegion> = setOf(DEFAULT_REGION),
+        validPeriod: ValidityPeriod =
+            ValidityPeriod.create(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31)).unwrap(),
+    ): StudCertificate = StudCertificate.create(number, validRegions, validPeriod).unwrap()
+
     /** 既定値を持つ、分娩結果未報告の [BreedingResult] を生成する。必要な属性のみ上書きする。 */
     fun breedingResult(
         broodmareRegistration: BreedingRegistration = breedingRegistration(),
@@ -39,12 +54,16 @@ object BreedingFixture {
         coveringDate: LocalDate = LocalDate.of(2024, 4, 1),
         certificateNumber: CoveringCertificateNumber =
             CoveringCertificateNumber.create("C-2024-0001").unwrap(),
+        studCertificate: StudCertificate? = null,
+        coveringPlace: BreedingRegion? = null,
     ): BreedingResult =
         BreedingResult.create(
                 broodmareRegistration,
                 stallionRegistration,
                 coveringDate,
                 certificateNumber,
+                studCertificate,
+                coveringPlace,
             )
             .unwrap()
 

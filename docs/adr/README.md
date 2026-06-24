@@ -32,3 +32,4 @@
 | [0020](0020-sealed-origin-and-discriminated-origin-subobject.md) | 出自を sealed Origin に統合し、リソース表現に discriminated 部分オブジェクトを許す | Accepted |
 | [0021](0021-parent-not-found-unprocessable-entity.md) | 父母不在（sire/dam 参照先不在）を 422 Unprocessable Entity で確定する | Accepted |
 | [0022](0022-domain-service-repository-for-set-invariants.md) | ドメインサービスは集合制約の検証に限りリポジトリポートを受け取ってよい | Accepted |
+| [0023](0023-covering-validity-via-stud-certificate.md) | 種付の有効性（種畜証明書の有効区域・有効期間）をファクトリの段階導入前提条件として検証する | Accepted |

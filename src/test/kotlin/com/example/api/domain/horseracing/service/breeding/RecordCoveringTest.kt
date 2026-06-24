@@ -1,8 +1,10 @@
 package com.example.api.domain.horseracing.service.breeding
 
 import com.example.api.domain.horseracing.model.breeding.BreedingFixture
+import com.example.api.domain.horseracing.model.breeding.BreedingRegion
 import com.example.api.domain.horseracing.model.breeding.BreedingResultRepository
 import com.example.api.domain.horseracing.model.breeding.CoveringCertificateNumber
+import com.example.api.domain.horseracing.model.breeding.CoveringValidityError
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
@@ -113,5 +115,58 @@ class RecordCoveringTest {
             )
 
         assert(result.getError() == RecordCoveringError.NotStallion)
+    }
+
+    @Test
+    fun `種畜証明書と種付場所を渡すと有効性検証がファクトリへ素通しされ有効なら記録されること`() {
+        val place = BreedingRegion.create("北海道").unwrap()
+        val studCertificate = BreedingFixture.studCertificate(validRegions = setOf(place))
+        val repository =
+            mockk<BreedingResultRepository> {
+                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+            }
+
+        val result =
+            recordCovering(
+                    BreedingFixture.breedingRegistration(),
+                    BreedingFixture.stallionRegistration(),
+                    coveringDate,
+                    certificateNumber,
+                    repository,
+                    studCertificate,
+                    place,
+                )
+                .unwrap()
+
+        assert(result.covering?.coveringPlace == place)
+    }
+
+    @Test
+    fun `有効区域外の種付場所だとファクトリの InvalidCovering が素通しで伝播すること`() {
+        val validRegion = BreedingRegion.create("北海道").unwrap()
+        val otherPlace = BreedingRegion.create("青森").unwrap()
+        val studCertificate = BreedingFixture.studCertificate(validRegions = setOf(validRegion))
+        val repository =
+            mockk<BreedingResultRepository> {
+                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+            }
+
+        val result =
+            recordCovering(
+                BreedingFixture.breedingRegistration(),
+                BreedingFixture.stallionRegistration(),
+                coveringDate,
+                certificateNumber,
+                repository,
+                studCertificate,
+                otherPlace,
+            )
+
+        val error = result.getError()
+        assert(error is RecordCoveringError.InvalidCovering)
+        assert(
+            (error as RecordCoveringError.InvalidCovering).cause
+                is CoveringValidityError.OutsideValidRegion
+        )
     }
 }
