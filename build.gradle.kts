@@ -25,6 +25,12 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // [#338 spike] 永続化アクセスの素振り（Spring Data JDBC + Flyway）。本番化時は DB を
+    // PostgreSQL（Testcontainers でテスト）へ寄せる想定。H2 は Docker 不要で spike を走らせるための
+    // 暫定の組み込み DB（PostgreSQL 互換モードで使用）。詳細は ADR-0025。
+    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    implementation("org.flywaydb:flyway-core")
+    runtimeOnly("com.h2database:h2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)

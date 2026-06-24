@@ -7,6 +7,17 @@ spring:
   threads:
     virtual:
       enabled: true
+  # [#338 spike] 永続化アクセスの素振り用データソース（ADR-0025）。
+  # 本番化時は PostgreSQL（Testcontainers でテスト）へ差し替える。spike では Docker 不要の
+  # 組み込み H2 を PostgreSQL 互換モード（識別子は小文字へ畳む）で使い、本番 DB の挙動へ寄せる。
+  datasource:
+    url: jdbc:h2:mem:toybox;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  # マイグレーションは Flyway（plain SQL）。db/migration 配下の V*.sql を起動時に適用する。
+  flyway:
+    enabled: true
   jackson:
     # JSON ボディのフィールド名を snake_case で表現する（request/response bean に一括適用）。
     # URL=camelCase / ボディ=snake_case の命名規約は ADR-0012 を参照。

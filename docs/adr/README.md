@@ -34,3 +34,4 @@
 | [0022](0022-domain-service-repository-for-set-invariants.md) | ドメインサービスは集合制約の検証に限りリポジトリポートを受け取ってよい | Accepted |
 | [0023](0023-covering-validity-via-stud-certificate.md) | 種付の有効性（種畜証明書の有効区域・有効期間）をファクトリの段階導入前提条件として検証する | Accepted |
 | [0024](0024-split-studbook-and-racing-contexts.md) | horseracing を studbook（JAIRS 登録）と racing（JRA 騎手・競走）の 2 コンテキストへ分割する | Accepted |
+| [0025](0025-persistence-spring-data-jdbc.md) | 永続化アクセスに Spring Data JDBC を主軸採用し PostgreSQL / Flyway / Testcontainers で構成する | Accepted |
