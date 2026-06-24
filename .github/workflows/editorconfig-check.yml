@@ -1,4 +1,5 @@
-# Pull Request 時に EditorConfig のフォーマットチェックを自動実行し、mainブランチへのフォーマットが崩れたコードのマージを防止します。
+# Pull Request 時に EditorConfig のフォーマットチェックと .gitattributes の行末正規化整合を自動実行し、
+# mainブランチへのフォーマットが崩れたコード・行末が正規化されていない blob のマージを防止します。
 name: EditorConfig Check
 run-name: EditorConfig Check for ${{ github.ref }}
 
@@ -26,4 +27,18 @@ jobs:
 
       - name: Run EditorConfig check
         run: editorconfig-checker --format github-actions
+
+      # .gitattributes が要求する行末正規化（例: `*.bat text eol=crlf` は blob を LF で保存）と、
+      # コミット済み blob の実体がズレていないかを検証する。Dependabot 等は gitattributes の
+      # clean フィルタを通さずに CRLF を焼き込んだ blob を持ち込むことがあり、その場合 clone 直後から
+      # 恒常的な `M`（無変更なのに modified）が出る（#416）。renormalize で差分が出たら fail させる。
+      - name: Check line-ending normalization (.gitattributes)
+        run: |
+          git add --renormalize .
+          if ! git diff --cached --quiet; then
+            echo "::error::行末が .gitattributes どおりに正規化されていません。ローカルで 'git add --renormalize . && git commit' を実行して push してください。"
+            git diff --cached --stat
+            exit 1
+          fi
+          echo "Line endings are normalized per .gitattributes ✓"
 
