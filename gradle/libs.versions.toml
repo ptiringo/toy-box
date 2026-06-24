@@ -38,6 +38,7 @@ springmockk = { module = "com.ninja-squad:springmockk", version.ref = "springmoc
 # jMolecules（DDD ビルディングブロックをアノテーションで表明する。バージョンは BOM で管理）
 jmolecules-bom = { module = "org.jmolecules:jmolecules-bom", version.ref = "jmolecules-bom" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
+jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 
 # ArchUnit（アーキテクチャテスト）
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }

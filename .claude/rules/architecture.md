@@ -70,7 +70,7 @@ domain/
 
 ## DDD ビルディングブロック（jMolecules）
 
-ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`org.jmolecules.ddd.annotation.*`）で役割を表明する。アノテーションはメタデータのみでランタイム挙動を持たないため domain 層に置いてよい。
+ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`org.jmolecules.ddd.annotation.*` / `org.jmolecules.event.annotation.*`）で役割を表明する。アノテーションはメタデータのみでランタイム挙動を持たないため domain 層に置いてよい。
 
 | 対象 | アノテーション | 例 |
 |------|--------------|-----|
@@ -79,13 +79,16 @@ domain/
 | 値オブジェクト（ID 値クラス含む） | `@ValueObject` | `JockeyId` |
 | 識別子プロパティ | `@field:Identity` | `Jockey.id` |
 | Repository ポート（interface） | `@Repository`（jMolecules 版） | `JockeyRepository` |
+| ドメインイベント | `@DomainEvent`（jMolecules events 版） | `HorseNamed` |
 
 ドメインサービス（`service/` のトップレベル関数）には jMolecules アノテーションを付けない。`@Service`（jMolecules）は型向けでトップレベル関数に付けられず、ドメインサービスであることは `service/` パッケージへの配置で表現する。
+
+**ドメインイベント**（`@DomainEvent`）は「起きたこと」を表すビルディングブロック。イミュータブル集約（`var` 禁止）は内部にイベントを溜め込めないため、状態遷移メソッドが遷移後の集約とイベントを `StateTransition<A, E>`（`domain.shared`）に同梱して返し、発行は application 層が担う（集約は純粋なまま保つ）。失敗しうる遷移は `Result<StateTransition<A, E>, エラー>` を返し失敗時はイベントを生成しない（例: `BloodHorse.assignName` → `HorseNamed`）。イベントは値としての等価性が自然なため `data class` を使ってよい（ID ベース `final equals` を持つ集約と異なり衝突しない）。他集約への参照は ID 値クラス経由。収集・発行方式の決定経緯は [ADR-0029](../../docs/adr/0029-domain-events-via-state-transition-return.md)（Spring `ApplicationEventPublisher` 連携・publish-after-commit・発生時刻 enrichment は別イシュー送り）。
 
 注意点:
 
 - `@Identity` は FIELD / METHOD ターゲットのため、Kotlin プロパティには **`@field:Identity`** と use-site target を明示する
-- jMolecules アノテーション付きクラスはドメインモデルリング（`domain.*.model`）にのみ置ける（ArchUnit で強制）
+- jMolecules アノテーション付きクラス（`@DomainEvent` を含む）はドメインモデルリング（`domain.*.model`）にのみ置ける（ArchUnit `dddBuildingBlocksResideInDomainModel` で強制）。`StateTransition` 等の汎用キャリアはアノテーションを持たないため `domain.shared` に置いてよい
 - `JMoleculesDddRules.all()` により以下が強制される:
   - `@Entity` / `@AggregateRoot` は `@Identity` 付き識別子を持つ
   - **他の集約への参照は ID 値クラス（または `Association`）経由のみ**。集約オブジェクトを直接フィールドに持ってはならない（例: `Stallion` は `BloodHorse` ではなく `BloodHorseId` を持つ）

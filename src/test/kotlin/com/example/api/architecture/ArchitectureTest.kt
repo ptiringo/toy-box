@@ -25,6 +25,7 @@ import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Entity as DddEntity
 import org.jmolecules.ddd.annotation.Repository as DddRepository
 import org.jmolecules.ddd.annotation.ValueObject
+import org.jmolecules.event.annotation.DomainEvent
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
@@ -177,7 +178,12 @@ class ArchitectureTest {
      */
     @ArchTest val dddBuildingBlocks = JMoleculesDddRules.all()
 
-    /** DDD ビルディングブロック（jMolecules アノテーション付きクラス）はドメインモデルリングに置くこと。 */
+    /**
+     * DDD ビルディングブロック（jMolecules アノテーション付きクラス）はドメインモデルリングに置くこと。
+     *
+     * 集約ルート / エンティティ / 値オブジェクト / リポジトリポートに加え、ドメインイベント（`@DomainEvent`）も
+     * 対象に含める。イベントもドメインモデルの一員であり、フレームワーク非依存の domain.*.model に置く（ADR-0029）。
+     */
     @ArchTest
     val dddBuildingBlocksResideInDomainModel =
         classes()
@@ -189,6 +195,8 @@ class ArchitectureTest {
             .areAnnotatedWith(ValueObject::class.java)
             .or()
             .areAnnotatedWith(DddRepository::class.java)
+            .or()
+            .areAnnotatedWith(DomainEvent::class.java)
             .should()
             .resideInAPackage(DOMAIN_MODEL)
 

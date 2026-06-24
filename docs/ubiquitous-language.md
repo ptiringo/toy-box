@@ -7,9 +7,9 @@
 
 1. **用語集（手書き）** — 定義・和名・別名・禁止語など、コードには現れない知識を人が書く。
 2. **型レベル用語カタログ（自動生成）** — jMolecules のビルディングブロック（`@AggregateRoot` /
-   `@Entity` / `@ValueObject` / `@Repository`）とドメインサービス（`service/` のトップレベル関数）を
-   バイトコードから走査して生成する。**コードが唯一の出所**であり、`UbiquitousLanguageCatalogTest` が
-   コミット済みの内容と一致することを検証する。
+   `@Entity` / `@ValueObject` / `@Repository` / `@DomainEvent`）とドメインサービス（`service/` の
+   トップレベル関数）を バイトコードから走査して生成する。**コードが唯一の出所**であり、
+   `UbiquitousLanguageCatalogTest` が コミット済みの内容と一致することを検証する。
 
 > **メンテナンス方法**: ビルディングブロックを追加・改名・削除すると `UbiquitousLanguageCatalogTest` が
 > 落ちる。次でカタログを再生成し、併せて下の手書き用語集にも定義を足してからコミットする。
@@ -22,7 +22,7 @@
 
 ## 用語集（手書き）
 
-凡例 — **種別**: 集約ルート / エンティティ / 値オブジェクト / リポジトリポート / ドメインサービス。
+凡例 — **種別**: 集約ルート / エンティティ / 値オブジェクト / リポジトリポート / ドメインイベント / ドメインサービス。
 **禁止語**は「使うと誤解を生むため避ける言い回し」を表す。
 
 ### studbook コンテキスト（軽種馬登録）
@@ -38,6 +38,7 @@
 | --- | --- | --- | --- | --- |
 | BloodHorse | 軽種馬 | 集約ルート | 血統及び個体識別を明らかにする血統登録の成立によって誕生する個体。ライフサイクル全体を通じて同一の `BloodHorse` が各ロールを担う。 | 禁止: 単に「Horse」と呼ぶと文脈で曖昧。父母・ロールも別個体として扱わない |
 | HorseName | 馬名 | 値オブジェクト | 血統登録済みの個体に一度だけ付与できる名。出生時は未命名（`null`）。 | — |
+| HorseNamed | 馬名登録された | ドメインイベント | 馬名登録（`BloodHorse.assignName`）の成功時に「起きたこと」を表すイベント。遷移後の集約とともに `StateTransition` で同梱して返し、発行は application 層が担う（[ADR-0029](adr/0029-domain-events-via-state-transition-return.md)）。 | 禁止: `Command`（何をしたいか）と混同しない。本型は結果（何が起きたか） |
 | PedigreeRegistrationNumber | 血統登録番号 | 値オブジェクト | 血統登録の成立時に交付される番号。 | — |
 | MicrochipNumber | マイクロチップ番号 | 値オブジェクト | 個体識別に用いるマイクロチップの番号。 | — |
 | StudBookEntry | 血統登録申請（個体識別の束） | 値オブジェクト | 申請者が持ち込む仔馬自身の個体識別情報の束。父母は集約をまたぐためここには含めない。 | — |
@@ -209,6 +210,7 @@ graph LR
 | BloodHorseRepository | リポジトリポート | domain.studbook.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
 | BreedingResultRepository | リポジトリポート | domain.studbook.model.breeding |
+| HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
 | recordUncovered | ドメインサービス | domain.studbook.service.breeding |
 | registerFoal | ドメインサービス | domain.studbook.service.horse |

@@ -127,6 +127,21 @@ class Command<T>(
 fun registerInStudBook(command: Command<StudBook>)
 ```
 
+#### Domain Event パターン
+
+ドメインイベントは「**起きたこと**」を表すビルディングブロック（`Command` の「何をしたいか」と対）。`@org.jmolecules.event.annotation.DomainEvent` で役割を表明し、`domain.*.model` に置く。値としての等価性が自然なため `data class` を使ってよい（ID ベース `final equals` を持つ集約と異なり衝突しない）。他集約への参照は ID 値クラス経由。
+
+イミュータブル集約（`var` 禁止）は内部にイベントを溜め込めないため、状態遷移メソッドが**遷移後の集約とイベントを `StateTransition<A, E>`（`domain.shared`）に同梱して返し**、発行は application 層が担う（集約は純粋なまま）。失敗しうる遷移は `Result<StateTransition<A, E>, エラー>` を返し、失敗時はイベントを生成しない：
+
+```kotlin
+@DomainEvent data class HorseNamed(val bloodHorseId: BloodHorseId, val name: HorseName)
+
+// 状態遷移は遷移後の集約とイベントを同梱して返す
+fun assignName(horseName: HorseName): Result<StateTransition<BloodHorse, HorseNamed>, HorseAlreadyNamed>
+```
+
+決定経緯と現状のスコープ（Spring `ApplicationEventPublisher` 連携・publish-after-commit・発生時刻 enrichment は別イシュー送り）は [ADR-0029](docs/adr/0029-domain-events-via-state-transition-return.md) を参照。
+
 ### パッケージ構成
 
 オニオンアーキテクチャの 4 リング（domainModel / domainService / applicationService / adapter）構成。`domain` 配下は各コンテキストを `model/` と `service/` に分割する。
@@ -155,7 +170,7 @@ com.example.api/
 
 **設計原則**（ArchUnit で強制。詳細は `.claude/rules/architecture.md`）:
 
-- **domain.shared**: 共有カーネル。`Command` / `Entity` 基底など、コンテキスト横断の最小限の基盤のみ
+- **domain.shared**: 共有カーネル。`Command` / `Entity` 基底 / `StateTransition`（状態遷移＋ドメインイベントの封筒）など、コンテキスト横断の最小限の基盤のみ
 - **domain.\*.model**: Entity / Value Object / Repository ポート（interface）/ 集約内で完結するロジック。Repository ポートには jMolecules の `@Repository` を付与
 - **domain.\*.service**: 複数の集約をまたぐドメインロジック。**Kotlin のトップレベル関数で書き**、`service/` への配置でドメインサービスと表現する（jMolecules `@Service` は付けない）。モデルにのみ依存でき、その逆は禁止
 - **application**: ユースケース（コマンド DTO + ユースケースクラス + そのユースケースに紐づく失敗バリアント）。ドメインを組み合わせて業務シナリオを構築する。ユースケースを DI 経由で公開するための `@Service` / `@Component` のみ Spring 依存を許容し、ロジック本体は Plain Kotlin で書く
