@@ -74,8 +74,10 @@ Spring Data JDBC を採るうえで、本プロジェクト固有の制約と衝
 積み残し（follow-up）:
 
 - **Flyway の自動実行が Spring Boot 4.1 + Flyway 12 で動かない**。`flyway-core` を入れ `spring.flyway.enabled=true` でもマイグレーションが走らず DB が空のままになる事象を確認（起動ログに Flyway 出力なし）。spike では `@Sql` でスキーマを用意して回避した。Flyway 12 の DB モジュール分割（`flyway-database-postgresql` 等）や Boot 4 の autoconfig 条件を要追検証。
+  - **解消（#421 / #422）**: `spring-boot-starter-flyway`（`spring-boot-flyway` autoconfig を含む）で配線（#421）、PostgreSQL 用に `flyway-database-postgresql` を追加（#422）。`@Sql` を撤廃し、契約テストは Flyway が起動時に `db/migration/V*.sql` を PostgreSQL コンテナへ適用するのを前提に成立させた。
 - **更新系（version を進める save）はドメイン経由では未対応**。ドメインが version を持たないため、アダプタの `save` は常に insert になる。update は「version を Row 取得して引き当てる」等の方針を実装イシューで決める。
 - **H2 は spike 用の暫定**。本番は PostgreSQL + Testcontainers（Docker 必須のため spike 環境では未実行）。識別子の大文字小文字など方言差は Testcontainers で詰める。
+  - **一部解消（#422）**: 永続化の契約テストを Testcontainers(PostgreSQL) で本番ターゲット DB に対して実行するようにした（共有シングルトンコンテナ `PostgresContainerSupport` が `@DynamicPropertySource` で datasource を上書き）。識別子の小文字畳み等の方言差も実 PostgreSQL で検証できるようになった。**ランタイムの datasource は当面 H2（PostgreSQL 互換モード）のまま据え置く**: 実リポジトリはまだ InMemory Bean で datasource は付随的に初期化されるだけであり、H2 を撤去すると Container Smoke Test と Cloud Run 本番デプロイ（いずれもアプリを外部 DB なしで起動する）が壊れるため。実永続化を使う本番 PostgreSQL 化（Cloud SQL の新設と Cloud Run への配線）は #423 / インフラ作業に委ねる。
 - **本番配線**: `JdbcJockeyRepository` は既存 `InMemoryJockeyRepository` との DI 衝突を避けるため spike では Bean 化していない。プロファイル分け等の配線は別イシュー。
 
 ## Consequences（結果・影響）

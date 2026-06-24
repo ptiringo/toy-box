@@ -25,18 +25,23 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    // [#338 spike] 永続化アクセスの素振り（Spring Data JDBC + Flyway）。本番化時は DB を
-    // PostgreSQL（Testcontainers でテスト）へ寄せる想定。H2 は Docker 不要で spike を走らせるための
-    // 暫定の組み込み DB（PostgreSQL 互換モードで使用）。詳細は ADR-0027。
+    // 永続化アクセス（Spring Data JDBC + Flyway）。集約 write は Spring Data JDBC（集約 = 永続化境界）。
+    // ランタイムの datasource は当面 H2（PostgreSQL 互換モード）の組み込み DB のまま据え置く。実リポジトリは
+    // まだ InMemory Bean のため datasource/Flyway は付随的に初期化されるだけで、本番 PostgreSQL 化（Cloud SQL
+    // 配線）は実永続化を使う #423 / インフラ作業に委ねる。一方、永続化の契約テストは本番ターゲットの
+    // PostgreSQL を Testcontainers で用意して検証する（ADR-0027 / #422。testing.md の宿題に対応）。
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     // Flyway は starter で引く。Spring Boot 4 は autoconfig を機能別モジュールに分割しており、
     // FlywayAutoConfiguration は spring-boot-autoconfigure ではなく専用モジュール spring-boot-flyway
     // に移った。素の flyway-core だけだと autoconfig が classpath に無く、エラーも出さず migrate が
     // 走らない（#421）。starter-flyway が spring-boot-flyway(autoconfig) + spring-boot-jdbc +
-    // flyway-core を引き込む。H2 等の組み込み DB は starter だけで足り、PostgreSQL 化（#422）で
-    // flyway-database-postgresql を追加する。
+    // flyway-core を引き込む。
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     runtimeOnly("com.h2database:h2")
+    // PostgreSQL ドライバと Flyway の PostgreSQL モジュール（Flyway 10+ は DB 別サポートをモジュール分割）は
+    // 契約テスト（Testcontainers）でのみ要るため testRuntimeOnly に置く。本番 jar・ランタイムには載らない。
+    testRuntimeOnly("org.postgresql:postgresql")
+    testRuntimeOnly("org.flywaydb:flyway-database-postgresql")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)
@@ -50,6 +55,11 @@ dependencies {
     testImplementation(libs.springmockk)
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.jmolecules.archunit)
+    // 永続化の契約テストは Testcontainers(PostgreSQL) で本番ターゲット DB に対して検証する（ADR-0027 / #422）。
+    // コンテナはシングルトン起動し接続先を @DynamicPropertySource（spring-test）で注入するため、
+    // @ServiceConnection 用の spring-boot-testcontainers や JUnit5 拡張モジュールは要らず postgresql モジュール
+    // 1 本でよい（core は推移取得）。アーティファクト ID は Testcontainers 2.0 の testcontainers-<module> 体系。
+    testImplementation("org.testcontainers:testcontainers-postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // プロジェクト固有の detekt カスタムルール（domain/application で throw しない 等）を detekt 実行時に組み込む
