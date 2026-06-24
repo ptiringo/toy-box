@@ -54,8 +54,8 @@ object BreedingFixture {
         coveringDate: LocalDate = LocalDate.of(2024, 4, 1),
         certificateNumber: CoveringCertificateNumber =
             CoveringCertificateNumber.create("C-2024-0001").unwrap(),
-        studCertificate: StudCertificate? = null,
-        coveringPlace: BreedingRegion? = null,
+        studCertificate: StudCertificate = studCertificate(),
+        coveringPlace: BreedingRegion = DEFAULT_REGION,
     ): BreedingResult =
         BreedingResult.create(
                 broodmareRegistration,

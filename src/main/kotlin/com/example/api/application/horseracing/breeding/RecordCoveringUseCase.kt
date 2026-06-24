@@ -1,11 +1,15 @@
 package com.example.api.application.horseracing.breeding
 
+import com.example.api.domain.horseracing.model.breeding.BreedingRegion
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationId
 import com.example.api.domain.horseracing.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.horseracing.model.breeding.BreedingResult
 import com.example.api.domain.horseracing.model.breeding.BreedingResultRepository
 import com.example.api.domain.horseracing.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.horseracing.model.breeding.RecordCoveringError
+import com.example.api.domain.horseracing.model.breeding.StudCertificate
+import com.example.api.domain.horseracing.model.breeding.StudCertificateNumber
+import com.example.api.domain.horseracing.model.breeding.ValidityPeriod
 import com.example.api.domain.horseracing.service.breeding.recordCovering
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Result
@@ -19,25 +23,59 @@ import org.springframework.stereotype.Service
 /**
  * 種付記録ユースケースの入力コマンド。
  *
- * 繁殖成績報告書の「種付」欄に相当する境界の生入力。種付証明書番号は素の文字列で受け取り、ユースケース内で VO の `create`
+ * 繁殖成績報告書の「種付」欄に相当する境界の生入力。VO で表す項目（種付証明書番号・種付場所・種畜証明書）は素の値で 受け取り、ユースケース内で各 VO の `create`
  * を通して検証する。繁殖牝馬・種牡馬はいずれも既存の繁殖登録IDで参照する（種牡馬も繁殖登録の対象）。
  *
  * @property breedingRegistrationId 種付対象の繁殖牝馬の繁殖登録ID
  * @property stallionRegistrationId 配合相手の種牡馬の繁殖登録ID
  * @property coveringDate 種付日
+ * @property coveringPlace 種付が行われた場所（有効区域の整合検証に用いる）
  * @property certificateNumber 種付の事実を証明する種付証明書の番号
+ * @property studCertificate 種牡馬の種畜証明書（種付の有効性検証の与件）
  */
 data class RecordCoveringCommand(
     val breedingRegistrationId: UUID,
     val stallionRegistrationId: UUID,
     val coveringDate: LocalDate,
+    val coveringPlace: String,
     val certificateNumber: String,
+    val studCertificate: StudCertificateInput,
+)
+
+/**
+ * 種畜証明書の入力（[RecordCoveringCommand.studCertificate]）。各項目は素の値で受け取り、ユースケースが VO 検証する。
+ *
+ * @property number 種畜証明書番号
+ * @property validRegions 有効区域名（1 つ以上）
+ * @property validPeriodStart 有効期間の起点（当日を含む）
+ * @property validPeriodEnd 有効期間の終点（当日を含む）
+ */
+data class StudCertificateInput(
+    val number: String,
+    val validRegions: List<String>,
+    val validPeriodStart: LocalDate,
+    val validPeriodEnd: LocalDate,
 )
 
 /** 種付記録時に発生しうる業務ルール違反。 */
 sealed interface RecordCoveringUseCaseError {
     /** 種付証明書番号がブランク。 */
     data object InvalidCertificateNumber : RecordCoveringUseCaseError
+
+    /** 種付場所がブランク。 */
+    data object InvalidCoveringPlace : RecordCoveringUseCaseError
+
+    /** 種畜証明書番号がブランク。 */
+    data object InvalidStudCertificateNumber : RecordCoveringUseCaseError
+
+    /** 種畜証明書の有効区域名のいずれかがブランク。 */
+    data object InvalidValidRegion : RecordCoveringUseCaseError
+
+    /** 種畜証明書の有効期間が不正（終点が起点より前）。 */
+    data object InvalidValidityPeriod : RecordCoveringUseCaseError
+
+    /** 種畜証明書の有効区域が 1 つも指定されていない。 */
+    data object EmptyValidRegions : RecordCoveringUseCaseError
 
     /** 種付対象として指定された繁殖牝馬の繁殖登録が存在しない。 */
     data class BreedingRegistrationNotFound(val breedingRegistrationId: UUID) :
@@ -80,6 +118,13 @@ class RecordCoveringUseCase(
                 .mapError { RecordCoveringUseCaseError.InvalidCertificateNumber }
                 .bind()
 
+        val coveringPlace =
+            BreedingRegion.create(input.coveringPlace)
+                .mapError { RecordCoveringUseCaseError.InvalidCoveringPlace }
+                .bind()
+
+        val studCertificate = buildStudCertificate(input.studCertificate).bind()
+
         val broodmareRegistration =
             breedingRegistrationRepository
                 .findById(BreedingRegistrationId(input.breedingRegistrationId))
@@ -107,10 +152,40 @@ class RecordCoveringUseCase(
                     input.coveringDate,
                     certificateNumber,
                     breedingResultRepository,
+                    studCertificate,
+                    coveringPlace,
                 )
                 .mapError { RecordCoveringUseCaseError.PreconditionViolated(it) }
                 .bind()
 
         breedingResultRepository.save(breedingResult)
+    }
+
+    /** 種畜証明書の生入力を各 VO 検証して [StudCertificate] を組み立てる。形式不正は 400 系の入力エラーにマップする。 */
+    private fun buildStudCertificate(
+        input: StudCertificateInput
+    ): Result<StudCertificate, RecordCoveringUseCaseError> = binding {
+        val number =
+            StudCertificateNumber.create(input.number)
+                .mapError { RecordCoveringUseCaseError.InvalidStudCertificateNumber }
+                .bind()
+
+        val validRegions = mutableSetOf<BreedingRegion>()
+        for (region in input.validRegions) {
+            validRegions.add(
+                BreedingRegion.create(region)
+                    .mapError { RecordCoveringUseCaseError.InvalidValidRegion }
+                    .bind()
+            )
+        }
+
+        val validityPeriod =
+            ValidityPeriod.create(input.validPeriodStart, input.validPeriodEnd)
+                .mapError { RecordCoveringUseCaseError.InvalidValidityPeriod }
+                .bind()
+
+        StudCertificate.create(number, validRegions, validityPeriod)
+            .mapError { RecordCoveringUseCaseError.EmptyValidRegions }
+            .bind()
     }
 }

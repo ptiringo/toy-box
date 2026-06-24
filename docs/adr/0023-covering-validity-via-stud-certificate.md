@@ -59,3 +59,19 @@
   渡したときのみ働く。
 - 有効区域の包含関係（全国 ⊇ 個別区域）と、種畜証明書番号・種付証明書番号の桁数/形式検証は本 ADR のスコープ外。区分体系・形式が
   判明した時点で具体化する。
+
+## 追補（2026-06-24）: 段階導入の解消
+
+決定 4 の段階導入（種畜証明書・種付場所を省略可能とし `Covering.coveringPlace` を nullable とする過渡措置）は、API 入口の供給配線
+（issue #404）の完了により解消した。`POST /api/breedingResults` のリクエストが種付場所（`covering_place`）と種畜証明書
+（`stud_certificate`：番号・有効区域・有効期間）を受け取り、`RecordCoveringUseCase` が各 VO を `create` 検証して
+（VO 形式不正は 400）`recordCovering` へ渡すようになった。これに伴い:
+
+- `BreedingResult.create` / `recordCovering` の `studCertificate` / `coveringPlace` 引数を**必須（非 null）化**し、デフォルト
+  `null` を撤去した。有効性検証は常に `StudCertificate.authorizes` を通る（「渡されたときだけ検証」を廃止）。
+- `Covering.coveringPlace` を非 null 化した。種付は必ずどこかで行われた事実であり、有効性検証の与件でもあるため。
+- `BreedingResultResponse` に `covering_place` を加え、リソース表現に種付場所を反映した（種畜証明書は永続化しない与件のため
+  レスポンスには載せない）。
+
+決定そのもの（検証の置き場所＝ファクトリ自己検証、有効区域＝集合メンバーシップ、種畜証明書と種付証明書の型分離）は不変で、
+本追補は決定 4 が予告した過渡措置の終了を記録するもの。

@@ -18,6 +18,9 @@ import org.junit.jupiter.api.Test
 class RecordCoveringTest {
     private val coveringDate = LocalDate.of(2024, 4, 1)
     private val certificateNumber = CoveringCertificateNumber.create("C-2024-0001").unwrap()
+    private val coveringPlace = BreedingRegion.create("北海道").unwrap()
+    private val studCertificate =
+        BreedingFixture.studCertificate(validRegions = setOf(coveringPlace))
 
     @Test
     fun `同年の既存成績が無ければ種付が記録され分娩結果未報告の繁殖成績が生成されること`() {
@@ -35,6 +38,8 @@ class RecordCoveringTest {
                     coveringDate,
                     certificateNumber,
                     repository,
+                    studCertificate,
+                    coveringPlace,
                 )
                 .unwrap()
 
@@ -67,6 +72,8 @@ class RecordCoveringTest {
                 coveringDate,
                 certificateNumber,
                 repository,
+                studCertificate,
+                coveringPlace,
             )
 
         assert(
@@ -91,6 +98,8 @@ class RecordCoveringTest {
                 coveringDate,
                 certificateNumber,
                 repository,
+                studCertificate,
+                coveringPlace,
             )
 
         assert(result.getError() == RecordCoveringError.NotBroodmare)
@@ -112,6 +121,8 @@ class RecordCoveringTest {
                 coveringDate,
                 certificateNumber,
                 repository,
+                studCertificate,
+                coveringPlace,
             )
 
         assert(result.getError() == RecordCoveringError.NotStallion)

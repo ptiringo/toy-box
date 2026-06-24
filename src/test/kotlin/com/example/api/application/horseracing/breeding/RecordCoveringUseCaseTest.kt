@@ -26,7 +26,15 @@ class RecordCoveringUseCaseTest {
             breedingRegistrationId = breedingRegistrationId,
             stallionRegistrationId = stallionRegistrationId,
             coveringDate = LocalDate.of(2024, 4, 1),
+            coveringPlace = "北海道",
             certificateNumber = "C-2024-0001",
+            studCertificate =
+                StudCertificateInput(
+                    number = "S-2024-0001",
+                    validRegions = listOf("北海道"),
+                    validPeriodStart = LocalDate.of(2024, 1, 1),
+                    validPeriodEnd = LocalDate.of(2024, 12, 31),
+                ),
         )
 
     private fun command(payload: RecordCoveringCommand): Command<RecordCoveringCommand> =
@@ -66,6 +74,7 @@ class RecordCoveringUseCaseTest {
             assert(result.breedingRegistrationId == broodmareRegistration.id)
             assert(covering?.stallionId == stallionRegistration.registeredHorseId)
             assert(covering?.coveringDate == LocalDate.of(2024, 4, 1))
+            assert(covering?.coveringPlace?.value == "北海道")
             assert(covering?.certificateNumber?.value == "C-2024-0001")
             assert(result.outcome == null)
             verify(exactly = 1) { breedingResultRepository.save(any()) }
@@ -89,6 +98,122 @@ class RecordCoveringUseCaseTest {
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidCertificateNumber)
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `種付場所がブランクのとき InvalidCoveringPlace を返し永続化されない`() {
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase =
+                RecordCoveringUseCase(
+                    mockk<BreedingRegistrationRepository>(),
+                    breedingResultRepository,
+                )
+
+            val result =
+                useCase(
+                    command(
+                        validPayload(UUID.randomUUID(), UUID.randomUUID()).copy(coveringPlace = "")
+                    )
+                )
+
+            assert(result.getError() == RecordCoveringUseCaseError.InvalidCoveringPlace)
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `種畜証明書番号がブランクのとき InvalidStudCertificateNumber を返し永続化されない`() {
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase =
+                RecordCoveringUseCase(
+                    mockk<BreedingRegistrationRepository>(),
+                    breedingResultRepository,
+                )
+
+            val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
+            val result =
+                useCase(
+                    command(
+                        payload.copy(studCertificate = payload.studCertificate.copy(number = ""))
+                    )
+                )
+
+            assert(result.getError() == RecordCoveringUseCaseError.InvalidStudCertificateNumber)
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `有効区域名にブランクが混じるとき InvalidValidRegion を返し永続化されない`() {
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase =
+                RecordCoveringUseCase(
+                    mockk<BreedingRegistrationRepository>(),
+                    breedingResultRepository,
+                )
+
+            val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
+            val result =
+                useCase(
+                    command(
+                        payload.copy(
+                            studCertificate =
+                                payload.studCertificate.copy(validRegions = listOf("北海道", ""))
+                        )
+                    )
+                )
+
+            assert(result.getError() == RecordCoveringUseCaseError.InvalidValidRegion)
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `有効区域が空のとき EmptyValidRegions を返し永続化されない`() {
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase =
+                RecordCoveringUseCase(
+                    mockk<BreedingRegistrationRepository>(),
+                    breedingResultRepository,
+                )
+
+            val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
+            val result =
+                useCase(
+                    command(
+                        payload.copy(
+                            studCertificate =
+                                payload.studCertificate.copy(validRegions = emptyList())
+                        )
+                    )
+                )
+
+            assert(result.getError() == RecordCoveringUseCaseError.EmptyValidRegions)
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `有効期間の終点が起点より前のとき InvalidValidityPeriod を返し永続化されない`() {
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase =
+                RecordCoveringUseCase(
+                    mockk<BreedingRegistrationRepository>(),
+                    breedingResultRepository,
+                )
+
+            val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
+            val result =
+                useCase(
+                    command(
+                        payload.copy(
+                            studCertificate =
+                                payload.studCertificate.copy(
+                                    validPeriodStart = LocalDate.of(2024, 12, 31),
+                                    validPeriodEnd = LocalDate.of(2024, 1, 1),
+                                )
+                        )
+                    )
+                )
+
+            assert(result.getError() == RecordCoveringUseCaseError.InvalidValidityPeriod)
             verify(exactly = 0) { breedingResultRepository.save(any()) }
         }
 

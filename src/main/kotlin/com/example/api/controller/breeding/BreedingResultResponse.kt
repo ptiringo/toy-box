@@ -27,6 +27,7 @@ import org.springframework.http.ProblemDetail
  * @property breedingYear 繁殖年
  * @property stallionId 種牡馬の生 UUID。種付せずの年は null
  * @property coveringDate 種付日。種付せずの年は null
+ * @property coveringPlace 種付が行われた場所。種付せずの年は null
  * @property certificateNumber 種付証明書番号。種付せずの年は null
  * @property outcome 分娩結果。種付した年で未報告なら null
  */
@@ -36,6 +37,7 @@ data class BreedingResultResponse(
     val breedingYear: Int,
     val stallionId: UUID?,
     val coveringDate: LocalDate?,
+    val coveringPlace: String?,
     val certificateNumber: String?,
     val outcome: FoalingOutcomeResponse?,
 )
@@ -48,9 +50,14 @@ fun BreedingResult.toResponse(): BreedingResultResponse =
         breedingYear = breedingYear.value,
         stallionId = covering?.stallionId?.value,
         coveringDate = covering?.coveringDate,
+        coveringPlace = covering?.coveringPlace?.value,
         certificateNumber = covering?.certificateNumber?.value,
         outcome = outcome?.toResponse(),
     )
+
+/** 入力不正（VO 形式違反）を 400 Bad Request の [ProblemDetail] に描画する小さなビルダ。 */
+private fun badRequest(code: String, title: String, detail: String): ProblemDetail =
+    problem(status = HttpStatus.BAD_REQUEST, code = code, title = title, detail = detail)
 
 /**
  * [RecordCoveringUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
@@ -61,11 +68,40 @@ fun BreedingResult.toResponse(): BreedingResultResponse =
 fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
         RecordCoveringUseCaseError.InvalidCertificateNumber ->
-            problem(
-                status = HttpStatus.BAD_REQUEST,
-                code = "invalid-covering-certificate-number",
-                title = "Invalid covering certificate number",
-                detail = "certificate_number は空であってはいけません。",
+            badRequest(
+                "invalid-covering-certificate-number",
+                "Invalid covering certificate number",
+                "certificate_number は空であってはいけません。",
+            )
+        RecordCoveringUseCaseError.InvalidCoveringPlace ->
+            badRequest(
+                "invalid-covering-place",
+                "Invalid covering place",
+                "covering_place は空であってはいけません。",
+            )
+        RecordCoveringUseCaseError.InvalidStudCertificateNumber ->
+            badRequest(
+                "invalid-stud-certificate-number",
+                "Invalid stud certificate number",
+                "stud_certificate.number は空であってはいけません。",
+            )
+        RecordCoveringUseCaseError.InvalidValidRegion ->
+            badRequest(
+                "invalid-valid-region",
+                "Invalid valid region",
+                "stud_certificate.valid_regions の各区域名は空であってはいけません。",
+            )
+        RecordCoveringUseCaseError.InvalidValidityPeriod ->
+            badRequest(
+                "invalid-validity-period",
+                "Invalid validity period",
+                "stud_certificate の有効期間の終点は起点以降でなければなりません。",
+            )
+        RecordCoveringUseCaseError.EmptyValidRegions ->
+            badRequest(
+                "empty-valid-regions",
+                "Empty valid regions",
+                "stud_certificate.valid_regions は 1 つ以上指定してください。",
             )
         is RecordCoveringUseCaseError.BreedingRegistrationNotFound ->
             problem(

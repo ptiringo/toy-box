@@ -18,8 +18,7 @@ import java.time.Year
  * 種付記録の前提条件は2系統あり、性質が異なるため担い手を分ける:
  * - **配合の登録ロール（繁殖牝馬 × 種牡馬）／種付の有効性（種畜証明書の有効区域・有効期間）** … いずれも単一の繁殖成績
  *   インスタンスの構築時前提条件で、協力与件（繁殖登録・種畜証明書）を引数で受け取れる。委譲先のファクトリ [BreedingResult.create]
- *   が自己検証する（NotBroodmare / NotStallion / InvalidCovering の [RecordCoveringError]）。有効性検証は
- *   [studCertificate] が渡された場合のみ行う段階導入。
+ *   が自己検証する（NotBroodmare / NotStallion / InvalidCovering の [RecordCoveringError]）。
  * - **「繁殖牝馬 × 繁殖年」で一意（同一年の重複記録の禁止）** … 既存成績群（集合）をまたぐ集合制約で、単一インスタンスの 構築では完結しない。本サービスが
  *   [breedingResultRepository] から同年の既存成績を引き当てて検証する （[RecordCoveringError.AlreadyRecordedForYear]）。
  *
@@ -32,8 +31,8 @@ import java.time.Year
  * @param coveringDate 種付日
  * @param certificateNumber 種付の事実を証明する種付証明書の番号
  * @param breedingResultRepository 同一繁殖牝馬・同一繁殖年の既存成績を引き当てる繁殖成績ポート
- * @param studCertificate 種牡馬の種畜証明書。渡された場合のみ種付の有効性（有効区域・有効期間）をファクトリが検証する
- * @param coveringPlace 種付場所。[studCertificate] を渡す場合は必須（有効区域の整合検証に用いる）
+ * @param studCertificate 種牡馬の種畜証明書。種付の有効性（有効区域・有効期間）をファクトリが検証する与件
+ * @param coveringPlace 種付場所（有効区域の整合検証に用いる）
  * @return 起こされた [BreedingResult]、または前提条件違反を表す [RecordCoveringError]
  */
 fun recordCovering(
@@ -42,8 +41,8 @@ fun recordCovering(
     coveringDate: LocalDate,
     certificateNumber: CoveringCertificateNumber,
     breedingResultRepository: BreedingResultRepository,
-    studCertificate: StudCertificate? = null,
-    coveringPlace: BreedingRegion? = null,
+    studCertificate: StudCertificate,
+    coveringPlace: BreedingRegion,
 ): Result<BreedingResult, RecordCoveringError> {
     val breedingYear = Year.of(coveringDate.year)
     val existingForYear =

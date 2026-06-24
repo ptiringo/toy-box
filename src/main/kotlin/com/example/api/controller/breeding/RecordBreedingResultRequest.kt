@@ -2,6 +2,7 @@ package com.example.api.controller.breeding
 
 import com.example.api.application.horseracing.breeding.RecordCoveringCommand
 import com.example.api.application.horseracing.breeding.RecordUncoveredCommand
+import com.example.api.application.horseracing.breeding.StudCertificateInput
 import com.example.api.controller.problem
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -34,16 +35,35 @@ data class RecordBreedingResultRequest(
 /**
  * 種付の入力（[RecordBreedingResultRequest.covering]）。
  *
- * 繁殖牝馬・種牡馬はいずれも登録済みの繁殖登録IDで参照する。VO で表す種付証明書番号は素の文字列で受け取り、 ユースケースで検証する。
+ * 繁殖牝馬・種牡馬はいずれも登録済みの繁殖登録IDで参照する。VO で表す項目（種付場所・種付証明書番号・種畜証明書）は 素の値で受け取り、ユースケースで検証する。
  *
  * @property stallionRegistrationId 配合相手の種牡馬の繁殖登録ID
  * @property coveringDate 種付日
+ * @property coveringPlace 種付が行われた場所（有効区域の整合検証に用いる）
  * @property certificateNumber 種付証明書番号
+ * @property studCertificate 種牡馬の種畜証明書（種付の有効性検証の与件）
  */
 data class CoveringRequest(
     val stallionRegistrationId: UUID,
     val coveringDate: LocalDate,
+    val coveringPlace: String,
     val certificateNumber: String,
+    val studCertificate: StudCertificateRequest,
+)
+
+/**
+ * 種畜証明書の入力（[CoveringRequest.studCertificate]）。各項目は素の値で受け取り、ユースケースで VO 検証する。
+ *
+ * @property number 種畜証明書番号
+ * @property validRegions 有効区域名（1 つ以上）
+ * @property validPeriodStart 有効期間の起点（当日を含む）
+ * @property validPeriodEnd 有効期間の終点（当日を含む）
+ */
+data class StudCertificateRequest(
+    val number: String,
+    val validRegions: List<String>,
+    val validPeriodStart: LocalDate,
+    val validPeriodEnd: LocalDate,
 )
 
 /** 種付ありの入力を種付記録ユースケースの入力コマンドへ変換する。 */
@@ -54,7 +74,15 @@ fun RecordBreedingResultRequest.toCoveringCommand(
         breedingRegistrationId = breedingRegistrationId,
         stallionRegistrationId = covering.stallionRegistrationId,
         coveringDate = covering.coveringDate,
+        coveringPlace = covering.coveringPlace,
         certificateNumber = covering.certificateNumber,
+        studCertificate =
+            StudCertificateInput(
+                number = covering.studCertificate.number,
+                validRegions = covering.studCertificate.validRegions,
+                validPeriodStart = covering.studCertificate.validPeriodStart,
+                validPeriodEnd = covering.studCertificate.validPeriodEnd,
+            ),
     )
 
 /**
