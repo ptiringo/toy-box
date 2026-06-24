@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test
 class BreedingResultCreateTest {
     private val coveringDate = LocalDate.of(2024, 4, 1)
     private val certificateNumber = CoveringCertificateNumber.create("C-2024-0001").unwrap()
+    private val coveringPlace = BreedingRegion.create("北海道").unwrap()
+    private val studCertificate =
+        BreedingFixture.studCertificate(validRegions = setOf(coveringPlace))
 
     @Test
     fun `繁殖牝馬と種牡馬の登録なら種付が記録され種牡馬を ID で参照する繁殖成績が生成されること`() {
@@ -21,6 +24,8 @@ class BreedingResultCreateTest {
                     stallionRegistration,
                     coveringDate,
                     certificateNumber,
+                    studCertificate,
+                    coveringPlace,
                 )
                 .unwrap()
 
@@ -29,6 +34,7 @@ class BreedingResultCreateTest {
         assert(result.breedingRegistrationId == broodmareRegistration.id)
         assert(covering?.stallionId == stallionRegistration.registeredHorseId)
         assert(covering?.coveringDate == coveringDate)
+        assert(covering?.coveringPlace == coveringPlace)
         assert(covering?.certificateNumber == certificateNumber)
         assert(result.outcome == null)
     }
@@ -44,6 +50,8 @@ class BreedingResultCreateTest {
                 stallionRegistration,
                 coveringDate,
                 certificateNumber,
+                studCertificate,
+                coveringPlace,
             )
 
         assert(result.getError() == RecordCoveringError.NotBroodmare)
@@ -60,6 +68,8 @@ class BreedingResultCreateTest {
                 stallionRegistration,
                 coveringDate,
                 certificateNumber,
+                studCertificate,
+                coveringPlace,
             )
 
         assert(result.getError() == RecordCoveringError.NotStallion)

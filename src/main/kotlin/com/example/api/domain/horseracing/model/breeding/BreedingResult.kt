@@ -188,8 +188,8 @@ private constructor(
          * を返す。生成物は種牡馬を `BloodHorseId` 経由で参照する。生成直後は分娩結果が 未報告（[outcome] は null）。
          *
          * 本ファクトリが守るのは「単一の繁殖成績インスタンスの構築時不変条件」（登録ロール）と、協力与件を引数で受け取れる 構築時前提条件（種畜証明書による種付の有効性）に限る。後者は
-         * [studCertificate] が渡されたときだけ検証する段階導入で、 渡されなければ従来どおりロール検証のみで生成する（API
-         * 入口が種畜証明書・種付場所を供給するようになり次第、必須化する）。 「繁殖牝馬 ×
+         * [studCertificate] の有効区域・有効期間に対し種付（[coveringDate] / [coveringPlace]）が内側にあるかを
+         * [StudCertificate.authorizes] で検証する。 「繁殖牝馬 ×
          * 繁殖年」で一意という集合制約（同一年の重複記録の禁止）は単一インスタンスの構築では完結しないため、 既存成績群をまたぐ ドメインサービス recordCovering
          * が担い、本ファクトリはその検証を経た上で呼び出される。
          *
@@ -197,8 +197,8 @@ private constructor(
          * @param stallionRegistration 配合相手の種牡馬の繁殖登録（ロールが種牡馬であること）
          * @param coveringDate 種付日
          * @param certificateNumber 種付の事実を証明する種付証明書の番号
-         * @param studCertificate 種牡馬の種畜証明書。渡された場合のみ種付の有効性（有効区域・有効期間）を検証する
-         * @param coveringPlace 種付場所。[studCertificate] を渡す場合は必須（有効区域の整合検証に用いる）
+         * @param studCertificate 種牡馬の種畜証明書。種付の有効性（有効区域・有効期間）を検証する与件
+         * @param coveringPlace 種付場所（有効区域の整合検証に用いる）
          * @return 種付を記録した [BreedingResult]、または前提条件違反を表す [RecordCoveringError]
          */
         fun create(
@@ -206,8 +206,8 @@ private constructor(
             stallionRegistration: BreedingRegistration,
             coveringDate: LocalDate,
             certificateNumber: CoveringCertificateNumber,
-            studCertificate: StudCertificate? = null,
-            coveringPlace: BreedingRegion? = null,
+            studCertificate: StudCertificate,
+            coveringPlace: BreedingRegion,
         ): Result<BreedingResult, RecordCoveringError> =
             when {
                 broodmareRegistration.role != BreedingRole.BROODMARE ->
@@ -215,7 +215,8 @@ private constructor(
                 stallionRegistration.role != BreedingRole.STALLION ->
                     Err(RecordCoveringError.NotStallion)
                 else ->
-                    validateCovering(studCertificate, coveringDate, coveringPlace)
+                    studCertificate
+                        .authorizes(coveringDate, coveringPlace)
                         .map {
                             BreedingResult(
                                 id = BreedingResultId(generateId()),
@@ -232,23 +233,6 @@ private constructor(
                             )
                         }
                         .mapError { RecordCoveringError.InvalidCovering(it) }
-            }
-
-        /**
-         * 種畜証明書が渡された場合に種付の有効性（有効区域・有効期間）を検証する。渡されなければ検証なし（段階導入）。
-         *
-         * [studCertificate] を渡す場合、有効区域の整合検証のため [coveringPlace] は必須（プログラミングエラーとして表明）。
-         */
-        private fun validateCovering(
-            studCertificate: StudCertificate?,
-            coveringDate: LocalDate,
-            coveringPlace: BreedingRegion?,
-        ): Result<Unit, CoveringValidityError> =
-            if (studCertificate == null) {
-                Ok(Unit)
-            } else {
-                require(coveringPlace != null) { "種畜証明書を渡す場合は種付場所も必須。" }
-                studCertificate.authorizes(coveringDate, coveringPlace)
             }
 
         /**

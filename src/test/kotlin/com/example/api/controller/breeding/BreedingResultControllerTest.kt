@@ -59,7 +59,14 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 "covering": {
                     "stallion_registration_id": "22222222-2222-2222-2222-222222222222",
                     "covering_date": "2024-04-01",
-                    "certificate_number": "C-2024-0001"
+                    "covering_place": "北海道",
+                    "certificate_number": "C-2024-0001",
+                    "stud_certificate": {
+                        "number": "S-2024-0001",
+                        "valid_regions": ["北海道"],
+                        "valid_period_start": "2024-01-01",
+                        "valid_period_end": "2024-12-31"
+                    }
                 }
             }
             """
@@ -78,8 +85,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson()
-                .extractingPath("$.breeding_year")
-                .isEqualTo(2024)
+                .extractingPath("$.covering_place")
+                .isEqualTo("北海道")
         }
 
         @Test
@@ -98,6 +105,24 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("invalid-covering-certificate-number")
+        }
+
+        @Test
+        fun `InvalidStudCertificateNumber で 400 と problem+json が返ること`() {
+            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+                Err(RecordCoveringUseCaseError.InvalidStudCertificateNumber)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("invalid-stud-certificate-number")
         }
 
         @Test
