@@ -48,6 +48,23 @@ VO で表す項目（番号・名前など）は素の文字列で DTO に受け
 
 宣言的 Bean Validation（jakarta.validation / `@Valid` / `@NotBlank` 等）は**当面採らない**。リクエストの形式検証は「構造＝Jackson ＋ Kotlin 非 null 型」「形式・業務＝VO の `create()`」の二層に置き、検証の真実を VO に一本化する（DTO への制約注釈はドメイン不変条件と二重化し drift するため）。フィールド形式が具体化し OpenAPI への制約公開が主目的化した時点で springdoc `@Schema` による公開（または二重検証）を再評価する。採否・却下案・再評価トリガは [ADR-0026](../../docs/adr/0026-request-validation-vo-centric-defer-bean-validation.md) を参照。
 
+## パッケージ構成（controller 配下）
+
+1 リソースに操作（Create・カスタムメソッド等）が増えるほど Request DTO と Problem 変換が増える。これらを resource パッケージ直下に平置きすると見通しが悪化するため、**役割別サブパッケージへ隔離**する。経緯は [ADR-0028](../../docs/adr/0028-controller-adapter-dto-packaging.md)。
+
+各リソースは `controller/<resource>/` を起点に、次のとおり配置する（例: `horse` / `jockey` / `breeding`）。
+
+| 配置 | 置くもの | 命名 |
+|---|---|---|
+| **resource 直下**（root） | `@RestController`、単一リソース表現（全操作共通の `〜Response`）、その表現が露出する共有 wire enum・入れ子 DTO | `〜Controller` / `〜Response` / `〜WireEnums`・`〜Dto` |
+| **`request/`** | リクエストボディ DTO と、その `toCommand()` 等の入力マッピング | `〜Request` |
+| **`problem/`** | 業務エラー → `ProblemDetail` 変換（`toProblemDetail()` 拡張関数群）。リソース単位で 1 ファイルに集約する | `〜Problem.kt` |
+
+- **中心物は root に残す**: 単一リソース表現（`〜Response`、ADR-0008）はリソースの一等地に置く。wire enum は request / response の双方が使う共有物のため root に置き、request / response の純粋三分割は採らない。
+- **増えるものを隔離する**: 操作ごとに増える Request と Problem だけをサブパッケージへ追い出す。
+- **機械強制**: 「`〜Request` は `request/` に」「`〜Problem.kt`（facade `〜ProblemKt`）は `problem/` に」は ArchUnit（`requestDtosResideInRequestSubpackage` / `problemMappersResideInProblemSubpackage`、検出の空振りは `ControllerPackageLayoutRuleTest` で担保）で強制する。「Controller＋Response クラスタが root にある」という意味的グルーピングは機械強制せずレビューで担保する（後述の ADR-0008 の判断と同種）。
+- ArchUnit（`com.example.api.controller..`）/ Kover（`packages("com.example.api.controller")`）はいずれもサブパッケージを包含するため、サブパッケージ化してもアーキテクチャ検証・カバレッジゲートの対象は変わらない。
+
 ## エラーレスポンス
 
 [RFC 9457 Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457) に準拠する。

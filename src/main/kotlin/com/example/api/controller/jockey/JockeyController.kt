@@ -2,6 +2,8 @@ package com.example.api.controller.jockey
 
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
+import com.example.api.controller.jockey.problem.toProblemDetail
+import com.example.api.controller.jockey.request.RegisterJockeyRequest
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError

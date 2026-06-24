@@ -1,4 +1,4 @@
-package com.example.api.controller.horse
+package com.example.api.controller.horse.request
 
 import com.example.api.application.studbook.horse.NameHorseCommand
 import java.util.UUID

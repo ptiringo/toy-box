@@ -5,6 +5,7 @@ import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
+import com.tngtech.archunit.core.domain.JavaModifier
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
@@ -61,6 +62,18 @@ private val isFailureVariantType =
 private val isDomainEnum =
     DescribedPredicate.describe<JavaClass>("ドメイン層の enum") { javaClass ->
         javaClass.isEnum && javaClass.packageName.startsWith("com.example.api.domain.")
+    }
+
+/**
+ * Kotlin コンパイラが生成する合成クラス（`when` の `〜Kt$WhenMappings`・ラムダ等）であること。
+ *
+ * controller のパッケージ allowlist（[ArchitectureTest.requestSubpackageContainsOnlyRequests] /
+ * [ArchitectureTest.problemSubpackageContainsOnlyProblemMappers]）は**ソース上の宣言**を対象とするため、
+ * 名前規約を満たしようがない合成クラスは判定対象から除外する。
+ */
+private val isSyntheticClass =
+    DescribedPredicate.describe<JavaClass>("合成クラス") { javaClass ->
+        javaClass.modifiers.contains(JavaModifier.SYNTHETIC)
     }
 
 /**
@@ -270,6 +283,80 @@ class ArchitectureTest {
                 "HTTP 契約はドメイン enum を wire に直接晒さず、controller 層の 〜Dto enum へ" +
                     "マッピングする（ADR-0007）。列挙子リネームによる契約破壊を防ぐ"
             )
+
+    /**
+     * リクエスト DTO（`〜Request`）は各リソースの `request/` サブパッケージに置くこと。
+     *
+     * 1 リソースに操作が増えるほど Request DTO が増えるため、resource パッケージ直下から `request/` へ隔離して
+     * 肥大化を防ぐ（`.claude/rules/api-design.md`「パッケージ構成」/ ADR-0028）。Controller・単一リソース表現 （`〜Response`）・共有
+     * wire enum は resource 直下に残す。ルールが実際に違反を検出することは `ControllerPackageLayoutRuleTest` で別途担保する。
+     */
+    @ArchTest
+    val requestDtosResideInRequestSubpackage =
+        classes()
+            .that()
+            .haveSimpleNameEndingWith("Request")
+            .and()
+            .resideInAPackage(CONTROLLER)
+            .should()
+            .resideInAPackage("..request..")
+            .because("リクエスト DTO は各リソースの request/ サブパッケージへ隔離する（ADR-0028）")
+
+    /**
+     * Problem 変換（`〜Problem.kt` の `toProblemDetail()` 拡張関数群）は各リソースの `problem/` サブパッケージに置くこと。
+     *
+     * 拡張関数はファイルごとのファサードクラス（`〜ProblemKt`）へコンパイルされるため、`〜ProblemKt` が `problem/`
+     * 配下に居ることを検証する（`.claude/rules/api-design.md`「パッケージ構成」/ ADR-0028）。エラー描画ヘルパ
+     * （`ProblemResponses.kt` ＝ `ProblemResponsesKt`）は `Problem` で終わらないため誤検出されない。ルールが実際に 違反を検出することは
+     * `ControllerPackageLayoutRuleTest` で別途担保する。
+     */
+    @ArchTest
+    val problemMappersResideInProblemSubpackage =
+        classes()
+            .that()
+            .haveSimpleNameEndingWith("ProblemKt")
+            .and()
+            .resideInAPackage(CONTROLLER)
+            .should()
+            .resideInAPackage("..problem..")
+            .because("Problem 変換は各リソースの problem/ サブパッケージへ集約する（ADR-0028）")
+
+    /**
+     * `request/` サブパッケージには Request DTO（と入力マッピング facade）のみ置くこと（逆方向の allowlist）。
+     *
+     * `requestDtosResideInRequestSubpackage`（順方向）と対にして iff を成し、`request/` に無関係なクラスが
+     * 紛れ込む抜け穴を塞ぐ。トップレベルの入力マッピング（`toCommand()` 等）はファイル facade `〜RequestKt` へ
+     * コンパイルされるため、`〜Request`（data class）または `〜RequestKt`（facade）のいずれかであることを要求する。 ルールが実際に違反を検出することは
+     * `ControllerPackageLayoutRuleTest` で別途担保する。
+     */
+    @ArchTest
+    val requestSubpackageContainsOnlyRequests =
+        classes()
+            .that()
+            .resideInAPackage("..controller..request..")
+            .and(not(isSyntheticClass))
+            .should()
+            .haveSimpleNameEndingWith("Request")
+            .orShould()
+            .haveSimpleNameEndingWith("RequestKt")
+            .because("request/ には 〜Request DTO と入力マッピング facade 〜RequestKt のみ置く（ADR-0028）")
+
+    /**
+     * `problem/` サブパッケージには Problem 変換 facade（`〜ProblemKt`）のみ置くこと（逆方向の allowlist）。
+     *
+     * `problemMappersResideInProblemSubpackage`（順方向）と対にして iff を成す。Problem 変換は拡張関数群であり ファイル facade
+     * `〜ProblemKt` へコンパイルされるため、`problem/` 配下のクラスは `〜ProblemKt` に限る。 ルールが実際に違反を検出することは
+     * `ControllerPackageLayoutRuleTest` で別途担保する。
+     */
+    @ArchTest
+    val problemSubpackageContainsOnlyProblemMappers =
+        classes()
+            .that()
+            .resideInAPackage("..controller..problem..")
+            .and(not(isSyntheticClass))
+            .should()
+            .haveSimpleNameEndingWith("ProblemKt")
+            .because("problem/ には Problem 変換 facade 〜ProblemKt のみ置く（ADR-0028）")
 
     /** ユースケース（@Service）は application 層に置くこと。 */
     @ArchTest
