@@ -17,6 +17,9 @@ class InMemoryBloodHorseRepository : BloodHorseRepository {
 
     override fun findById(id: BloodHorseId): BloodHorse? = store[id]
 
+    override fun findAllById(ids: Set<BloodHorseId>): Map<BloodHorseId, BloodHorse> =
+        ids.mapNotNull { id -> store[id]?.let { id to it } }.toMap()
+
     override fun save(bloodHorse: BloodHorse): BloodHorse {
         store[bloodHorse.id] = bloodHorse
         return bloodHorse

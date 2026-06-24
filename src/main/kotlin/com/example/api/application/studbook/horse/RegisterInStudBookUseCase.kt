@@ -108,14 +108,16 @@ class RegisterInStudBookUseCase(private val bloodHorseRepository: BloodHorseRepo
                 .mapError { RegisterInStudBookUseCaseError.BlankBreeder }
                 .bind()
 
+        // 父・母を 1 回の一括 lookup で引き当てる（逐次往復と sireId==damId の二重取得を避ける）。
+        val sireId = BloodHorseId(input.sireId)
+        val damId = BloodHorseId(input.damId)
+        val found = bloodHorseRepository.findAllById(setOf(sireId, damId))
         val sire =
-            bloodHorseRepository
-                .findById(BloodHorseId(input.sireId))
+            found[sireId]
                 .toResultOr { RegisterInStudBookUseCaseError.SireNotFound(input.sireId) }
                 .bind()
         val dam =
-            bloodHorseRepository
-                .findById(BloodHorseId(input.damId))
+            found[damId]
                 .toResultOr { RegisterInStudBookUseCaseError.DamNotFound(input.damId) }
                 .bind()
 
