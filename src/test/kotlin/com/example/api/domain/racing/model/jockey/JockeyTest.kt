@@ -1,5 +1,6 @@
 package com.example.api.domain.racing.model.jockey
 
+import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import org.junit.jupiter.api.Nested
@@ -32,6 +33,18 @@ class JockeyTest {
         fun `lastName がブランクのとき BlankLastName を返すこと`() {
             val result = Jockey.create("武", "")
             assert(result.getError() == JockeyValidationError.BlankLastName)
+        }
+    }
+
+    @Nested
+    inner class ReconstituteTest {
+        @Test
+        fun `reconstitute は ID を再採番せず与えた状態をそのまま復元すること`() {
+            val id = JockeyId(generateId())
+            val jockey = Jockey.reconstitute(id, "武", "豊")
+            assert(jockey.id == id)
+            assert(jockey.firstName == "武")
+            assert(jockey.lastName == "豊")
         }
     }
 
