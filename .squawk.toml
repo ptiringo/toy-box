@@ -1,0 +1,14 @@
+# squawk 設定
+# https://squawkhq.com/docs/configuration
+
+# 除外するルール
+# - prefer-robust-stmts: Flyway がマイグレーション適用済みチェックを行うため
+#   CREATE TABLE の IF NOT EXISTS は不要。Flyway のトランザクション管理で
+#   部分失敗後の再実行は Flyway 側が制御する。
+# - prefer-text-field: VARCHAR(255) は新規テーブル作成時はロックリスクなし
+#   (ACCESS EXCLUSIVE ロックが問題になるのは ALTER TABLE でのサイズ変更時のみ)。
+#   Spring/Hibernate との型互換性のため VARCHAR を意図的に使用する。
+excluded_rules = [
+  "prefer-robust-stmts",
+  "prefer-text-field",
+]
