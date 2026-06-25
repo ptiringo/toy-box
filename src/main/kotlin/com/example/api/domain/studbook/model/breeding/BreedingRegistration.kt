@@ -106,5 +106,26 @@ private constructor(
                 role = BreedingRole.from(horse.sex),
                 retirement = null,
             )
+
+        /**
+         * 永続化層に保存済みの状態から [BreedingRegistration] を再構成（リハイドレート）する。
+         *
+         * 既に [create] を通過して保存された状態の復元であり、不変条件の再検証も ID の再採番も行わない。 永続化アダプター（infrastructure
+         * 層）からの復元専用であり、新規生成には [create] を使うこと。
+         *
+         * @param id 保存済みの繁殖登録ID
+         * @param registrationNumber 保存済みの繁殖登録番号
+         * @param registeredHorseId 繁殖登録した個体の軽種馬ID
+         * @param role 付与済みの繁殖ロール
+         * @param retirement 供用停止（供用中なら null）
+         */
+        fun reconstitute(
+            id: BreedingRegistrationId,
+            registrationNumber: BreedingRegistrationNumber,
+            registeredHorseId: BloodHorseId,
+            role: BreedingRole,
+            retirement: BreedingRetirement?,
+        ): BreedingRegistration =
+            BreedingRegistration(id, registrationNumber, registeredHorseId, role, retirement)
     }
 }
