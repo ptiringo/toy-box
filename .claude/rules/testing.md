@@ -64,7 +64,7 @@ CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け
 
 `total` レポートで 0% に見える領域は、成熟させるときにテストを添える。優先度は実装の成熟度に従う:
 
-- `infrastructure.*`（InMemory リポジトリ）: ポート実装の契約テストが未整備
+- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）
 - `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し
 - `domain.racing.model`（`race`）・`sakamichi` / `tennis`: 探索段階のモデル
 

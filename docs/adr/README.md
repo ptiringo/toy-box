@@ -36,6 +36,7 @@
 | [0024](0024-split-studbook-and-racing-contexts.md) | horseracing を studbook（JAIRS 登録）と racing（JRA 騎手・競走）の 2 コンテキストへ分割する | Accepted |
 | [0025](0025-defer-spring-modulith-adoption.md) | Spring Modulith は現時点では採用せず、永続化とコンテキスト間連携の実需要が出た時点で再評価する | Accepted |
 | [0026](0026-request-validation-vo-centric-defer-bean-validation.md) | API リクエストバリデーションは VO 中心を維持し Bean Validation を当面採らない | Accepted |
-| [0027](0027-persistence-spring-data-jdbc.md) | 永続化アクセスに Spring Data JDBC を主軸採用し PostgreSQL / Flyway / Testcontainers で構成する | Accepted |
+| [0027](0027-persistence-spring-data-jdbc.md) | 永続化アクセスに Spring Data JDBC を主軸採用し PostgreSQL / Flyway / Testcontainers で構成する | Accepted（一部 [0030](0030-jdbc-only-persistence-retire-inmemory.md) で改訂） |
 | [0028](0028-controller-adapter-dto-packaging.md) | controller アダプターの DTO を役割別サブパッケージ（request/ + problem/）へ整理する | Accepted |
 | [0029](0029-domain-events-via-state-transition-return.md) | イミュータブル集約のドメインイベントは状態遷移の戻り値に同梱して収集する | Accepted |
+| [0030](0030-jdbc-only-persistence-retire-inmemory.md) | 永続化実装を JDBC 一本に統一し InMemory リポジトリを廃止する（datasource を H2↔PostgreSQL で差し替える） | Accepted |
