@@ -208,5 +208,38 @@ private constructor(
                     ),
                 name = null,
             )
+
+        /**
+         * 永続化層に保存済みの状態から [BloodHorse] を再構成（リハイドレート）する。
+         *
+         * 既に [create] / [createImported] を通過して保存された状態の復元であり、前提条件の再検証も ID の再採番も
+         * 行わない。永続化アダプター（infrastructure 層）からの復元専用であり、新規生成には [create] / [createImported]
+         * を使うこと。出自（[origin]）・馬名（[name]）も保存済みの値をそのまま引き継ぐ。
+         */
+        @Suppress("LongParameterList")
+        fun reconstitute(
+            id: BloodHorseId,
+            registrationNumber: PedigreeRegistrationNumber,
+            sex: Sex,
+            coatColor: CoatColor,
+            breedType: BreedType,
+            dateOfBirth: DateOfBirth,
+            breeder: Breeder,
+            microchipNumber: MicrochipNumber,
+            origin: Origin,
+            name: HorseName?,
+        ): BloodHorse =
+            BloodHorse(
+                id = id,
+                registrationNumber = registrationNumber,
+                sex = sex,
+                coatColor = coatColor,
+                breedType = breedType,
+                dateOfBirth = dateOfBirth,
+                breeder = breeder,
+                microchipNumber = microchipNumber,
+                origin = origin,
+                name = name,
+            )
     }
 }
