@@ -88,9 +88,7 @@ class JockeyController(
 
     @Operation(
         summary = "ジョッキーを取得する",
-        description =
-            "ID でジョッキーを取得する。軽量 CQRS（L2）の読み取り経路（集約を経由しない Read Model）で引く。" +
-                "対象が存在しなければ RFC 9457 形式の problem+json を返す。",
+        description = "ID でジョッキーを取得する。対象が存在しなければ RFC 9457 形式の problem+json を返す。",
         tags = ["Jockey"],
         responses =
             [
