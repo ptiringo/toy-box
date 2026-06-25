@@ -5,9 +5,6 @@
 dialect = postgres
 templater = raw
 max_line_length = 120
-# RF04（references.keywords）は除外。version 列は PostgreSQL の予約語ではなく
-# Spring Data JDBC の楽観ロック列として使われる正当な識別子のため。
-exclude_rules = RF04
 
 [sqlfluff:indentation]
 indent_unit = space

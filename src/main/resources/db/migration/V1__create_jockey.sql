@@ -6,5 +6,5 @@ CREATE TABLE jockey (
     id UUID NOT NULL PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    version BIGINT
+    version BIGINT -- noqa: RF04
 );
