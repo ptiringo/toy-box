@@ -1,12 +1,17 @@
 package com.example.api.controller.jockey
 
+import com.example.api.application.racing.jockey.FindJockeyQuery
+import com.example.api.application.racing.jockey.FindJockeyUseCase
+import com.example.api.application.racing.jockey.JockeyNotFound
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
+import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -28,6 +33,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JockeyControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
+
+    @MockkBean private lateinit var findJockey: FindJockeyUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -110,6 +117,40 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.existing_id")
                 .isEqualTo(existing.id.value.toString())
+        }
+    }
+
+    @Nested
+    inner class GetCase {
+        @Test
+        fun `存在するIDで 200 OK とリソース表現が返ること`() {
+            val id = generateId()
+            every { findJockey(FindJockeyQuery(id)) } returns
+                Ok(JockeyView(id = id, firstName = "武", lastName = "豊"))
+
+            val response =
+                tester.get().uri("/api/jockeys/{id}", id).assertThat().hasStatusOk().bodyJson()
+
+            // 読み取り経路（Get）も書き込み経路と同一のリソース表現を返す（ADR-0008）
+            response.extractingPath("$.id").isEqualTo(id.toString())
+            response.extractingPath("$.first_name").isEqualTo("武")
+            response.extractingPath("$.last_name").isEqualTo("豊")
+        }
+
+        @Test
+        fun `存在しないIDで 404 と jockey_id 付きの problem+json が返ること`() {
+            val id = generateId()
+            every { findJockey(FindJockeyQuery(id)) } returns Err(JockeyNotFound(id))
+
+            tester
+                .get()
+                .uri("/api/jockeys/{id}", id)
+                .assertThat()
+                .hasStatus(HttpStatus.NOT_FOUND)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.jockey_id")
+                .isEqualTo(id.toString())
         }
     }
 }

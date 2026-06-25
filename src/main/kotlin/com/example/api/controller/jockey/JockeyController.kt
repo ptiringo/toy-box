@@ -1,5 +1,7 @@
 package com.example.api.controller.jockey
 
+import com.example.api.application.racing.jockey.FindJockeyQuery
+import com.example.api.application.racing.jockey.FindJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.controller.jockey.problem.toProblemDetail
@@ -12,9 +14,12 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
+import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class JockeyController(
     private val registerJockey: JockeyRegistrationUseCase,
+    private val findJockey: FindJockeyUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -78,5 +84,44 @@ class JockeyController(
         val command = Command.now(RegisterJockeyCommand(request.firstName, request.lastName), clock)
         val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
         return jockey.toResponse()
+    }
+
+    @Operation(
+        summary = "ジョッキーを取得する",
+        description =
+            "ID でジョッキーを取得する。軽量 CQRS（L2）の読み取り経路（集約を経由しない Read Model）で引く。" +
+                "対象が存在しなければ RFC 9457 形式の problem+json を返す。",
+        tags = ["Jockey"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "取得成功",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = JockeyResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "指定 ID のジョッキーが存在しない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @GetMapping("/api/jockeys/{id}")
+    fun get(@PathVariable id: UUID): JockeyResponse {
+        val view =
+            findJockey(FindJockeyQuery(id)).mapError { it.toProblemDetail() }.orThrowProblem()
+        return view.toResponse()
     }
 }

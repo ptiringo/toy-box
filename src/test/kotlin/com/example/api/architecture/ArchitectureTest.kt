@@ -20,6 +20,7 @@ import com.tngtech.archunit.library.dependencies.SliceAssignment
 import com.tngtech.archunit.library.dependencies.SliceIdentifier
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
 import java.util.UUID
+import org.jmolecules.architecture.cqrs.QueryModel
 import org.jmolecules.archunit.JMoleculesDddRules
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Entity as DddEntity
@@ -199,6 +200,24 @@ class ArchitectureTest {
             .areAnnotatedWith(DomainEvent::class.java)
             .should()
             .resideInAPackage(DOMAIN_MODEL)
+
+    /**
+     * 読み取りモデル（`@QueryModel`）は application 層に置くこと。
+     *
+     * 軽量 CQRS（L2）の読み取り側として、Read Model（View）は書き込み集約を経由せずストアから直接組む フラットな DTO である（ADR-0031）。DDD
+     * ビルディングブロック（`@AggregateRoot` 等）が domain.*.model に
+     * 居る（[dddBuildingBlocksResideInDomainModel]）のと対称に、読みモデルはドメインを汚さず application 層へ
+     * 置く。`@QueryModel` は jMolecules の CQRS アーキテクチャ注釈（`org.jmolecules.architecture.cqrs`）であり DDD
+     * ビルディングブロック注釈ではないため、[dddBuildingBlocksResideInDomainModel] とは独立して検証する。
+     */
+    @ArchTest
+    val queryModelsResideInApplication =
+        classes()
+            .that()
+            .areAnnotatedWith(QueryModel::class.java)
+            .should()
+            .resideInAPackage(APPLICATION)
+            .because("読み取りモデル（@QueryModel）は軽量 CQRS（L2）の読み取り側として application 層に置く（ADR-0031）")
 
     /**
      * 集約（@AggregateRoot / @Entity）はイミュータブルに保つこと（val のみ・var 禁止）。

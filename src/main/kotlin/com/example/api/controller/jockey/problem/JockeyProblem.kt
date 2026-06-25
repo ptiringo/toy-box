@@ -1,5 +1,6 @@
 package com.example.api.controller.jockey.problem
 
+import com.example.api.application.racing.jockey.JockeyNotFound
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.controller.problem
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
@@ -27,6 +28,20 @@ fun JockeyRegistrationError.toProblemDetail(): ProblemDetail =
                 )
                 .apply { setProperty("existing_id", existingId.value) }
     }
+
+/**
+ * [JockeyNotFound]（照会対象のジョッキー不在）を 404 Not Found の [ProblemDetail] に変換する。
+ *
+ * URL パス（`/api/jockeys/{id}`）で識別される操作対象そのものが無いため 404 とする（api-design.md 「リソース不在のステータス（404 vs 422）」）。
+ */
+fun JockeyNotFound.toProblemDetail(): ProblemDetail =
+    problem(
+            status = HttpStatus.NOT_FOUND,
+            code = "jockey-not-found",
+            title = "Jockey not found",
+            detail = "指定された ID のジョッキーは存在しません。",
+        )
+        .apply { setProperty("jockey_id", id) }
 
 private fun JockeyValidationError.toProblemDetail(): ProblemDetail =
     when (this) {
