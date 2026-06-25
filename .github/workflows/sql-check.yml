@@ -12,11 +12,13 @@ on:
     paths:
       - 'src/main/resources/db/migration/**'
       - '.sqlfluff'
+      - '.squawk.toml'
   push:
     branches: [ main ]
     paths:
       - 'src/main/resources/db/migration/**'
       - '.sqlfluff'
+      - '.squawk.toml'
   workflow_dispatch:
 
 jobs:
