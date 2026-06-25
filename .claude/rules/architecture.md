@@ -39,6 +39,17 @@
 - **service**: **単一集約の構築ではない、複数集約をまたぐオーケストレーション／手続き**のドメインロジック（例: `registerFoal` は分娩結果の判定→`BloodHorse.create` へ橋渡し、`confirmRaceResult`）。**Kotlin のトップレベル関数で書く**（`object` でラップしない）。jMolecules の `@Service` は付けない（パッケージ配置で表現し、`service/` に居ることがドメインサービスの証）。役割分担は「構築時バリデーション＝ファクトリ／入力参照の解決・操作対象のロード・保存・オーケストレーション＝アプリケーション層」を基本とする。**例外: 集合制約（一意性・件数上限など、既存レコード集合への問い合わせが必要なドメイン不変条件）の検証に限り、ドメインサービスがリポジトリ「ポート」を引数で受け取って読み取り引き当てしてよい**（書き込みはしない・ポートは `domain.*.model` の interface に限る。例: `recordCovering` が `BreedingResultRepository` を受け取り種付年の一意性を検証）。経緯は [ADR-0022](../../docs/adr/0022-domain-service-repository-for-set-invariants.md)
 - 1 ファイルにモデルとサービスを混在させない（例: `confirmRaceResult` は `service/race/` に、入力 VO の `RaceResult` は `model/race/` に置く）
 
+### 読み取り経路（軽量 CQRS / L2）
+
+読み取り（クエリ）系は、書き込み側の集約を**経由しない**独立経路として実装する（軽量 CQRS = L2。ストア分離・結果整合・イベントソーシング = L3 は採らない）。決定経緯は [ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)、リファレンス実装は `racing/jockey`（`FindJockeyUseCase`）。
+
+- **Read Model（View）とクエリポートは `application` に置く**（ドメインを汚さない）。書き込みの「集約 + Repository ポートは `domain.*.model`」と非対称だが、これは意図したもの。読みモデルは集約のライフサイクル（生成・状態遷移・整合性境界）を持たないため domain には置かない
+- **View には jMolecules の `@QueryModel`（`org.jmolecules.architecture.cqrs`）を付ける**。不変条件を持たないフラットな DTO で、値の等価性が自然なため `data class` でよい。`@QueryModel` が `application` に居ることは ArchUnit [`queryModelsResideInApplication`] で強制する（DDD ビルディングブロックを `domain.*.model` に縛る [`dddBuildingBlocksResideInDomainModel`] と対称）
+- **クエリポート（`〜Queries`）は plain interface とし、書き込みポートの jMolecules `@Repository` は付けない**。読み取りは Repository ビルディングブロックではないため
+- **infrastructure の実装は集約を組まずストアから直接 View へ詰める**（例: `JdbcJockeyQueries` が `JdbcClient` で `jockey` を直 SELECT し、書き込みの `JockeyRow`／集約を経由しない）。同じテーブルを読んでも、経路（write=集約復元 / read=View 直組み）とモデルを分離するのが L2 の価値であり、「write ポートに finder を生やす」誘惑には乗らない
+- **読み取りも write と対称に `application` を必ず通す**（現行オニオンの依存方向を維持。infrastructure → application のポート実装はアダプターの依存として onion ルールが許容する）
+- クエリ入力 DTO は `〜Query` サフィックス。書き込み系の `Command<T>` 封筒（発生時刻メタデータ）は読み取りでは**使わない**（発生時刻は書き込みイベントの概念）
+
 ## パッケージ構造
 
 ```
@@ -93,6 +104,7 @@ domain/
   - `@Entity` / `@AggregateRoot` は `@Identity` 付き識別子を持つ
   - **他の集約への参照は ID 値クラス（または `Association`）経由のみ**。集約オブジェクトを直接フィールドに持ってはならない（例: `Stallion` は `BloodHorse` ではなく `BloodHorseId` を持つ）
   - `@ValueObject` は Entity / AggregateRoot を参照しない
+- 軽量 CQRS の読みモデル `@QueryModel`（`org.jmolecules.architecture.cqrs`）は DDD ビルディングブロックではなく **CQRS アーキテクチャ注釈**。`domain.*.model` ではなく `application` に置き、ArchUnit `queryModelsResideInApplication` で強制する（読み取り経路の全体方針は「レイヤー依存ルール」の「読み取り経路（軽量 CQRS / L2）」、決定経緯は [ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)）
 
 ## その他の強制ルール
 
@@ -104,6 +116,7 @@ domain/
 - **ドメインサービス（`domain.*.service`）はトップレベル関数で書く**（`object` / `class` でラップしない）。トップレベル関数はファイルごとのファサードクラス（`〜Kt`）へコンパイルされるため、service パッケージ内のクラスが `Kt` で終わることを ArchUnit で検証して `object` / `class` 宣言を排除する。ただしサービスの戻り値（`Result<_, 〜Error>`）の失敗側を表す失敗バリアント型（`〜Error`）はサービスと同居させてよく、対象から除外する
 - **`@RestController` のハンドラは成功レスポンスで `ResponseEntity` を返さない**。成功は `@ResponseStatus` ＋戻り値で resource を返す（[error-handling.md](error-handling.md) / [api-design.md](api-design.md)）。エラー描画 funnel の `GlobalExceptionHandler` は `@RestController` ではない（`ResponseEntityExceptionHandler` 継承）ため誤検出されない
 - **HTTP 契約（request / response DTO）はフィールド型にドメイン enum を持たない**。`controller` 層に契約専用の `〜Dto` enum を置き、`toDomain()` / `toApi()` でマッピングする（[api-design.md](api-design.md) / [ADR-0007](../../docs/adr/0007-wire-enum-dto-decoupling.md)）。`controller` 配下のフィールドがドメイン（`domain..`）の enum を raw type に持たないことを ArchUnit で検証する。マッパー関数はドメイン enum を引数・戻り値で扱うが、フィールド型のみを対象とするため誤検出されない（ルールが実際に違反を検出することは `DtoDomainEnumRuleTest` で別途担保）
+- **読み取りモデル（`@QueryModel`）は `application` 層に置く**。軽量 CQRS（L2）の読み取り側として、書き込み集約を経由しないフラットな Read Model を application に置く（[ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)）。`@QueryModel` 付きクラスが `application` 配下に居ることを ArchUnit `queryModelsResideInApplication` で検証する（DDD ビルディングブロックを `domain.*.model` に縛る `dddBuildingBlocksResideInDomainModel` と対称）。詳細は「読み取り経路（軽量 CQRS / L2）」
 - **ドメイン / アプリケーション層では `throw` しない**。業務エラーは `Result<V, E>` で返し、プログラミングエラーは `require` / `check` を使う（[error-handling.md](error-handling.md)）。`domain..` / `application..` 配下の明示的な `throw` 式を **detekt カスタムルール** `NoThrowInDomainAndApplication`（`:detekt-rules` モジュール）で検出してビルドを失敗させる。例外送出は `infrastructure`（インフラ障害）と Controller 境界の `orThrowProblem()` に限るため、両者はパッケージ判定で対象外。`require` / `check` / `error` は `throw` 式ではないため検出されない。テストコードは detekt 設定の `excludes` で対象外
 - **コンパイラ警告をエラー化する（警告ゼロ運用）**。両モジュール（root `api` / `:detekt-rules`）の Kotlin `compilerOptions` に `allWarningsAsErrors = true` を設定し、コンパイラ警告が 1 件でもあればビルドを失敗させる（[ADR-0019](../../docs/adr/0019-compiler-warnings-as-errors.md)）。CI は ktfmt の後の専用コンパイルステップで明示ゲートする（detekt / test 内のコンパイルでも効くが原因可視化のため）。個別に許容する警告は `@Suppress` または `-Xwarning-level=<ID>:warning` で逃がす。注意: K2 では未使用ローカル変数は警告化されないため、ルールの空振り検証（ミューテーション）は `@Deprecated` 呼び出し等で行う
 

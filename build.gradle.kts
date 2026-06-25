@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.kotlin.result)
     implementation(libs.jmolecules.ddd)
     implementation(libs.jmolecules.events)
+    implementation(libs.jmolecules.cqrs.architecture)
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
     testImplementation("org.springframework.boot:spring-boot-starter-test")

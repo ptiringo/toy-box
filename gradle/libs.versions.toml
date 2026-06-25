@@ -39,6 +39,7 @@ springmockk = { module = "com.ninja-squad:springmockk", version.ref = "springmoc
 jmolecules-bom = { module = "org.jmolecules:jmolecules-bom", version.ref = "jmolecules-bom" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
+jmolecules-cqrs-architecture = { module = "org.jmolecules:jmolecules-cqrs-architecture" }
 
 # ArchUnit（アーキテクチャテスト）
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }

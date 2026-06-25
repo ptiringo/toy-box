@@ -40,3 +40,4 @@
 | [0028](0028-controller-adapter-dto-packaging.md) | controller アダプターの DTO を役割別サブパッケージ（request/ + problem/）へ整理する | Accepted |
 | [0029](0029-domain-events-via-state-transition-return.md) | イミュータブル集約のドメインイベントは状態遷移の戻り値に同梱して収集する | Accepted |
 | [0030](0030-jdbc-only-persistence-retire-inmemory.md) | 永続化実装を JDBC 一本に統一し InMemory リポジトリを廃止する（datasource を H2↔PostgreSQL で差し替える） | Accepted |
+| [0031](0031-lightweight-cqrs-read-model.md) | 読み取りを集約非経由の Read Model 経路で実装する（軽量 CQRS / L2・レイヤー先） | Accepted |

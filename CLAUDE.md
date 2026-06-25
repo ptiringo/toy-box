@@ -142,6 +142,27 @@ fun assignName(horseName: HorseName): Result<StateTransition<BloodHorse, HorseNa
 
 決定経緯と現状のスコープ（Spring `ApplicationEventPublisher` 連携・publish-after-commit・発生時刻 enrichment は別イシュー送り）は [ADR-0029](docs/adr/0029-domain-events-via-state-transition-return.md) を参照。
 
+#### Query パターン（軽量 CQRS / L2）
+
+読み取り系は書き込み集約を**経由しない**独立経路として実装する（軽量 CQRS = L2。ストア分離・結果整合・イベントソーシング = L3 は採らない）。リファレンス実装は `racing/jockey` の `FindJockeyUseCase`。
+
+- **Read Model（View）とクエリポートは `application` に置く**（ドメインを汚さない）。View には jMolecules の `@QueryModel`（`org.jmolecules.architecture.cqrs`）を付け、不変条件のないフラットな `data class` とする
+- **クエリポート（`〜Queries`）は plain interface**。書き込みポートの jMolecules `@Repository` は付けない。実装（infrastructure）は集約を組まずストアから直接 View へ詰める（例: `JdbcJockeyQueries` が `JdbcClient` で直 SELECT）
+- クエリ入力 DTO は `〜Query` サフィックス。書き込み系の `Command<T>` 封筒は読み取りでは使わない
+
+```kotlin
+@QueryModel data class JockeyView(val id: UUID, val firstName: String, val lastName: String)
+
+interface JockeyQueries { fun findById(id: JockeyId): JockeyView? }
+
+@Service
+class FindJockeyUseCase(private val jockeyQueries: JockeyQueries) {
+    operator fun invoke(query: FindJockeyQuery): Result<JockeyView, JockeyNotFound> = ...
+}
+```
+
+`@QueryModel` が `application` に居ることは ArchUnit で強制する（`.claude/rules/architecture.md`「読み取り経路（軽量 CQRS / L2）」）。決定経緯は [ADR-0031](docs/adr/0031-lightweight-cqrs-read-model.md) を参照。
+
 ### パッケージ構成
 
 オニオンアーキテクチャの 4 リング（domainModel / domainService / applicationService / adapter）構成。`domain` 配下は各コンテキストを `model/` と `service/` に分割する。
