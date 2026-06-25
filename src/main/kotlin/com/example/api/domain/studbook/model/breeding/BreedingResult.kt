@@ -267,5 +267,22 @@ private constructor(
                     )
                 )
             }
+
+        /**
+         * 永続化層に保存済みの状態から [BreedingResult] を再構成（リハイドレート）する。
+         *
+         * 既に [create] / [createUncovered] を通過して保存された状態の復元であり、前提条件（登録ロール・種付の有効性・ 集合制約）の再検証も ID
+         * の再採番も行わない。永続化アダプター（infrastructure 層）からの復元専用であり、新規生成には [create] / [createUncovered]
+         * を使うこと。なお covering と区分の整合（covering の有無と [FoalingOutcome.NotCovered]）は
+         * コンストラクタの不変条件（init）が引き続き保証する。
+         */
+        fun reconstitute(
+            id: BreedingResultId,
+            breedingRegistrationId: BreedingRegistrationId,
+            breedingYear: Year,
+            covering: Covering?,
+            outcome: FoalingOutcome?,
+        ): BreedingResult =
+            BreedingResult(id, breedingRegistrationId, breedingYear, covering, outcome)
     }
 }
