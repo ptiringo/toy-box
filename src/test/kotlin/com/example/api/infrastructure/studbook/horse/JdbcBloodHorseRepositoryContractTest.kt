@@ -14,7 +14,9 @@ import java.time.LocalDate
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -154,6 +156,16 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
         assert(found[foal.id]?.id == foal.id)
         // 存在しないIDはキーに現れない
         assert(missing !in found)
+    }
+
+    @Test
+    fun `出自の不変条件に反する行はCHECK制約で拒否される`() {
+        // DOMESTIC を名乗りつつ父IDが欠落（かつ非該当列もない）＝ sealed Origin の不変条件違反。
+        // マッパーは常に整合した行しか作らないが、スキーマ側の CHECK 制約（chk_blood_horse_origin）が
+        // DB 単独でもこの不正な組合せを拒否することを担保する。
+        val inconsistent = domesticRow().copy(sireId = null)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(inconsistent) }
     }
 
     @Test
