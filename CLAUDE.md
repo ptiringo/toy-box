@@ -296,7 +296,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 - `gitleaks`: シークレット混入スキャン
 - `java` (Temurin 21): Gradle / Kotlin のビルドおよびテスト実行用 JDK
 - `lefthook`: Git フック管理
-- `sqlfluff`: SQL 書式・スタイル lint および自動整形（dialect=postgres、pipx 管理）
+- `sqlfluff`: SQL 書式・スタイル lint および自動整形（dialect=postgres、mise の `pipx:` backend を uv 駆動で管理）
 - `squawk`: Flyway マイグレーション SQL の安全性チェックと構文検証（libpg_query パース）
 - `terraform`: インフラ構成管理
 - `zizmor`: GitHub Actions ワークフローのセキュリティ監査
