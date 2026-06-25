@@ -1,0 +1,48 @@
+# SQL（Flyway マイグレーション）チェックワークフロー
+#
+# 目的: マイグレーション SQL の変更時に squawk（安全性）と sqlfluff（書式）を実行し、
+# ローカルの pre-commit と同じ品質ゲートを CI でも担保する。
+
+name: SQL Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/main/resources/db/migration/**'
+      - '.sqlfluff'
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/main/resources/db/migration/**'
+      - '.sqlfluff'
+  workflow_dispatch:
+
+jobs:
+  sql-check:
+    runs-on: ubuntu-latest
+    name: SQL Lint and Migration Safety Check
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+
+    - name: Install mise
+      uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+
+    - name: Verify tool versions
+      run: |
+        squawk --version
+        sqlfluff --version
+
+    - name: sqlfluff lint
+      run: sqlfluff lint src/main/resources/db/migration
+
+    - name: squawk migration safety
+      run: squawk src/main/resources/db/migration/*.sql
