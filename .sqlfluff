@@ -1,0 +1,20 @@
+# sqlfluff 設定。Flyway マイグレーション SQL（PostgreSQL 互換）を対象とする。
+# dialect は H2(PG互換) と PostgreSQL の双方の土台である postgres に固定。
+# Flyway は素の SQL を実行するため templater は raw（Jinja 解釈を無効化）。
+[sqlfluff]
+dialect = postgres
+templater = raw
+max_line_length = 120
+# RF04（references.keywords）は除外。version 列は PostgreSQL の予約語ではなく
+# Spring Data JDBC の楽観ロック列として使われる正当な識別子のため。
+exclude_rules = RF04
+
+[sqlfluff:indentation]
+indent_unit = space
+tab_space_size = 4
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = upper
