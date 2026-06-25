@@ -2,12 +2,14 @@
 # https://squawkhq.com/docs/configuration
 
 # 除外するルール
-# - prefer-robust-stmts: Flyway がマイグレーション適用済みチェックを行うため
-#   CREATE TABLE の IF NOT EXISTS は不要。Flyway のトランザクション管理で
-#   部分失敗後の再実行は Flyway 側が制御する。
+# - prefer-robust-stmts: Flyway のバージョン管理テーブル（flyway_schema_history）が
+#   各マイグレーションを一度だけ適用し冪等性を保証するため、CREATE TABLE の
+#   IF NOT EXISTS 等による文単体の堅牢化は不要（堅牢性は Flyway 側で担保される）。
 # - prefer-text-field: VARCHAR(255) は新規テーブル作成時はロックリスクなし
 #   (ACCESS EXCLUSIVE ロックが問題になるのは ALTER TABLE でのサイズ変更時のみ)。
-#   Spring/Hibernate との型互換性のため VARCHAR を意図的に使用する。
+#   Spring Data JDBC の型マッピング都合で TEXT ではなく VARCHAR を意図的に使用する。
+#   注意: このルールはプロジェクト全体で無効になるため、将来 ALTER TABLE で
+#   VARCHAR のサイズを変更するマイグレーションを追加する際は、ロックリスクを手動で確認すること。
 excluded_rules = [
   "prefer-robust-stmts",
   "prefer-text-field",
