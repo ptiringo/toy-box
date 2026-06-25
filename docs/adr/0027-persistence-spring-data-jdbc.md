@@ -1,6 +1,6 @@
 # 0027. 永続化アクセスに Spring Data JDBC を主軸採用し、PostgreSQL / Flyway / Testcontainers で構成する
 
-- Status: Accepted
+- Status: Accepted（主軸決定は有効。「InMemory 保持」「InMemory↔JDBC のプロファイル切替」の 2 つの sub-decision は [ADR-0030](0030-jdbc-only-persistence-retire-inmemory.md) で supersede）
 - Date: 2026-06-24
 - Deciders: Matsui
 
@@ -53,6 +53,8 @@ Spring Data JDBC を採るうえで、本プロジェクト固有の制約と衝
 2. **DB**: **PostgreSQL**。
 3. **マイグレーション**: **Flyway**（plain SQL）。明示的・逐次適用の趣味に合う。Liquibase（XML/YAML DSL 抽象）は採らない。
 4. **テスト戦略**: **Testcontainers**（PostgreSQL コンテナ）で infrastructure 層の**契約テスト**を整備する（`.claude/rules/testing.md` の宿題「`infrastructure.*` の契約テスト未整備」に対応）。高速ユニット用に **InMemory リポジトリは残す**（ドメイン／アプリ層テストはこれまで通り Fixture + InMemory で回す）。テストのコンテキストキャッシュ方針（[ADR-0015](0015-gradle-build-performance-tuning.md)）は維持し、Testcontainers 利用テストの distinct なコンテキスト構成を増やさない。
+
+   > **更新（[ADR-0030](0030-jdbc-only-persistence-retire-inmemory.md) が supersede）**: 「InMemory リポジトリを残す」判断は撤回した。アプリ／ドメイン層テストは実際には mockk / Fixture でポートを差すため InMemory 実体を使っておらず、起動時の外部 DB 回避は H2 が担えるため。永続化実装は **JDBC 一本**に統一し InMemory は廃止する（集約ごとに段階移行）。
 5. **マッピング方式（spike で確定。当初案から補正）**: ドメイン集約には Spring Data のアノテーションを**付けない**。infrastructure 層に永続化モデル（`〜Row` data class）を別に置き、`@Id` / `@Version` / `@Table` / `@Column` はそこに付け、**ドメイン集約 ⇔ Row は手書きマッパーで相互変換**する。理由はオニオン規約（ArchUnit）が `domain..` の `org.springframework..` 依存を禁じており、`org.springframework.data.annotation.*` を集約に載せられないため（当初案の「集約に直接 `@Version`」「value class 用カスタムコンバータ」は採れない）。
    - **value class ID** → 別途の Spring Data カスタムコンバータは**不要**。Row は生の `UUID` 列を持ち、`JockeyId(uuid)` / `id.value` の変換は手書きマッパーが担う（永続化モデルを分離した帰結）。
    - **採番時の insert 判定** ＆ **楽観ロック** → **Row に** `@Version` 数値列を持たせ、「version null/0 = 新規」で insert を判定しつつ楽観ロックを兼ねる（`Persistable<ID>` 実装は採らない）。version はドメインへ漏らさない（ドメインは永続化メタデータを持たない）。
@@ -79,6 +81,7 @@ Spring Data JDBC を採るうえで、本プロジェクト固有の制約と衝
 - **H2 は spike 用の暫定**。本番は PostgreSQL + Testcontainers（Docker 必須のため spike 環境では未実行）。識別子の大文字小文字など方言差は Testcontainers で詰める。
   - **一部解消（#422）**: 永続化の契約テストを Testcontainers(PostgreSQL) で本番ターゲット DB に対して実行するようにした（共有シングルトンコンテナ `PostgresContainerSupport` が `@DynamicPropertySource` で datasource を上書き）。識別子の小文字畳み等の方言差も実 PostgreSQL で検証できるようになった。**ランタイムの datasource は当面 H2（PostgreSQL 互換モード）のまま据え置く**: 実リポジトリはまだ InMemory Bean で datasource は付随的に初期化されるだけであり、H2 を撤去すると Container Smoke Test と Cloud Run 本番デプロイ（いずれもアプリを外部 DB なしで起動する）が壊れるため。実永続化を使う本番 PostgreSQL 化（Cloud SQL の新設と Cloud Run への配線）は #423 / インフラ作業に委ねる。
 - **本番配線**: `JdbcJockeyRepository` は既存 `InMemoryJockeyRepository` との DI 衝突を避けるため spike では Bean 化していない。プロファイル分け等の配線は別イシュー。
+  - **方針変更（[ADR-0030](0030-jdbc-only-persistence-retire-inmemory.md)）**: 当初想定した「InMemory↔JDBC をプロファイルで切り替える本番配線」は採らない。InMemory を廃止し JDBC を唯一の実装にするため、切替先（InMemory）が消え `@Profile` 機構が不要になる。`JdbcJockeyRepository` は無条件で Bean 化し、起動 datasource を H2↔PostgreSQL で差し替える（#423）。
 
 ## Consequences（結果・影響）
 
