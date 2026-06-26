@@ -11,8 +11,8 @@ import org.jmolecules.architecture.cqrs.QueryModel
  * JAIRS 様式第2号（繁殖登録原簿〈雄〉）に対応し、(種牡馬, 種付年) 単位の繁殖成績を表す。 書き込み集約
  * [com.example.api.domain.studbook.model.breeding.BreedingResult] を一切経由せず、ストアから直接組む 平坦な DTO。
  *
- * `@QueryModel`（jMolecules CQRS）で読み取りモデルとしての役割を表明する。不変条件は持たない。 [of] は件数から受胎率・生産率を導出する
- * 構築ヘルパー（検証ではなく派生値の算出のみ）。
+ * `@QueryModel`（jMolecules CQRS）で読み取りモデルとしての役割を表明する。不変条件は持たない。 受胎率・生産率は件数から導出する派生値のため、
+ * 整合しない率を直接渡せないよう **コンストラクタは private とし、生成は件数から率を算出する [of] ファクトリ経由に限る**。
  *
  * 指標定義（様式第2号 / 様式第14号裏）:
  * - [maresCovered] 種付雌馬数 = その種牡馬がその年に種付けした雌馬数
@@ -27,7 +27,9 @@ import org.jmolecules.architecture.cqrs.QueryModel
  * @property breedingYear 種付年
  */
 @QueryModel
-data class BreedingResultSummaryView(
+@ConsistentCopyVisibility
+data class BreedingResultSummaryView
+private constructor(
     val stallionId: UUID,
     val breedingYear: Int,
     val maresCovered: Int,
