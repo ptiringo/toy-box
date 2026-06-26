@@ -7,13 +7,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 /**
- * `ArchitectureTest.aggregatesAreNotDataClasses`（集約に data class を使わない規約）のメタテスト。
+ * `DomainModelingRulesTest.aggregatesAreNotDataClasses`（集約に data class を使わない規約）のメタテスト。
  *
  * ルールが「data class の集約を検出する」「private ctor ＋手書き copy を持つ実集約は誤検出しない」の双方を能動的に 検証する（#307 の完了条件）。本番の
  * `@ArchTest` は現状違反ゼロを保証するが、ルールが実際に噛むことは別途確かめないと 「常に成功するだけの無力なルール」と区別できない。
  */
 class AggregateNotDataClassRuleTest {
-    private val rule = ArchitectureTest().aggregatesAreNotDataClasses
+    private val rule = DomainModelingRulesTest().aggregatesAreNotDataClasses
 
     @Test
     fun `data class の集約は違反として検出されること`() {
