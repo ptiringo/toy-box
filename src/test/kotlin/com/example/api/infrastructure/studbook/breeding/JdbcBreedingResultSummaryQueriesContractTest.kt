@@ -68,7 +68,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
 
     @Test
     fun `種付年単位で種付雌馬数・受胎数・生産数と率を集計する`() {
-        // 2024年・対象種牡馬: 種付6頭
+        // 2024年・対象種牡馬: 種付7頭（双子流産を1頭追加して TWIN 区分の集計も検証）
         rows.saveAll(
             listOf(
                 covered(stallion, 2024, "LIVE_FOAL", LocalDate.of(2025, 3, 1)), // 受胎○ 生産○
@@ -77,6 +77,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
                 covered(stallion, 2024, "STILLBIRTH"), // 受胎○ 生産×
                 covered(stallion, 2024, "NOT_CONCEIVED"), // 受胎× 生産×
                 covered(stallion, 2024, null), // 未報告: 分母のみ
+                covered(stallion, 2024, "TWIN_ABORTION"), // 受胎○ 生産×（双子流産）
             )
         )
         // 除外されるべき行
@@ -89,12 +90,15 @@ class JdbcBreedingResultSummaryQueriesContractTest(
         val s = summaries.single()
         assert(s.stallionId == stallion)
         assert(s.breedingYear == 2024)
-        assert(s.maresCovered == 6) // LIVE_FOAL+NEONATAL+ABORTION+STILLBIRTH+NOT_CONCEIVED+未報告
-        assert(s.conceived == 4) // 不受胎と未報告を除く
-        assert(s.liveFoals == 1) // LIVE_FOAL のみ（生後直死は含めない）
-        // 受胎率 4/6=66.7%、生産率 1/6=16.7%
-        assert(s.conceptionRate.compareTo(BigDecimal("66.7")) == 0)
-        assert(s.productionRate.compareTo(BigDecimal("16.7")) == 0)
+        // 6区分 + TWIN_ABORTION = 7頭
+        assert(s.maresCovered == 7)
+        // 不受胎（NOT_CONCEIVED）と未報告を除く（TWIN_ABORTION は受胎に含む）
+        assert(s.conceived == 5)
+        // LIVE_FOAL のみ（生後直死・双子流産は含めない）
+        assert(s.liveFoals == 1)
+        // 受胎率 5/7=71.4%、生産率 1/7=14.3%
+        assert(s.conceptionRate.compareTo(BigDecimal("71.4")) == 0)
+        assert(s.productionRate.compareTo(BigDecimal("14.3")) == 0)
     }
 
     @Test

@@ -20,6 +20,9 @@ import org.jmolecules.architecture.cqrs.QueryModel
  * - [liveFoals] 生産数 = 生存産駒を得た件数（生後直死は「産駒がない母」に分類され含めない）
  * - [conceptionRate] 受胎率(%) = 受胎数 / 種付雌馬数、[productionRate] 生産率(%) = 生産数 / 種付雌馬数
  *
+ * 分娩結果が未報告（outcome == null）の行は [maresCovered]（分母）にのみ計上され、[conceived] / [liveFoals] には含まれない。
+ * したがって年内の分娩結果が全て報告されるまで、[conceptionRate] / [productionRate] は報告済み時点までの暫定値となる。
+ *
  * @property stallionId 種牡馬の生 UUID（`covering.stallionId`）
  * @property breedingYear 種付年
  */
@@ -59,7 +62,8 @@ data class BreedingResultSummaryView(
             )
 
         private fun percentage(numerator: Int, denominator: Int): BigDecimal =
-            BigDecimal(numerator * PERCENTAGE_SCALE)
+            BigDecimal(numerator)
+                .multiply(BigDecimal(PERCENTAGE_SCALE))
                 .divide(BigDecimal(denominator), PERCENTAGE_DECIMAL_PLACES, RoundingMode.HALF_UP)
     }
 }

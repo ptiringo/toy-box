@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository
 /**
  * 読み取りポート [BreedingResultSummaryQueries] の実装（軽量 CQRS / L2 の Query 側。ADR-0031）。
  *
- * 書き込み側の [JdbcBreedingResultRepository]（集約
- * [com.example.api.domain.studbook.model.breeding.BreedingResult] を [BreedingResultRow] 経由で復元する）とは
+ * 書き込み側の `JdbcBreedingResultRepository`（集約
+ * [com.example.api.domain.studbook.model.breeding.BreedingResult] を `BreedingResultRow` 経由で復元する）とは
  * **別経路**として、`breeding_result` を [JdbcClient] で直接集計し、 集約を一切組まずに平坦な [BreedingResultSummaryView]
  * へ詰める。
  *

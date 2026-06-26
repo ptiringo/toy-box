@@ -25,17 +25,21 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `種牡馬IDの集計一覧が200で件数と率つきの配列で返ること`() {
+        // BreedingResultSummaryView.of(stallionId, 2024, 6, 4, 1) → 受胎率 4/6=66.7%
         every { findBreedingResultSummary(any<FindBreedingResultSummaryQuery>()) } returns
             listOf(BreedingResultSummaryView.of(stallionId, 2024, 6, 4, 1))
 
-        tester
-            .get()
-            .uri("/api/breedingResultSummaries?stallionId=$stallionId")
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .extractingPath("$[0].breeding_year")
-            .isEqualTo(2024)
+        val body =
+            tester
+                .get()
+                .uri("/api/breedingResultSummaries?stallionId=$stallionId")
+                .assertThat()
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+
+        body.extractingPath("$[0].breeding_year").isEqualTo(2024)
+        // 受胎率が JSON 数値 66.7 として公開されること
+        body.extractingPath("$[0].conception_rate").isEqualTo(66.7)
     }
 
     @Test
