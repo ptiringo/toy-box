@@ -15,7 +15,12 @@
 #   制約ではなく意図的なスキーマ設計判断。
 #   注意: このルールはプロジェクト全体で無効になるため、将来 ALTER TABLE で
 #   varchar のサイズを変更するマイグレーションを追加する際は、ロックリスクを手動で確認すること。
+# - prefer-bigint-over-int: int(32bit) は自動採番 ID 等で max(約21億) に達しうるため
+#   bigint を推奨するルール。本プロジェクトの ID は UUIDv7（int 連番を使わない）であり、
+#   INTEGER を使うのは breeding_year（java.time.Year の西暦値）のような上限に達し得ない
+#   ドメイン値に限るため、誤検知となる。意図して INTEGER を使う設計判断として除外する。
 excluded_rules = [
   "prefer-robust-stmts",
   "prefer-text-field",
+  "prefer-bigint-over-int",
 ]
