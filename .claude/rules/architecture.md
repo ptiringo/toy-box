@@ -1,6 +1,6 @@
 # アーキテクチャ規約
 
-本プロジェクトはオニオンアーキテクチャ（ドメインモデル / ドメインサービス / アプリケーションサービス / アダプターの 4 リング）を採用する。規約は ArchUnit（`src/test/kotlin/com/example/api/architecture/ArchitectureTest.kt`）で機械的に強制されており、違反すると `./gradlew test` が失敗する。**新しいコードを書くときは以下の規約に従うこと。規約を変えたい場合はテストと本ファイルを同時に更新する。**
+本プロジェクトはオニオンアーキテクチャ（ドメインモデル / ドメインサービス / アプリケーションサービス / アダプターの 4 リング）を採用する。規約は ArchUnit（`src/test/kotlin/com/example/api/architecture/` 配下の `〜RulesTest` 群）で機械的に強制されており、違反すると `./gradlew test` が失敗する。規約は関心ごとに分割してあり、`OnionLayerRulesTest`（レイヤー依存方向・stereotype 配置）/ `DomainModelingRulesTest`（jMolecules・イミュータブル集約）/ `ControllerContractRulesTest`（HTTP 契約・パッケージ構成）/ `BoundedContextRulesTest`（コンテキスト分離）/ `GeneralCodingRulesTest`（一般コーディング規約）に置く。共有の述語・定数・スライス割り当ては `ArchSupport.kt` に集約する。**新しいコードを書くときは以下の規約に従うこと。規約を変えたい場合はテストと本ファイルを同時に更新する。**
 
 ## レイヤー依存ルール（オニオン 4 リング）
 

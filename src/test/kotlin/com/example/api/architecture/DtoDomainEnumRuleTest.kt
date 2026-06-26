@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 /**
- * `ArchitectureTest.dtosDoNotExposeDomainEnums`（DTO がドメイン enum をフィールド型に晒さない規約）の
+ * `ControllerContractRulesTest.dtosDoNotExposeDomainEnums`（DTO がドメイン enum をフィールド型に晒さない規約）の
  * メタテスト。ルールが「違反を検出する」「マッパー関数を誤検出しない」の双方を能動的に検証する（#297 の完了条件）。
  *
  * 本番の `@ArchTest` は全クラスに対し現状違反ゼロを保証するが、ルールが**実際に噛む**ことは別途確かめないと
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.assertThrows
  * を引数・戻り値で扱うマッパー関数を含む）に対しては成功することを確認する。
  */
 class DtoDomainEnumRuleTest {
-    private val rule = ArchitectureTest().dtosDoNotExposeDomainEnums
+    private val rule = ControllerContractRulesTest().dtosDoNotExposeDomainEnums
 
     @Test
     fun `フィールド型にドメインenumを持つDTOは違反として検出されること`() {

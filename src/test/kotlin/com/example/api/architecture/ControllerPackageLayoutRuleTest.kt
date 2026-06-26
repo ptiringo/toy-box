@@ -7,19 +7,20 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 /**
- * `ArchitectureTest` の controller パッケージ構成ルールのメタテスト。順方向（`〜Request` は `request/` へ、 `〜ProblemKt` は
- * `problem/` へ）と逆方向 allowlist（`request/` / `problem/` には所定のものしか置けない）の 計 4 ルールが「違反を検出する」「実
- * controller を誤検出しない」の双方を能動的に検証する（ADR-0028）。
+ * `ControllerContractRulesTest` の controller パッケージ構成ルールのメタテスト。順方向（`〜Request` は `request/` へ、
+ * `〜ProblemKt` は `problem/` へ）と逆方向 allowlist（`request/` / `problem/` には所定のものしか置けない）の 計 4 ルールが
+ * 「違反を検出する」「実 controller を誤検出しない」の双方を能動的に検証する（ADR-0028）。
  *
  * 本番の `@ArchTest` は全クラスに対し現状違反ゼロを保証するが、ルールが**実際に噛む**ことは別途確かめないと 「常に成功するだけの無力なルール」と区別できない。とくに
  * Problem 系ルールは Kotlin の facade クラス （`〜ProblemKt`）の名前に依存するため、違反フィクスチャで確実に検出することを確かめる。
  */
 class ControllerPackageLayoutRuleTest {
-    private val requestRule = ArchitectureTest().requestDtosResideInRequestSubpackage
-    private val problemRule = ArchitectureTest().problemMappersResideInProblemSubpackage
-    private val requestAllowlistRule = ArchitectureTest().requestSubpackageContainsOnlyRequests
+    private val requestRule = ControllerContractRulesTest().requestDtosResideInRequestSubpackage
+    private val problemRule = ControllerContractRulesTest().problemMappersResideInProblemSubpackage
+    private val requestAllowlistRule =
+        ControllerContractRulesTest().requestSubpackageContainsOnlyRequests
     private val problemAllowlistRule =
-        ArchitectureTest().problemSubpackageContainsOnlyProblemMappers
+        ControllerContractRulesTest().problemSubpackageContainsOnlyProblemMappers
 
     @Test
     fun `request サブパッケージ外の Request DTO は違反として検出されること`() {

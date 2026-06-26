@@ -90,7 +90,7 @@ class HelloController {
 
 ### アーキテクチャテスト（ArchUnit）
 
-アーキテクチャ規約は ArchUnit + jMolecules で機械的に強制されています（`src/test/kotlin/com/example/api/architecture/ArchitectureTest.kt`）。レイヤー依存方向（オニオン）、境界づけられたコンテキスト間の分離、DDD ビルディングブロックの整合性などが `./gradlew test` で検証されます。規約の詳細は `.claude/rules/architecture.md` を参照してください。
+アーキテクチャ規約は ArchUnit + jMolecules で機械的に強制されています（`src/test/kotlin/com/example/api/architecture/` 配下に関心ごとへ分割した `〜RulesTest` 群）。レイヤー依存方向（オニオン）、境界づけられたコンテキスト間の分離、DDD ビルディングブロックの整合性などが `./gradlew test` で検証されます。規約の詳細は `.claude/rules/architecture.md` を参照してください。
 
 ### ドメイン駆動設計
 
