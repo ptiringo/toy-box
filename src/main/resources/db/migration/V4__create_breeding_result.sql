@@ -8,24 +8,28 @@
 -- BreedingResult の不変条件（covering の有無と区分 NotCovered・分娩日の整合）を CHECK 制約でスキーマ側にも強制する。
 -- version は楽観ロック兼「新規 insert 判定」用の列。
 CREATE TABLE breeding_result (
-    id                          UUID         NOT NULL PRIMARY KEY,
-    breeding_registration_id    UUID         NOT NULL,
-    breeding_year               INTEGER      NOT NULL,
-    covering_stallion_id        UUID,
-    covering_date               DATE,
-    covering_place              VARCHAR(255),
+    id UUID NOT NULL PRIMARY KEY,
+    breeding_registration_id UUID NOT NULL,
+    breeding_year INTEGER NOT NULL,
+    covering_stallion_id UUID,
+    covering_date DATE,
+    covering_place VARCHAR(255),
     covering_certificate_number VARCHAR(255),
-    outcome_type                VARCHAR(32),
-    outcome_foaling_date        DATE,
-    version                     BIGINT,
+    outcome_type VARCHAR(32),
+    outcome_foaling_date DATE,
+    version BIGINT, -- noqa: RF04
     -- 種付列の整合: 種付ありなら種牡馬ID・種付日・種付証明書番号が揃って NOT NULL、種付なしなら covering_* は全 NULL
     -- （covering_place は Covering 内でも nullable なため種付ありでも NULL を許す）。
     CONSTRAINT chk_breeding_result_covering CHECK (
-        (covering_stallion_id IS NULL AND covering_date IS NULL
-            AND covering_certificate_number IS NULL AND covering_place IS NULL)
+        (
+            covering_stallion_id IS NULL AND covering_date IS NULL
+            AND covering_certificate_number IS NULL AND covering_place IS NULL
+        )
         OR
-        (covering_stallion_id IS NOT NULL AND covering_date IS NOT NULL
-            AND covering_certificate_number IS NOT NULL)
+        (
+            covering_stallion_id IS NOT NULL AND covering_date IS NOT NULL
+            AND covering_certificate_number IS NOT NULL
+        )
     ),
     -- 種付の有無と区分の整合: 種付なし(covering_date IS NULL)は区分が NOT_COVERED で確定、
     -- 種付あり(covering_date IS NOT NULL)は未報告(NULL)か NOT_COVERED 以外。

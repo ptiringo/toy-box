@@ -1,0 +1,26 @@
+# squawk 設定
+# https://squawkhq.com/docs/configuration
+
+# 除外するルール
+# - prefer-robust-stmts: Flyway のバージョン管理テーブル（flyway_schema_history）が
+#   各マイグレーションを一度だけ適用し冪等性を保証するため、CREATE TABLE の
+#   IF NOT EXISTS 等による文単体の堅牢化は不要（堅牢性は Flyway 側で担保される）。
+# - prefer-text-field: squawk は varchar(n) より text + CHECK 制約を推奨する。
+#   理由は「varchar(n) の長さ上限を後から変えると ACCESS EXCLUSIVE ロックで
+#   テーブル書き換えが走る」ため。ただしこのリスクは ALTER TABLE でのサイズ変更時のみで、
+#   新規テーブル作成（CREATE TABLE）には当てはまらない。
+#   本プロジェクトは varchar(n) の n に各列の想定最大長というドメイン制約を表現させる
+#   （例: role=32 は enum 名の上限、registration_number=255）。text だと長さ無制限になる。
+#   Spring Data JDBC は varchar / text どちらも String にマップするため、これはマッピング上の
+#   制約ではなく意図的なスキーマ設計判断。
+#   注意: このルールはプロジェクト全体で無効になるため、将来 ALTER TABLE で
+#   varchar のサイズを変更するマイグレーションを追加する際は、ロックリスクを手動で確認すること。
+# - prefer-bigint-over-int: int(32bit) は自動採番 ID 等で max(約21億) に達しうるため
+#   bigint を推奨するルール。本プロジェクトの ID は UUIDv7（int 連番を使わない）であり、
+#   INTEGER を使うのは breeding_year（java.time.Year の西暦値）のような上限に達し得ない
+#   ドメイン値に限るため、誤検知となる。意図して INTEGER を使う設計判断として除外する。
+excluded_rules = [
+  "prefer-robust-stmts",
+  "prefer-text-field",
+  "prefer-bigint-over-int",
+]

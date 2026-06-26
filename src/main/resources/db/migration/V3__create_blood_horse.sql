@@ -12,28 +12,32 @@
 -- DB 単独でも sealed Origin の不変条件（判別子に応じて該当列が NOT NULL・非該当列が NULL）が破られないようにする。
 -- name は馬名（未命名なら NULL）。version は楽観ロック兼「新規 insert 判定」用の列。
 CREATE TABLE blood_horse (
-    id                  UUID         NOT NULL PRIMARY KEY,
+    id UUID NOT NULL PRIMARY KEY,
     registration_number VARCHAR(255) NOT NULL,
-    sex                 VARCHAR(16)  NOT NULL,
-    coat_color          VARCHAR(32)  NOT NULL,
-    breed_type          VARCHAR(32)  NOT NULL,
-    date_of_birth       DATE         NOT NULL,
-    breeder             VARCHAR(255) NOT NULL,
-    microchip_number    VARCHAR(64)  NOT NULL,
-    name                VARCHAR(255),
-    origin_type         VARCHAR(16)  NOT NULL,
-    sire_id             UUID,
-    dam_id              UUID,
-    origin_country      VARCHAR(255),
-    landing_date        DATE,
-    version             BIGINT,
+    sex VARCHAR(16) NOT NULL,
+    coat_color VARCHAR(32) NOT NULL,
+    breed_type VARCHAR(32) NOT NULL,
+    date_of_birth DATE NOT NULL,
+    breeder VARCHAR(255) NOT NULL,
+    microchip_number VARCHAR(64) NOT NULL,
+    name VARCHAR(255), -- noqa: RF04
+    origin_type VARCHAR(16) NOT NULL,
+    sire_id UUID,
+    dam_id UUID,
+    origin_country VARCHAR(255),
+    landing_date DATE,
+    version BIGINT, -- noqa: RF04
     CONSTRAINT chk_blood_horse_origin CHECK (
-        (origin_type = 'DOMESTIC'
+        (
+            origin_type = 'DOMESTIC'
             AND sire_id IS NOT NULL AND dam_id IS NOT NULL
-            AND origin_country IS NULL AND landing_date IS NULL)
+            AND origin_country IS NULL AND landing_date IS NULL
+        )
         OR
-        (origin_type = 'IMPORTED'
+        (
+            origin_type = 'IMPORTED'
             AND origin_country IS NOT NULL AND landing_date IS NOT NULL
-            AND sire_id IS NULL AND dam_id IS NULL)
+            AND sire_id IS NULL AND dam_id IS NULL
+        )
     )
 );

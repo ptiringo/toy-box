@@ -57,6 +57,18 @@ pre-commit:
       run: cd infra && mise exec -- tflint --recursive
       tags: lint
 
+    # sqlfluff による SQL の書式・スタイルチェック
+    sqlfluff:
+      glob: "**/*.sql"
+      run: mise exec -- sqlfluff lint {staged_files}
+      tags: format
+
+    # squawk によるマイグレーション安全性チェック
+    squawk:
+      glob: "**/*.sql"
+      run: mise exec -- squawk {staged_files}
+      tags: lint
+
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行

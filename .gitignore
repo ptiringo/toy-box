@@ -60,3 +60,9 @@ override.tf.json
 terraform.rc
 .terraform.tfstate.lock.info
 !.terraform.lock.hcl
+
+### superpowers ###
+# superpowers（brainstorming / writing-plans）が出力する spec・plan・作業 scratch は
+# リポジトリ管理しない（決定事項は ADR / Issue に残す）
+.superpowers/
+docs/superpowers/

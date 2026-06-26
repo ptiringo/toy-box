@@ -7,11 +7,11 @@
 -- （両方 NULL なら供用中、両方 NOT NULL なら供用停止済み）。
 -- version は楽観ロック兼「新規 insert 判定」用の列（version が NULL のとき Spring Data JDBC が新規とみなす）。
 CREATE TABLE breeding_registration (
-    id                     UUID         NOT NULL PRIMARY KEY,
-    registration_number    VARCHAR(255) NOT NULL,
-    registered_horse_id    UUID         NOT NULL,
-    role                   VARCHAR(32)  NOT NULL,
-    retirement_reason      VARCHAR(32),
+    id UUID NOT NULL PRIMARY KEY,
+    registration_number VARCHAR(255) NOT NULL,
+    registered_horse_id UUID NOT NULL,
+    role VARCHAR(32) NOT NULL, -- noqa: RF04
+    retirement_reason VARCHAR(32),
     retirement_occurred_on DATE,
-    version                BIGINT
+    version BIGINT -- noqa: RF04
 );
