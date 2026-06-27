@@ -1,4 +1,41 @@
 {
+  "permissions": {
+    "deny": [
+      "Bash(gcloud run deploy *)",
+      "Bash(gcloud * delete *)",
+      "Bash(gcloud projects delete *)",
+      "Bash(terraform apply *)",
+      "Bash(terraform apply)",
+      "Bash(terraform destroy *)",
+      "Bash(terraform destroy)"
+    ],
+    "ask": [
+      "Bash(gcloud * create *)",
+      "Bash(gcloud * update *)",
+      "Bash(gcloud * set-iam-policy *)",
+      "Bash(gcloud * add-iam-policy-binding *)",
+      "Bash(gcloud * remove-iam-policy-binding *)",
+      "Bash(gcloud services enable *)",
+      "Bash(gcloud services disable *)",
+      "Bash(tfctl run start *)",
+      "Bash(tfctl run start)",
+      "Bash(tfctl variable import *)",
+      "Bash(tfctl create *)",
+      "Bash(tfctl api *)"
+    ],
+    "allow": [
+      "Bash(gcloud * describe *)",
+      "Bash(gcloud * list *)",
+      "Bash(gcloud * get-iam-policy *)",
+      "Bash(terraform plan *)",
+      "Bash(terraform validate)",
+      "Bash(terraform show *)",
+      "Bash(terraform state list *)",
+      "Bash(terraform fmt *)",
+      "Bash(tfctl run status *)",
+      "Bash(tfctl get *)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
