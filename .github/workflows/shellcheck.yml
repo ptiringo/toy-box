@@ -33,11 +33,19 @@ jobs:
       with:
         persist-credentials: false
 
+    # mise バイナリのみ用意し、全ツールの `mise install --locked` は走らせない（install: false）。
+    # ランナー環境のグローバル mise 設定に含まれる無関係ツールまで巻き込んで lock 解決に失敗するのを避け、
+    # 本ジョブに必要な ShellCheck だけをスコープしてインストールする。
     - name: Install mise
       uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+      with:
+        install: false
 
-    - name: Verify tool version
-      run: shellcheck --version
+    - name: Install ShellCheck
+      run: mise install "aqua:koalaman/shellcheck"
 
     - name: Run ShellCheck
-      run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck
+      run: |
+        mise exec "aqua:koalaman/shellcheck" -- shellcheck --version
+        find . -name '*.sh' -not -path './.git/*' -print0 \
+          | xargs -0 mise exec "aqua:koalaman/shellcheck" -- shellcheck
