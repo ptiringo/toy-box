@@ -39,7 +39,7 @@ class JockeyMcpToolsTest {
         every { findJockeyUseCase(FindJockeyQuery(id)) } returns Err(JockeyNotFound(id))
 
         val ex = assertThrows<NoSuchElementException> { tools.findJockey(id.toString()) }
-        assert(ex.message!!.contains(id.toString()))
+        assert(ex.message == "jockey not found: $id")
     }
 
     @Test

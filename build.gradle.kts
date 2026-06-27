@@ -26,7 +26,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     // MCP インターフェース（REST と並ぶ adapter）。Spring AI 2.0 の MCP server を WebMVC(SSE/Streamable)
-    // トランスポートで配線する。@McpTool 注釈付き Bean を annotation scanner が自動登録する。採否は ADR-NNNN。
+    // トランスポートで配線する。@McpTool 注釈付き Bean を annotation scanner が自動登録する。採否は ADR-0035。
     implementation(libs.spring.ai.starter.mcp.server.webmvc)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // 永続化アクセス（Spring Data JDBC + Flyway）。集約 write は Spring Data JDBC（集約 = 永続化境界）。
