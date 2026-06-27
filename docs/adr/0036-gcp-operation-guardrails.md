@@ -12,7 +12,7 @@ Claude Code の permission 仕様は本決定の土台となる: `deny` は bypa
 
 ## Decision（決定）
 
-GCP 操作のガードレールを 2 層で構成する。
+GCP 操作のガードレールを 2 層で構成する。**役割は非対称**で、permissions 層が「無確認の変更を止める」強制を担い、資格情報層は「安全な既定 + 多層防御」を担う（owner を IAM で縛る檻ではない。section 2 参照）。
 
 ### 1. permissions の層（deny / ask / allow）
 
@@ -26,11 +26,16 @@ GCP 操作のガードレールを 2 層で構成する。
 
 ### 2. 資格情報の層（最小権限 viewer SA）
 
-ローカル作業用に `roles/viewer` のみを持つ `local-readonly` SA を Terraform（`infra/modules/local-readonly/`）で定義し、開発者は `roles/iam.serviceAccountTokenCreator` 経由の impersonation で使う。SA / IAM の変更は CI/HCP 経由のみ（ローカルは plan まで）。
+ローカル作業用に `roles/viewer` のみを持つ `local-readonly` SA を Terraform（`infra/modules/local-readonly/`）で定義し、開発者は `roles/iam.serviceAccountTokenCreator` 経由の impersonation で使う。これは**読み取り作業の安全な既定アイデンティティ**であって唯一の資格情報ではない。SA / IAM の変更は CI/HCP 経由のみ（ローカルは plan まで）。
+
+- **変更作業はローカルのアイデンティティを通さない**: アプリ deploy は GitHub Actions（WIF → `deployer@`）、infra apply は HCP Terraform run（tfctl/UI）で、いずれも CI/HCP の資格で走る。稀にローカルで変更が要るときだけ owner 等への**明示的な昇格**で行う（摩擦は意図的）。「viewer SA だけでは変更できない」のは仕様であり、変更は正規ルートか明示昇格に寄せる。
+- **owner は IAM で強制できない**: project owner（本リポジトリの利用者）は常に owner 権限を持ち、`--account` 切替や env 上書きで viewer 既定を回避できる。したがって viewer SA の使用を owner に**ハード強制することはできない**。実際の強制は permissions 層（deny/ask）が担う（アイデンティティ非依存で無確認変更を止める）。viewer SA の価値は「安全な既定」と「多層防御（コマンドがすり抜けても被害が閲覧に限定）」。
+- **非 owner の協力者には実効的**: 協力者には viewer SA への tokenCreator のみを渡せば impersonation が唯一の経路になり、read-only を本当に強制できる。
+- impersonation を最小抵抗の既定にする（`CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT` / `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` を env で既定化）配線は、SA の apply と tokenCreator 付与の**後**に行う必要があるためフォローアップとする。
 
 ### スコープ
 
-課金アラート・quota／実験用 project・環境分離（blast radius）、Cloud Audit Logs、auto-mode 分類器側のブロックはフォローアップ issue とする。
+課金アラート・quota／実験用 project・環境分離（blast radius）、Cloud Audit Logs、auto-mode 分類器側のブロック、impersonation 既定化の env 配線はフォローアップ issue とする。
 
 ## Consequences（結果・影響）
 
