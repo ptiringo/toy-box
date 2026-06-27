@@ -1,0 +1,57 @@
+# devcontainer firewall の許可ドメイン（唯一の出所・コミット共有）。
+# init-firewall.sh が各ドメインを解決して ipset に登録する。
+# GitHub は IP レンジが動的なため api.github.com/meta から CIDR を別途取得する
+# （下記 GitHub 行は補助・解決対象だが実 IP の主たる出所は meta API）。
+# 形式: 1 行 1 ドメイン。# 以降と空行は無視。
+
+# --- GitHub ---
+github.com
+api.github.com
+codeload.github.com
+objects.githubusercontent.com
+raw.githubusercontent.com
+
+# --- Gradle / Maven ---
+services.gradle.org
+plugins.gradle.org
+plugins-artifacts.gradle.org
+repo.maven.apache.org
+repo1.maven.org
+
+# --- mise（ツール本体。java/shellcheck 等の実体は GitHub releases 経由）---
+mise.jdx.dev
+mise-versions.jdx.dev
+
+# --- pipx 系ツール（sqlfluff / squawk）---
+pypi.org
+files.pythonhosted.org
+
+# --- Terraform ---
+registry.terraform.io
+releases.hashicorp.com
+app.terraform.io
+
+# --- Anthropic / Claude Code ---
+api.anthropic.com
+statsig.anthropic.com
+sentry.io
+statsig.com
+registry.npmjs.org
+
+# --- MCP（context7 http トランスポート）---
+mcp.context7.com
+
+# --- JetBrains Gateway（バックエンド配信・プラグイン取得）---
+download.jetbrains.com
+cache-redirector.jetbrains.com
+plugins.jetbrains.com
+data.services.jetbrains.com
+
+# --- 任意追加（必要な人がコメントを外して追記する）---
+# Google Cloud（infra/gcloud 作業時。ipset はワイルドカード不可のため使うホストを個別に列挙）:
+# oauth2.googleapis.com
+# www.googleapis.com
+# Docker Hub（DinD で terraform MCP イメージを pull する時。dev コンテナの dockerd が pull する）:
+# registry-1.docker.io
+# auth.docker.io
+# production.cloudflare.docker.com
