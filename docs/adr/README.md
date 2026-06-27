@@ -44,3 +44,4 @@
 | [0032](0032-sql-lint-squawk-sqlfluff.md) | SQL lint に squawk + sqlfluff を採用する | Accepted |
 | [0033](0033-defer-production-db-selection.md) | 本番 DB プロダクトの選定を遅延し、当面ランタイムは H2 据え置きで進める | Accepted |
 | [0034](0034-adopt-tfctl-cli.md) | HCP Terraform 操作 CLI として tfctl を採用する | Accepted |
+| [0035](0035-devcontainer-egress-firewall.md) | devcontainer の egress を firewall で default-deny + 許可リストに制限する | Accepted |
