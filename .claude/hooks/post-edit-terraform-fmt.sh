@@ -23,11 +23,10 @@ abs_file="$(/usr/bin/env python3 -c 'import os, sys; print(os.path.realpath(sys.
 abs_root="$(/usr/bin/env python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$repo_root" 2>/dev/null || echo "$repo_root")"
 rel_path="${abs_file#"$abs_root"/}"
 
-# infra/ 配下の *.tf のみ対象（モジュール配下も含む）
+# infra/ 配下の *.tf のみ対象（モジュール配下も含む）。
+# case の glob では `*` が `/` も含むため、`infra/*.tf` 単独で任意の深さの .tf を捕捉できる。
 case "$rel_path" in
     infra/*.tf) ;;
-    infra/*/*.tf) ;;
-    infra/*/*/*.tf) ;;
     *) exit 0 ;;
 esac
 
@@ -38,6 +37,8 @@ fi
 output="$(cd "$repo_root" && terraform fmt -check -recursive infra/ 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
+    # メッセージ中の `terraform fmt ...` はユーザー向けの案内テキスト（リテラル表示が意図）。
+    # shellcheck disable=SC2016
     printf 'terraform fmt 違反が検出されました:\n%s\n`terraform fmt -recursive infra/` で整形してください。\n' "$output" >&2
     exit 2
 fi
