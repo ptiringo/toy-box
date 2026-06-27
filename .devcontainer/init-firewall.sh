@@ -48,15 +48,22 @@ for net in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16; do
 done
 
 # --- GitHub の IP レンジを meta API から取得して ipset へ ---
+# 取得失敗（レート制限等）でスクリプト全体を中断させない。中断すると OUTPUT DROP 適用前に
+# firewall 未適用のまま起動し fail-open になるため。空なら取り込みをスキップし、
+# allowed-domains.txt の github.com 等の dig 解決でカバーする。
 echo "fetching GitHub IP ranges from api.github.com/meta ..."
-gh_meta="$(curl -fsSL --connect-timeout 10 https://api.github.com/meta)"
-echo "$gh_meta" \
-  | jq -r '[.hooks?, .web?, .api?, .git?, .packages?, .actions?, .importer?] | add | .[]?' \
-  | grep -v ':' \
-  | sort -u \
-  | while read -r cidr; do
-      ipset add allowed-domains "$cidr" 2>/dev/null || true
-    done
+gh_meta="$(curl -fsSL --connect-timeout 10 https://api.github.com/meta || true)"
+if [[ -n "$gh_meta" ]]; then
+  echo "$gh_meta" \
+    | jq -r '[.hooks?, .web?, .api?, .git?, .packages?, .actions?, .importer?] | add | .[]?' \
+    | { grep -v ':' || true; } \
+    | sort -u \
+    | while read -r cidr; do
+        ipset add allowed-domains "$cidr" 2>/dev/null || true
+      done
+else
+  echo "warn: api.github.com/meta を取得できませんでした。GitHub の IP レンジ取り込みをスキップします（allowed-domains.txt の dig 解決でカバー）。" >&2
+fi
 
 # --- allowed-domains.txt の各ドメインを解決して ipset へ ---
 while read -r line; do
@@ -81,11 +88,11 @@ echo "firewall 適用完了。"
 
 # --- 自己テスト ---
 echo "running self-test ..."
-if curl -fsS --connect-timeout 5 https://example.com >/dev/null 2>&1; then
+if curl -fS --connect-timeout 5 https://example.com >/dev/null 2>&1; then
   echo "self-test 失敗: 許可外ホスト example.com に到達できてしまいました" >&2
   exit 1
 fi
-if ! curl -fsS --connect-timeout 5 https://api.github.com/zen >/dev/null 2>&1; then
+if ! curl -fS --connect-timeout 5 https://api.github.com/zen >/dev/null 2>&1; then
   echo "self-test 失敗: 許可済みホスト api.github.com に到達できません" >&2
   exit 1
 fi

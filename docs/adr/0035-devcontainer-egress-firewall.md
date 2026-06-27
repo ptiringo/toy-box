@@ -43,6 +43,7 @@ devcontainer 起動時に `init-firewall.sh`（`ipset`/`iptables`）で **OUTPUT
 - DinD 子コンテナ egress は未制約という抜け道が残る（firewall を回避したければ子コンテナに入る）。完全制御が必要に
   なれば FORWARD 管理を別 issue で検討する。
 - 許可リストは 2 系統（firewall / Claude Code sandbox）併存となり、編集時は対象レイヤーを意識する必要がある。
+- 本 firewall は IPv4（`iptables`）のみを制御し IPv6（`ip6tables`）は対象外。コンテナに IPv6 接続性があれば IPv6 経由の egress は絞られない（known-gap）。Docker 既定の IPv6 無効化と自己テストのバックストップで実害可能性は低い。完全対応は fast-follow issue で扱う。
 
 ## 関連
 

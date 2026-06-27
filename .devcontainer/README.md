@@ -81,6 +81,13 @@ DinD（terraform MCP の `docker run`）を壊さないが、**DinD 子コンテ
 Claude Code 本体は子コンテナにいないため主目的（エージェント egress の制限）は守られる。DinD で外部イメージを
 pull する場合は `allowed-domains.txt` 末尾の Docker Hub 雛形を有効化する。
 
+### IPv6 は対象外（known-caveat）
+
+本 firewall は **IPv4（`iptables`）のみ**を制御し、`ip6tables`（IPv6 の egress）は対象外。コンテナに IPv6
+接続性がある場合、IPv6 経由の egress は許可リストで絞られない。実害可能性は低い（Docker は既定で IPv6 を無効化、
+かつ許可外ホストに IPv6 で到達できると `init-firewall.sh` 末尾の自己テストが失敗して検知する）が、ギャップとして
+明示する。IPv6 の完全対応（`ip6tables` の default-deny + IPv6 allowlist）は別 issue で扱う。
+
 ## 既知の制約（スコープ外）
 
 本 devcontainer は「Java/Gradle 開発 + Claude Code」の土台を優先しており、以下は別途検討する（[issue #302](https://github.com/ptiringo/toy-box/issues/302) のスコープ外）。
