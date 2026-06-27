@@ -23,6 +23,8 @@ internal const val DOMAIN_SERVICE = "com.example.api.domain..service.."
 internal const val APPLICATION = "com.example.api.application.."
 internal const val CONTROLLER = "com.example.api.controller.."
 internal const val INFRASTRUCTURE = "com.example.api.infrastructure.."
+// MCP アダプタ（Model Context Protocol 公開層）。adapter リングに属し、application 層を利用する。
+internal const val MCP = "com.example.api.mcp.."
 
 /**
  * ドメインサービスの失敗バリアント型（`〜Error` の sealed interface とその variant）であること。
