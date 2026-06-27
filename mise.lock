@@ -188,6 +188,14 @@ url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8
 checksum = "sha256:d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip"
 
+[[tools."http:tfctl"]]
+version = "0.3.0"
+backend = "http:tfctl"
+
+[tools."http:tfctl"."platforms.macos-x64"]
+checksum = "blake3:e860c6cd3698a644712c5869ad6213603528d7e64e78b6921835c249e75f519f"
+url = "https://releases.hashicorp.com/tfctl/0.3.0/tfctl_0.3.0_darwin_amd64.zip"
+
 [[tools.java]]
 version = "temurin-21.0.11+10.0.LTS"
 backend = "core:java"
