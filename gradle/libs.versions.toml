@@ -11,6 +11,7 @@ detekt = "2.0.0-alpha.3"
 kover = "0.9.8"
 
 # ライブラリのバージョン
+spring-ai = "2.0.0"
 springdoc-openapi-bom = "3.0.3"
 java-uuid-generator = "5.2.0"
 kotlin-result = "2.3.1"
@@ -21,6 +22,10 @@ jmolecules-bom = "2025.0.2"
 junit = "6.1.0"
 
 [libraries]
+# Spring AI（MCP server。WebMVC SSE/Streamable トランスポート）
+spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
+spring-ai-starter-mcp-server-webmvc = { module = "org.springframework.ai:spring-ai-starter-mcp-server-webmvc" }
+
 # SpringDoc OpenAPI
 springdoc-openapi-bom = { module = "org.springdoc:springdoc-openapi-bom", version.ref = "springdoc-openapi-bom" }
 springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui" }

@@ -25,6 +25,13 @@ spring:
     # URL=camelCase / ボディ=snake_case の命名規約は ADR-0012 を参照。
     # 注: ProblemDetail.properties は Map のため naming strategy が効かず、拡張キーは setProperty で個別に snake_case 指定する。
     property-naming-strategy: SNAKE_CASE
+  ai:
+    mcp:
+      server:
+        name: toy-box-mcp
+        version: 0.1.0
+        # WebMVC の Streamable HTTP トランスポート。SSE/STATELESS も選べるが現行 MCP の標準は STREAMABLE。
+        protocol: STREAMABLE
   mvc:
     problemdetails:
       # Spring MVC 標準例外（リクエストボディ不正・媒体型不一致等）を RFC 9457 形式に変換する
