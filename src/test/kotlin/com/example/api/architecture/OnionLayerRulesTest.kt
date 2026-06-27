@@ -37,6 +37,7 @@ class OnionLayerRulesTest {
             .applicationServices(APPLICATION)
             .adapter("rest", CONTROLLER)
             .adapter("persistence", INFRASTRUCTURE)
+            .adapter("mcp", MCP)
 
     /** domain 層はフレームワークに依存しないこと。 */
     @ArchTest
