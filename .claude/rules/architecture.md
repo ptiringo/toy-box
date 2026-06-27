@@ -8,7 +8,7 @@
 
 ```
                   ┌─────────────── adapter ───────────────┐
-                  │  controller / infrastructure          │
+                  │  controller / infrastructure / mcp    │
                   │   ┌────── applicationService ──────┐  │
                   │   │   ┌─── domainService ───┐       │  │
                   │   │   │  ┌ domainModel ┐    │       │  │
@@ -26,10 +26,12 @@
 | applicationService | `application` | domainModel / domainService | `org.springframework.stereotype`（`@Service` / `@Component`）のみ |
 | adapter (rest) | `controller` | 内側すべて | 可 |
 | adapter (persistence) | `infrastructure` | 内側すべて | 可 |
+| adapter (mcp) | `mcp` | 内側すべて | 可 |
 
 - **ドメインサービスはドメインモデルにのみ依存でき、その逆（モデル→サービス）は禁止**
-- アダプター同士（`controller` ⇔ `infrastructure`）の参照は禁止
+- アダプター同士（`controller` ⇔ `infrastructure` ⇔ `mcp`）の参照は禁止
 - `@RestController` は `controller`、`@Service` は `application`、Spring の `@Repository`（ポート実装）は `infrastructure` に置く
+- `@McpTool` を持つ Spring Bean は `mcp` に置く（application 層に直付けしない）。ArchUnit は `ArchSupport.kt` の `adapter("mcp", MCP)` で `mcp` を adapter リングとして強制する（[ADR-0035](../../docs/adr/0035-mcp-interface-adapter.md)）
 
 ### ドメインモデルとドメインサービスの分け方
 
