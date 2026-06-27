@@ -49,6 +49,9 @@ mise exec -- ./gradlew build # mise 未活性化の非対話シェルのみ
 mise exec -- sqlfluff lint src/main/resources/db/migration   # 書式・スタイル
 mise exec -- sqlfluff fix src/main/resources/db/migration    # 自動整形
 mise exec -- squawk src/main/resources/db/migration/*.sql    # マイグレーション安全性
+
+# シェルスクリプトの lint（ShellCheck）
+mise exec -- shellcheck .claude/hooks/*.sh .devcontainer/post-create.sh scripts/*.sh
 ```
 
 ktfmt はフォーマッタ、detekt は静的解析ツールという役割分担です。detekt の設定は `config/detekt/detekt.yml` にあり、`buildUponDefaultConfig = true` でデフォルト設定に上書きする形で運用しています。雛形を再生成したい場合は `./gradlew detektGenerateConfig` を実行してください。レポートは `build/reports/detekt/` に HTML / SARIF / Checkstyle XML / Markdown 形式で出力されます。プロジェクト固有のカスタムルール（例: ドメイン / アプリケーション層で `throw` しない）は `:detekt-rules` モジュールで定義し、`detektPlugins` 経由で組み込んでいます（詳細は `.claude/rules/architecture.md`）。
@@ -296,6 +299,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 - `gitleaks`: シークレット混入スキャン
 - `java` (Temurin 21): Gradle / Kotlin のビルドおよびテスト実行用 JDK
 - `lefthook`: Git フック管理
+- `shellcheck`: シェルスクリプトの静的解析（未クォート変数・誤った比較・移植性の問題等の検出）
 - `sqlfluff`: SQL 書式・スタイル lint および自動整形（dialect=postgres、mise の `pipx:` backend を uv 駆動で管理）
 - `squawk`: Flyway マイグレーション SQL の安全性チェックと構文検証（libpg_query パース）
 - `terraform`: インフラ構成管理
@@ -307,7 +311,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 Git フックは **Lefthook** で管理（`lefthook.yml`）。セットアップは `lefthook install`。
 
-- **pre-commit**（並列）: gitleaks、EditorConfig チェック、ktfmt チェック、detekt、actionlint、zizmor、Terraform fmt / validate、sqlfluff / squawk による SQL チェック
+- **pre-commit**（並列）: gitleaks、EditorConfig チェック、ktfmt チェック、detekt、actionlint、zizmor、Terraform fmt / validate、sqlfluff / squawk による SQL チェック、ShellCheck によるシェルスクリプトチェック
 - **pre-push**: 全テスト
 - **commit-msg**: Conventional Commits 形式チェック
 

@@ -38,6 +38,12 @@ pre-commit:
       run: mise exec -- zizmor --offline --quiet .github/workflows/
       tags: security
 
+    # ShellCheck によるシェルスクリプトの lint
+    shellcheck:
+      glob: "**/*.sh"
+      run: mise exec -- shellcheck {staged_files}
+      tags: lint
+
     # Terraform フォーマットチェック
     terraform-fmt-check:
       glob: "infra/*.tf"
