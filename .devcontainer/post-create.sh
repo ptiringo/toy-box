@@ -10,6 +10,13 @@
 # それらを本スクリプトで担う。
 set -euo pipefail
 
+# egress firewall（init-firewall.sh）が依存するツールを導入する。
+# base image（bookworm）はこれらを含まないため apt で入れる。postCreate で入れたパッケージは
+# コンテナ FS に永続化し、再起動をまたいで残る（フル再構築時のみ再導入される）。
+echo "installing firewall toolchain (iptables / ipset / dnsutils / jq) ..."
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends iptables ipset dnsutils jq
+
 # 対話 bash 起動時に mise を有効化する（重複追記を避ける）。
 if ! grep -qs 'mise activate bash' "${HOME}/.bashrc"; then
   # `$(mise activate bash)` は .bashrc にリテラルとして書き込むのが意図（ここで展開しない）。
