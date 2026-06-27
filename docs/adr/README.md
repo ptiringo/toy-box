@@ -43,3 +43,4 @@
 | [0031](0031-lightweight-cqrs-read-model.md) | 読み取りを集約非経由の Read Model 経路で実装する（軽量 CQRS / L2・レイヤー先） | Accepted |
 | [0032](0032-sql-lint-squawk-sqlfluff.md) | SQL lint に squawk + sqlfluff を採用する | Accepted |
 | [0033](0033-defer-production-db-selection.md) | 本番 DB プロダクトの選定を遅延し、当面ランタイムは H2 据え置きで進める | Accepted |
+| [0034](0034-adopt-tfctl-cli.md) | HCP Terraform 操作 CLI として tfctl を採用する | Accepted |

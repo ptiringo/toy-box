@@ -303,6 +303,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 - `sqlfluff`: SQL 書式・スタイル lint および自動整形（dialect=postgres、mise の `pipx:` backend を uv 駆動で管理）
 - `squawk`: Flyway マイグレーション SQL の安全性チェックと構文検証（libpg_query パース）
 - `terraform`: インフラ構成管理
+- `tfctl`: HCP Terraform / TFE 管理 CLI（run / variable / workspace 操作。レジストリ参照は MCP、操作は tfctl と棲み分け）。認証は `tfctl auth login`（tfctl 自身の資格情報ストア。`gh` CLI と同様に fnox は使わない）。採否と運用方針は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md) を参照
 - `zizmor`: GitHub Actions ワークフローのセキュリティ監査
 
 **Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言しています（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出します。
