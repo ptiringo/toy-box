@@ -172,4 +172,18 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(BloodHorseId(generateId())) == null)
     }
+
+    @Test
+    fun `既に付与済みの馬名は existsByName が true を返す`() {
+        repository.save(namedDomesticFoal()) // "オグリキャップ" で命名済み
+
+        assert(repository.existsByName(HorseName.create("オグリキャップ").unwrap()))
+    }
+
+    @Test
+    fun `未使用の馬名は existsByName が false を返す`() {
+        repository.save(namedDomesticFoal()) // "オグリキャップ"
+
+        assert(!repository.existsByName(HorseName.create("トウカイテイオー").unwrap()))
+    }
 }

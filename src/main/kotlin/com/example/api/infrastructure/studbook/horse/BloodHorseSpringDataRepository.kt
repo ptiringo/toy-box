@@ -10,4 +10,7 @@ import org.springframework.data.repository.CrudRepository
  * [com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository] とは別物。
  * ドメインポートの実装は本リポジトリを委譲先に持つアダプタ [JdbcBloodHorseRepository] が担う。
  */
-interface BloodHorseSpringDataRepository : CrudRepository<BloodHorseRow, UUID>
+interface BloodHorseSpringDataRepository : CrudRepository<BloodHorseRow, UUID> {
+    /** 馬名（`blood_horse.name`）が一致する行が存在するか。馬名の一意性照合に用いる。 */
+    fun existsByName(name: String): Boolean
+}
