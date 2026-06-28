@@ -1,3 +1,10 @@
+---
+paths:
+  - "fnox.toml"
+  - "mise.toml"
+  - ".claude/rules/secrets.md"
+---
+
 # シークレット管理規約（mise + fnox）
 
 ローカル開発で必要なシークレットは、平文で `~/.zshrc` 等に `export` せず、**暗号化保管／外部参照＋必要時だけ環境変数へ展開**する。仕組みは mise で管理する [fnox](https://fnox.jdx.dev/)（mise 作者 jdx 製）で統一する。
