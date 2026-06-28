@@ -5,6 +5,8 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
+import com.example.api.domain.studbook.model.horse.bloodhorse.NameHorseError
+import com.example.api.domain.studbook.service.horse.nameHorse
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
@@ -38,6 +40,9 @@ sealed interface NameHorseUseCaseError {
      * @property currentName 既に付与されている馬名
      */
     data class AlreadyNamed(val currentName: String) : NameHorseUseCaseError
+
+    /** 申請された馬名が既に他の軽種馬で使用済み。 */
+    data class NameAlreadyTaken(val name: String) : NameHorseUseCaseError
 }
 
 /**
@@ -68,9 +73,15 @@ class NameHorseUseCase(private val bloodHorseRepository: BloodHorseRepository) {
                 .bind()
 
         val transition =
-            bloodHorse
-                .assignName(horseName)
-                .mapError { NameHorseUseCaseError.AlreadyNamed(it.currentName.value) }
+            nameHorse(bloodHorse, horseName, bloodHorseRepository)
+                .mapError { error ->
+                    when (error) {
+                        is NameHorseError.NameAlreadyTaken ->
+                            NameHorseUseCaseError.NameAlreadyTaken(error.name.value)
+                        is NameHorseError.AlreadyNamed ->
+                            NameHorseUseCaseError.AlreadyNamed(error.currentName.value)
+                    }
+                }
                 .bind()
 
         val named = bloodHorseRepository.save(transition.aggregate)

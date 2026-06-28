@@ -21,6 +21,7 @@ import org.springframework.http.ProblemDetail
  * - 馬名の不変条件違反は入力不正として 400 Bad Request
  * - 対象軽種馬の不在は、URL で指し示したリソースが存在しないため 404 Not Found
  * - 既に命名済みは、リソースの状態と要求が衝突するため 409 Conflict
+ * - 申請馬名が既に使用済みは、原簿の既存馬名と衝突するため 409 Conflict
  */
 fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -47,6 +48,14 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "対象の軽種馬は既に命名済みのため、再命名はできません。",
                 )
                 .apply { setProperty("current_name", currentName) }
+        is NameHorseUseCaseError.NameAlreadyTaken ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "horse-name-already-taken",
+                    title = "Horse name already taken",
+                    detail = "申請された馬名は既に他の軽種馬で使用されています。",
+                )
+                .apply { setProperty("name", name) }
     }
 
 /**
