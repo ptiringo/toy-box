@@ -1,4 +1,4 @@
-# 0036. devcontainer の egress を firewall で default-deny + 許可リストに制限する
+# 0037. devcontainer の egress を firewall で default-deny + 許可リストに制限する
 
 - Status: Accepted
 - Date: 2026-06-27

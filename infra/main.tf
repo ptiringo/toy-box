@@ -30,3 +30,10 @@ module "cloudrun" {
 
   deployer_member = module.cicd.deployer_member
 }
+
+module "local_readonly" {
+  source = "./modules/local-readonly"
+
+  project_id    = "ptiringo-toy-box"
+  impersonators = var.local_readonly_impersonators
+}

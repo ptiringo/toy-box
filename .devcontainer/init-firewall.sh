@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # devcontainer の egress を「デフォルト拒否 + 許可リスト」に制限する firewall 初期化スクリプト。
 #
-# 方針（設計: docs/superpowers/specs/2026-06-27-devcontainer-egress-firewall-design.md / ADR-0036）:
+# 方針（設計: docs/superpowers/specs/2026-06-27-devcontainer-egress-firewall-design.md / ADR-0037）:
 #   - コンテナ自身のプロセスが出す通信（iptables OUTPUT チェーン）を default-deny + 許可リスト化する。
 #   - 許可ドメインの唯一の出所は .devcontainer/allowed-domains.txt（コミット共有）。
 #   - GitHub は IP レンジが動的なため api.github.com/meta の CIDR を別途取り込む。
