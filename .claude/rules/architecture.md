@@ -1,3 +1,10 @@
+---
+paths:
+  - "src/main/**/*.kt"
+  - "src/test/**/*.kt"
+  - "detekt-rules/src/**/*.kt"
+---
+
 # アーキテクチャ規約
 
 本プロジェクトはオニオンアーキテクチャ（ドメインモデル / ドメインサービス / アプリケーションサービス / アダプターの 4 リング）を採用する。規約は ArchUnit（`src/test/kotlin/com/example/api/architecture/` 配下の `〜RulesTest` 群）で機械的に強制されており、違反すると `./gradlew test` が失敗する。規約は関心ごとに分割してあり、`OnionLayerRulesTest`（レイヤー依存方向・stereotype 配置）/ `DomainModelingRulesTest`（jMolecules・イミュータブル集約）/ `ControllerContractRulesTest`（HTTP 契約・パッケージ構成）/ `BoundedContextRulesTest`（コンテキスト分離）/ `GeneralCodingRulesTest`（一般コーディング規約）に置く。共有の述語・定数・スライス割り当ては `ArchSupport.kt` に集約する。**新しいコードを書くときは以下の規約に従うこと。規約を変えたい場合はテストと本ファイルを同時に更新する。**
@@ -97,6 +104,12 @@ domain/
 ドメインサービス（`service/` のトップレベル関数）には jMolecules アノテーションを付けない。`@Service`（jMolecules）は型向けでトップレベル関数に付けられず、ドメインサービスであることは `service/` パッケージへの配置で表現する。
 
 **ドメインイベント**（`@DomainEvent`）は「起きたこと」を表すビルディングブロック。イミュータブル集約（`var` 禁止）は内部にイベントを溜め込めないため、状態遷移メソッドが遷移後の集約とイベントを `StateTransition<A, E>`（`domain.shared`）に同梱して返し、発行は application 層が担う（集約は純粋なまま保つ）。失敗しうる遷移は `Result<StateTransition<A, E>, エラー>` を返し失敗時はイベントを生成しない（例: `BloodHorse.assignName` → `HorseNamed`）。イベントは値としての等価性が自然なため `data class` を使ってよい（ID ベース `final equals` を持つ集約と異なり衝突しない）。他集約への参照は ID 値クラス経由。収集・発行方式の決定経緯は [ADR-0029](../../docs/adr/0029-domain-events-via-state-transition-return.md)（Spring `ApplicationEventPublisher` 連携・publish-after-commit・発生時刻 enrichment は別イシュー送り）。
+
+**コマンド**（`Command<T>`、`domain.shared`）はドメインイベント（「起きたこと」）と対をなすビルディングブロックで、ペイロード（何をしたいか）に発生時刻メタデータ（`issuedAt: Instant`、タイムゾーン非依存のドメインイベント時刻）を添える封筒。ペイロードと横断的メタデータを分離する。書き込みユースケースの入力に用い（例: `registerInStudBook(command: Command<StudBook>)`）、読み取り（クエリ）系では使わない（発生時刻は書き込みイベントの概念）。jMolecules アノテーションを持たない汎用キャリアのため `domain.shared` に置く。
+
+```kotlin
+class Command<T>(val payload: T, val issuedAt: Instant)
+```
 
 注意点:
 
