@@ -30,6 +30,16 @@
     "PATH": "${containerEnv:PATH}:/home/vscode/.local/share/mise/shims"
   },
 
+  // ロケールを UTF-8 に固定する。base image は LANG/LC_ALL 未設定で、SSH/Gateway 経由だと
+  // クライアント（macOS）が転送する LC_CTYPE=UTF-8 が Linux に存在せず実効ロケールが POSIX/C に
+  // 落ちる。すると JVM の sun.jnu.encoding が ASCII になり、日本語のテストメソッド名から生成される
+  // 非 ASCII を含む .class ファイル名を Gradle が読み戻せず compileTestKotlin が失敗する。
+  // LC_ALL=C.UTF-8（bookworm は生成不要で保持）で転送された LC_CTYPE を上書きし UTF-8 を強制する。
+  "containerEnv": {
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8"
+  },
+
   // コンテナ作成後に一度だけ実行: mise trust → mise install（全ツール）→ lefthook install。
   "postCreateCommand": ".devcontainer/post-create.sh",
 
