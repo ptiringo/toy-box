@@ -33,6 +33,13 @@
   // コンテナ作成後に一度だけ実行: mise trust → mise install（全ツール）→ lefthook install。
   "postCreateCommand": ".devcontainer/post-create.sh",
 
+  // egress firewall に必要な権限。NET_ADMIN は iptables/ipset 操作、NET_RAW は raw ソケット用。
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+
+  // iptables ルールはコンテナ再起動で消えるため、毎起動時に firewall を root で初期化する。
+  // （許可リストの出所は .devcontainer/allowed-domains.txt。DinD は best-effort で温存）
+  "postStartCommand": "sudo .devcontainer/init-firewall.sh",
+
   "remoteUser": "vscode",
 
   "customizations": {
