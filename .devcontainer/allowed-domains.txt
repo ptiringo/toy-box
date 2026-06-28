@@ -47,11 +47,15 @@ cache-redirector.jetbrains.com
 plugins.jetbrains.com
 data.services.jetbrains.com
 
+# --- Docker Hub（DinD の dockerd が pull する先）---
+# Testcontainers 契約テスト（postgres:17-alpine + Ryuk）と terraform MCP（docker run）の
+# イメージ取得に必要。これが無いと `./gradlew check` の JDBC 契約テストが
+# ContainerFetchException で落ちる。production.cloudflare.docker.com はイメージ blob の CDN。
+registry-1.docker.io
+auth.docker.io
+production.cloudflare.docker.com
+
 # --- 任意追加（必要な人がコメントを外して追記する）---
 # Google Cloud（infra/gcloud 作業時。ipset はワイルドカード不可のため使うホストを個別に列挙）:
 # oauth2.googleapis.com
 # www.googleapis.com
-# Docker Hub（DinD で terraform MCP イメージを pull する時。dev コンテナの dockerd が pull する）:
-# registry-1.docker.io
-# auth.docker.io
-# production.cloudflare.docker.com

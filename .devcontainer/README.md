@@ -78,8 +78,13 @@ sudo .devcontainer/init-firewall.sh          # 再適用（自己テストも走
 
 firewall は **dev コンテナ自身の egress（OUTPUT）に集中**し、`FORWARD` チェーンは管理しない。これにより
 DinD（terraform MCP の `docker run`）を壊さないが、**DinD 子コンテナ経由の egress は厳密には絞られない**。
-Claude Code 本体は子コンテナにいないため主目的（エージェント egress の制限）は守られる。DinD で外部イメージを
-pull する場合は `allowed-domains.txt` 末尾の Docker Hub 雛形を有効化する。
+Claude Code 本体は子コンテナにいないため主目的（エージェント egress の制限）は守られる。
+
+DinD の `dockerd` がイメージを pull する先（Docker Hub: `registry-1.docker.io` / `auth.docker.io` /
+`production.cloudflare.docker.com`）は `allowed-domains.txt` で**既定で許可**している。Testcontainers の
+契約テスト（`postgres:17-alpine` + Ryuk）と terraform MCP がこれを必要とし、無いと `./gradlew check` の
+JDBC 契約テストが `ContainerFetchException` で落ちるため。これらの IP（特に Cloudflare CDN）は時間で変わりうるので、
+pull が急に通らなくなったら `sudo .devcontainer/init-firewall.sh` で貼り直す。
 
 ### IPv6 は対象外（known-caveat）
 
