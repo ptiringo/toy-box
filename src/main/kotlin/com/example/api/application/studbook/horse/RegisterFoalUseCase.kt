@@ -10,11 +10,11 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseReposito
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.Breeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
-import com.example.api.domain.studbook.model.horse.bloodhorse.DnaParentageResult
 import com.example.api.domain.studbook.model.horse.bloodhorse.FoalIdentity
-import com.example.api.domain.studbook.model.horse.bloodhorse.MicrochipNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
 import com.example.api.domain.studbook.service.horse.registerFoal
 import com.github.michaelbull.result.Result

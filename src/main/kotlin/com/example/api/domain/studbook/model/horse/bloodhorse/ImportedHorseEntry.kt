@@ -1,13 +1,13 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
+import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import org.jmolecules.ddd.annotation.ValueObject
 
 /**
  * 輸入馬・基礎輸入馬の血統登録申請に際して申請者が持ち込む、馬自身の個体識別情報の束。
  *
  * 通常の内国産馬（[StudBookEntry]）と異なり、**父・母が当システムに存在しない**ことを前提とする。このため父母 ID や 申告された親子関係の DNA
- * 判定結果（[DnaParentageResult]）は含めない。品種は承認海外機関の血統書・輸出証明書に依拠するため、
- * 父母の品種との整合検証も行わない（これらの輸入特有の審査は別途のモデリングに委ねる）。
+ * 型による親子判定結果は含めない。品種は承認海外機関の血統書・輸出証明書に依拠するため、 父母の品種との整合検証も行わない（これらの輸入特有の審査は別途のモデリングに委ねる）。
  *
  * 代わりに輸入馬固有の属性として、原産国（[originCountry]）と揚陸日（[landingDate]）を保持する。
  *

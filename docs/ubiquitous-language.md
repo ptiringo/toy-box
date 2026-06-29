@@ -175,6 +175,7 @@ graph LR
 | BloodHorse | 集約ルート | domain.studbook.model.horse.bloodhorse |
 | BreedingRegistration | 集約ルート | domain.studbook.model.breeding |
 | BreedingResult | 集約ルート | domain.studbook.model.breeding |
+| HorseInspection | 集約ルート | domain.studbook.model.inspection |
 | BloodHorseId | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | BreedType | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Breeder | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
@@ -187,7 +188,7 @@ graph LR
 | Covering | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
 | DateOfBirth | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
-| DnaParentageResult | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| DnaParentageResult | 値オブジェクト | domain.studbook.model.inspection |
 | FoalIdentity | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | FoalingOutcome.Abortion | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.LiveFoal | 値オブジェクト | domain.studbook.model.breeding |
@@ -198,14 +199,21 @@ graph LR
 | FoalingOutcome.TwinAbortion | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.TwinStillbirth | 値オブジェクト | domain.studbook.model.breeding |
+| HorseInspectionId | 値オブジェクト | domain.studbook.model.inspection |
 | HorseName | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| IdentificationFeatures | 値オブジェクト | domain.studbook.model.inspection |
 | ImportedHorseEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | LandingDate | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
-| MicrochipNumber | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| MicrochipNumber | 値オブジェクト | domain.studbook.model.inspection |
 | Origin | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Domestic | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Imported | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | OriginCountry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| ParentageDetermination | 値オブジェクト | domain.studbook.model.inspection |
+| ParentageDetermination.ByBloodType | 値オブジェクト | domain.studbook.model.inspection |
+| ParentageDetermination.ByDna | 値オブジェクト | domain.studbook.model.inspection |
+| ParentageDetermination.ByOverseasInstitution | 値オブジェクト | domain.studbook.model.inspection |
+| ParentageDetermination.NotApplicable | 値オブジェクト | domain.studbook.model.inspection |
 | PedigreeRegistrationNumber | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | StudBookEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | StudCertificate | 値オブジェクト | domain.studbook.model.breeding |
@@ -214,6 +222,7 @@ graph LR
 | BloodHorseRepository | リポジトリポート | domain.studbook.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
 | BreedingResultRepository | リポジトリポート | domain.studbook.model.breeding |
+| HorseInspectionRepository | リポジトリポート | domain.studbook.model.inspection |
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
 | nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |

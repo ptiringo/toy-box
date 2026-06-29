@@ -3,6 +3,8 @@ package com.example.api.domain.studbook.model.horse.bloodhorse
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.StateTransition
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
