@@ -63,6 +63,14 @@ pre-commit:
       run: cd infra && mise exec -- tflint --recursive
       tags: lint
 
+    # Trivy による IaC セキュリティ misconfig スキャン（ADR-0017 / #378）。
+    # mise 管理ツールの解決を確実にするため mise exec 経由で呼ぶ（tflint と同型）。
+    # --exit-code 1: findings があればコミットをブロック（指定しないと findings があっても 0 を返す）。
+    trivy-config:
+      glob: "infra/*.tf"
+      run: cd infra && mise exec -- trivy config . --exit-code 1 --quiet
+      tags: security
+
     # sqlfluff による SQL の書式・スタイルチェック
     sqlfluff:
       glob: "**/*.sql"
