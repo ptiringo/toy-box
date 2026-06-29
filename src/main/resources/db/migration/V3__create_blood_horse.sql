@@ -3,6 +3,7 @@
 -- （ランタイムは H2、永続化の契約テストは Testcontainers の PostgreSQL。型は両者で互換）。
 -- 識別子は外部採番の UUIDv7（ADR-0005）をアプリ側で採番して渡す（DB 採番ではない）。
 -- sex / coat_color / breed_type は対応するドメイン enum の名前を保持する。
+-- inspection_id は審査（horse_inspection）の ID。識別子は審査側が保持する。
 -- 出自（sealed Origin）は子テーブルを設けず、判別子 origin_type（DOMESTIC/IMPORTED）と各バリアントの属性列を
 -- フラットに並べて表す（1 集約 = 1 テーブルを保ち、1:1 子テーブルや JSON 列の迂回を避ける）。バリアント固有の列は
 -- 一方のバリアントにしか現れないため、列定義としては nullable にせざるを得ない（内国産は sire_id/dam_id を、
@@ -19,7 +20,7 @@ CREATE TABLE blood_horse (
     breed_type VARCHAR(32) NOT NULL,
     date_of_birth DATE NOT NULL,
     breeder VARCHAR(255) NOT NULL,
-    microchip_number VARCHAR(64) NOT NULL,
+    inspection_id UUID NOT NULL,
     name VARCHAR(255), -- noqa: RF04
     origin_type VARCHAR(16) NOT NULL,
     sire_id UUID,

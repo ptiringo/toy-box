@@ -95,6 +95,33 @@ class JdbcHorseInspectionRepositoryContractTest(
     }
 
     @Test
+    fun `血液型検査区分の審査は判別子ごと往復できる`() {
+        val inspection = HorseInspection.create(microchip, ParentageDetermination.ByBloodType)
+
+        repository.save(inspection)
+        val found = repository.findById(inspection.id)
+
+        assert(found != null)
+        assert(found!!.id == inspection.id)
+        assert(found.parentage == ParentageDetermination.ByBloodType)
+        assert(found.features == null)
+    }
+
+    @Test
+    fun `承認海外機関区分の審査は判別子ごと往復できる`() {
+        val inspection =
+            HorseInspection.create(microchip, ParentageDetermination.ByOverseasInstitution)
+
+        repository.save(inspection)
+        val found = repository.findById(inspection.id)
+
+        assert(found != null)
+        assert(found!!.id == inspection.id)
+        assert(found.parentage == ParentageDetermination.ByOverseasInstitution)
+        assert(found.features == null)
+    }
+
+    @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(HorseInspectionId(generateId())) == null)
     }

@@ -1,6 +1,6 @@
 package com.example.api.controller.horse
 
-import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
+import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import java.time.LocalDate
 import java.util.UUID
 
@@ -39,17 +39,17 @@ data class BloodHorseResponse(
     val name: String?,
 )
 
-/** [BloodHorse] を軽種馬リソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */
-fun BloodHorse.toResponse(): BloodHorseResponse =
+/** [RegisteredBloodHorse]（軽種馬＋審査）を軽種馬リソースの表現へ変換する。マイクロチップは審査から引く。 */
+fun RegisteredBloodHorse.toResponse(): BloodHorseResponse =
     BloodHorseResponse(
-        id = id.value,
-        registrationNumber = registrationNumber.value,
-        sex = sex.toApi(),
-        coatColor = coatColor.toApi(),
-        breedType = breedType.toApi(),
-        dateOfBirth = dateOfBirth.value,
-        breeder = breeder.name,
-        microchipNumber = microchipNumber.value,
-        origin = origin.toApi(),
-        name = name?.value,
+        id = bloodHorse.id.value,
+        registrationNumber = bloodHorse.registrationNumber.value,
+        sex = bloodHorse.sex.toApi(),
+        coatColor = bloodHorse.coatColor.toApi(),
+        breedType = bloodHorse.breedType.toApi(),
+        dateOfBirth = bloodHorse.dateOfBirth.value,
+        breeder = bloodHorse.breeder.name,
+        microchipNumber = inspection.microchipNumber.value,
+        origin = bloodHorse.origin.toApi(),
+        name = bloodHorse.name?.value,
     )

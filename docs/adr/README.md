@@ -47,3 +47,4 @@
 | [0035](0035-mcp-interface-adapter.md) | REST と並ぶ MCP インターフェースアダプタを adapter リングに追加する | Accepted |
 | [0036](0036-gcp-operation-guardrails.md) | Claude Code からの GCP 操作ガードレールを permissions + 最小権限 SA で構成する | Accepted |
 | [0037](0037-devcontainer-egress-firewall.md) | devcontainer の egress を firewall で default-deny + 許可リストに制限する | Accepted |
+| [0038](0038-inspection-subdomain-aggregate.md) | 審査（個体識別・親子判定）を独立集約とし識別子の出所を審査側へ一本化する | Accepted |

@@ -22,6 +22,7 @@ import org.springframework.http.ProblemDetail
  * - 対象軽種馬の不在は、URL で指し示したリソースが存在しないため 404 Not Found
  * - 既に命名済みは、リソースの状態と要求が衝突するため 409 Conflict
  * - 申請馬名が既に使用済みは、原簿の既存馬名と衝突するため 409 Conflict
+ * - 命名後の審査欠落は、登録時に必ず生成する審査が見つからない内部不整合相当のため 422 Unprocessable Entity
  */
 fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -56,6 +57,14 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "申請された馬名は既に他の軽種馬で使用されています。",
                 )
                 .apply { setProperty("name", name) }
+        is NameHorseUseCaseError.InspectionNotFound ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    code = "inspection-not-found",
+                    title = "Inspection not found",
+                    detail = "命名対象の軽種馬に紐づく審査が見つかりません。",
+                )
+                .apply { setProperty("inspection_id", inspectionId) }
     }
 
 /**

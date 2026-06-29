@@ -1,7 +1,5 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
-import com.example.api.domain.studbook.model.inspection.DnaParentageResult
-import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import org.jmolecules.ddd.annotation.ValueObject
 
 /**
@@ -16,8 +14,6 @@ import org.jmolecules.ddd.annotation.ValueObject
  * @property coatColor 毛色
  * @property breedType 品種
  * @property breeder 生産者
- * @property microchipNumber マイクロチップ番号
- * @property dnaParentage 申告された父母との DNA 型による親子判定結果
  */
 @ValueObject
 data class FoalIdentity(
@@ -25,8 +21,6 @@ data class FoalIdentity(
     val coatColor: CoatColor,
     val breedType: BreedType,
     val breeder: Breeder,
-    val microchipNumber: MicrochipNumber,
-    val dnaParentage: DnaParentageResult,
 ) {
     /** [foalingDate] を生年月日として補い、血統登録の入力となる [StudBookEntry] を組み立てる。 */
     fun toStudBookEntry(foalingDate: DateOfBirth): StudBookEntry =
@@ -36,7 +30,5 @@ data class FoalIdentity(
             breedType = breedType,
             dateOfBirth = foalingDate,
             breeder = breeder,
-            microchipNumber = microchipNumber,
-            dnaParentage = dnaParentage,
         )
 }

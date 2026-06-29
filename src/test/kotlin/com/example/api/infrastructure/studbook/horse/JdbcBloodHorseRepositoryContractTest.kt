@@ -57,7 +57,7 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
             breedType = "THOROUGHBRED",
             dateOfBirth = LocalDate.of(2023, 3, 15),
             breeder = "ノーザンファーム",
-            microchipNumber = "392140000000001",
+            inspectionId = generateId(),
             originType = "DOMESTIC",
             sireId = generateId(),
             damId = generateId(),
@@ -72,6 +72,7 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
                     sire = sire,
                     dam = dam,
                     entry = BloodHorseFixture.studBookEntry(sex = Sex.MALE),
+                    inspection = BloodHorseFixture.inspection(),
                     registrationNumber = PedigreeRegistrationNumber.create("2023109999").unwrap(),
                 )
                 .unwrap()

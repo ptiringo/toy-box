@@ -10,6 +10,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -41,6 +42,10 @@ class RegisterInStudBookUseCaseTest {
     private fun command(payload: RegisterInStudBookCommand): Command<RegisterInStudBookCommand> =
         Command(payload, Instant.now())
 
+    /** 審査ポートのスタブ。`save` は引数（確定済み審査）をそのまま返す。 */
+    private fun inspectionRepository() =
+        mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }
+
     @Nested
     inner class SuccessCase {
         @Test
@@ -53,13 +58,16 @@ class RegisterInStudBookUseCaseTest {
                         mapOf(sire.id to sire, dam.id to dam)
                     every { save(any()) } answers { firstArg() }
                 }
-            val useCase = RegisterInStudBookUseCase(repository)
+            val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val bloodHorse = useCase(command(validPayload(sire.id.value, dam.id.value))).unwrap()
+            val registered = useCase(command(validPayload(sire.id.value, dam.id.value))).unwrap()
 
+            val bloodHorse = registered.bloodHorse
             assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
             assert(bloodHorse.breedType == BreedType.THOROUGHBRED)
             assert(bloodHorse.registrationNumber.value == "2023104567")
+            assert(bloodHorse.inspectionId == registered.inspection.id)
+            assert(registered.inspection.microchipNumber.value == "392140000000001")
             // 父・母の引き当ては逐次 findById ではなく 1 回の一括 lookup で行う。
             verify(exactly = 1) { repository.findAllById(setOf(sire.id, dam.id)) }
             verify(exactly = 1) { repository.save(any()) }
@@ -71,7 +79,7 @@ class RegisterInStudBookUseCaseTest {
         @Test
         fun `血統登録番号がブランクのとき InvalidRegistrationNumber を返し永続化されない`() {
             val repository = mockk<BloodHorseRepository>()
-            val useCase = RegisterInStudBookUseCase(repository)
+            val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
             val result =
                 useCase(
@@ -88,7 +96,7 @@ class RegisterInStudBookUseCaseTest {
         @Test
         fun `マイクロチップ番号が不正なとき InvalidMicrochipNumber を返し永続化されない`() {
             val repository = mockk<BloodHorseRepository>()
-            val useCase = RegisterInStudBookUseCase(repository)
+            val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
             val result =
                 useCase(
@@ -112,7 +120,7 @@ class RegisterInStudBookUseCaseTest {
                     every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
                         mapOf(BloodHorseId(damId) to dam)
                 }
-            val useCase = RegisterInStudBookUseCase(repository)
+            val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
             val result = useCase(command(validPayload(sireId, damId)))
 
@@ -130,7 +138,7 @@ class RegisterInStudBookUseCaseTest {
                     every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
                         mapOf(BloodHorseId(sireId) to sire)
                 }
-            val useCase = RegisterInStudBookUseCase(repository)
+            val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
             val result = useCase(command(validPayload(sireId, damId)))
 
@@ -147,7 +155,7 @@ class RegisterInStudBookUseCaseTest {
                     every { findAllById(setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
                 }
-            val useCase = RegisterInStudBookUseCase(repository)
+            val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
             val result = useCase(command(validPayload(sire.id.value, dam.id.value)))
 
@@ -158,6 +166,24 @@ class RegisterInStudBookUseCaseTest {
                     )
             )
             verify(exactly = 0) { repository.save(any()) }
+        }
+
+        @Test
+        fun `前提条件違反で登録が失敗したとき審査が保存されない`() {
+            // 父が雌のため BloodHorse.create が SireNotMale を返す → 審査 save に到達しない
+            val sire = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+            val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+            val bloodHorseRepository =
+                mockk<BloodHorseRepository> {
+                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                        mapOf(sire.id to sire, dam.id to dam)
+                }
+            val inspectionRepository = mockk<HorseInspectionRepository>()
+            val useCase = RegisterInStudBookUseCase(bloodHorseRepository, inspectionRepository)
+
+            useCase(command(validPayload(sire.id.value, dam.id.value)))
+
+            verify(exactly = 0) { inspectionRepository.save(any()) }
         }
     }
 }
