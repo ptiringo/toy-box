@@ -23,11 +23,12 @@
 
 親子判定は sealed `ParentageDetermination` で区分する。
 
-- `DnaBased`: DNA 型鑑定による親子判定（通常ルート）。`DnaParentageResult` を保持。
-- `Fallback`: 血液型鑑定または海外機関による判定（DNA 型鑑定が利用できない場合のフォールバック）。
-- `NotApplicable`: 輸入馬など、国内審査が対象外の場合。
+- `ByDna`: DNA 型検査による親子判定（基本ルート）。`DnaParentageResult` を保持。
+- `ByBloodType`: 血液型検査によるフォールバック（父母死亡・血液型のみ確認等）。詳細条件は #267。
+- `ByOverseasInstitution`: 承認海外機関の判定によるフォールバック（輸入馬等）。詳細条件は #267。
+- `NotApplicable`: 父母不明等、親子判定の対象外の場合。
 
-血統登録は `HorseInspection.confirmsDeclaredParents()` が `true` を返すことを前提条件とする（親子判定で申告通りの父母が確認されていなければ登録できない）。
+血統登録は `ParentageDetermination.confirmsDeclaredParents()` が `true` を返すことを前提条件とする（親子判定で申告通りの父母が確認されていなければ登録できない）。
 
 ### パッケージ配置
 
