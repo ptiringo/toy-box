@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -36,21 +37,27 @@ class RegisterImportedHorseUseCaseTest {
         payload: RegisterImportedHorseCommand
     ): Command<RegisterImportedHorseCommand> = Command(payload, Instant.now())
 
+    /** 審査ポートのスタブ。`save` は引数（確定済み審査）をそのまま返す。 */
+    private fun inspectionRepository() =
+        mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }
+
     @Nested
     inner class SuccessCase {
         @Test
         fun `正しい入力のとき父母不明の輸入馬が登録され永続化される`() {
             val repository =
                 mockk<BloodHorseRepository> { every { save(any()) } answers { firstArg() } }
-            val useCase = RegisterImportedHorseUseCase(repository)
+            val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
-            val bloodHorse = useCase(command(validPayload())).unwrap()
+            val registered = useCase(command(validPayload())).unwrap()
 
+            val bloodHorse = registered.bloodHorse
             val origin = bloodHorse.origin
             assert(origin is Origin.Imported)
             assert((origin as Origin.Imported).originCountry.name == "アイルランド")
             assert(origin.landingDate.value == LocalDate.of(2024, 9, 1))
             assert(bloodHorse.registrationNumber.value == "2020900001")
+            assert(registered.inspection.microchipNumber.value == "392140000000002")
             verify(exactly = 1) { repository.save(any()) }
         }
     }
@@ -60,7 +67,7 @@ class RegisterImportedHorseUseCaseTest {
         @Test
         fun `血統登録番号がブランクのとき InvalidRegistrationNumber を返し永続化されない`() {
             val repository = mockk<BloodHorseRepository>()
-            val useCase = RegisterImportedHorseUseCase(repository)
+            val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
             val result = useCase(command(validPayload().copy(registrationNumber = "")))
 
@@ -71,7 +78,7 @@ class RegisterImportedHorseUseCaseTest {
         @Test
         fun `マイクロチップ番号が不正なとき InvalidMicrochipNumber を返し永続化されない`() {
             val repository = mockk<BloodHorseRepository>()
-            val useCase = RegisterImportedHorseUseCase(repository)
+            val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
             val result = useCase(command(validPayload().copy(microchipNumber = "123")))
 
@@ -82,7 +89,7 @@ class RegisterImportedHorseUseCaseTest {
         @Test
         fun `原産国がブランクのとき BlankOriginCountry を返し永続化されない`() {
             val repository = mockk<BloodHorseRepository>()
-            val useCase = RegisterImportedHorseUseCase(repository)
+            val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
             val result = useCase(command(validPayload().copy(originCountry = "")))
 

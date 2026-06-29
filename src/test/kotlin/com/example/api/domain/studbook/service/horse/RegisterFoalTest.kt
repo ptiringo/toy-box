@@ -30,7 +30,15 @@ class RegisterFoalTest {
         val foalIdentity = BloodHorseFixture.foalIdentity(breedType = BreedType.THOROUGHBRED)
 
         val bloodHorse =
-            registerFoal(liveFoalResult(), sire, dam, foalIdentity, registrationNumber).unwrap()
+            registerFoal(
+                    liveFoalResult(),
+                    sire,
+                    dam,
+                    foalIdentity,
+                    BloodHorseFixture.inspection(),
+                    registrationNumber,
+                )
+                .unwrap()
 
         assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
         assert(bloodHorse.dateOfBirth.value == foalingDate)
@@ -48,6 +56,7 @@ class RegisterFoalTest {
                 sire,
                 dam,
                 BloodHorseFixture.foalIdentity(),
+                BloodHorseFixture.inspection(),
                 registrationNumber,
             )
 
@@ -67,6 +76,7 @@ class RegisterFoalTest {
                 sire,
                 dam,
                 BloodHorseFixture.foalIdentity(),
+                BloodHorseFixture.inspection(),
                 registrationNumber,
             )
 
@@ -84,6 +94,7 @@ class RegisterFoalTest {
                 sire,
                 dam,
                 BloodHorseFixture.foalIdentity(),
+                BloodHorseFixture.inspection(),
                 registrationNumber,
             )
 

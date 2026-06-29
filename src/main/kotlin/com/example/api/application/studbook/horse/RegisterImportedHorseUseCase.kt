@@ -12,7 +12,10 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.LandingDate
 import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.domain.studbook.model.inspection.HorseInspection
+import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
+import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
@@ -70,13 +73,16 @@ sealed interface RegisterImportedHorseUseCaseError {
  * 永続化する。父母が当システムに存在しないため、内国産馬の登録（[RegisterInStudBookUseCase]）のような父母の引き当て・前提条件検証は 行わない。Controller
  * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
- * @return 登録された [BloodHorse]、または業務ルール違反を表す [RegisterImportedHorseUseCaseError]
+ * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterImportedHorseUseCaseError]
  */
 @Service
-class RegisterImportedHorseUseCase(private val bloodHorseRepository: BloodHorseRepository) {
+class RegisterImportedHorseUseCase(
+    private val bloodHorseRepository: BloodHorseRepository,
+    private val horseInspectionRepository: HorseInspectionRepository,
+) {
     operator fun invoke(
         command: Command<RegisterImportedHorseCommand>
-    ): Result<BloodHorse, RegisterImportedHorseUseCaseError> = binding {
+    ): Result<RegisteredBloodHorse, RegisterImportedHorseUseCaseError> = binding {
         val input = command.payload
 
         val registrationNumber =
@@ -103,13 +109,20 @@ class RegisterImportedHorseUseCase(private val bloodHorseRepository: BloodHorseR
                 breedType = input.breedType,
                 dateOfBirth = DateOfBirth(input.dateOfBirth),
                 breeder = breeder,
-                microchipNumber = microchipNumber,
                 originCountry = originCountry,
                 landingDate = LandingDate(input.landingDate),
             )
 
-        val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
+        val inspection =
+            horseInspectionRepository.save(
+                HorseInspection.create(
+                    microchipNumber = microchipNumber,
+                    parentage = ParentageDetermination.NotApplicable,
+                )
+            )
 
-        bloodHorseRepository.save(bloodHorse)
+        val bloodHorse = BloodHorse.createImported(entry, inspection, registrationNumber)
+
+        RegisteredBloodHorse(bloodHorseRepository.save(bloodHorse), inspection)
     }
 }

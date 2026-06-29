@@ -1,7 +1,9 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
+import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 
@@ -13,12 +15,21 @@ import java.time.LocalDate
  * これを使えば検証を通さずに任意の馬を組み立てられる（テスト上は原産国・揚陸日が付くだけで、性・品種・ID は自由に指定できる）。
  */
 object BloodHorseFixture {
+    /** 既定の確定済み審査を生成する。親子判定は上書き可能。 */
+    fun inspection(
+        parentage: ParentageDetermination =
+            ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT)
+    ): HorseInspection =
+        HorseInspection.create(
+            microchipNumber = MicrochipNumber.create("392140000000001").unwrap(),
+            parentage = parentage,
+        )
+
     /** 既定値を持つ [StudBookEntry] を生成する。必要な属性のみ上書きする。 */
     fun studBookEntry(
         sex: Sex = Sex.MALE,
         coatColor: CoatColor = CoatColor.BAY,
         breedType: BreedType = BreedType.THOROUGHBRED,
-        dnaParentage: DnaParentageResult = DnaParentageResult.CONSISTENT,
     ): StudBookEntry =
         StudBookEntry(
             sex = sex,
@@ -26,8 +37,6 @@ object BloodHorseFixture {
             breedType = breedType,
             dateOfBirth = DateOfBirth(LocalDate.of(2023, 3, 15)),
             breeder = Breeder.create("ノーザンファーム").unwrap(),
-            microchipNumber = MicrochipNumber.create("392140000000001").unwrap(),
-            dnaParentage = dnaParentage,
         )
 
     /** 既定値を持つ [FoalIdentity] を生成する。必要な属性のみ上書きする。 */
@@ -35,15 +44,12 @@ object BloodHorseFixture {
         sex: Sex = Sex.MALE,
         coatColor: CoatColor = CoatColor.BAY,
         breedType: BreedType = BreedType.THOROUGHBRED,
-        dnaParentage: DnaParentageResult = DnaParentageResult.CONSISTENT,
     ): FoalIdentity =
         FoalIdentity(
             sex = sex,
             coatColor = coatColor,
             breedType = breedType,
             breeder = Breeder.create("ノーザンファーム").unwrap(),
-            microchipNumber = MicrochipNumber.create("392140000000001").unwrap(),
-            dnaParentage = dnaParentage,
         )
 
     /**
@@ -55,6 +61,7 @@ object BloodHorseFixture {
     fun bloodHorse(sex: Sex = Sex.MALE, breedType: BreedType = BreedType.THOROUGHBRED): BloodHorse =
         BloodHorse.createImported(
             entry = importedHorseEntry(sex = sex, breedType = breedType),
+            inspection = inspection(parentage = ParentageDetermination.NotApplicable),
             registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
         )
 
@@ -71,7 +78,6 @@ object BloodHorseFixture {
             breedType = breedType,
             dateOfBirth = DateOfBirth(LocalDate.of(2020, 4, 10)),
             breeder = Breeder.create("Coolmore").unwrap(),
-            microchipNumber = MicrochipNumber.create("392140000000002").unwrap(),
             originCountry = OriginCountry.create(originCountry).unwrap(),
             landingDate = LandingDate(LocalDate.of(2024, 9, 1)),
         )
@@ -83,6 +89,7 @@ object BloodHorseFixture {
     ): BloodHorse =
         BloodHorse.createImported(
             entry = importedHorseEntry(sex = sex, breedType = breedType),
+            inspection = inspection(parentage = ParentageDetermination.NotApplicable),
             registrationNumber = PedigreeRegistrationNumber.create("2020900001").unwrap(),
         )
 
@@ -92,6 +99,7 @@ object BloodHorseFixture {
                 sire = bloodHorse(sex = Sex.MALE),
                 dam = bloodHorse(sex = Sex.FEMALE),
                 entry = studBookEntry(),
+                inspection = inspection(),
                 registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
             )
             .unwrap()

@@ -31,7 +31,7 @@ data class BloodHorseRow(
     @Column("breed_type") val breedType: String,
     @Column("date_of_birth") val dateOfBirth: LocalDate,
     @Column("breeder") val breeder: String,
-    @Column("microchip_number") val microchipNumber: String,
+    @Column("inspection_id") val inspectionId: UUID,
     @Column("name") val name: String? = null,
     @Column("origin_type") val originType: String,
     @Column("sire_id") val sireId: UUID? = null,

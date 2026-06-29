@@ -17,6 +17,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
@@ -83,12 +84,15 @@ class RegisterFoalUseCaseTest {
                 every { findById(dam.id) } returns dam
                 every { save(any()) } answers { firstArg() }
             }
+        val horseInspectionRepository =
+            mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }
 
         fun useCase() =
             RegisterFoalUseCase(
                 breedingResultRepository,
                 breedingRegistrationRepository,
                 bloodHorseRepository,
+                horseInspectionRepository,
             )
     }
 
@@ -98,10 +102,12 @@ class RegisterFoalUseCaseTest {
         fun `産駒が血統登録され父母が繁殖記録から解決され出生日が分娩日になる`() {
             val w = Wiring()
 
-            val bloodHorse = w.useCase()(command(w.breedingResult.id.value)).unwrap()
+            val registered = w.useCase()(command(w.breedingResult.id.value)).unwrap()
 
+            val bloodHorse = registered.bloodHorse
             assert(bloodHorse.origin == Origin.Domestic(sireId = w.sire.id, damId = w.dam.id))
             assert(bloodHorse.dateOfBirth.value == foalingDate)
+            assert(bloodHorse.inspectionId == registered.inspection.id)
             verify(exactly = 1) { w.bloodHorseRepository.save(any()) }
         }
     }
@@ -148,7 +154,13 @@ class RegisterFoalUseCaseTest {
                 mockk<BreedingResultRepository> {
                     every { findById(BreedingResultId(breedingResultId)) } returns null
                 }
-            val useCase = RegisterFoalUseCase(repository, mockk(), mockk(relaxed = true))
+            val useCase =
+                RegisterFoalUseCase(
+                    repository,
+                    mockk(),
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
+                )
 
             val result = useCase(command(breedingResultId))
 

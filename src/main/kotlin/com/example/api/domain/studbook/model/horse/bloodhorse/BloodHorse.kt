@@ -3,8 +3,8 @@ package com.example.api.domain.studbook.model.horse.bloodhorse
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.StateTransition
 import com.example.api.domain.shared.generateId
-import com.example.api.domain.studbook.model.inspection.DnaParentageResult
-import com.example.api.domain.studbook.model.inspection.MicrochipNumber
+import com.example.api.domain.studbook.model.inspection.HorseInspection
+import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -77,7 +77,7 @@ sealed interface RegisterInStudBookError {
  * @property breedType 品種
  * @property dateOfBirth 生年月日
  * @property breeder 生産者
- * @property microchipNumber マイクロチップ番号
+ * @property inspectionId 個体識別・親子判定を行った審査（[HorseInspection]）の ID。識別子（マイクロチップ）は審査側が保持する
  * @property origin 出自（内国産＝父母ID／輸入＝原産国・揚陸日）。相互排他を [Origin] で型強制する
  * @property name 馬名。未命名なら null。命名は [assignName] でのみ行う
  */
@@ -91,7 +91,7 @@ private constructor(
     val breedType: BreedType,
     val dateOfBirth: DateOfBirth,
     val breeder: Breeder,
-    val microchipNumber: MicrochipNumber,
+    val inspectionId: HorseInspectionId,
     val origin: Origin,
     val name: HorseName?,
 ) : Entity<BloodHorseId>() {
@@ -129,7 +129,7 @@ private constructor(
             breedType = breedType,
             dateOfBirth = dateOfBirth,
             breeder = breeder,
-            microchipNumber = microchipNumber,
+            inspectionId = inspectionId,
             origin = origin,
             name = name,
         )
@@ -141,7 +141,7 @@ private constructor(
          * 父・母は既に血統登録済みの [BloodHorse] であり、本ファクトリは集約をまたぐ前提条件を自己検証してから生成する。 検証する前提条件:
          * - 父が雄であること
          * - 母が雌であること
-         * - 申告された父母との DNA 型による親子判定に矛盾がないこと
+         * - 確定済み審査の親子判定が申告父母を確認していること
          * - 仔の品種が父母の品種と整合すること
          *
          * 検証を満たさなければ生成せず [RegisterInStudBookError] を返す。生成された [BloodHorse] は父母を ID
@@ -149,7 +149,8 @@ private constructor(
          *
          * @param sire 父（雄）の軽種馬
          * @param dam 母（雌）の軽種馬
-         * @param entry 仔馬自身の個体識別情報と DNA 親子判定結果
+         * @param entry 仔馬自身の個体識別情報（性・毛色・品種・生年月日・生産者）
+         * @param inspection 確定済みの個体識別・親子判定審査（親子判定が確認済みであること）
          * @param registrationNumber 交付される血統登録番号
          * @return 生成された [BloodHorse]、または前提条件違反を表す [RegisterInStudBookError]
          */
@@ -157,12 +158,13 @@ private constructor(
             sire: BloodHorse,
             dam: BloodHorse,
             entry: StudBookEntry,
+            inspection: HorseInspection,
             registrationNumber: PedigreeRegistrationNumber,
         ): Result<BloodHorse, RegisterInStudBookError> =
             when {
                 sire.sex != Sex.MALE -> Err(RegisterInStudBookError.SireNotMale)
                 dam.sex != Sex.FEMALE -> Err(RegisterInStudBookError.DamNotFemale)
-                entry.dnaParentage != DnaParentageResult.CONSISTENT ->
+                !inspection.parentage.confirmsDeclaredParents() ->
                     Err(RegisterInStudBookError.ParentageNotConfirmed)
                 !entry.breedType.isConsistentWith(sire.breedType, dam.breedType) ->
                     Err(RegisterInStudBookError.BreedMismatch)
@@ -176,7 +178,7 @@ private constructor(
                             breedType = entry.breedType,
                             dateOfBirth = entry.dateOfBirth,
                             breeder = entry.breeder,
-                            microchipNumber = entry.microchipNumber,
+                            inspectionId = inspection.id,
                             origin = Origin.Domestic(sireId = sire.id, damId = dam.id),
                             name = null,
                         )
@@ -192,6 +194,7 @@ private constructor(
          */
         fun createImported(
             entry: ImportedHorseEntry,
+            inspection: HorseInspection,
             registrationNumber: PedigreeRegistrationNumber,
         ): BloodHorse =
             BloodHorse(
@@ -202,7 +205,7 @@ private constructor(
                 breedType = entry.breedType,
                 dateOfBirth = entry.dateOfBirth,
                 breeder = entry.breeder,
-                microchipNumber = entry.microchipNumber,
+                inspectionId = inspection.id,
                 origin =
                     Origin.Imported(
                         originCountry = entry.originCountry,
@@ -227,7 +230,7 @@ private constructor(
             breedType: BreedType,
             dateOfBirth: DateOfBirth,
             breeder: Breeder,
-            microchipNumber: MicrochipNumber,
+            inspectionId: HorseInspectionId,
             origin: Origin,
             name: HorseName?,
         ): BloodHorse =
@@ -239,7 +242,7 @@ private constructor(
                 breedType = breedType,
                 dateOfBirth = dateOfBirth,
                 breeder = breeder,
-                microchipNumber = microchipNumber,
+                inspectionId = inspectionId,
                 origin = origin,
                 name = name,
             )

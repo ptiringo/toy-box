@@ -13,7 +13,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
-import com.example.api.domain.studbook.model.inspection.MicrochipNumber
+import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrThrow
 import org.springframework.stereotype.Repository
@@ -68,7 +68,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
             breedType = BreedType.valueOf(breedType),
             dateOfBirth = DateOfBirth(dateOfBirth),
             breeder = Breeder.create(breeder).orThrow(),
-            microchipNumber = MicrochipNumber.create(microchipNumber).orThrow(),
+            inspectionId = HorseInspectionId(inspectionId),
             origin = toOrigin(),
             name = name?.let { HorseName.create(it).orThrow() },
         )
@@ -102,7 +102,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
                 breedType = breedType.name,
                 dateOfBirth = dateOfBirth.value,
                 breeder = breeder.name,
-                microchipNumber = microchipNumber.value,
+                inspectionId = inspectionId.value,
                 name = name?.value,
                 originType = "",
             )

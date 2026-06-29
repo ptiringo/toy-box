@@ -1,11 +1,11 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
-import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.NameHorseError
+import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.service.horse.nameHorse
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -43,6 +43,15 @@ sealed interface NameHorseUseCaseError {
 
     /** 申請された馬名が既に他の軽種馬で使用済み。 */
     data class NameAlreadyTaken(val name: String) : NameHorseUseCaseError
+
+    /**
+     * 命名対象の軽種馬に紐づく審査が存在しない。
+     *
+     * 血統登録時に審査を必ず生成・保存するため、命名フローでは通常起こりえない内部不整合相当の状態。
+     *
+     * @property inspectionId 引き当てに失敗した審査の ID
+     */
+    data class InspectionNotFound(val inspectionId: UUID) : NameHorseUseCaseError
 }
 
 /**
@@ -54,13 +63,16 @@ sealed interface NameHorseUseCaseError {
  * 状態遷移が同梱して返すドメインイベント（`HorseNamed`）は、ここ application 層で受け取って最小限に扱う （現状はログ）。Spring の
  * `ApplicationEventPublisher` への接続や永続化と整合した publish-after-commit は スコープ外（別イシュー送り。ADR-0029）。
  *
- * @return 命名された [BloodHorse]、または業務ルール違反を表す [NameHorseUseCaseError]
+ * @return 命名された [RegisteredBloodHorse]、または業務ルール違反を表す [NameHorseUseCaseError]
  */
 @Service
-class NameHorseUseCase(private val bloodHorseRepository: BloodHorseRepository) {
+class NameHorseUseCase(
+    private val bloodHorseRepository: BloodHorseRepository,
+    private val horseInspectionRepository: HorseInspectionRepository,
+) {
     operator fun invoke(
         command: Command<NameHorseCommand>
-    ): Result<BloodHorse, NameHorseUseCaseError> = binding {
+    ): Result<RegisteredBloodHorse, NameHorseUseCaseError> = binding {
         val input = command.payload
 
         val horseName =
@@ -87,7 +99,16 @@ class NameHorseUseCase(private val bloodHorseRepository: BloodHorseRepository) {
         val named = bloodHorseRepository.save(transition.aggregate)
         // ドメインイベントは当面 application 層内で最小ハンドリング（ログ）に留める。
         logger.info("ドメインイベント発生: {}", transition.event)
-        named
+
+        // response（マイクロチップを露出）の組み立てに審査が要るため、命名済みの inspectionId で読み込む。
+        // 血統登録時に審査を必ず生成・保存しているため、欠落は通常ありえない内部不整合相当（InspectionNotFound）。
+        val inspection =
+            horseInspectionRepository
+                .findById(named.inspectionId)
+                .toResultOr { NameHorseUseCaseError.InspectionNotFound(named.inspectionId.value) }
+                .bind()
+
+        RegisteredBloodHorse(named, inspection)
     }
 
     private companion object {

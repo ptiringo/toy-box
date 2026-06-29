@@ -13,7 +13,10 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBook
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.horse.bloodhorse.StudBookEntry
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.HorseInspection
+import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
+import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
@@ -86,13 +89,16 @@ sealed interface RegisterInStudBookUseCaseError {
  * で前提条件（父=雄・母=雌・DNA 親子整合・品種整合）を検証してから、誕生した [BloodHorse] を 永続化する。Controller
  * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
- * @return 登録された [BloodHorse]、または業務ルール違反を表す [RegisterInStudBookUseCaseError]
+ * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterInStudBookUseCaseError]
  */
 @Service
-class RegisterInStudBookUseCase(private val bloodHorseRepository: BloodHorseRepository) {
+class RegisterInStudBookUseCase(
+    private val bloodHorseRepository: BloodHorseRepository,
+    private val horseInspectionRepository: HorseInspectionRepository,
+) {
     operator fun invoke(
         command: Command<RegisterInStudBookCommand>
-    ): Result<BloodHorse, RegisterInStudBookUseCaseError> = binding {
+    ): Result<RegisteredBloodHorse, RegisterInStudBookUseCaseError> = binding {
         val input = command.payload
 
         val registrationNumber =
@@ -128,15 +134,21 @@ class RegisterInStudBookUseCase(private val bloodHorseRepository: BloodHorseRepo
                 breedType = input.breedType,
                 dateOfBirth = DateOfBirth(input.dateOfBirth),
                 breeder = breeder,
-                microchipNumber = microchipNumber,
-                dnaParentage = input.dnaParentage,
+            )
+
+        val inspection =
+            horseInspectionRepository.save(
+                HorseInspection.create(
+                    microchipNumber = microchipNumber,
+                    parentage = ParentageDetermination.ByDna(input.dnaParentage),
+                )
             )
 
         val bloodHorse =
-            BloodHorse.create(sire, dam, entry, registrationNumber)
+            BloodHorse.create(sire, dam, entry, inspection, registrationNumber)
                 .mapError { RegisterInStudBookUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        bloodHorseRepository.save(bloodHorse)
+        RegisteredBloodHorse(bloodHorseRepository.save(bloodHorse), inspection)
     }
 }

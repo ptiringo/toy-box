@@ -1,6 +1,5 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
-import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import org.jmolecules.ddd.annotation.ValueObject
 
 /**
@@ -16,7 +15,6 @@ import org.jmolecules.ddd.annotation.ValueObject
  * @property breedType 品種（承認海外機関の血統書・輸出証明書に基づく）
  * @property dateOfBirth 生年月日（海外血統書に基づく）
  * @property breeder 生産者
- * @property microchipNumber マイクロチップ番号
  * @property originCountry 原産国
  * @property landingDate 揚陸日（陸揚げされた日。登録の起算点）
  */
@@ -27,7 +25,6 @@ data class ImportedHorseEntry(
     val breedType: BreedType,
     val dateOfBirth: DateOfBirth,
     val breeder: Breeder,
-    val microchipNumber: MicrochipNumber,
     val originCountry: OriginCountry,
     val landingDate: LandingDate,
 )

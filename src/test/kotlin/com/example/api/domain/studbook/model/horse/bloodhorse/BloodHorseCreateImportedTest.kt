@@ -11,7 +11,8 @@ class BloodHorseCreateImportedTest {
     fun `父母不明の輸入馬が血統登録され父母 ID を持たず原産国と揚陸日を持つこと`() {
         val entry = BloodHorseFixture.importedHorseEntry(originCountry = "アイルランド")
 
-        val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
+        val bloodHorse =
+            BloodHorse.createImported(entry, BloodHorseFixture.inspection(), registrationNumber)
 
         val expected =
             Origin.Imported(originCountry = entry.originCountry, landingDate = entry.landingDate)
@@ -28,7 +29,8 @@ class BloodHorseCreateImportedTest {
                 breedType = BreedType.THOROUGHBRED,
             )
 
-        val bloodHorse = BloodHorse.createImported(entry, registrationNumber)
+        val bloodHorse =
+            BloodHorse.createImported(entry, BloodHorseFixture.inspection(), registrationNumber)
 
         assert(bloodHorse.sex == Sex.FEMALE)
         assert(bloodHorse.breedType == BreedType.THOROUGHBRED)

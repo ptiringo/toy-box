@@ -7,6 +7,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.DateOfBirth
 import com.example.api.domain.studbook.model.horse.bloodhorse.FoalIdentity
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
+import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.mapError
@@ -29,6 +30,7 @@ import com.github.michaelbull.result.mapError
  * @param sire 父（雄）の軽種馬。`breedingResult.covering.stallionId` に対応する個体を上位で解決して渡す
  * @param dam 母（雌）の軽種馬。繁殖登録の `registeredHorseId` に対応する個体を上位で解決して渡す
  * @param foalIdentity 申請者が持ち込む仔馬自身の個体識別情報（生年月日を除く）
+ * @param inspection 確定済みの個体識別・親子判定審査
  * @param registrationNumber 交付される血統登録番号
  * @return 生成された [BloodHorse]、または前提条件違反を表す [RegisterFoalError]
  */
@@ -37,6 +39,7 @@ fun registerFoal(
     sire: BloodHorse,
     dam: BloodHorse,
     foalIdentity: FoalIdentity,
+    inspection: HorseInspection,
     registrationNumber: PedigreeRegistrationNumber,
 ): Result<BloodHorse, RegisterFoalError> {
     val outcome = breedingResult.outcome
@@ -44,7 +47,7 @@ fun registerFoal(
         return Err(RegisterFoalError.NotLiveFoal(outcome))
     }
     val entry = foalIdentity.toStudBookEntry(DateOfBirth(outcome.foalingDate))
-    return BloodHorse.create(sire, dam, entry, registrationNumber).mapError {
+    return BloodHorse.create(sire, dam, entry, inspection, registrationNumber).mapError {
         RegisterFoalError.RegistrationFailed(it)
     }
 }

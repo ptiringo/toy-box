@@ -9,6 +9,7 @@ import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseEr
 import com.example.api.application.studbook.horse.RegisterInStudBookCommand
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCase
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
+import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
@@ -71,7 +72,11 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     inner class SuccessCase {
         @Test
         fun `正常な入力で 201 Created と内国産の出自を持つ登録結果が返ること`() {
-            val saved = BloodHorseFixture.domesticBloodHorse()
+            val saved =
+                RegisteredBloodHorse(
+                    BloodHorseFixture.domesticBloodHorse(),
+                    BloodHorseFixture.inspection(),
+                )
             every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
                 Ok(saved)
 
@@ -163,7 +168,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     .assignName(HorseName.create("オグリキャップ").unwrap())
                     .unwrap()
                     .aggregate
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns Ok(named)
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Ok(RegisteredBloodHorse(named, BloodHorseFixture.inspection()))
 
             tester
                 .post()
@@ -273,7 +279,11 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `正常な入力で 201 Created と父母不明の登録結果が返ること`() {
-            val saved = BloodHorseFixture.importedBloodHorse()
+            val saved =
+                RegisteredBloodHorse(
+                    BloodHorseFixture.importedBloodHorse(),
+                    BloodHorseFixture.inspection(),
+                )
             every { registerImportedHorse(any<Command<RegisterImportedHorseCommand>>()) } returns
                 Ok(saved)
 
