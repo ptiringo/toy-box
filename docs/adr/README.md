@@ -46,3 +46,4 @@
 | [0034](0034-adopt-tfctl-cli.md) | HCP Terraform 操作 CLI として tfctl を採用する | Accepted |
 | [0035](0035-mcp-interface-adapter.md) | REST と並ぶ MCP インターフェースアダプタを adapter リングに追加する | Accepted |
 | [0036](0036-gcp-operation-guardrails.md) | Claude Code からの GCP 操作ガードレールを permissions + 最小権限 SA で構成する | Accepted |
+| [0037](0037-devcontainer-egress-firewall.md) | devcontainer の egress を firewall で default-deny + 許可リストに制限する | Accepted |
