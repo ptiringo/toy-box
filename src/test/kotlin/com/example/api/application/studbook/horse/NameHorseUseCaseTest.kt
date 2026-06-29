@@ -112,13 +112,13 @@ class NameHorseUseCaseTest {
         }
 
         @Test
-        fun `命名後の審査が見つからないとき InspectionNotFound を返す`() {
+        fun `命名後の審査が見つからないとき InspectionNotFound を返し改名が保存されない`() {
             val horse = BloodHorseFixture.bloodHorse()
+            // save をスタブしない（strict mockk）: 審査欠落で save に到達した場合は例外で即時失敗させる
             val repository =
                 mockk<BloodHorseRepository> {
                     every { findById(horse.id) } returns horse
                     every { existsByName(any()) } returns false
-                    every { save(any()) } answers { firstArg() }
                 }
             val inspectionRepository =
                 mockk<HorseInspectionRepository> { every { findById(any()) } returns null }
@@ -130,6 +130,8 @@ class NameHorseUseCaseTest {
                 result.getError() ==
                     NameHorseUseCaseError.InspectionNotFound(horse.inspectionId.value)
             )
+            // 審査が欠落した場合、改名済みの集約は保存しない（エラーなのに命名状態だけ永続化されるのを防ぐ）
+            verify(exactly = 0) { repository.save(any()) }
         }
     }
 }

@@ -123,6 +123,7 @@ class RegisterImportedHorseUseCase(
 
         val bloodHorse = BloodHorse.createImported(entry, inspection, registrationNumber)
 
+        // 審査と軽種馬の2集約書き込みは現状トランザクション境界を持たず、インフラ障害時の原子性は #483 で対応。
         horseInspectionRepository.save(inspection)
         RegisteredBloodHorse(bloodHorseRepository.save(bloodHorse), inspection)
     }
