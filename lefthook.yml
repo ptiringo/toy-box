@@ -86,9 +86,23 @@ pre-commit:
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行
+    #
+    # git worktree（リンクされた作業ツリー）では Gradle daemon を使わない（#482）。
+    # Gradle daemon は永続・プロジェクト横断で共有され、起動時の作業ディレクトリ／書込権限
+    # プロファイルを固定したまま再利用される。別コンテキスト（メインチェックアウト等）で
+    # 起動済みの daemon が当 worktree の `.gradle` へ書き込めず、pre-push が即失敗することがある。
+    # --no-daemon なら起動プロセス内でビルドが走り、この foreign daemon 再利用の非対称を回避する。
+    # メインチェックアウト（`.git` がディレクトリ＝git-dir と git-common-dir が一致）では
+    # 条件が偽となり、従来どおり daemon を使って高速化の恩恵を受ける。
+    #
+    # 上流根本原因: gradle/gradle#38054「Make the Gradle daemon sandbox-friendly」。
+    # サンドボックスが $TMPDIR をセッション固有パスに書き換える環境で、起動コンテキストの
+    # 異なる共有 daemon が当該セッションの書込先に到達できないことが本質。--no-daemon は
+    # そこで挙げられた暫定回避策。将来 org.gradle.daemon.scope（キャッシュ共有のまま daemon を
+    # スコープ分離）が実装されたら、性能を犠牲にしない形へ置き換えられる。
     full-test:
       glob: "**/*.{kt,kts,java}"
-      run: mise exec -- ./gradlew test
+      run: mise exec -- ./gradlew test $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
       tags: test
 
 commit-msg:
