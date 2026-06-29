@@ -1,4 +1,4 @@
-package com.example.api.domain.studbook.model.horse.bloodhorse
+package com.example.api.domain.studbook.model.inspection
 
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap

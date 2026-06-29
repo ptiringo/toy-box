@@ -1,5 +1,6 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
+import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import org.junit.jupiter.api.Test

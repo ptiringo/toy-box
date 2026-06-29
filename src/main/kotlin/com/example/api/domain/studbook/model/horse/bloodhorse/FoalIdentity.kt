@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
+import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import org.jmolecules.ddd.annotation.ValueObject
 
 /**

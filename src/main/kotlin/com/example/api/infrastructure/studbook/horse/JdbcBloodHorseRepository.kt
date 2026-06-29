@@ -9,11 +9,11 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.DateOfBirth
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.LandingDate
-import com.example.api.domain.studbook.model.horse.bloodhorse.MicrochipNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrThrow
 import org.springframework.stereotype.Repository
