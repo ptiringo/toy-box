@@ -167,5 +167,23 @@ class RegisterInStudBookUseCaseTest {
             )
             verify(exactly = 0) { repository.save(any()) }
         }
+
+        @Test
+        fun `前提条件違反で登録が失敗したとき審査が保存されない`() {
+            // 父が雌のため BloodHorse.create が SireNotMale を返す → 審査 save に到達しない
+            val sire = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+            val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+            val bloodHorseRepository =
+                mockk<BloodHorseRepository> {
+                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                        mapOf(sire.id to sire, dam.id to dam)
+                }
+            val inspectionRepository = mockk<HorseInspectionRepository>()
+            val useCase = RegisterInStudBookUseCase(bloodHorseRepository, inspectionRepository)
+
+            useCase(command(validPayload(sire.id.value, dam.id.value)))
+
+            verify(exactly = 0) { inspectionRepository.save(any()) }
+        }
     }
 }

@@ -270,5 +270,26 @@ class RegisterFoalUseCaseTest {
             )
             verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
         }
+
+        @Test
+        fun `前提条件違反で登録が失敗したとき審査が保存されない`() {
+            // 父が雌のため registerFoal が RegistrationFailed(SireNotMale) を返す → 審査 save に到達しない
+            val w = Wiring()
+            val female = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+            every { w.bloodHorseRepository.findById(w.sire.id) } returns female
+            // inspectionRepository は save を許可しないで生成（呼ばれると例外）
+            val strictInspectionRepository = mockk<HorseInspectionRepository>()
+            val useCase =
+                RegisterFoalUseCase(
+                    w.breedingResultRepository,
+                    w.breedingRegistrationRepository,
+                    w.bloodHorseRepository,
+                    strictInspectionRepository,
+                )
+
+            useCase(command(w.breedingResult.id.value))
+
+            verify(exactly = 0) { strictInspectionRepository.save(any()) }
+        }
     }
 }

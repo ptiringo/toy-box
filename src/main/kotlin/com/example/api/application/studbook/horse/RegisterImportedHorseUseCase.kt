@@ -113,16 +113,17 @@ class RegisterImportedHorseUseCase(
                 landingDate = LandingDate(input.landingDate),
             )
 
+        // 審査をメモリ内で組み立て、createImported 後に永続化する（登録系ユースケースで一貫した順序）。
+        // createImported は失敗しないが、内国産馬登録との一貫性のため「組み立て → create → save」の順に揃える。
         val inspection =
-            horseInspectionRepository.save(
-                HorseInspection.create(
-                    microchipNumber = microchipNumber,
-                    parentage = ParentageDetermination.NotApplicable,
-                )
+            HorseInspection.create(
+                microchipNumber = microchipNumber,
+                parentage = ParentageDetermination.NotApplicable,
             )
 
         val bloodHorse = BloodHorse.createImported(entry, inspection, registrationNumber)
 
+        horseInspectionRepository.save(inspection)
         RegisteredBloodHorse(bloodHorseRepository.save(bloodHorse), inspection)
     }
 }

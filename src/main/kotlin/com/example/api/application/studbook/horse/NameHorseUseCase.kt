@@ -96,17 +96,23 @@ class NameHorseUseCase(
                 }
                 .bind()
 
+        // response（マイクロチップを露出）の組み立てに審査が要るため、改名の保存前に引き当てる。
+        // inspectionId は命名遷移で変わらないため save 前に引き当てて問題ない。
+        // 審査が欠落（InspectionNotFound）なら改名を save せず返す（エラーなのに改名済みになるのを避ける）。
+        // 血統登録時に審査を必ず生成・保存しているため、欠落は通常ありえない内部不整合相当。
+        val inspection =
+            horseInspectionRepository
+                .findById(transition.aggregate.inspectionId)
+                .toResultOr {
+                    NameHorseUseCaseError.InspectionNotFound(
+                        transition.aggregate.inspectionId.value
+                    )
+                }
+                .bind()
+
         val named = bloodHorseRepository.save(transition.aggregate)
         // ドメインイベントは当面 application 層内で最小ハンドリング（ログ）に留める。
         logger.info("ドメインイベント発生: {}", transition.event)
-
-        // response（マイクロチップを露出）の組み立てに審査が要るため、命名済みの inspectionId で読み込む。
-        // 血統登録時に審査を必ず生成・保存しているため、欠落は通常ありえない内部不整合相当（InspectionNotFound）。
-        val inspection =
-            horseInspectionRepository
-                .findById(named.inspectionId)
-                .toResultOr { NameHorseUseCaseError.InspectionNotFound(named.inspectionId.value) }
-                .bind()
 
         RegisteredBloodHorse(named, inspection)
     }

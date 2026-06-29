@@ -157,12 +157,12 @@ class RegisterFoalUseCase(
                 breeder = breeder,
             )
 
+        // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
+        // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
         val inspection =
-            horseInspectionRepository.save(
-                HorseInspection.create(
-                    microchipNumber = microchipNumber,
-                    parentage = ParentageDetermination.ByDna(input.dnaParentage),
-                )
+            HorseInspection.create(
+                microchipNumber = microchipNumber,
+                parentage = ParentageDetermination.ByDna(input.dnaParentage),
             )
 
         val bloodHorse =
@@ -170,6 +170,7 @@ class RegisterFoalUseCase(
                 .mapError { RegisterFoalUseCaseError.PreconditionViolated(it) }
                 .bind()
 
+        horseInspectionRepository.save(inspection)
         RegisteredBloodHorse(bloodHorseRepository.save(bloodHorse), inspection)
     }
 
