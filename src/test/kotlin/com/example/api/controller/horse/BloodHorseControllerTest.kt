@@ -231,6 +231,24 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("horse-already-named")
         }
+
+        @Test
+        fun `NameAlreadyTaken で 409 と problem+json が返ること`() {
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.NameAlreadyTaken("オグリキャップ"))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("horse-name-already-taken")
+        }
     }
 
     @Nested

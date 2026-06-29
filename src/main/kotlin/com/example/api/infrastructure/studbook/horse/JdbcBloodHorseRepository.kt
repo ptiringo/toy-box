@@ -51,6 +51,8 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
 
     override fun save(bloodHorse: BloodHorse): BloodHorse = rows.save(bloodHorse.toRow()).toDomain()
 
+    override fun existsByName(name: HorseName): Boolean = rows.existsByName(name.value)
+
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
      *

@@ -22,4 +22,7 @@ interface BloodHorseRepository {
 
     /** 軽種馬を永続化する。 */
     fun save(bloodHorse: BloodHorse): BloodHorse
+
+    /** 指定の馬名が既に他の軽種馬に付与されているかを判定する（馬名の一意性照合用）。 */
+    fun existsByName(name: HorseName): Boolean
 }

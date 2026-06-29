@@ -215,6 +215,7 @@ graph LR
 | BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
 | BreedingResultRepository | リポジトリポート | domain.studbook.model.breeding |
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
+| nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
 | recordUncovered | ドメインサービス | domain.studbook.service.breeding |
 | registerFoal | ドメインサービス | domain.studbook.service.horse |

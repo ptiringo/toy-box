@@ -28,6 +28,7 @@ class NameHorseUseCaseTest {
             val repository =
                 mockk<BloodHorseRepository> {
                     every { findById(horse.id) } returns horse
+                    every { existsByName(any()) } returns false
                     every { save(any()) } answers { firstArg() }
                 }
             val useCase = NameHorseUseCase(repository)
@@ -68,6 +69,22 @@ class NameHorseUseCaseTest {
         }
 
         @Test
+        fun `馬名が既に使用済みのとき NameAlreadyTaken を返し永続化されない`() {
+            val horse = BloodHorseFixture.bloodHorse()
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { findById(horse.id) } returns horse
+                    every { existsByName(HorseName.create("オグリキャップ").unwrap()) } returns true
+                }
+            val useCase = NameHorseUseCase(repository)
+
+            val result = useCase(command(horse.id.value, "オグリキャップ"))
+
+            assert(result.getError() == NameHorseUseCaseError.NameAlreadyTaken("オグリキャップ"))
+            verify(exactly = 0) { repository.save(any()) }
+        }
+
+        @Test
         fun `既に命名済みのとき AlreadyNamed を返し永続化されない`() {
             val named =
                 BloodHorseFixture.bloodHorse()
@@ -75,7 +92,10 @@ class NameHorseUseCaseTest {
                     .unwrap()
                     .aggregate
             val repository =
-                mockk<BloodHorseRepository> { every { findById(named.id) } returns named }
+                mockk<BloodHorseRepository> {
+                    every { findById(named.id) } returns named
+                    every { existsByName(any()) } returns false
+                }
             val useCase = NameHorseUseCase(repository)
 
             val result = useCase(command(named.id.value, "トウカイテイオー"))
