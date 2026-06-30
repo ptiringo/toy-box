@@ -19,6 +19,7 @@ REST API は以下のスタイルガイドに準拠する。
 - カスタムメソッドは `POST /{resource}:{verb}`（[AIP-136](https://google.aip.dev/136)）で表す。特定リソースを操作するカスタムメソッド（例: 馬名登録 `:registerName`）は、操作後の resource 全体を返す
 - **リソース操作の成功レスポンスは一律でリソース表現を返す**。操作ごとに別レスポンス DTO を作らず、リソース名ベースの単一 DTO（`〜Response`、例 `BloodHorseResponse`）を全操作（Create / カスタムメソッド等）で共用する。操作前は未設定になりうる属性（命名前の `name` 等）は nullable で表す。経緯は [ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md)
 - 単一リソース表現を維持したまま、**相互排他な属性集合だけ**は discriminated な入れ子オブジェクト（`oneOf` ＋判別子 `type`）にしてよい（例: 軽種馬の出自 `origin` ＝ 内国産 `DOMESTIC` / 輸入 `IMPORTED`）。リソース全体を `oneOf` に割ることは依然採らず、共通項は平置きを保つ。Jackson は `@JsonTypeInfo(use = NAME, property = "type")` ＋ `@JsonSubTypes`、springdoc は `@Schema(oneOf = […], discriminatorProperty = "type")`。経緯は [ADR-0020](../../docs/adr/0020-sealed-origin-and-discriminated-origin-subobject.md)
+- **外部公開 ID は不透明（opaque）な識別子**として扱う。クライアントは ID の構造を解釈・推測せず、受け取った値をそのまま使う（[AIP-122](https://google.aip.dev/122) の原則）。当面は ID 表現を **生 UUID 据え置き**とし、不透明 ID エンコード（base62/ULID 等）や AIP resource name（`bloodHorses/{id}`）形式の導入は実クライアント・実運用が現れた時点まで遅延する。採否・再評価トリガは [ADR-0042](../../docs/adr/0042-defer-external-id-policy-keep-raw-uuid.md)
 
 ## 命名規約（casing）
 
