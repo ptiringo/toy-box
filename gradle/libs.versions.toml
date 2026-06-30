@@ -20,6 +20,8 @@ springmockk = "5.0.1"
 archunit = "1.4.2"
 jmolecules-bom = "2025.0.2"
 junit = "6.1.0"
+# Karate（ブラックボックス API E2E。Runner API のみ使用＝core。JUnit は project の 6 系に委ねる）
+karate = "1.5.1"
 
 [libraries]
 # Spring AI（MCP server。WebMVC SSE/Streamable トランスポート）
@@ -53,6 +55,9 @@ jmolecules-archunit = { module = "org.jmolecules.integrations:jmolecules-archuni
 # detekt カスタムルール開発（detekt-rules モジュール用）
 detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
 detekt-test = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
+
+# Karate（io.karatelabs。1.5 系で groupId が com.intuit.karate から変更。v2 は JUnit6 必須のため 1.5 系に留める）
+karate-core = { module = "io.karatelabs:karate-core", version.ref = "karate" }
 
 # JUnit（detekt-rules モジュールのテスト用。本体は spring-boot-starter-test 経由で取得する）
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
