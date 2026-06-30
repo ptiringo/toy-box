@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/session-start-mise.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start-mise.sh"
           }
         ]
       }
@@ -59,19 +59,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-editorconfig.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-editorconfig.sh",
             "timeout": 15,
             "statusMessage": "EditorConfig チェック中..."
           },
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-terraform-fmt.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-terraform-fmt.sh",
             "timeout": 30,
             "statusMessage": "terraform fmt チェック中..."
           },
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-workflow-lint.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-workflow-lint.sh",
             "timeout": 30,
             "statusMessage": "actionlint / zizmor チェック中..."
           }
@@ -83,13 +83,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/stop-kotlin-quality.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-kotlin-quality.sh",
             "timeout": 300,
             "statusMessage": "gradle check 実行中 (Kotlin/Java 変更時のみ)..."
           },
           {
             "type": "command",
-            "command": ".claude/hooks/stop-terraform-validate.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-terraform-validate.sh",
             "timeout": 60,
             "statusMessage": "terraform validate 実行中 (Terraform 変更時のみ)..."
           }
