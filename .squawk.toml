@@ -23,4 +23,9 @@ excluded_rules = [
   "prefer-robust-stmts",
   "prefer-text-field",
   "prefer-bigint-over-int",
+  # require-timeout-settings: COMMENT ON は ACCESS EXCLUSIVE ロックを瞬時に取るだけで
+  # 長時間ブロックしない安全操作。set lock_timeout / set statement_timeout を前置しても
+  # H2 が SET 構文を解釈できず（ランタイムは H2 + テスト Testcontainers PostgreSQL の二重適用）、
+  # Flyway マイグレーションが失敗する。COMMENT ON に限ってタイムアウト設定不要と判断して除外する。
+  "require-timeout-settings",
 ]
