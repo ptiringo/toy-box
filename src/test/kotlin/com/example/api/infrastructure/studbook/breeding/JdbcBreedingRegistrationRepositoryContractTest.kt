@@ -55,7 +55,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
             id = id,
             registrationNumber = "B-0001",
             registeredHorseId = generateId(),
-            role = BreedingRole.STALLION.name,
+            breedingRole = BreedingRole.STALLION.name,
             retirementReason = retirementReason,
             retirementOccurredOn = retirementOccurredOn,
         )

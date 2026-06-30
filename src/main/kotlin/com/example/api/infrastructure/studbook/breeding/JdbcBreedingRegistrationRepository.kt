@@ -47,7 +47,7 @@ class JdbcBreedingRegistrationRepository(
                     IllegalStateException("永続化された繁殖登録番号がブランクです: id=$id")
                 },
             registeredHorseId = BloodHorseId(registeredHorseId),
-            role = BreedingRole.valueOf(role),
+            role = BreedingRole.valueOf(breedingRole),
             retirement =
                 retirementReason?.let { reason ->
                     BreedingRetirement(
@@ -68,7 +68,7 @@ class JdbcBreedingRegistrationRepository(
             id = id.value,
             registrationNumber = registrationNumber.value,
             registeredHorseId = registeredHorseId.value,
-            role = role.name,
+            breedingRole = role.name,
             retirementReason = retirement?.reason?.name,
             retirementOccurredOn = retirement?.occurredOn,
         )
