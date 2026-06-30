@@ -1,0 +1,24 @@
+# tbls 設定（#447）。DB スキーマから dbdoc/ を生成し、CI で diff/lint ゲートを敷く。
+# DSN は generateDbDoc/checkDbDoc タスクが Testcontainers の接続情報から環境変数 TBLS_DSN で渡す。
+# この設定ファイルは Gradle タスクが --config で明示的に読み込ませる（tbls 1.94.5 は cwd の
+# .tbls.yml を自動探索しないため、build.gradle.kts から絶対パスを渡す）。
+name: toy-box DB schema
+dsn: ${TBLS_DSN}
+docPath: dbdoc
+
+er:
+  format: mermaid
+
+# flyway_schema_history は Flyway の内部管理テーブルで本ドメインのスキーマではない（V*.sql でも
+# 作らない）。ドキュメント・lint の対象から外し、本来のドメインテーブルだけを一次情報として扱う。
+exclude:
+  - flyway_schema_history
+
+# 本スキーマは DB の外部キー制約を持たず参照はアプリ側の UUID 列で表すため、
+# FK 由来の構造規約（requireForeignKeyIndex 等）は対象が無く no-op。
+# 「スキーマを一次情報」とする方針に沿い、コメント必須のみ有効化する。
+lint:
+  requireTableComment:
+    enabled: true
+  requireColumnComment:
+    enabled: true
