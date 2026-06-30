@@ -1,8 +1,10 @@
 # 0033. 本番 DB プロダクトの選定を遅延し、当面ランタイムは H2 据え置きで進める
 
-- Status: Accepted
+- Status: Superseded by [ADR-0044](0044-adopt-prisma-postgres-for-production-db.md)
 - Date: 2026-06-27
 - Deciders: Matsui
+
+> **注記（2026-07-01）**: 本 ADR の「選定を遅延する」決定は [0044](0044-adopt-prisma-postgres-for-production-db.md)（本番 DB に Prisma Postgres を採用）で置き換えられた。再評価トリガ（ランタイムへの永続化の実需要＝H2 脱却 #451）に該当したため選定を再開し、確定した。以下は当時の記録として保持する。
 
 ## Context（背景・課題）
 

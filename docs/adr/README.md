@@ -42,7 +42,7 @@
 | [0030](0030-jdbc-only-persistence-retire-inmemory.md) | 永続化実装を JDBC 一本に統一し InMemory リポジトリを廃止する（datasource を H2↔PostgreSQL で差し替える） | Accepted |
 | [0031](0031-lightweight-cqrs-read-model.md) | 読み取りを集約非経由の Read Model 経路で実装する（軽量 CQRS / L2・レイヤー先） | Accepted |
 | [0032](0032-sql-lint-squawk-sqlfluff.md) | SQL lint に squawk + sqlfluff を採用する | Accepted |
-| [0033](0033-defer-production-db-selection.md) | 本番 DB プロダクトの選定を遅延し、当面ランタイムは H2 据え置きで進める | Accepted |
+| [0033](0033-defer-production-db-selection.md) | 本番 DB プロダクトの選定を遅延し、当面ランタイムは H2 据え置きで進める | Superseded by [0044](0044-adopt-prisma-postgres-for-production-db.md) |
 | [0034](0034-adopt-tfctl-cli.md) | HCP Terraform 操作 CLI として tfctl を採用する | Accepted |
 | [0035](0035-mcp-interface-adapter.md) | REST と並ぶ MCP インターフェースアダプタを adapter リングに追加する | Accepted |
 | [0036](0036-gcp-operation-guardrails.md) | Claude Code からの GCP 操作ガードレールを permissions + 最小権限 SA で構成する | Accepted |
@@ -52,4 +52,6 @@
 | [0040](0040-coverage-gate-operation-model.md) | カバレッジゲートの運用モデルを excludes 反転 + LINE/BRANCH 2 ボーンド + 手動ラチェットで構成する | Accepted |
 | [0041](0041-immutable-data-model-as-modeling-discipline.md) | イミュータブルデータモデルを永続化機構ではなくモデリング規律として部分採用する | Accepted |
 | [0042](0042-defer-external-id-policy-keep-raw-uuid.md) | 外部公開 ID は当面 生 UUID 据え置きとし、不透明化・別 ID 体系の導入を遅延する | Accepted |
-| [0043](0043-tbls-db-schema-docs.md) | DB スキーマドキュメントに tbls を採用し CI でドリフトとコメント必須をゲートする | Accepted |
+| [0043](0043-aggregate-to-table-mapping-guidelines.md) | 集約⇔テーブルのマッピング指針（sealed/埋め込み VO のフラット化・CHECK 必須・子テーブル化の境界）を定める | Accepted |
+| [0044](0044-adopt-prisma-postgres-for-production-db.md) | 本番 DB プロダクトに Prisma Postgres を採用する（H2 脱却・東京リージョン・標準 JDBC） | Accepted |
+| [0045](0045-tbls-db-schema-docs.md) | DB スキーマドキュメントに tbls を採用し CI でドリフトとコメント必須をゲートする | Accepted |

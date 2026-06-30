@@ -137,6 +137,16 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 
 > 強制手段は ArchUnit（`src/test/.../architecture/`）に限らない。`throw` 文のような構文レベルの規約は ArchUnit では検出しづらいため、detekt のカスタムルールを `:detekt-rules` モジュール（`RuleSetProvider` を ServiceLoader 登録）に置き、本体 build の `detektPlugins` に組み込んで `./gradlew detekt` で強制する。ルール挙動の検証テストは同モジュール内（`detekt-test` 使用）に置く。
 
+### 永続化マッピング（集約 ⇔ テーブル）
+
+集約をリレーショナルスキーマへ写すときの指針（決定経緯は [ADR-0043](../../docs/adr/0043-aggregate-to-table-mapping-guidelines.md)。前提は [ADR-0027](../../docs/adr/0027-persistence-spring-data-jdbc.md) の Row 分離、分類軸は [ADR-0041](../../docs/adr/0041-immutable-data-model-as-modeling-discipline.md) の R/E）。
+
+- **1 集約 = 1 テーブル**を基本とし、1:1 子テーブルや JSON 列での迂回を避ける。
+- **単一の sealed 型・nullable 埋め込み VO はフラット化**する。sealed は判別子列 `<名詞>_type`（値は enum 名の文字列）＋各バリアント固有列、共在 VO は構成列をまとめて「全 NULL／全 NOT NULL」で在不在を表す。
+- **相互排他・共在の不変条件は CHECK 制約で必須強制**する（多層防御。マッパーが整合行を書いても DB 単独で破れないように）。命名は `chk_<table>_<rule>`。
+- **子テーブル化は多重度（コレクション `List`）かイベント性（[ADR-0041](../../docs/adr/0041-immutable-data-model-as-modeling-discipline.md) の INSERT-only イベント）のときだけ**。リソースの現在状態は親行へフラット化して UPDATE、イベントは INSERT-only 子テーブル。
+- マッピング SQL は H2(PostgreSQL 互換モード) と PostgreSQL 双方で適用可能な構文に保つ。
+
 ### 機械強制しない規約（レビューで担保）
 
 - **REST リソース操作の成功レスポンスは一律でリソース表現を返す**（[ADR-0008](../../docs/adr/0008-uniform-resource-representation-response.md) / [api-design.md](api-design.md)）は**機械強制しない**。この規約の本質は「同一リソースの全操作が同一の単一表現 DTO（`〜Response`）を返す」という**リソース単位の意味的一貫性**であり、ハンドラを「どのリソースを操作するか」で束ねる必要がある。ArchUnit / detekt はパッケージ・型・アノテーション・構文は検査できるが、この「リソース帰属によるグルーピング」を表現できない。名前ベースの近似（`Register〜Response` の禁止等）は、AIP-136 がリソース外の付加情報返却に専用 `Response` を認める余地（ADR-0008 でも追補余地として明記）と衝突して誤検出を生むうえ、現に移行途上の `RegisterJockeyResponse`（ADR-0008 が単一 DTO へ寄せる対象とする既知の不整合）を機械的に「違反」と断ずるだけで規約の意味は捉えられない。したがって api-design.md のルール文＋レビューで担保する（#307 の調査結論）。
