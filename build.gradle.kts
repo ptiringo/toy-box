@@ -270,6 +270,14 @@ configurations["dbdocRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"]
 // 作業ディレクトリも projectDir に固定する。
 val tblsConfigFile = layout.projectDirectory.file(".tbls.yml").asFile
 
+// tbls は mise(aqua backend) 管理で素の PATH に乗らないため、実行時 PATH の活性化に依存せず
+// 確実に解決できるよう、設定時に `mise which tbls` で絶対パスを引き、システムプロパティ tbls.bin で
+// 生成側へ渡す（CI は mise-action 活性化済み、ローカルは mise インストール済みなら解決できる）。
+// providers.exec は Configuration Cache 互換。.get() は各 dbdoc タスクの構成時に評価し、
+// tbls 解決が不要な `check` 等では `mise which tbls` が走らないようにする。
+val tblsBin =
+    providers.exec { commandLine("mise", "which", "tbls") }.standardOutput.asText.map(String::trim)
+
 // dbdoc/ を再生成する（開発者が手動実行し差分をコミットする）。
 tasks.register<JavaExec>("generateDbDoc") {
     description = "Testcontainers の PostgreSQL に Flyway を適用し tbls で dbdoc/ を再生成する"
@@ -278,6 +286,7 @@ tasks.register<JavaExec>("generateDbDoc") {
     mainClass = "com.example.api.dbdoc.DbDocGeneratorKt"
     workingDir = layout.projectDirectory.asFile
     systemProperty("tbls.config", tblsConfigFile.absolutePath)
+    systemProperty("tbls.bin", tblsBin.get())
     args("generate")
 }
 
@@ -290,5 +299,6 @@ tasks.register<JavaExec>("checkDbDoc") {
     mainClass = "com.example.api.dbdoc.DbDocGeneratorKt"
     workingDir = layout.projectDirectory.asFile
     systemProperty("tbls.config", tblsConfigFile.absolutePath)
+    systemProperty("tbls.bin", tblsBin.get())
     args("check")
 }

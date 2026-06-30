@@ -8,7 +8,8 @@ import org.testcontainers.utility.DockerImageName
  * DB スキーマドキュメント（dbdoc/）の生成・検査エントリポイント（#447）。
  *
  * Testcontainers で本番ターゲットと同じ PostgreSQL を起動し、Flyway で db/migration の V*.sql を 適用したうえで tbls CLI（mise
- * 管理・PATH 上）を子プロセスで実行する。ランタイムは H2 だが ドキュメントは本番型 PostgreSQL で出す（設計:
+ * 管理）を子プロセスで実行する。tbls の実行パスは build.gradle.kts が `mise which tbls` で解決し システムプロパティ tbls.bin で渡す（実行時
+ * PATH への依存を避ける）。ランタイムは H2 だが ドキュメントは本番型 PostgreSQL で出す（設計:
  * docs/superpowers/specs/2026-06-30-tbls-db-schema-docs-design.md）。
  *
  * 引数 mode:
@@ -55,7 +56,7 @@ private fun buildDsn(container: PostgreSQLContainer): String =
 private fun runTbls(dsn: String, args: List<String>, failOnNonEmptyStdout: Boolean = false) {
     // tbls 1.94.5 は cwd の .tbls.yml を自動探索しないため、設定ファイルを --config で明示指定する
     // （build.gradle.kts がシステムプロパティ tbls.config に絶対パスを渡す）。サブコマンド直後へ挿す。
-    val command = listOf("tbls", args.first()) + configArgs() + args.drop(1)
+    val command = listOf(tblsExecutable(), args.first()) + configArgs() + args.drop(1)
     val process =
         ProcessBuilder(command)
             .apply { environment()["TBLS_DSN"] = dsn }
@@ -71,6 +72,13 @@ private fun runTbls(dsn: String, args: List<String>, failOnNonEmptyStdout: Boole
         "dbdoc/ がスキーマと乖離しています。`./gradlew generateDbDoc` で再生成してコミットしてください。"
     }
 }
+
+/**
+ * tbls の実行ファイルパスを返す。build.gradle.kts が `mise which tbls` で解決した絶対パスを システムプロパティ tbls.bin に設定する。未設定なら
+ * PATH 上の "tbls" にフォールバックする。
+ */
+private fun tblsExecutable(): String =
+    System.getProperty("tbls.bin")?.takeIf { it.isNotBlank() } ?: "tbls"
 
 /**
  * tbls へ渡す設定ファイル指定（--config <path>）を返す。 build.gradle.kts がシステムプロパティ tbls.config に .tbls.yml
