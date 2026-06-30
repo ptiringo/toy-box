@@ -128,7 +128,12 @@ kover {
     // 検証ゲート専用に total と同一内容の variant を複製する。
     // Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てないため、
     // 「全体を見せるレポート（total）」と「成熟パッケージだけを検証する variant（mature）」を分ける。
-    currentProject { copyVariant("mature", "jvm") }
+    currentProject {
+        copyVariant("mature", "jvm")
+        // E2E（Karate）は check/pre-push に載せない設計のため、Kover 計測からも外す。
+        // これにより koverGenerateArtifactJvm が e2eTest に依存せず、check から e2eTest が除外される。
+        instrumentation { disabledForTestTasks.add("e2eTest") }
+    }
 
     reports {
         // 全レポート共通の除外。カバレッジ対象として意味を持たないものだけを外す。
@@ -207,3 +212,32 @@ kover {
         }
     }
 }
+
+// --- E2E（Karate によるブラックボックス API テスト） ---
+// 専用ソースセットに隔離する。ArchUnit は src/test のみ走査し、Kover は test タスクに紐づくため、
+// E2E は規約検査・カバレッジゲートのいずれの対象にもならない（探索的な E2E がゲートを揺らさない）。
+sourceSets {
+    create("e2eTest") {
+        // main の出力を載せることで @SpringBootApplication などのアプリ設定クラスをスキャンできる。
+        // PostgresContainerSupport（src/test）を再利用するため test の出力もクラスパスへ載せる。
+        compileClasspath += sourceSets["main"].output + sourceSets["test"].output
+        runtimeClasspath += sourceSets["main"].output + sourceSets["test"].output
+    }
+}
+
+// e2eTest の依存は test の依存（spring-boot-starter-test / testcontainers-postgresql 等）を引き継ぐ。
+configurations["e2eTestImplementation"].extendsFrom(configurations["testImplementation"])
+
+configurations["e2eTestRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
+
+dependencies { "e2eTestImplementation"(libs.karate.core) }
+
+// CI 独立ジョブ専用のタスク。check / pre-push には意図的に載せない（速い内側ループを保つ）。
+val e2eTest by
+    tasks.registering(Test::class) {
+        description = "Karate によるブラックボックス API E2E テスト（CI 独立ジョブ専用。check/pre-push には載せない）"
+        group = "verification"
+        testClassesDirs = sourceSets["e2eTest"].output.classesDirs
+        classpath = sourceSets["e2eTest"].runtimeClasspath
+        shouldRunAfter(tasks.named("test"))
+    }
