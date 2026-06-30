@@ -6,6 +6,12 @@ name: toy-box DB schema
 dsn: ${TBLS_DSN}
 docPath: dbdoc
 
+# schema.json の出力を止める。tbls diff は Markdown のみ比較し schema.json を突き合わせない
+# ため、driver.database_version（PG パッチ版・生成マシンの CPU アーキ amd64↔arm64 で変動）が
+# 埋まった schema.json は CI に検知されず静かに drift する。ADR-0043 の「local==CI 出力一致」
+# 方針に反するので、非決定的な schema.json は生成対象から外し Markdown だけを一次情報とする。
+disableOutputSchema: true
+
 er:
   format: mermaid
 
