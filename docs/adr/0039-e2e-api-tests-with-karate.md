@@ -26,3 +26,18 @@ slice テスト（@WebMvcTest）は application 層を mock するため結線�
 - 結線リグレッションを HTTP 入口から検出できる。シナリオが仕様兼ドキュメントになる。
 - `.feature` + JS という異質な文法が入る。遅い E2E は内側ループ（check/pre-push）から切り離す前提を維持する。
 - 「登録→照会の往復」は Create と Get-by-id が揃う jockey でのみ可能。他コンテキストへの展開は GET 整備が前提。
+
+### フォローアップ
+
+以下は本 ADR のスコープ外とし、フォロー issue で対応する。
+
+- 他コンテキスト（breeding / horse 等）への横展開（往復には GET-by-id の整備が前提）
+- OpenAPI スキーマと実装の突き合わせ（schema 検証）
+- E2E をどこかのゲート（check / pre-push）へ昇格させるかの判断
+
+## 関連
+
+- [ADR-0015](0015-gradle-build-performance-tuning.md): コンテキストキャッシュ優先のテスト実行性能（E2E をゲート外に置く根拠）
+- [ADR-0006](0006-kover-over-jacoco.md): Kover によるカバレッジ計測（E2E は計測対象外）
+- [ADR-0027](0027-persistence-spring-data-jdbc.md): Spring Data JDBC による永続化（Testcontainers PostgreSQL 基盤を再利用）
+- [ADR-0019](0019-compiler-warnings-as-errors.md): 警告のエラー化（e2eTest の Kotlin も warning-free）
