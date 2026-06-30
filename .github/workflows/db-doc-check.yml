@@ -1,0 +1,60 @@
+# DB スキーマドキュメント（tbls）チェックワークフロー（#447）
+#
+# 目的: マイグレーション・.tbls.yml・dbdoc・生成ロジックの変更時に checkDbDoc を実行し、
+# dbdoc/ の鮮度（tbls diff）とコメント規約（tbls lint）のドリフトを CI で防ぐ。
+# Testcontainers で PostgreSQL を起動するため Docker が要る（ubuntu-latest に同梱）。
+
+name: DB Doc Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/main/resources/db/migration/**'
+      - '.tbls.yml'
+      - 'dbdoc/**'
+      - 'src/dbdoc/**'
+      - 'build.gradle.kts'
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/main/resources/db/migration/**'
+      - '.tbls.yml'
+      - 'dbdoc/**'
+      - 'src/dbdoc/**'
+      - 'build.gradle.kts'
+  workflow_dispatch:
+
+jobs:
+  db-doc-check:
+    runs-on: ubuntu-latest
+    name: tbls diff and lint
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          java-version-file: '.java-version'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          cache-provider: basic
+
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+
+      - name: Verify tbls
+        run: tbls version
+
+      - name: Check DB doc drift and lint
+        run: ./gradlew checkDbDoc --stacktrace
