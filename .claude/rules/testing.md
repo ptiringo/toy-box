@@ -16,7 +16,7 @@ paths:
 | domainService | `domain.*.service` | 純粋ユニット。集約はテスト用 Fixture で組む（モック不要） | `RegisterInStudBookTest` |
 | applicationService | `application` | ユニット。Repository ポートを mockk でスタブし、ユースケースの分岐と失敗バリアントを検証 | `RegisterInStudBookUseCaseTest` / `JockeyRegistrationUseCaseTest` |
 | adapter (rest) | `controller` | `@WebMvcTest` + `MockMvcTester` の slice テスト。HTTP 入出力と ProblemDetail 描画を検証 | `BloodHorseControllerTest` / `GlobalExceptionHandlerTest` |
-| 横断 | — | ArchUnit（規約）／ OpenAPI 契約／ `@SpringBootTest` 統合（最小限） | `architecture/` の `〜RulesTest` 群 / `OpenApiTest` / `HealthEndpointTest` |
+| 横断 | — | ArchUnit（規約）／ OpenAPI 契約／ `@SpringBootTest` 統合（最小限）／ **E2E（Karate・実配線・ゲート外）** | `architecture/` の `〜RulesTest` 群 / `OpenApiTest` / `HealthEndpointTest` / `JockeyApiE2eTest` |
 
 方針:
 
@@ -33,6 +33,10 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 - **`@DirtiesContext` は原則使わない**（キャッシュを退避させ再構築を強いる）。状態リークは設計で断つ。
 - **テスト並列化（`maxParallelForks` / JUnit 5 の `junit.jupiter.execution.parallel`）は採らない**。フォークはキャッシュが JVM 単位のため逆効果、JVM 内並列は `@MockBean`/`@MockkBean` や共有状態を使うテストを Spring 公式が非推奨とする。再評価は #338（永続化層）でテスト隔離を整えてから。
 - 速度を縮めたいときの効く順: ビルドキャッシュ/デーモン（[ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）→ コンテキスト構成の共通化 → （将来）隔離を整えた上での並列化。
+
+## E2E（ブラックボックス API テスト・ゲート外）
+
+全層を実配線したまま HTTP 越しに叩く E2E は Karate で書く（`src/e2eTest`、決定は [ADR-0039](../../docs/adr/0039-e2e-api-tests-with-karate.md)）。`@SpringBootTest(RANDOM_PORT)` + Testcontainers PostgreSQL でアプリを起動し、`.feature` のシナリオを流す。遅く探索的なため **ArchUnit / Kover / `check` / pre-push のいずれの対象にもしない**（独立ソースセット `e2eTest` + タスク `e2eTest`）。CI は独立ワークフロー `e2e-tests.yml` で回す。ローカルは必要時に `./gradlew e2eTest`。網羅はここで広げず内側リングで担保する（ピラミッドの底を厚く）。
 
 ## カバレッジハーネス（Kover）
 
