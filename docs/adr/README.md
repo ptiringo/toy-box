@@ -51,3 +51,4 @@
 | [0039](0039-e2e-api-tests-with-karate.md) | ブラックボックス API E2E テストに Karate を採用する | Accepted |
 | [0040](0040-coverage-gate-operation-model.md) | カバレッジゲートの運用モデルを excludes 反転 + LINE/BRANCH 2 ボーンド + 手動ラチェットで構成する | Accepted |
 | [0041](0041-immutable-data-model-as-modeling-discipline.md) | イミュータブルデータモデルを永続化機構ではなくモデリング規律として部分採用する | Accepted |
+| [0042](0042-defer-external-id-policy-keep-raw-uuid.md) | 外部公開 ID は当面 生 UUID 据え置きとし、不透明化・別 ID 体系の導入を遅延する | Accepted |
