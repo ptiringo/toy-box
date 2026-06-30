@@ -15,7 +15,7 @@
 | [0003](0003-consolidate-mcp-config-in-repo.md) | MCP サーバー設定をリポジトリ管理ファイルに集約する | Accepted |
 | [0004](0004-secrets-fnox-1password.md) | シークレット管理を fnox + 1Password（参照のみ）で行う | Accepted |
 | [0005](0005-time-based-uuid-generation.md) | エンティティ識別子をタイムベース UUID（UUIDv7 相当）に統一する | Accepted |
-| [0006](0006-kover-over-jacoco.md) | カバレッジ計測に Kover を採用し、成熟領域のみゲートする | Accepted |
+| [0006](0006-kover-over-jacoco.md) | カバレッジ計測に Kover を採用し、成熟領域のみゲートする | Accepted（運用詳細は [0040](0040-coverage-gate-operation-model.md) で更新） |
 | [0007](0007-wire-enum-dto-decoupling.md) | HTTP 契約の enum をドメインから分離し Dto enum + マッパーで往復する | Accepted |
 | [0008](0008-uniform-resource-representation-response.md) | REST リソース操作の成功レスポンスは一律でリソース表現を返す | Accepted |
 | [0009](0009-immutable-aggregates.md) | ドメイン集約はイミュータブルに保ち、状態遷移は新インスタンスで表す | Accepted |

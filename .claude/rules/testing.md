@@ -76,8 +76,8 @@ CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け
 
 `total` レポートで 0% に見える領域は、成熟させるときにテストを添える。優先度は実装の成熟度に従う:
 
-- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）
-- `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し
-- `domain.racing.model`（`race`）・`sakamichi` / `tennis`: 探索段階のモデル
+- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）。なお `infrastructure.*` は `excludes` に入れておらず**既にゲート母集団内**。未テスト分は集計に乗るが現状の LINE 90% / BRANCH 80% を満たしている（割り込んだらテストを添えること）。
+- `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し。`excludes` 在籍。
+- `domain.racing.model`（`race`）・`sakamichi` / `tennis`: 探索段階のモデル。`excludes` 在籍。
 
-これらは成熟してゲート対象に昇格する時点で `variant("mature")` の `excludes` から外す。
+このうち `excludes` に在籍している探索領域（`racing.model.race` / `racing.service` / `sakamichi` / `tennis`）は、テストが揃った時点で `variant("mature")` の `excludes` から外してゲート対象へ昇格させる（`infrastructure.*` は既にゲート対象なので対象外）。
