@@ -48,3 +48,4 @@
 | [0036](0036-gcp-operation-guardrails.md) | Claude Code からの GCP 操作ガードレールを permissions + 最小権限 SA で構成する | Accepted |
 | [0037](0037-devcontainer-egress-firewall.md) | devcontainer の egress を firewall で default-deny + 許可リストに制限する | Accepted |
 | [0038](0038-inspection-subdomain-aggregate.md) | 審査（個体識別・親子判定）を独立集約とし識別子の出所を審査側へ一本化する | Accepted |
+| [0040](0040-coverage-gate-operation-model.md) | カバレッジゲートの運用モデルを excludes 反転 + LINE/BRANCH 2 ボーンド + 手動ラチェットで構成する | Accepted |
