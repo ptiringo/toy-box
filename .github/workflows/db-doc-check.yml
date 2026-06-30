@@ -16,6 +16,8 @@ on:
       - 'dbdoc/**'
       - 'src/dbdoc/**'
       - 'build.gradle.kts'
+      - 'mise.toml'
+      - 'mise.lock'
   push:
     branches: [ main ]
     paths:
@@ -24,6 +26,8 @@ on:
       - 'dbdoc/**'
       - 'src/dbdoc/**'
       - 'build.gradle.kts'
+      - 'mise.toml'
+      - 'mise.lock'
   workflow_dispatch:
 
 jobs:
