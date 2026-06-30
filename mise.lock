@@ -68,6 +68,30 @@ checksum = "sha256:ea31c2a927382410cfa2b4eb5970aed62308cf28902e1d167ea36bbfa0515
 url = "https://github.com/aquasecurity/trivy/releases/download/v0.71.2/trivy_0.71.2_windows-64bit.zip"
 provenance = "cosign"
 
+[[tools."aqua:k1LoW/tbls"]]
+version = "1.94.5"
+backend = "aqua:k1LoW/tbls"
+
+[tools."aqua:k1LoW/tbls"."platforms.linux-x64"]
+checksum = "sha256:0ee4381c65fb222c64f0dba039dc956a20097167500e2cf96fd7264249b94f79"
+url = "https://github.com/k1LoW/tbls/releases/download/v1.94.5/tbls_v1.94.5_linux_amd64.tar.gz"
+
+[tools."aqua:k1LoW/tbls"."platforms.linux-x64-musl"]
+checksum = "sha256:0ee4381c65fb222c64f0dba039dc956a20097167500e2cf96fd7264249b94f79"
+url = "https://github.com/k1LoW/tbls/releases/download/v1.94.5/tbls_v1.94.5_linux_amd64.tar.gz"
+
+[tools."aqua:k1LoW/tbls"."platforms.macos-arm64"]
+checksum = "sha256:da1d17f3174c9aa6ca78925f9af27588ad5c733dbddf8ff539533ab2946b3693"
+url = "https://github.com/k1LoW/tbls/releases/download/v1.94.5/tbls_v1.94.5_darwin_arm64.zip"
+
+[tools."aqua:k1LoW/tbls"."platforms.macos-x64"]
+checksum = "sha256:c090035eacd3452f57510c616884ed3e9e8fb2e3e5fcf883c65101a388d730ec"
+url = "https://github.com/k1LoW/tbls/releases/download/v1.94.5/tbls_v1.94.5_darwin_amd64.zip"
+
+[tools."aqua:k1LoW/tbls"."platforms.windows-x64"]
+checksum = "sha256:098824843de8fd6ba091c44ab4db4c5ffe71aec4937683603e2e8ce1ce9e12e9"
+url = "https://github.com/k1LoW/tbls/releases/download/v1.94.5/tbls_v1.94.5_windows_amd64.zip"
+
 [[tools."aqua:koalaman/shellcheck"]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"
