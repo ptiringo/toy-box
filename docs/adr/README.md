@@ -50,3 +50,4 @@
 | [0038](0038-inspection-subdomain-aggregate.md) | 審査（個体識別・親子判定）を独立集約とし識別子の出所を審査側へ一本化する | Accepted |
 | [0039](0039-e2e-api-tests-with-karate.md) | ブラックボックス API E2E テストに Karate を採用する | Accepted |
 | [0040](0040-coverage-gate-operation-model.md) | カバレッジゲートの運用モデルを excludes 反転 + LINE/BRANCH 2 ボーンド + 手動ラチェットで構成する | Accepted |
+| [0041](0041-immutable-data-model-as-modeling-discipline.md) | イミュータブルデータモデルを永続化機構ではなくモデリング規律として部分採用する | Accepted |
