@@ -170,21 +170,21 @@ kover {
             verify { onCheck = false }
         }
 
-        // mature: 検証ゲートを「成熟パッケージのみ」に絞る。
-        // 探索段階のモデル（tennis / sakamichi / breeding / race / racehorse / stallion 等）は
-        // total レポートには出すが、ゲートからは外してノイズで CI を赤くしない。
+        // mature: 検証ゲートを「成熟領域のみ」に絞る。
+        // includes 列挙ではなく excludes 反転: 全体をゲートし、探索段階のパッケージだけ明示除外する。
+        // 新パッケージは既定でゲート対象に入り、除外し忘れても「より厳しくなる」安全側に倒れる。
         variant("mature") {
-            // 共通の除外に加え、成熟＝レイヤーごとのテストが揃っている領域だけを includes で残す
             filtersAppend {
-                includes {
+                excludes {
                     packages(
-                        "com.example.api.domain.shared",
-                        "com.example.api.domain.racing.model.jockey",
-                        "com.example.api.domain.studbook.model.horse.bloodhorse",
-                        "com.example.api.domain.studbook.service.horse",
-                        "com.example.api.application.studbook",
-                        "com.example.api.application.racing.jockey",
-                        "com.example.api.controller",
+                        // 探索段階（レイヤーごとのテスト未整備）。成熟したらこの行を外す＝ゲート対象へ昇格。
+                        "com.example.api.domain.racing.model.race",
+                        "com.example.api.domain.racing.service",
+                        "com.example.api.domain.sakamichi",
+                        "com.example.api.domain.tennis",
+                        // e2eTest ソースセットのクラス（Karate ランナー等）を除外。
+                        // アプリケーションロジックではなくテスト基盤コードのため。
+                        "com.example.api.e2e",
                     )
                 }
             }
@@ -193,17 +193,22 @@ kover {
                 coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
                 aggregationForGroup =
                     kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
-                format = "成熟ゲート対象の行カバレッジ: <value>%"
+                format = "成熟ゲート対象の行カバレッジ（分岐も別途ゲート）: <value>%"
             }
             verify {
-                // check 実行時に検証も走らせる
                 onCheck = true
-                rule("成熟パッケージの行カバレッジ（リグレッション防止のラチェット）") {
+                rule("成熟領域の行・分岐カバレッジ（リグレッション防止のラチェット）") {
                     bound {
-                        // 現状実測 88.3%（302/342 行）を 85% に固定し、以後の低下を検出するラチェット。
-                        // 成熟領域に新コードを足すならテストも添えること、という圧をかける。
-                        minValue = 85
+                        // 反転後母集団の実測 94.57% を 90 に固定したラチェット。
+                        minValue = 90
                         coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                        aggregationForGroup =
+                            kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                    }
+                    bound {
+                        // 反転後母集団の実測 84.91% を 80 に固定したラチェット。
+                        minValue = 80
+                        coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH
                         aggregationForGroup =
                             kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
                     }

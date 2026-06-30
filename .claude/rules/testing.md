@@ -47,18 +47,20 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 | variant | 目的 | 対象 | タスク |
 |---------|------|------|-------|
 | `total` | **穴の可視化**。探索領域も含めた全体像を見せる | 全 main コード（エントリーポイント除く） | `koverHtmlReport` / `koverXmlReport` / `koverLog` |
-| `mature` | **リグレッション防止ゲート**。成熟領域だけを検証 | 下記「ゲート対象」のみ | `koverVerifyMature` / `koverLogMature` |
+| `mature` | **リグレッション防止ゲート**。成熟領域だけを検証 | 下記「探索除外パッケージ」以外の全 main コード | `koverVerifyMature` / `koverLogMature` |
 
-Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てないため、`copyVariant` で `total` を複製した `mature` variant に includes フィルタを掛けてゲート対象を絞っている。
+Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てないため、`copyVariant` で `total` を複製した `mature` variant に excludes フィルタを掛けてゲート対象を絞っている（探索段階のパッケージだけ除外し、残りを全てゲートする）。
 
 ### ゲートの考え方（ラチェット）
 
-- **成熟パッケージのみゲート**: レイヤーごとのテストが揃った領域だけに行カバレッジ下限を課す。探索段階のモデル（`tennis` / `sakamichi` / `breeding` / `race` / `racehorse` / `stallion` 等）は `total` レポートには出すが、ゲートからは外して CI をノイズで赤くしない。
-- **現状の下限は行 85%**（実測 88.3% を少し下げてロック）。これは**ラチェット**であり、カバレッジが上がったら下限も引き上げて後戻りを防ぐ。下げるのは設計判断を伴うときだけ。
-- ゲート対象に新コードを足すなら、テストも添えて 85% を割らないこと。割ると `./gradlew check`（および CI の `koverVerifyMature`）が失敗する。
+- **excludes 反転でゲート対象を決める**: 全体をゲート対象とし、探索段階のパッケージだけを `variant("mature")` の `excludes` に列挙する。パッケージが成熟したら `excludes` から外す＝ゲート対象へ昇格。**外し忘れても「より厳しくなる」安全側**（includes 方式では追加忘れが「緩くなる」危険側だった）。
+- **カバレッジ単位は LINE と BRANCH の 2 ボーンド**。下限は反転後母集団の実測直下のキリ番（LINE 90% / BRANCH 80%）に固定した**手動ラチェット**。実測が上がったら手で下限を上げてよい。割ると `./gradlew check`（CI の `koverVerifyMature`）が失敗する。
+- **自動ラチェット機構は持たない**（YAGNI）。手動で引き上げる。
 
-ゲート対象パッケージ（`build.gradle.kts` の `variant("mature")` の includes が唯一の出所。ここは要約）:
-`domain.shared` / `domain.racing.model.jockey` / `domain.studbook.model.horse.bloodhorse` / `domain.studbook.service.horse` / `application.studbook` / `application.racing.jockey` / `controller`。
+探索除外パッケージ（`build.gradle.kts` の `variant("mature")` の `excludes` が唯一の出所。ここは要約）:
+`domain.racing.model.race` / `domain.racing.service` / `domain.sakamichi` / `domain.tennis` / `e2e`（Karate テスト基盤）。
+
+集約ゲート（本見直し）は成熟領域全体の絶対水準を守り、patch coverage（[#437](https://github.com/ptiringo/toy-box/issues/437)）は新規・変更コードのカバレッジを別途課す補完関係にある。
 
 ### 実行
 
@@ -74,8 +76,8 @@ CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け
 
 `total` レポートで 0% に見える領域は、成熟させるときにテストを添える。優先度は実装の成熟度に従う:
 
-- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）
-- `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し
-- `domain.racing.model`（`race`）・`sakamichi` / `tennis`: 探索段階のモデル
+- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）。なお `infrastructure.*` は `excludes` に入れておらず**既にゲート母集団内**。未テスト分は集計に乗るが現状の LINE 90% / BRANCH 80% を満たしている（割り込んだらテストを添えること）。
+- `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し。`excludes` 在籍。
+- `domain.racing.model`（`race`）・`sakamichi` / `tennis`: 探索段階のモデル。`excludes` 在籍。
 
-これらは成熟してゲート対象に昇格する時点で `variant("mature")` の includes に追加する。
+このうち `excludes` に在籍している探索領域（`racing.model.race` / `racing.service` / `sakamichi` / `tennis`）は、テストが揃った時点で `variant("mature")` の `excludes` から外してゲート対象へ昇格させる（`infrastructure.*` は既にゲート対象なので対象外）。
