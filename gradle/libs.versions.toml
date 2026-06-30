@@ -19,7 +19,7 @@ mockk = "1.14.11"
 springmockk = "5.0.1"
 archunit = "1.4.2"
 jmolecules-bom = "2025.0.2"
-junit = "6.1.0"
+junit = "6.1.1"
 # Karate（ブラックボックス API E2E。Runner API のみ使用＝core。JUnit は project の 6 系に委ねる）
 karate = "1.5.1"
 
