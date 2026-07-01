@@ -41,6 +41,9 @@ dependencies {
     // flyway-core を引き込む。
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     runtimeOnly("com.h2database:h2")
+    // ローカル開発（bootRun）時に compose.yaml の PostgreSQL を自動起動し datasource を自動配線する。
+    // developmentOnly のため本番イメージ（bootBuildImage）・テスト classpath には載らない（#451）。
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
     // PostgreSQL ドライバと Flyway の PostgreSQL モジュール（Flyway 10+ は DB 別サポートをモジュール分割）。
     // 本番ランタイムは Prisma Postgres（実 PostgreSQL v17）へ接続するため runtimeOnly で本番 jar に載せる
     // （#451 / ADR-0044）。契約テスト（Testcontainers）でも runtimeOnly は testRuntimeClasspath に含まれる。
