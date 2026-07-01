@@ -8,3 +8,9 @@ variable "local_readonly_impersonators" {
   type        = list(string)
   default     = []
 }
+
+variable "prisma_service_token" {
+  description = "Prisma Postgres 管理 API のサービストークン（HCP workspace の sensitive 変数で供給）"
+  type        = string
+  sensitive   = true
+}
