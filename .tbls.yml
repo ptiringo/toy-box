@@ -8,7 +8,7 @@ docPath: dbdoc
 
 # schema.json の出力を止める。tbls diff は Markdown のみ比較し schema.json を突き合わせない
 # ため、driver.database_version（PG パッチ版・生成マシンの CPU アーキ amd64↔arm64 で変動）が
-# 埋まった schema.json は CI に検知されず静かに drift する。ADR-0043 の「local==CI 出力一致」
+# 埋まった schema.json は CI に検知されず静かに drift する。ADR-0045 の「local==CI 出力一致」
 # 方針に反するので、非決定的な schema.json は生成対象から外し Markdown だけを一次情報とする。
 disableOutputSchema: true
 
@@ -20,11 +20,35 @@ er:
 exclude:
   - flyway_schema_history
 
-# 本スキーマは DB の外部キー制約を持たず参照はアプリ側の UUID 列で表すため、
-# FK 由来の構造規約（requireForeignKeyIndex 等）は対象が無く no-op。
-# 「スキーマを一次情報」とする方針に沿い、コメント必須のみ有効化する。
+# lint ルールは一通り列挙し、現状の方針に沿って有効/無効を明示する（後から toggle しやすくするため）。
+# 現状はコメント必須のみ有効。DB 外部キーを張るか・スキーマ名前空間をどうするかは別途検討（Issue 化済み）。
+# 外部キーを導入したら unrelatedTable / requireForeignKeyIndex / duplicateRelations の有効化を見直す。
 lint:
+  # スキーマを一次情報とするため、テーブル・カラムのコメントを必須にする。
   requireTableComment:
     enabled: true
   requireColumnComment:
     enabled: true
+  # 以下は現状の設計では対象が無い/方針未定のため無効。該当機能を使い始めた時点で有効化する。
+  requireIndexComment:
+    enabled: false
+  requireConstraintComment:
+    enabled: false
+  requireTriggerComment:
+    enabled: false # トリガー未使用
+  requireTableLabels:
+    enabled: false # tbls ラベル未使用
+  unrelatedTable:
+    enabled: false # 現状 DB 外部キーが無く全テーブルが unrelated 扱いになるため無効（FK 導入時に見直し）
+  columnCount:
+    enabled: false
+  requireColumns:
+    enabled: false
+  duplicateRelations:
+    enabled: false # 関連(FK)未定義のため対象なし
+  requireForeignKeyIndex:
+    enabled: false # DB 外部キーが無く対象なし（FK 導入時に見直し）
+  labelStyleBigQuery:
+    enabled: false
+  requireViewpoints:
+    enabled: false
