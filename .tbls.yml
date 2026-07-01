@@ -20,35 +20,38 @@ er:
 exclude:
   - flyway_schema_history
 
-# lint ルールは一通り列挙し、現状の方針に沿って有効/無効を明示する（後から toggle しやすくするため）。
-# 現状はコメント必須のみ有効。DB 外部キーを張るか・スキーマ名前空間をどうするかは別途検討（Issue 化済み）。
-# 外部キーを導入したら unrelatedTable / requireForeignKeyIndex / duplicateRelations の有効化を見直す。
+# lint ルールは可能な限り有効化する方針（crit レビュー: 基本的に全て true）。
+# ただし現スキーマに対して「違反ゼロで通せる」ものだけを true にする（CI の tbls lint ゲートを割らないため）。
+# 残りは該当機能（外部キー / ラベル / ビューポイント / index・制約コメント）を導入した時点で有効化する。
+# 外部キー・スキーマ名前空間の方針は別 Issue で検討中。
 lint:
-  # スキーマを一次情報とするため、テーブル・カラムのコメントを必須にする。
+  # コメント必須（スキーマを一次情報とする）。
   requireTableComment:
     enabled: true
   requireColumnComment:
     enabled: true
-  # 以下は現状の設計では対象が無い/方針未定のため無効。該当機能を使い始めた時点で有効化する。
-  requireIndexComment:
-    enabled: false
-  requireConstraintComment:
-    enabled: false
+  # 現スキーマで対象ゼロ＝違反なしのため有効化（該当要素が増えたら実効化する）。
   requireTriggerComment:
-    enabled: false # トリガー未使用
-  requireTableLabels:
-    enabled: false # tbls ラベル未使用
-  unrelatedTable:
-    enabled: false # 現状 DB 外部キーが無く全テーブルが unrelated 扱いになるため無効（FK 導入時に見直し）
-  columnCount:
-    enabled: false
-  requireColumns:
-    enabled: false
+    enabled: true # トリガー未使用（対象ゼロ）
   duplicateRelations:
-    enabled: false # 関連(FK)未定義のため対象なし
+    enabled: true # DB 外部キー未使用で関連ゼロ（対象ゼロ）
   requireForeignKeyIndex:
-    enabled: false # DB 外部キーが無く対象なし（FK 導入時に見直し）
+    enabled: true # DB 外部キー未使用（対象ゼロ）。FK 導入後に実効化される
   labelStyleBigQuery:
-    enabled: false
+    enabled: true # tbls ラベル未使用（対象ゼロ）
+  columnCount:
+    enabled: true
+    max: 50 # 現状の最大は blood_horse の 15 列。上限は緩めに設定
+  # 以下は現スキーマだと違反が出て tbls lint が落ちるため、対応が済むまで無効（理由を明記）。
+  unrelatedTable:
+    enabled: false # DB 外部キーが無く全テーブルが unrelated 判定になり落ちる（FK 導入で有効化）
+  requireIndexComment:
+    enabled: false # PK 由来の暗黙 index にコメントが無く落ちる（index コメント追加で有効化）
+  requireConstraintComment:
+    enabled: false # PK/CHECK 制約にコメントが無く落ちる（制約コメント追加で有効化）
+  requireTableLabels:
+    enabled: false # tbls ラベル未使用のため必須化すると落ちる（ラベル運用開始で有効化）
   requireViewpoints:
-    enabled: false
+    enabled: false # ビューポイント未定義のため必須化すると落ちる（viewpoint 定義後に有効化）
+  requireColumns:
+    enabled: false # 全テーブル共通の必須列（created/updated 等）が無いため対象なし
