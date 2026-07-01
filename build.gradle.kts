@@ -30,10 +30,9 @@ dependencies {
     implementation(libs.spring.ai.starter.mcp.server.webmvc)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // 永続化アクセス（Spring Data JDBC + Flyway）。集約 write は Spring Data JDBC（集約 = 永続化境界）。
-    // ランタイムの datasource は当面 H2（PostgreSQL 互換モード）の組み込み DB のまま据え置く。実リポジトリは
-    // まだ InMemory Bean のため datasource/Flyway は付随的に初期化されるだけで、本番 PostgreSQL 化（Cloud SQL
-    // 配線）は実永続化を使う #423 / インフラ作業に委ねる。一方、永続化の契約テストは本番ターゲットの
-    // PostgreSQL を Testcontainers で用意して検証する（ADR-0027 / #422。testing.md の宿題に対応）。
+    // 本番ランタイムの datasource は Prisma Postgres（実 PostgreSQL v17）へ配線する（#451 / ADR-0044）。
+    // ローカル/CI/smoke も PostgreSQL に寄せ、既定の組み込み H2 は cutover で全面脱却する。永続化の契約
+    // テストは本番ターゲットの PostgreSQL を Testcontainers で用意して検証する（ADR-0027 / #422）。
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     // Flyway は starter で引く。Spring Boot 4 は autoconfig を機能別モジュールに分割しており、
     // FlywayAutoConfiguration は spring-boot-autoconfigure ではなく専用モジュール spring-boot-flyway
@@ -42,10 +41,11 @@ dependencies {
     // flyway-core を引き込む。
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     runtimeOnly("com.h2database:h2")
-    // PostgreSQL ドライバと Flyway の PostgreSQL モジュール（Flyway 10+ は DB 別サポートをモジュール分割）は
-    // 契約テスト（Testcontainers）でのみ要るため testRuntimeOnly に置く。本番 jar・ランタイムには載らない。
-    testRuntimeOnly("org.postgresql:postgresql")
-    testRuntimeOnly("org.flywaydb:flyway-database-postgresql")
+    // PostgreSQL ドライバと Flyway の PostgreSQL モジュール（Flyway 10+ は DB 別サポートをモジュール分割）。
+    // 本番ランタイムは Prisma Postgres（実 PostgreSQL v17）へ接続するため runtimeOnly で本番 jar に載せる
+    // （#451 / ADR-0044）。契約テスト（Testcontainers）でも runtimeOnly は testRuntimeClasspath に含まれる。
+    runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)
