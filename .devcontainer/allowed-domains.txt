@@ -46,6 +46,9 @@ download.jetbrains.com
 cache-redirector.jetbrains.com
 plugins.jetbrains.com
 data.services.jetbrains.com
+# kotlin-lsp（Claude Code の Kotlin LSP プラグインが要求する Language Server）を mise で取得する先。
+# 無いと devcontainer 内の `mise install` が http:kotlin-lsp のダウンロードで落ちる。採否は ADR-0046。
+download-cdn.jetbrains.com
 
 # --- Docker Hub（DinD の dockerd が pull する先）---
 # Testcontainers 契約テスト（postgres:17-alpine + Ryuk）と terraform MCP（docker run）の

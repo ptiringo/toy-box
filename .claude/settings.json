@@ -1,4 +1,7 @@
 {
+  "enabledPlugins": {
+    "kotlin-lsp@claude-plugins-official": true
+  },
   "permissions": {
     "deny": [
       "Bash(gcloud * deploy *)",
