@@ -55,3 +55,5 @@
 | [0043](0043-aggregate-to-table-mapping-guidelines.md) | 集約⇔テーブルのマッピング指針（sealed/埋め込み VO のフラット化・CHECK 必須・子テーブル化の境界）を定める | Accepted |
 | [0044](0044-adopt-prisma-postgres-for-production-db.md) | 本番 DB プロダクトに Prisma Postgres を採用する（H2 脱却・東京リージョン・標準 JDBC） | Accepted |
 | [0046](0046-adopt-kotlin-lsp-plugin.md) | Claude Code の Kotlin LSP プラグインを採用し kotlin-lsp を mise http バックエンドで配布する | Accepted |
+| [0047](0047-cross-aggregate-foreign-keys-as-safety-net.md) | 集約間参照に外部キー制約を安全網として張る（DB 参照整合性の多層防御・コンテキスト内に限定） | Accepted |
+| [0048](0048-per-context-db-schema-namespaces.md) | DB スキーマ名前空間を境界づけられたコンテキスト別に分割する | Accepted |
