@@ -9,12 +9,14 @@ spring:
       enabled: true
   # ランタイムの永続化データソース。永続化実装は JDBC 一本に統一し（ADR-0030）、JDBC リポジトリが実際に
   # 読み書きする。デフォルトは Docker 不要の組み込み H2 を PostgreSQL 互換モード（識別子は小文字へ畳む）で
-  # 使い、本番ターゲット DB（PostgreSQL）の挙動へ寄せる。本番は環境変数で datasource を PostgreSQL に
-  # 差し替える（Cloud SQL 新設・Cloud Run 配線は別途インフラ作業）。永続化の契約テストは本番ターゲットの
-  # PostgreSQL を Testcontainers で用意して検証する（PostgresContainerSupport が datasource を上書きする）。
+  # 使い、本番ターゲット DB（PostgreSQL）の挙動へ寄せる。本番は環境変数（SPRING_DATASOURCE_URL 等）で
+  # datasource を Prisma Postgres に差し替える（#451 / ADR-0044）。driver-class-name は明示せず JDBC URL
+  # から導出させる（H2 URL→H2 ドライバ / postgresql URL→PG ドライバ）。これにより env は URL の差し替え
+  # だけで DB を切り替えられる（driver をピンすると URL だけ上書きしたとき H2 ドライバが postgresql URL を
+  # 掴もうとして起動失敗する）。永続化の契約テストは本番ターゲットの PostgreSQL を Testcontainers で用意して
+  # 検証する（PostgresContainerSupport が datasource を上書きする）。
   datasource:
     url: jdbc:h2:mem:toybox;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
     username: sa
     password: ""
   # マイグレーションは Flyway（plain SQL）。db/migration 配下の V*.sql を起動時に適用する。

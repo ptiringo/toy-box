@@ -29,9 +29,8 @@ abstract class PostgresContainerSupport {
         @JvmStatic
         @DynamicPropertySource
         fun datasourceProperties(registry: DynamicPropertyRegistry) {
-            // app.yml は driver-class-name を H2 に固定しているため、URL だけ差し替えると
-            // ドライバ（H2）と URL（PostgreSQL）が食い違い datasource 初期化に失敗する。ドライバも上書きする。
-            registry.add("spring.datasource.driver-class-name", postgres::getDriverClassName)
+            // driver-class-name は app.yml で明示せず JDBC URL から導出させる方針（#451）。ここでも
+            // URL（PostgreSQL）だけ差し替えれば Spring がドライバを PostgreSQL に導出する（本番と同じ経路）。
             registry.add("spring.datasource.url", postgres::getJdbcUrl)
             registry.add("spring.datasource.username", postgres::getUsername)
             registry.add("spring.datasource.password", postgres::getPassword)

@@ -49,21 +49,37 @@ jobs:
       - name: Build Docker image with bootBuildImage
         run: ./gradlew bootBuildImage --imageName=api-smoke:test
 
-      # メモリ値は deploy.yml の --memory と揃えること。
-      # docker の `-m 1g` は 1 GiB (= 1024 MiB) を表し、gcloud の `--memory=1Gi` と等価。
-      # 単位表記が異なるため、片方だけを更新しないよう注意する。
-      - name: Smoke test container with prod-like memory limit
+      # smoke でも実 PostgreSQL を用意し、本番と同じ env 注入経路（SPRING_DATASOURCE_*）で
+      # 起動する。Flyway の起動時マイグレーション・DB health まで含めて本番相当を検証する。
+      # メモリ値は deploy.yml の --memory と揃えること（docker の -m 1g = gcloud の --memory=1Gi）。
+      - name: Smoke test container against PostgreSQL with prod-like memory limit
         run: |
-          docker run -d --name api-smoke -m 1g -p 8080:8080 -e PORT=8080 api-smoke:test
+          docker network create smoke
+          docker run -d --name pg --network smoke \
+            -e POSTGRES_DB=toybox -e POSTGRES_USER=toybox -e POSTGRES_PASSWORD=toybox \
+            postgres:17
+          # postgres が接続受付になるまで待つ
+          for _ in {1..30}; do
+            if docker exec pg pg_isready -U toybox -d toybox >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker run -d --name api-smoke --network smoke -m 1g -p 8080:8080 \
+            -e PORT=8080 \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://pg:5432/toybox \
+            -e SPRING_DATASOURCE_USERNAME=toybox \
+            -e SPRING_DATASOURCE_PASSWORD=toybox \
+            api-smoke:test
+          ok=false
           for _ in {1..60}; do
             if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
-              echo "Container healthy"
-              docker rm -f api-smoke
-              exit 0
+              echo "Container healthy"; ok=true; break
             fi
             sleep 1
           done
-          echo "Container did not become healthy in 60s"
-          docker logs api-smoke
-          docker rm -f api-smoke
-          exit 1
+          if [ "$ok" != true ]; then
+            echo "Container did not become healthy in 60s"
+            docker logs api-smoke
+          fi
+          docker rm -f api-smoke pg
+          docker network rm smoke
+          [ "$ok" = true ]

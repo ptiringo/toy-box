@@ -1,0 +1,13 @@
+# ローカル開発（./gradlew bootRun）用の PostgreSQL。spring-boot-docker-compose が
+# このファイルを検出してコンテナを起動し、datasource（url/username/password）を
+# 自動配線する。本番は Prisma Postgres（#451 / ADR-0044）で、このファイルは開発専用。
+# バージョンは本番ターゲットの PostgreSQL v17 に揃える。
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: toybox
+      POSTGRES_USER: toybox
+      POSTGRES_PASSWORD: toybox
+    ports:
+      - "5432:5432"
