@@ -134,6 +134,7 @@ class RegisterFoalUseCase(
         val breedingRegistration =
             breedingRegistrationRepository
                 .findById(breedingResult.breedingRegistrationId)
+                ?.value
                 .toResultOr {
                     RegisterFoalUseCaseError.BreedingRegistrationNotFound(
                         breedingResult.breedingRegistrationId.value

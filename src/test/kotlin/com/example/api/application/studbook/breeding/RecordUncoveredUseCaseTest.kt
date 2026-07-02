@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -30,7 +31,8 @@ class RecordUncoveredUseCaseTest {
             val broodmareRegistration = BreedingFixture.breedingRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(broodmareRegistration.id) } returns
+                        Versioned(broodmareRegistration, 0L)
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
@@ -82,7 +84,8 @@ class RecordUncoveredUseCaseTest {
             val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(stallionRegistration.id) } returns
+                        Versioned(stallionRegistration, 0L)
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
@@ -114,7 +117,8 @@ class RecordUncoveredUseCaseTest {
                 )
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(broodmareRegistration.id) } returns
+                        Versioned(broodmareRegistration, 0L)
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
