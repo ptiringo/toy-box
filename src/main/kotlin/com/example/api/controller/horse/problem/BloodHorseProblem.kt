@@ -23,6 +23,7 @@ import org.springframework.http.ProblemDetail
  * - 既に命名済みは、リソースの状態と要求が衝突するため 409 Conflict
  * - 申請馬名が既に使用済みは、原簿の既存馬名と衝突するため 409 Conflict
  * - 命名後の審査欠落は、登録時に必ず生成する審査が見つからない内部不整合相当のため 422 Unprocessable Entity
+ * - 更新競合（楽観ロック）は状態の競合として 409 Conflict
  */
 fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -65,6 +66,14 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "命名対象の軽種馬に紐づく審査が見つかりません。",
                 )
                 .apply { setProperty("inspection_id", inspectionId) }
+        is NameHorseUseCaseError.ConcurrentModification ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "concurrent-modification",
+                    title = "Concurrent modification",
+                    detail = "対象の軽種馬が他の更新と競合しました。最新の状態を取得してやり直してください。",
+                )
+                .apply { setProperty("blood_horse_id", bloodHorseId) }
     }
 
 /**

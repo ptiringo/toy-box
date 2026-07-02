@@ -255,6 +255,25 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("horse-name-already-taken")
         }
+
+        @Test
+        fun `ConcurrentModification で 409 と problem+json が返ること`() {
+            val id = UUID.fromString(bloodHorseId)
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.ConcurrentModification(id))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("concurrent-modification")
+        }
     }
 
     @Nested

@@ -171,7 +171,7 @@ class BloodHorseController(
                 ),
                 ApiResponse(
                     responseCode = "409",
-                    description = "対象が既に命名済み（二重命名）",
+                    description = "対象が既に命名済み（二重命名）、または他の更新と競合した",
                     content =
                         [
                             Content(

@@ -52,13 +52,23 @@ sealed interface NameHorseUseCaseError {
      * @property inspectionId 引き当てに失敗した審査の ID
      */
     data class InspectionNotFound(val inspectionId: UUID) : NameHorseUseCaseError
+
+    /**
+     * 読み取りから命名確定までの間に、対象の軽種馬が他の更新と競合した。
+     *
+     * 楽観ロック（読み取り時点の version との不一致）による検出。最新の状態を取得して再操作すれば解消しうる。
+     *
+     * @property bloodHorseId 競合した軽種馬ID
+     */
+    data class ConcurrentModification(val bloodHorseId: UUID) : NameHorseUseCaseError
 }
 
 /**
  * 馬名登録ユースケース。
  *
  * 境界の生入力を [HorseName] に変換し（不正なら検証エラー）、対象の軽種馬を [BloodHorseRepository] で引き当て、 集約の `assignName`
- * で命名状態を遷移させてから永続化する。血統登録 → 馬名登録という順序関係は、対象が 既に永続化済みの [BloodHorse] であることを引当が要求することで自然に満たされる。
+ * で命名状態を遷移させてから楽観ロック付きで更新する（競合は [NameHorseUseCaseError.ConcurrentModification]）。血統登録 →
+ * 馬名登録という順序関係は、対象が 既に永続化済みの [BloodHorse] であることを引当が要求することで自然に満たされる。
  *
  * 状態遷移が同梱して返すドメインイベント（`HorseNamed`）は、ここ application 層で受け取って最小限に扱う （現状はログ）。Spring の
  * `ApplicationEventPublisher` への接続や永続化と整合した publish-after-commit は スコープ外（別イシュー送り。ADR-0029）。
@@ -78,15 +88,14 @@ class NameHorseUseCase(
         val horseName =
             HorseName.create(input.name).mapError { NameHorseUseCaseError.InvalidName }.bind()
 
-        val bloodHorse =
+        val versioned =
             bloodHorseRepository
                 .findById(BloodHorseId(input.bloodHorseId))
-                ?.value
                 .toResultOr { NameHorseUseCaseError.HorseNotFound(input.bloodHorseId) }
                 .bind()
 
         val transition =
-            nameHorse(bloodHorse, horseName, bloodHorseRepository)
+            nameHorse(versioned.value, horseName, bloodHorseRepository)
                 .mapError { error ->
                     when (error) {
                         is NameHorseError.NameAlreadyTaken ->
@@ -111,7 +120,12 @@ class NameHorseUseCase(
                 }
                 .bind()
 
-        val named = bloodHorseRepository.save(transition.aggregate)
+        val named =
+            bloodHorseRepository
+                .update(versioned.map { transition.aggregate })
+                .mapError { NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId) }
+                .bind()
+                .value
         // ドメインイベントは当面 application 層内で最小ハンドリング（ログ）に留める。
         logger.info("ドメインイベント発生: {}", transition.event)
 
