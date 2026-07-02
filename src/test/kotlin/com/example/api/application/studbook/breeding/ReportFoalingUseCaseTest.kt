@@ -2,7 +2,6 @@ package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
-import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
@@ -33,8 +32,8 @@ class ReportFoalingUseCaseTest {
             val outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
-                    every { update(any()) } answers { Ok(firstArg()) }
+                    every { findById(breedingResult.id) } returns breedingResult
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = ReportFoalingUseCase(repository)
 
@@ -43,11 +42,8 @@ class ReportFoalingUseCaseTest {
 
             assert(result.outcome == outcome)
             assert(result.id == breedingResult.id)
-            // 読み取り時点の version(0) を封筒のまま update へ運ぶ（楽観ロックの本義）
-            verify(exactly = 1) {
-                repository.update(match { it.version == 0L && it.value.outcome == outcome })
-            }
-            verify(exactly = 0) { repository.save(any()) }
+            // save には報告済み（outcome 確定後）の集約が渡ること
+            verify(exactly = 1) { repository.save(match { it.outcome == outcome }) }
         }
     }
 
@@ -71,7 +67,7 @@ class ReportFoalingUseCaseTest {
                 result.getError() ==
                     ReportFoalingUseCaseError.BreedingResultNotFound(breedingResultId)
             )
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
@@ -79,9 +75,7 @@ class ReportFoalingUseCaseTest {
             val first = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
             val reported = BreedingFixture.breedingResult().recordFoaling(first).unwrap()
             val repository =
-                mockk<BreedingResultRepository> {
-                    every { findById(reported.id) } returns Versioned(reported, 0L)
-                }
+                mockk<BreedingResultRepository> { every { findById(reported.id) } returns reported }
             val useCase = ReportFoalingUseCase(repository)
 
             val result =
@@ -90,7 +84,7 @@ class ReportFoalingUseCaseTest {
                 )
 
             assert(result.getError() == ReportFoalingUseCaseError.AlreadyReported(first))
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
@@ -98,8 +92,8 @@ class ReportFoalingUseCaseTest {
             val breedingResult = BreedingFixture.breedingResult()
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
-                    every { update(any()) } returns Err(UpdateConflict)
+                    every { findById(breedingResult.id) } returns breedingResult
+                    every { save(any()) } returns Err(UpdateConflict)
                 }
             val useCase = ReportFoalingUseCase(repository)
 

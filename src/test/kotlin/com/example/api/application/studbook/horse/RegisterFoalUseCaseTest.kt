@@ -73,7 +73,7 @@ class RegisterFoalUseCaseTest {
 
         val breedingResultRepository =
             mockk<BreedingResultRepository> {
-                every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
+                every { findById(breedingResult.id) } returns breedingResult
             }
         val breedingRegistrationRepository =
             mockk<BreedingRegistrationRepository> {
@@ -222,8 +222,7 @@ class RegisterFoalUseCaseTest {
                     broodmareRegistration = w.breedingRegistration,
                     stallionRegistration = BreedingFixture.stallionRegistration(stallion = w.sire),
                 )
-            every { w.breedingResultRepository.findById(notReported.id) } returns
-                Versioned(notReported, 0L)
+            every { w.breedingResultRepository.findById(notReported.id) } returns notReported
 
             val result = w.useCase()(command(notReported.id.value))
 
@@ -243,8 +242,7 @@ class RegisterFoalUseCaseTest {
                 BreedingFixture.uncoveredBreedingResult(
                     broodmareRegistration = w.breedingRegistration
                 )
-            every { w.breedingResultRepository.findById(uncovered.id) } returns
-                Versioned(uncovered, 0L)
+            every { w.breedingResultRepository.findById(uncovered.id) } returns uncovered
 
             val result = w.useCase()(command(uncovered.id.value))
 

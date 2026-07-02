@@ -63,7 +63,7 @@ class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultR
     ): Result<BreedingResult, ReportFoalingUseCaseError> = binding {
         val input = command.payload
 
-        val versioned =
+        val breedingResult =
             breedingResultRepository
                 .findById(BreedingResultId(input.breedingResultId))
                 .toResultOr {
@@ -72,15 +72,14 @@ class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultR
                 .bind()
 
         val reported =
-            versioned.value
+            breedingResult
                 .recordFoaling(input.outcome)
                 .mapError { ReportFoalingUseCaseError.AlreadyReported(it.current) }
                 .bind()
 
         breedingResultRepository
-            .update(versioned.map { reported })
+            .save(reported)
             .mapError { ReportFoalingUseCaseError.ConcurrentModification(input.breedingResultId) }
             .bind()
-            .value
     }
 }

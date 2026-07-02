@@ -14,6 +14,7 @@ import com.example.api.domain.studbook.model.breeding.ValidityPeriod
 import com.example.api.domain.studbook.service.breeding.recordCovering
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.time.LocalDate
@@ -160,7 +161,9 @@ class RecordCoveringUseCase(
                 .mapError { RecordCoveringUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        breedingResultRepository.save(breedingResult)
+        breedingResultRepository.save(breedingResult).getOrElse {
+            error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
+        }
     }
 
     /** 種畜証明書の生入力を各 VO 検証して [StudCertificate] を組み立てる。形式不正は 400 系の入力エラーにマップする。 */

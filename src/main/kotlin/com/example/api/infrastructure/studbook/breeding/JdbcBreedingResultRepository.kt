@@ -1,7 +1,6 @@
 package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.UpdateConflict
-import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -42,8 +41,8 @@ private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
 class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRepository) :
     BreedingResultRepository {
 
-    override fun findById(id: BreedingResultId): Versioned<BreedingResult>? =
-        rows.findById(id.value).map { it.toVersioned() }.orElse(null)
+    override fun findById(id: BreedingResultId): BreedingResult? =
+        rows.findById(id.value).map { it.toDomain() }.orElse(null)
 
     override fun findByBreedingRegistrationIdAndBreedingYear(
         breedingRegistrationId: BreedingRegistrationId,
@@ -56,22 +55,13 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             )
             ?.toDomain()
 
-    override fun save(breedingResult: BreedingResult): BreedingResult =
-        rows.save(breedingResult.toRow()).toDomain()
-
-    override fun update(
-        versioned: Versioned<BreedingResult>
-    ): Result<Versioned<BreedingResult>, UpdateConflict> =
+    override fun save(breedingResult: BreedingResult): Result<BreedingResult, UpdateConflict> =
         try {
-            Ok(rows.save(versioned.value.toRow(version = versioned.version)).toVersioned())
+            Ok(rows.save(breedingResult.toRow()).toDomain())
         } catch (_: OptimisticLockingFailureException) {
             // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
             Err(UpdateConflict)
         }
-
-    /** 保存済み Row を、楽観ロック version を同梱した封筒つきドメイン集約へ写す。 */
-    private fun BreedingResultRow.toVersioned(): Versioned<BreedingResult> =
-        Versioned(toDomain(), checkNotNull(version) { "保存済み行に version がありません: id=$id" })
 
     /** 永続化モデルからドメイン集約を再構成する（検証・採番なし。covering/区分の整合は集約の init が保証）。 */
     private fun BreedingResultRow.toDomain(): BreedingResult =
@@ -118,10 +108,10 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
     /**
      * ドメイン集約を永続化モデルへ写す。
      *
-     * @param version 既存行を update するときは読み取り時点の version（[Versioned.version]）。新規 insert は null
-     *   のまま（Spring Data JDBC が新規と判定する。ADR-0027 の落とし穴②③）
+     * version は集約が保持する値をそのまま写す（null なら Spring Data JDBC が新規と判定して insert、非 null なら 楽観ロック付き
+     * update。ADR-0027 の落とし穴②③）。
      */
-    private fun BreedingResult.toRow(version: Long? = null): BreedingResultRow {
+    private fun BreedingResult.toRow(): BreedingResultRow {
         val (outcomeType, foalingDate) = outcome.toTypeAndDate()
         return BreedingResultRow(
             id = id.value,
