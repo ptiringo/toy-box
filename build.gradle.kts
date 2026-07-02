@@ -187,6 +187,9 @@ kover {
                         // e2eTest ソースセットのクラス（Karate ランナー等）を除外。
                         // アプリケーションロジックではなくテスト基盤コードのため。
                         "com.example.api.e2e",
+                        // dbdoc ソースセットの tbls ドキュメント生成ロジックを除外。
+                        // アプリケーションロジックではなくツール基盤コードのため。
+                        "com.example.api.dbdoc",
                     )
                 }
             }
@@ -248,3 +251,56 @@ val e2eTest by
         classpath = sourceSets["e2eTest"].runtimeClasspath
         shouldRunAfter(tasks.named("test"))
     }
+
+// --- DB スキーマドキュメント生成（tbls, #447） ---
+// 専用ソースセットに隔離する（ArchUnit は src/test のみ走査、Kover は test タスク紐付けのため、
+// 生成エントリポイントは規約検査・カバレッジゲートのいずれの対象にもならない）。
+sourceSets {
+    create("dbdoc") {
+        compileClasspath += sourceSets["main"].output + sourceSets["test"].output
+        runtimeClasspath += sourceSets["main"].output + sourceSets["test"].output
+    }
+}
+
+// dbdoc の依存は test の依存（testcontainers-postgresql / flyway-database-postgresql 等）を引き継ぐ。
+configurations["dbdocImplementation"].extendsFrom(configurations["testImplementation"])
+
+configurations["dbdocRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
+
+// tbls 1.94.5 は cwd の .tbls.yml を自動探索しないため、設定ファイルの絶対パスをシステムプロパティで
+// 明示的に渡し、生成側が --config で読み込む。docPath（相対 dbdoc）が repo root 直下へ解決されるよう
+// 作業ディレクトリも projectDir に固定する。
+val tblsConfigFile = layout.projectDirectory.file(".tbls.yml").asFile
+
+// tbls は mise(aqua backend) 管理で素の PATH に乗らないため、実行時 PATH の活性化に依存せず
+// 確実に解決できるよう、設定時に `mise which tbls` で絶対パスを引き、システムプロパティ tbls.bin で
+// 生成側へ渡す（CI は mise-action 活性化済み、ローカルは mise インストール済みなら解決できる）。
+// providers.exec は Configuration Cache 互換。.get() は各 dbdoc タスクの構成時に評価し、
+// tbls 解決が不要な `check` 等では `mise which tbls` が走らないようにする。
+val tblsBin =
+    providers.exec { commandLine("mise", "which", "tbls") }.standardOutput.asText.map(String::trim)
+
+// dbdoc/ を再生成する（開発者が手動実行し差分をコミットする）。
+tasks.register<JavaExec>("generateDbDoc") {
+    description = "Testcontainers の PostgreSQL に Flyway を適用し tbls で dbdoc/ を再生成する"
+    group = "documentation"
+    classpath = sourceSets["dbdoc"].runtimeClasspath
+    mainClass = "com.example.api.dbdoc.DbDocGeneratorKt"
+    workingDir = layout.projectDirectory.asFile
+    systemProperty("tbls.config", tblsConfigFile.absolutePath)
+    systemProperty("tbls.bin", tblsBin.get())
+    args("generate")
+}
+
+// dbdoc/ が最新か（tbls diff）とコメント規約（tbls lint）を検査する。
+// check / pre-push には載せない（Docker 依存の重いタスクを内側ループから外す。CI 専用ジョブで回す）。
+tasks.register<JavaExec>("checkDbDoc") {
+    description = "tbls diff（ドキュメント鮮度）と tbls lint（コメント必須）でスキーマドリフト/規約を検査する"
+    group = "verification"
+    classpath = sourceSets["dbdoc"].runtimeClasspath
+    mainClass = "com.example.api.dbdoc.DbDocGeneratorKt"
+    workingDir = layout.projectDirectory.asFile
+    systemProperty("tbls.config", tblsConfigFile.absolutePath)
+    systemProperty("tbls.bin", tblsBin.get())
+    args("check")
+}

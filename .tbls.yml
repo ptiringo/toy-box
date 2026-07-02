@@ -1,0 +1,57 @@
+# tbls 設定（#447）。DB スキーマから dbdoc/ を生成し、CI で diff/lint ゲートを敷く。
+# DSN は generateDbDoc/checkDbDoc タスクが Testcontainers の接続情報から環境変数 TBLS_DSN で渡す。
+# この設定ファイルは Gradle タスクが --config で明示的に読み込ませる（tbls 1.94.5 は cwd の
+# .tbls.yml を自動探索しないため、build.gradle.kts から絶対パスを渡す）。
+name: toy-box DB schema
+dsn: ${TBLS_DSN}
+docPath: dbdoc
+
+# schema.json の出力を止める。tbls diff は Markdown のみ比較し schema.json を突き合わせない
+# ため、driver.database_version（PG パッチ版・生成マシンの CPU アーキ amd64↔arm64 で変動）が
+# 埋まった schema.json は CI に検知されず静かに drift する。ADR-0045 の「local==CI 出力一致」
+# 方針に反するので、非決定的な schema.json は生成対象から外し Markdown だけを一次情報とする。
+disableOutputSchema: true
+
+er:
+  format: mermaid
+
+# flyway_schema_history は Flyway の内部管理テーブルで本ドメインのスキーマではない（V*.sql でも
+# 作らない）。ドキュメント・lint の対象から外し、本来のドメインテーブルだけを一次情報として扱う。
+exclude:
+  - flyway_schema_history
+
+# lint ルールは可能な限り有効化する方針（crit レビュー: 基本的に全て true）。
+# ただし現スキーマに対して「違反ゼロで通せる」ものだけを true にする（CI の tbls lint ゲートを割らないため）。
+# 残りは該当機能（外部キー / ラベル / ビューポイント / index・制約コメント）を導入した時点で有効化する。
+# 外部キー・スキーマ名前空間の方針は別 Issue で検討中。
+lint:
+  # コメント必須（スキーマを一次情報とする）。
+  requireTableComment:
+    enabled: true
+  requireColumnComment:
+    enabled: true
+  # 現スキーマで対象ゼロ＝違反なしのため有効化（該当要素が増えたら実効化する）。
+  requireTriggerComment:
+    enabled: true # トリガー未使用（対象ゼロ）
+  duplicateRelations:
+    enabled: true # DB 外部キー未使用で関連ゼロ（対象ゼロ）
+  requireForeignKeyIndex:
+    enabled: true # DB 外部キー未使用（対象ゼロ）。FK 導入後に実効化される
+  labelStyleBigQuery:
+    enabled: true # tbls ラベル未使用（対象ゼロ）
+  columnCount:
+    enabled: true
+    max: 50 # 現状の最大は blood_horse の 15 列。上限は緩めに設定
+  # 以下は現スキーマだと違反が出て tbls lint が落ちるため、対応が済むまで無効（理由を明記）。
+  unrelatedTable:
+    enabled: false # DB 外部キーが無く全テーブルが unrelated 判定になり落ちる（FK 導入で有効化）
+  requireIndexComment:
+    enabled: false # PK 由来の暗黙 index にコメントが無く落ちる（index コメント追加で有効化）
+  requireConstraintComment:
+    enabled: false # PK/CHECK 制約にコメントが無く落ちる（制約コメント追加で有効化）
+  requireTableLabels:
+    enabled: false # tbls ラベル未使用のため必須化すると落ちる（ラベル運用開始で有効化）
+  requireViewpoints:
+    enabled: false # ビューポイント未定義のため必須化すると落ちる（viewpoint 定義後に有効化）
+  requireColumns:
+    enabled: false # 全テーブル共通の必須列（created/updated 等）が無いため対象なし
