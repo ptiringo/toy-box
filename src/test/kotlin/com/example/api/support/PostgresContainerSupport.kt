@@ -6,13 +6,14 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 
 /**
- * 永続化の契約テストが本番ターゲットの PostgreSQL に対して検証するための共有コンテナ（ADR-0027 / #422）。
+ * テストが本番ターゲットの PostgreSQL に対して検証するための共有コンテナ（ADR-0027 / #422）。
  *
- * ランタイムの datasource は当面 H2（PostgreSQL 互換モード）だが、永続化の契約テストは本番ターゲット DB と 同じ PostgreSQL
- * で検証したい。そこで本クラスを継承したテストには Testcontainers の実 PostgreSQL を割り当てる。 コンテナはプロセス内で 1
+ * ランタイムの datasource は外部供給（H2 全面脱却・#451。本番 = Prisma Postgres の env 注入、ローカル bootRun = docker-compose
+ * 自動配線）で、app.yml に既定値を持たない。そのため Spring コンテキストを起動するテスト （契約テスト・`@SpringBootTest` 統合）は本クラスを継承して
+ * Testcontainers の実 PostgreSQL を割り当てる。 コンテナはプロセス内で 1
  * つだけ起動して全テストで共有し（シングルトン）、明示停止はしない（Testcontainers の Ryuk が JVM 終了時に破棄する）。接続先は
- * `@DynamicPropertySource` で各コンテキストへ注入し、app.yml の既定 （H2）を上書きする。注入する値は全テストで同一なので distinct な
- * ApplicationContext を増やさず、コンテキスト キャッシュ方針（ADR-0015 / testing.md）を維持する。
+ * `@DynamicPropertySource` で各コンテキストへ注入する。注入する値は全テストで同一なので distinct な ApplicationContext
+ * を増やさず、コンテキスト キャッシュ方針（ADR-0015 / testing.md）を維持する。
  *
  * 本クラスを継承するテストでは、Flyway が起動時に `db/migration/V*.sql` をこの PostgreSQL コンテナへ適用する （Boot 4.1 + Flyway
  * 12 + flyway-database-postgresql で自動実行されることを併せて担保する）。

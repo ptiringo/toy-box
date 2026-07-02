@@ -8,17 +8,12 @@ spring:
     virtual:
       enabled: true
   # ランタイムの永続化データソース。永続化実装は JDBC 一本に統一し（ADR-0030）、JDBC リポジトリが実際に
-  # 読み書きする。デフォルトは Docker 不要の組み込み H2 を PostgreSQL 互換モード（識別子は小文字へ畳む）で
-  # 使い、本番ターゲット DB（PostgreSQL）の挙動へ寄せる。本番は環境変数（SPRING_DATASOURCE_URL 等）で
-  # datasource を Prisma Postgres に差し替える（#451 / ADR-0044）。driver-class-name は明示せず JDBC URL
-  # から導出させる（H2 URL→H2 ドライバ / postgresql URL→PG ドライバ）。これにより env は URL の差し替え
-  # だけで DB を切り替えられる（driver をピンすると URL だけ上書きしたとき H2 ドライバが postgresql URL を
-  # 掴もうとして起動失敗する）。永続化の契約テストは本番ターゲットの PostgreSQL を Testcontainers で用意して
-  # 検証する（PostgresContainerSupport が datasource を上書きする）。
-  datasource:
-    url: jdbc:h2:mem:toybox;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
-    username: sa
-    password: ""
+  # 読み書きする。datasource はここに既定値を置かず、実行環境が外部から供給する（H2 全面脱却・#451 / ADR-0044）:
+  #   - 本番（Cloud Run）: Secret Manager から env（SPRING_DATASOURCE_URL / _USERNAME / _PASSWORD）で
+  #     Prisma Postgres（実 PostgreSQL v17）の接続情報を注入（deploy.yml の deploy-cloudrun secrets 入力）。
+  #   - ローカル bootRun: spring-boot-docker-compose が compose.yaml の PostgreSQL を自動起動・自動配線。
+  #   - テスト: Testcontainers の PostgreSQL を PostgresContainerSupport が注入。
+  # driver-class-name は明示せず JDBC URL から導出させる（URL の差し替えだけで接続先を切り替えられる）。
   # マイグレーションは Flyway（plain SQL）。db/migration 配下の V*.sql を起動時に適用する。
   flyway:
     enabled: true

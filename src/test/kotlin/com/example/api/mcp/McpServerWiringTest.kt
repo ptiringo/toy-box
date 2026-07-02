@@ -1,6 +1,7 @@
 package com.example.api.mcp
 
 import com.example.api.mcp.racing.jockey.JockeyMcpTools
+import com.example.api.support.PostgresContainerSupport
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -10,10 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest
  *
  * Spring AI MCP server オートコンフィグを足してもアプリケーションコンテキストが起動し、`@McpTool` を持つ [JockeyMcpTools] Bean
  * が登録されることだけを確認する。MCP プロトコルの E2E（ツール一覧・呼び出し）は follow-up とし、ロジック網羅は slice
- * テスト（JockeyMcpToolsTest）で済ませる（testing.md: 統合は最小限）。
+ * テスト（JockeyMcpToolsTest）で済ませる（testing.md: 統合は最小限）。 datasource は外部供給（H2 全面脱却・#451）のため
+ * PostgresContainerSupport を継承する。
  */
 @SpringBootTest
-class McpServerWiringTest {
+class McpServerWiringTest : PostgresContainerSupport() {
     @Autowired private lateinit var jockeyMcpTools: JockeyMcpTools
 
     @Test
