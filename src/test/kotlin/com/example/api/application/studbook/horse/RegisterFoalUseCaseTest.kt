@@ -77,8 +77,7 @@ class RegisterFoalUseCaseTest {
             }
         val breedingRegistrationRepository =
             mockk<BreedingRegistrationRepository> {
-                every { findById(breedingRegistration.id) } returns
-                    Versioned(breedingRegistration, 0L)
+                every { findById(breedingRegistration.id) } returns breedingRegistration
             }
         val bloodHorseRepository =
             mockk<BloodHorseRepository> {

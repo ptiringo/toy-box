@@ -1,7 +1,6 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
-import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -50,10 +49,8 @@ class RecordCoveringUseCaseTest {
             val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns
-                        Versioned(broodmareRegistration, 0L)
-                    every { findById(stallionRegistration.id) } returns
-                        Versioned(stallionRegistration, 0L)
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(stallionRegistration.id) } returns stallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
@@ -246,8 +243,7 @@ class RecordCoveringUseCaseTest {
             val stallionRegistrationId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns
-                        Versioned(broodmareRegistration, 0L)
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
                     every { findById(BreedingRegistrationId(stallionRegistrationId)) } returns null
                 }
             val breedingResultRepository = mockk<BreedingResultRepository>()
@@ -271,10 +267,8 @@ class RecordCoveringUseCaseTest {
             val notStallionRegistration = BreedingFixture.breedingRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns
-                        Versioned(broodmareRegistration, 0L)
-                    every { findById(notStallionRegistration.id) } returns
-                        Versioned(notStallionRegistration, 0L)
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(notStallionRegistration.id) } returns notStallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
@@ -307,10 +301,8 @@ class RecordCoveringUseCaseTest {
                 BreedingFixture.breedingResult(broodmareRegistration = broodmareRegistration)
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns
-                        Versioned(broodmareRegistration, 0L)
-                    every { findById(stallionRegistration.id) } returns
-                        Versioned(stallionRegistration, 0L)
+                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(stallionRegistration.id) } returns stallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {

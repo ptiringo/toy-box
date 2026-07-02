@@ -8,6 +8,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
@@ -73,6 +74,8 @@ class RegisterBreedingRegistrationUseCase(
                 .bind()
 
         val registration = BreedingRegistration.create(registrationNumber, horse)
-        breedingRegistrationRepository.save(registration)
+        breedingRegistrationRepository.save(registration).getOrElse {
+            error("新規の繁殖登録の保存で楽観ロック競合はありえない: id=${registration.id.value}")
+        }
     }
 }

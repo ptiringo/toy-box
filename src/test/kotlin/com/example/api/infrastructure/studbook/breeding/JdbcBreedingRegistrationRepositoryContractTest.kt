@@ -36,8 +36,9 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 3. 既存行の update で `@Version` がインクリメントされること（楽観ロック兼用。落とし穴③）
  * 4. イミュータブル集約 [BreedingRegistration] を ID を保ったまま再構成（reconstitute）して往復できること
  * 5. nullable な供用停止（`BreedingRetirement`）の供用中／供用停止済みの双方が 2 列のフラット化を経て往復できること
- * 6. save は insert 専用で、既存集約のドメイン経由 update（供用停止の反映等）は update メソッドが version を進めて行うこと
- * 7. 古い version での update が UpdateConflict になること（楽観ロック）
+ * 6. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
+ * 7. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
+ * 8. 供用停止の共在不変条件が CHECK 制約でスキーマ側にも強制されること
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -95,8 +96,8 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         val registration =
             BreedingRegistration.create(BreedingRegistrationNumber.create("B-1234").unwrap(), mare)
 
-        val saved = repository.save(registration)
-        val found = repository.findById(registration.id)?.value
+        val saved = repository.save(registration).unwrap()
+        val found = repository.findById(registration.id)
 
         // value class ID が DB 往復しても保たれ、ID ベースの等価性で同一集約とみなせる
         assert(saved.id == registration.id)
@@ -121,8 +122,8 @@ class JdbcBreedingRegistrationRepositoryContractTest(
                 .retire(RetirementReason.DEATH, occurredOn)
                 .unwrap()
 
-        repository.save(retired)
-        val found = repository.findById(retired.id)?.value
+        repository.save(retired).unwrap()
+        val found = repository.findById(retired.id)
 
         assert(found != null)
         assert(found!!.isRetired)
@@ -138,53 +139,50 @@ class JdbcBreedingRegistrationRepositoryContractTest(
     }
 
     @Test
-    fun `ドメイン経由のupdateで供用停止が反映されversionが進む`() {
+    fun `保存済み集約の再saveはupdateになりversionが進む`() {
         val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
-        val saved =
-            repository.save(
-                BreedingRegistration.create(
-                    BreedingRegistrationNumber.create("B-1234").unwrap(),
-                    mare,
+        val inserted =
+            repository
+                .save(
+                    BreedingRegistration.create(
+                        BreedingRegistrationNumber.create("B-1234").unwrap(),
+                        mare,
+                    )
                 )
-            )
-        val versioned = repository.findById(saved.id)
-        assert(versioned != null)
+                .unwrap()
+        assert(inserted.version != null)
 
-        val retired =
-            versioned!!.map { it.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap() }
-        val updated = repository.update(retired).unwrap()
+        val retired = inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap()
+        val updated = repository.save(retired).unwrap()
 
-        assert(updated.version > versioned.version)
+        assert(updated.version!! > inserted.version!!)
         assert(rows.count() == 1L)
-        assert(repository.findById(saved.id)!!.value.isRetired)
+        assert(repository.findById(inserted.id)?.isRetired == true)
     }
 
     @Test
-    fun `古いversionでのupdateはUpdateConflictを返し先行の書き込みが保たれる`() {
+    fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
         val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
-        val saved =
-            repository.save(
-                BreedingRegistration.create(
-                    BreedingRegistrationNumber.create("B-1234").unwrap(),
-                    mare,
+        val inserted =
+            repository
+                .save(
+                    BreedingRegistration.create(
+                        BreedingRegistrationNumber.create("B-1234").unwrap(),
+                        mare,
+                    )
                 )
-            )
-        val stale = repository.findById(saved.id)!!
+                .unwrap()
         repository
-            .update(
-                stale.map { it.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap() }
-            )
+            .save(inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap())
             .unwrap()
 
         val conflicted =
-            repository.update(
-                stale.map {
-                    it.retire(RetirementReason.USE_CHANGE, LocalDate.of(2026, 5, 1)).unwrap()
-                }
+            repository.save(
+                inserted.retire(RetirementReason.USE_CHANGE, LocalDate.of(2026, 5, 1)).unwrap()
             )
 
         assert(conflicted.getError() == UpdateConflict)
-        assert(repository.findById(saved.id)!!.value.retirement?.reason == RetirementReason.DEATH)
+        assert(repository.findById(inserted.id)?.retirement?.reason == RetirementReason.DEATH)
     }
 
     @Test

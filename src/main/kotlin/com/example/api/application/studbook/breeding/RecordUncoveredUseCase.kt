@@ -64,7 +64,6 @@ class RecordUncoveredUseCase(
         val broodmareRegistration =
             breedingRegistrationRepository
                 .findById(BreedingRegistrationId(input.breedingRegistrationId))
-                ?.value
                 .toResultOr {
                     RecordUncoveredUseCaseError.BreedingRegistrationNotFound(
                         input.breedingRegistrationId

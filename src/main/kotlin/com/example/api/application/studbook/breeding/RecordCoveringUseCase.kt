@@ -129,7 +129,6 @@ class RecordCoveringUseCase(
         val broodmareRegistration =
             breedingRegistrationRepository
                 .findById(BreedingRegistrationId(input.breedingRegistrationId))
-                ?.value
                 .toResultOr {
                     RecordCoveringUseCaseError.BreedingRegistrationNotFound(
                         input.breedingRegistrationId
@@ -140,7 +139,6 @@ class RecordCoveringUseCase(
         val stallionRegistration =
             breedingRegistrationRepository
                 .findById(BreedingRegistrationId(input.stallionRegistrationId))
-                ?.value
                 .toResultOr {
                     RecordCoveringUseCaseError.StallionRegistrationNotFound(
                         input.stallionRegistrationId
