@@ -148,6 +148,7 @@ class RegisterFoalUseCase(
         val dam =
             bloodHorseRepository
                 .findById(damId)
+                ?.value
                 .toResultOr { RegisterFoalUseCaseError.DamNotFound(damId.value) }
                 .bind()
 
@@ -198,6 +199,7 @@ class RegisterFoalUseCase(
         val sireId = covering.stallionId
         bloodHorseRepository
             .findById(sireId)
+            ?.value
             .toResultOr { RegisterFoalUseCaseError.SireNotFound(sireId.value) }
             .bind()
     }

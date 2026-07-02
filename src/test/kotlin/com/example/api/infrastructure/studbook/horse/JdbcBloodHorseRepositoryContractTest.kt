@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.horse
 
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
@@ -9,6 +10,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.support.PostgresContainerSupport
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.util.UUID
@@ -35,6 +37,8 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 5. sealed な出自 [Origin]（内国産＝父母ID／輸入＝原産国・揚陸日）が判別子フラット化を経て双方往復できること
  * 6. 馬名（[HorseName]）の命名済み／未命名の双方が往復できること
  * 7. [BloodHorseRepository.findAllById] が複数IDをまとめて引き当てられること
+ * 8. save は insert 専用で、既存集約のドメイン経由 update は update メソッドが version を進めて行うこと
+ * 9. 古い version での update が UpdateConflict になること（楽観ロック）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -108,7 +112,7 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
         val expectedOrigin = imported.origin as Origin.Imported
 
         val saved = repository.save(imported)
-        val found = repository.findById(imported.id)
+        val found = repository.findById(imported.id)?.value
 
         assert(saved.id == imported.id)
         assert(found != null)
@@ -131,7 +135,7 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
         val expectedOrigin = foal.origin as Origin.Domestic
 
         repository.save(foal)
-        val found = repository.findById(foal.id)
+        val found = repository.findById(foal.id)?.value
 
         assert(found != null)
         // 命名済みの馬名が往復する
@@ -186,5 +190,42 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
         repository.save(namedDomesticFoal()) // "オグリキャップ"
 
         assert(!repository.existsByName(HorseName.create("トウカイテイオー").unwrap()))
+    }
+
+    @Test
+    fun `ドメイン経由のupdateで馬名が反映されversionが進む`() {
+        val saved = repository.save(BloodHorseFixture.bloodHorse())
+        val versioned = repository.findById(saved.id)
+        assert(versioned != null)
+
+        val named =
+            versioned!!.map {
+                it.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
+            }
+        val updated = repository.update(named).unwrap()
+
+        assert(updated.version > versioned.version)
+        assert(repository.findById(saved.id)!!.value.name?.value == "オグリキャップ")
+    }
+
+    @Test
+    fun `古いversionでのupdateはUpdateConflictを返し先行の書き込みが保たれる`() {
+        val saved = repository.save(BloodHorseFixture.bloodHorse())
+        val stale = repository.findById(saved.id)!!
+        repository
+            .update(
+                stale.map { it.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate }
+            )
+            .unwrap()
+
+        val conflicted =
+            repository.update(
+                stale.map {
+                    it.assignName(HorseName.create("トウカイテイオー").unwrap()).unwrap().aggregate
+                }
+            )
+
+        assert(conflicted.getError() == UpdateConflict)
+        assert(repository.findById(saved.id)!!.value.name?.value == "オグリキャップ")
     }
 }

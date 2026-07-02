@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingRole
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
@@ -29,7 +30,9 @@ class RegisterBreedingRegistrationUseCaseTest {
         fun `雌馬を繁殖登録すると繁殖牝馬ロールの繁殖登録が永続化される`() {
             val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val bloodHorseRepository =
-                mockk<BloodHorseRepository> { every { findById(mare.id) } returns mare }
+                mockk<BloodHorseRepository> {
+                    every { findById(mare.id) } returns Versioned(mare, 0L)
+                }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
                     every { save(any()) } answers { firstArg() }
@@ -55,7 +58,9 @@ class RegisterBreedingRegistrationUseCaseTest {
         fun `雄馬を繁殖登録すると種牡馬ロールになる`() {
             val stallion = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
             val bloodHorseRepository =
-                mockk<BloodHorseRepository> { every { findById(stallion.id) } returns stallion }
+                mockk<BloodHorseRepository> {
+                    every { findById(stallion.id) } returns Versioned(stallion, 0L)
+                }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
                     every { save(any()) } answers { firstArg() }

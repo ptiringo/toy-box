@@ -82,8 +82,8 @@ class RegisterFoalUseCaseTest {
             }
         val bloodHorseRepository =
             mockk<BloodHorseRepository> {
-                every { findById(sire.id) } returns sire
-                every { findById(dam.id) } returns dam
+                every { findById(sire.id) } returns Versioned(sire, 0L)
+                every { findById(dam.id) } returns Versioned(dam, 0L)
                 every { save(any()) } answers { firstArg() }
             }
         val horseInspectionRepository =
@@ -262,7 +262,7 @@ class RegisterFoalUseCaseTest {
             // 父が雌のため registerInStudBook が SireNotMale を返す
             val w = Wiring()
             val female = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
-            every { w.bloodHorseRepository.findById(w.sire.id) } returns female
+            every { w.bloodHorseRepository.findById(w.sire.id) } returns Versioned(female, 0L)
 
             val result = w.useCase()(command(w.breedingResult.id.value))
 
@@ -280,7 +280,7 @@ class RegisterFoalUseCaseTest {
             // 父が雌のため registerFoal が RegistrationFailed(SireNotMale) を返す → 審査 save に到達しない
             val w = Wiring()
             val female = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
-            every { w.bloodHorseRepository.findById(w.sire.id) } returns female
+            every { w.bloodHorseRepository.findById(w.sire.id) } returns Versioned(female, 0L)
             // inspectionRepository は save を許可しないで生成（呼ばれると例外）
             val strictInspectionRepository = mockk<HorseInspectionRepository>()
             val useCase =

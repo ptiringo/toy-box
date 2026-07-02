@@ -66,6 +66,7 @@ class RegisterBreedingRegistrationUseCase(
         val horse =
             bloodHorseRepository
                 .findById(BloodHorseId(input.bloodHorseId))
+                ?.value
                 .toResultOr {
                     RegisterBreedingRegistrationUseCaseError.HorseNotFound(input.bloodHorseId)
                 }

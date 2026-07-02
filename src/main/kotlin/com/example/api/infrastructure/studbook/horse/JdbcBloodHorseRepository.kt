@@ -1,5 +1,7 @@
 package com.example.api.infrastructure.studbook.horse
 
+import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -14,8 +16,11 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrThrow
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Repository
 
 /**
@@ -40,8 +45,8 @@ private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
 class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository) :
     BloodHorseRepository {
 
-    override fun findById(id: BloodHorseId): BloodHorse? =
-        rows.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findById(id: BloodHorseId): Versioned<BloodHorse>? =
+        rows.findById(id.value).map { it.toVersioned() }.orElse(null)
 
     override fun findAllById(ids: Set<BloodHorseId>): Map<BloodHorseId, BloodHorse> =
         rows.findAllById(ids.map { it.value }).associate {
@@ -51,7 +56,21 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
 
     override fun save(bloodHorse: BloodHorse): BloodHorse = rows.save(bloodHorse.toRow()).toDomain()
 
+    override fun update(
+        versioned: Versioned<BloodHorse>
+    ): Result<Versioned<BloodHorse>, UpdateConflict> =
+        try {
+            Ok(rows.save(versioned.value.toRow(version = versioned.version)).toVersioned())
+        } catch (_: OptimisticLockingFailureException) {
+            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+            Err(UpdateConflict)
+        }
+
     override fun existsByName(name: HorseName): Boolean = rows.existsByName(name.value)
+
+    /** 保存済み Row を、楽観ロック version を同梱した封筒つきドメイン集約へ写す。 */
+    private fun BloodHorseRow.toVersioned(): Versioned<BloodHorse> =
+        Versioned(toDomain(), checkNotNull(version) { "保存済み行に version がありません: id=$id" })
 
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
@@ -91,8 +110,13 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
             else -> error("未知の origin_type です: $originType (id=$id)")
         }
 
-    /** ドメイン集約を永続化モデルへ写す。version はドメインが持たないため常に null（insert 判定。更新系は #424）。 */
-    private fun BloodHorse.toRow(): BloodHorseRow {
+    /**
+     * ドメイン集約を永続化モデルへ写す。
+     *
+     * @param version 既存行を update するときは読み取り時点の version（[Versioned.version]）。新規 insert は null
+     *   のまま（Spring Data JDBC が新規と判定する。ADR-0027 の落とし穴②③）
+     */
+    private fun BloodHorse.toRow(version: Long? = null): BloodHorseRow {
         val base =
             BloodHorseRow(
                 id = id.value,
@@ -105,6 +129,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
                 inspectionId = inspectionId.value,
                 name = name?.value,
                 originType = "",
+                version = version,
             )
         return when (val o = origin) {
             is Origin.Domestic ->

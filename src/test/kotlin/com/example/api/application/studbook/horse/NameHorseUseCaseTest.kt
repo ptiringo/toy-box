@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -34,7 +35,7 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
+                    every { findById(horse.id) } returns Versioned(horse, 0L)
                     every { existsByName(any()) } returns false
                     every { save(any()) } answers { firstArg() }
                 }
@@ -80,7 +81,7 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
+                    every { findById(horse.id) } returns Versioned(horse, 0L)
                     every { existsByName(HorseName.create("オグリキャップ").unwrap()) } returns true
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
@@ -100,7 +101,7 @@ class NameHorseUseCaseTest {
                     .aggregate
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(named.id) } returns named
+                    every { findById(named.id) } returns Versioned(named, 0L)
                     every { existsByName(any()) } returns false
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
@@ -117,7 +118,7 @@ class NameHorseUseCaseTest {
             // save をスタブしない（strict mockk）: 審査欠落で save に到達した場合は例外で即時失敗させる
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
+                    every { findById(horse.id) } returns Versioned(horse, 0L)
                     every { existsByName(any()) } returns false
                 }
             val inspectionRepository =

@@ -81,6 +81,7 @@ class NameHorseUseCase(
         val bloodHorse =
             bloodHorseRepository
                 .findById(BloodHorseId(input.bloodHorseId))
+                ?.value
                 .toResultOr { NameHorseUseCaseError.HorseNotFound(input.bloodHorseId) }
                 .bind()
 
