@@ -46,3 +46,40 @@ checksum = "sha256:5526b438bb66c5bc872f55c4bbb7325bb3e9d162ddd392eed3d60f407598c
 [tools."http:tfctl".platforms.linux-arm64]
 url = "https://releases.hashicorp.com/tfctl/{{version}}/tfctl_{{version}}_linux_arm64.zip"
 checksum = "sha256:1060b2903cd8f9cb0af5c878cf89790e0f588b735b6715d2eeadd52c5a71f8c5"
+
+# kotlin-lsp: JetBrains 公式 Kotlin Language Server。Claude Code の `kotlin-lsp@claude-plugins-official`
+# プラグイン（.claude/settings.json で有効化）が要求するバイナリで、PATH 上の `kotlin-lsp --stdio` を起動する。
+# 役割は「編集時のリアルタイム診断・コードナビ」で、detekt / ArchUnit / gradle check（stop hook）等のゲートは
+# 置き換えない補助操舵。採否・設計は ADR-0046 参照。
+#
+# 供給経路: JetBrains 公式配布は download-cdn.jetbrains.com（GitHub Releases に資産なし → ubi / aqua 不可、
+# 公式 brew tap は macOS 限定）。クロスプラットフォーム再現性を保つため tfctl と同様に http バックエンドで
+# 直接指す。mac は `.sit`（実体は zip なので `format = "zip"` で明示）、Linux は `.tar.gz`。
+# 版は JetBrains ビルド番号（例 262.8190.0）。更新時は version と 4 checksum を差し替える。
+#
+# checksum は公式 <asset>.sha256（同 URL に `.sha256` を付けたファイル）の値を固定する。http バックエンドは
+# aqua / ubi と異なり mise.lock に per-platform SHA を埋めないため、ここで明示して整合性を担保する。
+# strip_components=1 で version 付きトップディレクトリ（kotlin-server-<version>/）を剥がし、その直下の
+# ランチャ `kotlin-lsp.sh` を rename_exe でコマンド名 `kotlin-lsp` として PATH に出す。
+[tools."http:kotlin-lsp"]
+version = "262.8190.0"
+strip_components = 1
+rename_exe = "kotlin-lsp"
+
+[tools."http:kotlin-lsp".platforms.macos-x64]
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit"
+format = "zip"
+checksum = "sha256:f3845ae9ee38c22ef5e436390d86a3d908f77073e9667fa643a5ae0957c19728"
+
+[tools."http:kotlin-lsp".platforms.macos-arm64]
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit"
+format = "zip"
+checksum = "sha256:e20183262784bb7e665ce1aea4855872a8b16f211ebb478d452773553732d9fb"
+
+[tools."http:kotlin-lsp".platforms.linux-x64]
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.tar.gz"
+checksum = "sha256:8b4c70e95065420e7867c99aaf9f18e0b4e76311ec453e4c1a39e3f6ae774cbf"
+
+[tools."http:kotlin-lsp".platforms.linux-arm64]
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.tar.gz"
+checksum = "sha256:c3edd59ef34a7faa4d04f3517afb7a932b19c3f9cf17d1a14e9da17b0b5440ad"

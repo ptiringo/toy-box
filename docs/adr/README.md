@@ -55,3 +55,5 @@
 | [0043](0043-aggregate-to-table-mapping-guidelines.md) | 集約⇔テーブルのマッピング指針（sealed/埋め込み VO のフラット化・CHECK 必須・子テーブル化の境界）を定める | Accepted |
 | [0044](0044-adopt-prisma-postgres-for-production-db.md) | 本番 DB プロダクトに Prisma Postgres を採用する（H2 脱却・東京リージョン・標準 JDBC） | Accepted |
 | [0045](0045-tbls-db-schema-docs.md) | DB スキーマドキュメントに tbls を採用し CI でドリフトとコメント必須をゲートする | Accepted |
+| [0046](0046-adopt-kotlin-lsp-plugin.md) | Claude Code の Kotlin LSP プラグインを採用し kotlin-lsp を mise http バックエンドで配布する | Accepted |
+| [0049](0049-decline-atlas-keep-flyway-toolchain.md) | Atlas（schema-as-code）を現時点では不採用とし Flyway 中心のスキーマツールチェーンを維持する | Accepted |

@@ -20,6 +20,7 @@
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
+| chk_breeding_registration_retirement_coexistence | CHECK | CHECK ((((retirement_reason IS NULL) AND (retirement_occurred_on IS NULL)) OR ((retirement_reason IS NOT NULL) AND (retirement_occurred_on IS NOT NULL)))) |
 | breeding_registration_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 
 ## Indexes

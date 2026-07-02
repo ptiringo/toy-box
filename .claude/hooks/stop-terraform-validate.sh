@@ -6,8 +6,14 @@
 # - HEAD との差分で .tf 変更が無いターンは何もしない。
 # - 違反があれば exit 2 を返し、Claude にフィードバックする。
 # - terraform / trivy が未インストールなら、当該チェックのみ黙ってスキップする。
+# - 空回り対策（#519）: 前回失敗時から作業ツリーが変わっていなければ再実行しない
+#   （失敗指紋 dedup）。init 失敗（provider 未キャッシュ等）も失敗として記録する。
 
 set -uo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/lib/stop-hook-dedup.sh"
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root" || exit 0
@@ -17,11 +23,21 @@ if ! git diff HEAD --name-only 2>/dev/null | grep -qE '^infra/.*\.tf$'; then
     exit 0
 fi
 
+hook_name="terraform-validate"
+fingerprint="$(compute_tree_fingerprint)"
+
+if should_skip_unchanged "$hook_name" "$fingerprint"; then
+    printf '前回失敗時から作業ツリーに変化が無いため terraform validate / trivy をスキップしました（#519）。ツリーを変更するか %s を削除すると再実行されます。\n' \
+        "$(dedup_state_file "$hook_name")" >&2
+    exit 0
+fi
+
 # terraform validate（terraform 未インストール時はスキップ）
 if command -v terraform >/dev/null 2>&1; then
     # init が走っていない場合のみ backend 無効で init する（terraform validate の前提）
     if [ ! -d infra/.terraform ]; then
         if ! init_output="$(cd infra && terraform init -backend=false -no-color 2>&1)"; then
+            record_failure_fingerprint "$hook_name" "$fingerprint"
             printf 'terraform init に失敗しました:\n%s\n' "$init_output" >&2
             exit 2
         fi
@@ -30,6 +46,7 @@ if command -v terraform >/dev/null 2>&1; then
     output="$(cd infra && terraform validate -no-color 2>&1)"
     status=$?
     if [ "$status" -ne 0 ]; then
+        record_failure_fingerprint "$hook_name" "$fingerprint"
         printf 'terraform validate に失敗しました:\n%s\n' "$output" >&2
         exit 2
     fi
@@ -43,9 +60,11 @@ if command -v mise >/dev/null 2>&1; then
     trivy_output="$(cd infra && mise exec -- trivy config . --exit-code 1 --quiet 2>&1)"
     status=$?
     if [ "$status" -ne 0 ]; then
+        record_failure_fingerprint "$hook_name" "$fingerprint"
         printf 'Trivy が IaC misconfig を検出しました:\n%s\n' "$trivy_output" >&2
         exit 2
     fi
 fi
 
+clear_failure_fingerprint "$hook_name"
 exit 0

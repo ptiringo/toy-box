@@ -1,0 +1,11 @@
+# CI 用オーバーレイ設定（config environment）。CI のワークフローで `MISE_ENV=ci` を与えると
+# base の mise.toml に加えて本ファイルが読み込まれる（ローカル開発では読み込まれない）。
+#
+# http backend で供給する kotlin-lsp / tfctl は、mise が per-platform の SHA を mise.lock に
+# 永続化しない（`mise lock` が書かない）ため `mise install --locked`（Linux CI）を満たせず、
+# mise-action を使う CI ジョブを落とす（#510 回帰）。どちらも CI では不要なので除外する:
+#   - http:kotlin-lsp … 編集時診断・コードナビ用の LSP（ADR-0046）。CI に用途なし。
+#   - http:tfctl      … HCP Terraform の対話操作 CLI（ADR-0034）。CI に用途なし。
+# ローカル開発では base の mise.toml 定義がそのまま有効なので影響しない。
+[settings]
+disable_tools = ["http:kotlin-lsp", "http:tfctl"]

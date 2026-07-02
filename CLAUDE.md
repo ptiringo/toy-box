@@ -49,7 +49,7 @@ mise exec -- sqlfluff fix src/main/resources/db/migration    # 自動整形
 mise exec -- squawk src/main/resources/db/migration/*.sql    # マイグレーション安全性
 
 # シェルスクリプトの lint（ShellCheck）
-mise exec -- shellcheck .claude/hooks/*.sh .devcontainer/*.sh scripts/*.sh
+mise exec -- shellcheck .claude/hooks/*.sh .claude/hooks/lib/*.sh .devcontainer/*.sh scripts/*.sh
 
 # DB スキーマドキュメント（tbls）の生成・検査
 ./gradlew generateDbDoc   # dbdoc/ を再生成（手動）
@@ -177,7 +177,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 ### mise
 
-セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `zizmor` / `gitleaks` / `tbls`（DB スキーマドキュメント生成））、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）。
+セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `zizmor` / `gitleaks`）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
 
 **Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出する。
 
@@ -197,6 +197,8 @@ LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"   # 特定コマン
 ## MCP サーバー設定
 
 必要な MCP は各自が `/plugin` 等でアドホックに入れず、**リポジトリ管理の設定ファイルに宣言**して共有する（クローンすれば同一構成・再現性が保たれる。経緯は [ADR-0003](docs/adr/0003-consolidate-mcp-config-in-repo.md)）。Claude Code 用は `.mcp.json`（リポジトリ root。採用は `context7`＝ライブラリ最新ドキュメント参照 / `terraform`＝レジストリ・プロバイダ参照）、VS Code・Copilot 用は `.vscode/mcp.json`（別フォーマット・別ファイルで併存。共通 MCP（例 `context7`）は両者を同期）。`.mcp.json` を唯一の出所とし、グローバル設定や `/plugin` で同名サーバーを二重定義しない（初回はクローン後の承認プロンプトに応じる。承認状態は各自の `~/.claude.json`）。
+
+同じ「リポジトリ管理で宣言・共有」の方針で、**Claude Code の LSP プラグインは `.claude/settings.json` の `enabledPlugins` に宣言**する（現状 `kotlin-lsp@claude-plugins-official`＝Kotlin の編集時診断・コードナビ）。要求バイナリ `kotlin-lsp`（JetBrains 公式）は mise 管理で供給する（`mise install`）。LSP はゲート（detekt / ArchUnit / gradle check）を置き換えない補助で、採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)。
 
 **GitHub 操作は MCP ではなく `gh` CLI で行う**（[ADR-0001](docs/adr/0001-drop-github-mcp-use-gh-cli.md)）。サンドボックス下の TLS 問題（`OSStatus -26276`）は、`gh` を `.claude/settings.local.json` の `sandbox.excludedCommands` に `"gh"` と `"gh *"` の両方で登録して sandbox 外で実行し回避する。複合コマンド（`A && gh ...`）はマッチしないので `gh` は単体コマンドで実行する。
 

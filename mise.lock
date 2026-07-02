@@ -273,6 +273,26 @@ url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8
 checksum = "sha256:d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip"
 
+[[tools."http:kotlin-lsp"]]
+version = "262.8190.0"
+backend = "http:kotlin-lsp"
+
+[tools."http:kotlin-lsp"."platforms.linux-arm64"]
+checksum = "sha256:c3edd59ef34a7faa4d04f3517afb7a932b19c3f9cf17d1a14e9da17b0b5440ad"
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/262.8190.0/kotlin-server-262.8190.0-aarch64.tar.gz"
+
+[tools."http:kotlin-lsp"."platforms.linux-x64"]
+checksum = "sha256:8b4c70e95065420e7867c99aaf9f18e0b4e76311ec453e4c1a39e3f6ae774cbf"
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/262.8190.0/kotlin-server-262.8190.0.tar.gz"
+
+[tools."http:kotlin-lsp"."platforms.macos-arm64"]
+checksum = "sha256:e20183262784bb7e665ce1aea4855872a8b16f211ebb478d452773553732d9fb"
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/262.8190.0/kotlin-server-262.8190.0-aarch64.sit"
+
+[tools."http:kotlin-lsp"."platforms.macos-x64"]
+checksum = "sha256:f3845ae9ee38c22ef5e436390d86a3d908f77073e9667fa643a5ae0957c19728"
+url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/262.8190.0/kotlin-server-262.8190.0.sit"
+
 [[tools."http:tfctl"]]
 version = "0.3.0"
 backend = "http:tfctl"
