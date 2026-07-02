@@ -478,5 +478,24 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .extractingPath("$.error_code")
                 .isEqualTo("foaling-already-recorded")
         }
+
+        @Test
+        fun `ConcurrentModification で 409 と problem+json が返ること`() {
+            val id = UUID.fromString(breedingResultId)
+            every { reportFoaling(any<Command<ReportFoalingCommand>>()) } returns
+                Err(ReportFoalingUseCaseError.ConcurrentModification(id))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(liveFoalBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("concurrent-modification")
+        }
     }
 }

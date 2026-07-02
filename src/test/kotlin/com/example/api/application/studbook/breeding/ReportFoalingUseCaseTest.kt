@@ -1,11 +1,14 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -25,13 +28,13 @@ class ReportFoalingUseCaseTest {
     @Nested
     inner class SuccessCase {
         @Test
-        fun `対象成績が未報告のとき分娩結果が確定し報告済みの成績が永続化される`() {
+        fun `対象成績が未報告のとき分娩結果が確定し報告済みの成績が楽観ロック付きで更新される`() {
             val breedingResult = BreedingFixture.breedingResult()
             val outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
             val repository =
                 mockk<BreedingResultRepository> {
                     every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
-                    every { save(any()) } answers { firstArg() }
+                    every { update(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = ReportFoalingUseCase(repository)
 
@@ -40,7 +43,11 @@ class ReportFoalingUseCaseTest {
 
             assert(result.outcome == outcome)
             assert(result.id == breedingResult.id)
-            verify(exactly = 1) { repository.save(any()) }
+            // 読み取り時点の version(0) を封筒のまま update へ運ぶ（楽観ロックの本義）
+            verify(exactly = 1) {
+                repository.update(match { it.version == 0L && it.value.outcome == outcome })
+            }
+            verify(exactly = 0) { repository.save(any()) }
         }
     }
 
@@ -64,7 +71,7 @@ class ReportFoalingUseCaseTest {
                 result.getError() ==
                     ReportFoalingUseCaseError.BreedingResultNotFound(breedingResultId)
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.update(any()) }
         }
 
         @Test
@@ -83,7 +90,30 @@ class ReportFoalingUseCaseTest {
                 )
 
             assert(result.getError() == ReportFoalingUseCaseError.AlreadyReported(first))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.update(any()) }
+        }
+
+        @Test
+        fun `更新が競合したとき ConcurrentModification を返す`() {
+            val breedingResult = BreedingFixture.breedingResult()
+            val repository =
+                mockk<BreedingResultRepository> {
+                    every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
+                    every { update(any()) } returns Err(UpdateConflict)
+                }
+            val useCase = ReportFoalingUseCase(repository)
+
+            val result =
+                useCase(
+                    command(
+                        ReportFoalingCommand(breedingResult.id.value, FoalingOutcome.NotConceived)
+                    )
+                )
+
+            assert(
+                result.getError() ==
+                    ReportFoalingUseCaseError.ConcurrentModification(breedingResult.id.value)
+            )
         }
     }
 }
