@@ -75,6 +75,7 @@ class JdbcBreedingRegistrationRepository(
                         checkNotNull(retirementOccurredOn) { "供用停止事由があるのに発生日が欠落しています: id=$id" },
                     )
                 },
+            version = version,
         )
 
     /**

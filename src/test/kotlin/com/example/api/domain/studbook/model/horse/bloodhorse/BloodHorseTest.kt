@@ -22,6 +22,36 @@ class BloodHorseTest {
     }
 
     @Test
+    fun `createで生成した直後は楽観ロックversionがnull`() {
+        val unnamed = BloodHorseFixture.bloodHorse()
+
+        assert(unnamed.version == null)
+    }
+
+    @Test
+    fun `assignNameで得た新インスタンスは楽観ロックversionを引き継ぐ`() {
+        val base = BloodHorseFixture.bloodHorse()
+        val persisted =
+            BloodHorse.reconstitute(
+                id = base.id,
+                registrationNumber = base.registrationNumber,
+                sex = base.sex,
+                coatColor = base.coatColor,
+                breedType = base.breedType,
+                dateOfBirth = base.dateOfBirth,
+                breeder = base.breeder,
+                inspectionId = base.inspectionId,
+                origin = base.origin,
+                name = base.name,
+                version = 3L,
+            )
+
+        val named = persisted.assignName(name).unwrap().aggregate
+
+        assert(named.version == 3L)
+    }
+
+    @Test
     fun `命名に成功すると 命名された個体に対応する HorseNamed イベントが同梱される`() {
         val unnamed = BloodHorseFixture.bloodHorse()
 

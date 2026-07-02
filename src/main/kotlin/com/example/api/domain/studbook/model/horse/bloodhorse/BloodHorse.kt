@@ -94,6 +94,7 @@ private constructor(
     val inspectionId: HorseInspectionId,
     val origin: Origin,
     val name: HorseName?,
+    override val version: Long? = null,
 ) : Entity<BloodHorseId>() {
     /**
      * 馬名を登録し、命名済みの新しい [BloodHorse] と発生した [HorseNamed] イベントを同梱して返す。
@@ -132,6 +133,7 @@ private constructor(
             inspectionId = inspectionId,
             origin = origin,
             name = name,
+            version = version,
         )
 
     companion object {
@@ -220,6 +222,8 @@ private constructor(
          * 既に [create] / [createImported] を通過して保存された状態の復元であり、前提条件の再検証も ID の再採番も
          * 行わない。永続化アダプター（infrastructure 層）からの復元専用であり、新規生成には [create] / [createImported]
          * を使うこと。出自（[origin]）・馬名（[name]）も保存済みの値をそのまま引き継ぐ。
+         *
+         * @param version DB の version 列の値（楽観ロック）
          */
         @Suppress("LongParameterList")
         fun reconstitute(
@@ -233,6 +237,7 @@ private constructor(
             inspectionId: HorseInspectionId,
             origin: Origin,
             name: HorseName?,
+            version: Long?,
         ): BloodHorse =
             BloodHorse(
                 id = id,
@@ -245,6 +250,7 @@ private constructor(
                 inspectionId = inspectionId,
                 origin = origin,
                 name = name,
+                version = version,
             )
     }
 }

@@ -90,6 +90,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
             inspectionId = HorseInspectionId(inspectionId),
             origin = toOrigin(),
             name = name?.let { HorseName.create(it).orThrow() },
+            version = version,
         )
 
     /** 判別子と各バリアント列から sealed [Origin] を復元する。 */

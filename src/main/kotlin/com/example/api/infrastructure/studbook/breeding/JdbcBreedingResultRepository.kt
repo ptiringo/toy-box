@@ -81,6 +81,7 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             breedingYear = Year.of(breedingYear),
             covering = toCovering(),
             outcome = toOutcome(),
+            version = version,
         )
 
     /** 種付列（coveringDate の有無を判別子とする）から nullable な [Covering] を復元する。 */
