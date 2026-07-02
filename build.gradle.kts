@@ -31,7 +31,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // 永続化アクセス（Spring Data JDBC + Flyway）。集約 write は Spring Data JDBC（集約 = 永続化境界）。
     // 本番ランタイムの datasource は Prisma Postgres（実 PostgreSQL v17）へ配線する（#451 / ADR-0044）。
-    // ローカル/CI/smoke も PostgreSQL に寄せ、既定の組み込み H2 は cutover で全面脱却する。永続化の契約
+    // ローカル/CI/smoke/テストは全て PostgreSQL（組み込み H2 は cutover で全面脱却済み）。永続化の契約
     // テストは本番ターゲットの PostgreSQL を Testcontainers で用意して検証する（ADR-0027 / #422）。
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     // Flyway は starter で引く。Spring Boot 4 は autoconfig を機能別モジュールに分割しており、
@@ -40,7 +40,6 @@ dependencies {
     // 走らない（#421）。starter-flyway が spring-boot-flyway(autoconfig) + spring-boot-jdbc +
     // flyway-core を引き込む。
     implementation("org.springframework.boot:spring-boot-starter-flyway")
-    runtimeOnly("com.h2database:h2")
     // ローカル開発（bootRun）時に compose.yaml の PostgreSQL を自動起動し datasource を自動配線する。
     // developmentOnly のため本番イメージ（bootBuildImage）・テスト classpath には載らない（#451）。
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")

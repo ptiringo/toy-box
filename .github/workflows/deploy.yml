@@ -66,10 +66,15 @@ jobs:
       # --memory: container-smoke-test.yml の docker run -m と揃えること。
       # gcloud の `--memory=1Gi` は 1 GiB (= 1024 MiB) を表し、docker の `-m 1g` と等価。
       # 単位表記が異なるため、片方だけを更新しないよう注意する。
+      #
+      # --set-secrets: datasource（Prisma Postgres・#451 / ADR-0044）の接続情報を Secret Manager から
+      # 環境変数 SPRING_DATASOURCE_* として注入する。secret の実体は Terraform 管理
+      # （infra/modules/prisma-postgres/）で、値は provider の direct_* 属性から自動配線される。
+      # api-runner SA には当該 secret の secretAccessor が付与済み。
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@2028e2d7d30a78c6910e0632e48dd561b064884d # v3.0.1
         with:
           service: api
           region: asia-northeast1
           image: ${{ vars.IMAGE }}:${{ github.sha }}
-          flags: '--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 --cpu-boost --min-instances=0 --max-instances=3'
+          flags: '--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 --cpu-boost --min-instances=0 --max-instances=3 --set-secrets=SPRING_DATASOURCE_URL=spring-datasource-url:latest,SPRING_DATASOURCE_USERNAME=spring-datasource-username:latest,SPRING_DATASOURCE_PASSWORD=spring-datasource-password:latest'
