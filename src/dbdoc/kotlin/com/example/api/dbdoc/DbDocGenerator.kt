@@ -9,8 +9,8 @@ import org.testcontainers.utility.DockerImageName
  *
  * Testcontainers で本番ターゲットと同じ PostgreSQL を起動し、Flyway で db/migration の V*.sql を 適用したうえで tbls CLI（mise
  * 管理）を子プロセスで実行する。tbls の実行パスは build.gradle.kts が `mise which tbls` で解決し システムプロパティ tbls.bin で渡す（実行時
- * PATH への依存を避ける）。ランタイムは H2 だが ドキュメントは本番型 PostgreSQL で出す（設計:
- * docs/superpowers/specs/2026-06-30-tbls-db-schema-docs-design.md）。
+ * PATH への依存を避ける）。ドキュメントは本番（Prisma Postgres, ADR-0044）と同じ PostgreSQL 型で出す（採否と 生成・検査方式の経緯は
+ * docs/adr/0045-tbls-db-schema-docs.md）。
  *
  * 引数 mode:
  * - "generate": tbls doc で dbdoc/ を再生成する（開発者が手動実行し差分をコミットする）。

@@ -2,6 +2,11 @@
 -- tbls の requireTableComment / requireColumnComment 規約を満たし、スキーマを一次情報とした
 -- ドキュメント（dbdoc/）を生成するための説明をスキーマ側に保持する。
 -- 既存 V1〜V6 はイミュータブル原則のため書き換えず、コメントは本マイグレーションで追補する。
+-- COMMENT ON は ACCESS EXCLUSIVE ロックを瞬時に取るため、squawk（require-timeout-settings）に
+-- 従いタイムアウトを設定する。Flyway は各マイグレーションを 1 トランザクションで適用するため、
+-- SET LOCAL でこのマイグレーション内に閉じる（V6 と同じパターン）。
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '5min';
 
 -- jockey（騎手）
 COMMENT ON TABLE jockey IS '騎手（JRA 競馬コンテキスト）';
