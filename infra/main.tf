@@ -5,6 +5,7 @@ resource "google_project_service" "project" {
     "iamcredentials",
     "orgpolicy",
     "run",
+    "secretmanager",
   ])
   service = "${each.key}.googleapis.com"
 }
@@ -36,4 +37,15 @@ module "local_readonly" {
 
   project_id    = "ptiringo-toy-box"
   impersonators = var.local_readonly_impersonators
+}
+
+# 本番 DB（Prisma Postgres・東京）と、その接続情報を格納する Secret Manager。
+# secretmanager API 有効化に依存させ、初回 apply の順序レースを避ける。
+module "prisma_postgres" {
+  source = "./modules/prisma-postgres"
+
+  api_runner_email = module.cloudrun.api_runner_email
+  project_name     = var.prisma_project_name
+
+  depends_on = [google_project_service.project]
 }
