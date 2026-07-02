@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -72,7 +73,7 @@ class RegisterFoalUseCaseTest {
 
         val breedingResultRepository =
             mockk<BreedingResultRepository> {
-                every { findById(breedingResult.id) } returns breedingResult
+                every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
             }
         val breedingRegistrationRepository =
             mockk<BreedingRegistrationRepository> {
@@ -220,7 +221,8 @@ class RegisterFoalUseCaseTest {
                     broodmareRegistration = w.breedingRegistration,
                     stallionRegistration = BreedingFixture.stallionRegistration(stallion = w.sire),
                 )
-            every { w.breedingResultRepository.findById(notReported.id) } returns notReported
+            every { w.breedingResultRepository.findById(notReported.id) } returns
+                Versioned(notReported, 0L)
 
             val result = w.useCase()(command(notReported.id.value))
 
@@ -240,7 +242,8 @@ class RegisterFoalUseCaseTest {
                 BreedingFixture.uncoveredBreedingResult(
                     broodmareRegistration = w.breedingRegistration
                 )
-            every { w.breedingResultRepository.findById(uncovered.id) } returns uncovered
+            every { w.breedingResultRepository.findById(uncovered.id) } returns
+                Versioned(uncovered, 0L)
 
             val result = w.useCase()(command(uncovered.id.value))
 

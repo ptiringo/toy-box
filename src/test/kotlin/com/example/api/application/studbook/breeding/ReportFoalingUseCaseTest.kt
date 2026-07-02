@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
@@ -29,7 +30,7 @@ class ReportFoalingUseCaseTest {
             val outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(breedingResult.id) } returns breedingResult
+                    every { findById(breedingResult.id) } returns Versioned(breedingResult, 0L)
                     every { save(any()) } answers { firstArg() }
                 }
             val useCase = ReportFoalingUseCase(repository)
@@ -71,7 +72,9 @@ class ReportFoalingUseCaseTest {
             val first = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
             val reported = BreedingFixture.breedingResult().recordFoaling(first).unwrap()
             val repository =
-                mockk<BreedingResultRepository> { every { findById(reported.id) } returns reported }
+                mockk<BreedingResultRepository> {
+                    every { findById(reported.id) } returns Versioned(reported, 0L)
+                }
             val useCase = ReportFoalingUseCase(repository)
 
             val result =

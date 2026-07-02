@@ -56,6 +56,7 @@ class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultR
         val breedingResult =
             breedingResultRepository
                 .findById(BreedingResultId(input.breedingResultId))
+                ?.value
                 .toResultOr {
                     ReportFoalingUseCaseError.BreedingResultNotFound(input.breedingResultId)
                 }

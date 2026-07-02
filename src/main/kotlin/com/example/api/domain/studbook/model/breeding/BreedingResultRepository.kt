@@ -1,5 +1,8 @@
 package com.example.api.domain.studbook.model.breeding
 
+import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.Versioned
+import com.github.michaelbull.result.Result
 import java.time.Year
 import org.jmolecules.ddd.annotation.Repository
 
@@ -10,8 +13,8 @@ import org.jmolecules.ddd.annotation.Repository
  */
 @Repository
 interface BreedingResultRepository {
-    /** 繁殖成績IDで検索する。存在しなければ null。 */
-    fun findById(id: BreedingResultId): BreedingResult?
+    /** 繁殖成績IDで検索する。存在しなければ null。更新に使う楽観ロック version を [Versioned] で同梱して返す。 */
+    fun findById(id: BreedingResultId): Versioned<BreedingResult>?
 
     /**
      * 同一繁殖牝馬（繁殖登録）・同一繁殖年の既存の年次成績を検索する。存在しなければ null。
@@ -23,6 +26,16 @@ interface BreedingResultRepository {
         breedingYear: Year,
     ): BreedingResult?
 
-    /** 繁殖成績を永続化する。 */
+    /** 繁殖成績を新規に永続化する（insert 専用）。既存集約の更新は [update] を使う。 */
     fun save(breedingResult: BreedingResult): BreedingResult
+
+    /**
+     * 既存の繁殖成績を楽観ロック付きで更新する。
+     *
+     * [Versioned.version]（読み取り時点の version）が現在行と一致するときだけ更新し、version を進めた
+     * 新しい封筒を返す。読み取り後に他の更新が入っていた（または行が消えていた）場合は [UpdateConflict]。
+     */
+    fun update(
+        versioned: Versioned<BreedingResult>
+    ): Result<Versioned<BreedingResult>, UpdateConflict>
 }
