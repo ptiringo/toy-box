@@ -49,7 +49,7 @@ mise exec -- sqlfluff fix src/main/resources/db/migration    # 自動整形
 mise exec -- squawk src/main/resources/db/migration/*.sql    # マイグレーション安全性
 
 # シェルスクリプトの lint（ShellCheck）
-mise exec -- shellcheck .claude/hooks/*.sh .devcontainer/*.sh scripts/*.sh
+mise exec -- shellcheck .claude/hooks/*.sh .claude/hooks/lib/*.sh .devcontainer/*.sh scripts/*.sh
 ```
 
 ktfmt はフォーマッタ、detekt は静的解析ツール。detekt 設定は `config/detekt/detekt.yml`（`buildUponDefaultConfig = true` でデフォルトに上書き、雛形再生成は `./gradlew detektGenerateConfig`）、レポートは `build/reports/detekt/`。プロジェクト固有のカスタムルール（例: ドメイン / アプリケーション層で `throw` しない）は `:detekt-rules` モジュールで定義し `detektPlugins` で組み込む（詳細は `.claude/rules/architecture.md`）。
