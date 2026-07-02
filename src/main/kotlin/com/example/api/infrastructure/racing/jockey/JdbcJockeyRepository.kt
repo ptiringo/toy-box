@@ -31,8 +31,8 @@ class JdbcJockeyRepository(private val rows: JockeySpringDataRepository) : Jocke
      * ドメイン集約を永続化モデルへ写す。
      *
      * ドメイン側は楽観ロックの version を持たない（オニオン規約上 Spring 依存を載せられず、永続化メタデータを ドメインへ漏らさない方針）。そのため version は常に
-     * null となり Spring Data JDBC は insert と判定する。 既存行の update（version を進める）は本 spike の範囲外（対処方針は
-     * ADR-0027 を参照）。
+     * null となり Spring Data JDBC は insert と判定する。[Jockey] には更新の語彙（状態遷移メソッド）が現状無いため insert のみ
+     * を扱う。更新が必要になったら ADR-0047 の Versioned 封筒方式で update を追加する。
      */
     private fun Jockey.toRow(): JockeyRow =
         JockeyRow(id = id.value, firstName = firstName, lastName = lastName)
