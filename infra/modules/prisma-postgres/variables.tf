@@ -4,9 +4,9 @@ variable "api_runner_email" {
 }
 
 variable "project_name" {
-  description = "Prisma Postgres プロジェクト名（データベースの上位コンテナ）"
+  description = "Prisma Postgres プロジェクト名（データベースの上位コンテナ）。機微情報として扱い、既定値は置かず HCP の sensitive 変数で供給する"
   type        = string
-  default     = "toy-box"
+  sensitive   = true
 }
 
 variable "database_name" {

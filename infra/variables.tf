@@ -14,3 +14,9 @@ variable "prisma_service_token" {
   type        = string
   sensitive   = true
 }
+
+variable "prisma_project_name" {
+  description = "Prisma Postgres プロジェクト名（機微。HCP workspace の sensitive 変数で供給）"
+  type        = string
+  sensitive   = true
+}

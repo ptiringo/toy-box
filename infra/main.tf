@@ -45,6 +45,7 @@ module "prisma_postgres" {
   source = "./modules/prisma-postgres"
 
   api_runner_email = module.cloudrun.api_runner_email
+  project_name     = var.prisma_project_name
 
   depends_on = [google_project_service.project]
 }
