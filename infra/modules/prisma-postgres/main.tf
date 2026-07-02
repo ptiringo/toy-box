@@ -14,8 +14,14 @@ resource "prisma-postgres_database" "production" {
 # direct_host は Prisma 共有の安定ホスト、direct_user / direct_password は per-DB（再作成で変わる）。
 # PG カタログのデータベース名は Prisma の表示名によらず postgres 固定（#451 Phase B の spike で確認）。
 locals {
+  # direct_host はポート込み（例: db.prisma.io:5432）で返る。そのまま :5432 を連結すると
+  # ホスト名が「db.prisma.io:5432」となり DNS 解決不能（UnknownHostException）で本番リビジョンが
+  # 起動しない（#451 Phase D cutover 初回失敗の原因）。ホスト部だけ取り出して組み立てる
+  # （将来 direct_host がポート無しに変わっても壊れない）。
+  direct_host_without_port = split(":", prisma-postgres_database.production.direct_host)[0]
+
   datasource_secrets = {
-    "spring-datasource-url"      = "jdbc:postgresql://${prisma-postgres_database.production.direct_host}:5432/postgres?sslmode=require"
+    "spring-datasource-url"      = "jdbc:postgresql://${local.direct_host_without_port}:5432/postgres?sslmode=require"
     "spring-datasource-username" = prisma-postgres_database.production.direct_user
     "spring-datasource-password" = prisma-postgres_database.production.direct_password
   }
