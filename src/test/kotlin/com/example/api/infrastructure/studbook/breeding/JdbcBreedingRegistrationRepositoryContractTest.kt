@@ -16,7 +16,9 @@ import java.time.LocalDate
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -183,5 +185,16 @@ class JdbcBreedingRegistrationRepositoryContractTest(
 
         assert(conflicted.getError() == UpdateConflict)
         assert(repository.findById(saved.id)!!.value.retirement?.reason == RetirementReason.DEATH)
+    }
+
+    @Test
+    fun `供用停止の共在不変条件に反する行はCHECK制約で拒否される`() {
+        // 事由だけ在って発生日が欠落＝共在 VO（BreedingRetirement）の「両方 NULL か両方 NOT NULL」違反。
+        // マッパーは常に整合した行しか作らないが、スキーマ側の CHECK 制約
+        // （chk_breeding_registration_retirement_coexistence）が DB 単独でもこの不正な組合せを拒否することを担保する。
+        val inconsistent =
+            row(retirementReason = RetirementReason.DEATH.name, retirementOccurredOn = null)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(inconsistent) }
     }
 }
