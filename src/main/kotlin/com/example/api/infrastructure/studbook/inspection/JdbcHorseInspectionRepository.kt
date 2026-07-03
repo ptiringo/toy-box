@@ -1,6 +1,5 @@
 package com.example.api.infrastructure.studbook.inspection
 
-import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
@@ -38,36 +37,10 @@ class JdbcHorseInspectionRepository(private val rows: HorseInspectionSpringDataR
         HorseInspection.reconstitute(
             id = HorseInspectionId(id),
             microchipNumber = MicrochipNumber.create(microchipNumber).orThrow(),
-            parentage = toParentage(),
-            features = toFeatures(),
+            parentage = toParentageDetermination(parentageType, dnaParentageResult),
+            features =
+                toIdentificationFeatures(featureHairWhorl, featureWhiteMarkings, featureNosePrint),
         )
-
-    /** 判別子 [HorseInspectionRow.parentageType] から sealed [ParentageDetermination] を復元する。 */
-    private fun HorseInspectionRow.toParentage(): ParentageDetermination =
-        when (parentageType) {
-            PARENTAGE_BY_DNA ->
-                ParentageDetermination.ByDna(
-                    DnaParentageResult.valueOf(
-                        checkNotNull(dnaParentageResult) { "DNA 判定結果が欠落: id=$id" }
-                    )
-                )
-            PARENTAGE_BY_BLOOD_TYPE -> ParentageDetermination.ByBloodType
-            PARENTAGE_BY_OVERSEAS_INSTITUTION -> ParentageDetermination.ByOverseasInstitution
-            PARENTAGE_NOT_APPLICABLE -> ParentageDetermination.NotApplicable
-            else -> error("未知の parentage_type です: $parentageType (id=$id)")
-        }
-
-    /** feature_* 列から nullable な [IdentificationFeatures] を復元する（全 NULL なら未記録＝null）。 */
-    private fun HorseInspectionRow.toFeatures(): IdentificationFeatures? =
-        if (featureHairWhorl == null && featureWhiteMarkings == null && featureNosePrint == null) {
-            null
-        } else {
-            IdentificationFeatures(
-                hairWhorl = featureHairWhorl,
-                whiteMarkings = featureWhiteMarkings,
-                nosePrint = featureNosePrint,
-            )
-        }
 
     /**
      * ドメイン集約を永続化モデルへ写す。
@@ -86,22 +59,5 @@ class JdbcHorseInspectionRepository(private val rows: HorseInspectionSpringDataR
             featureWhiteMarkings = features?.whiteMarkings,
             featureNosePrint = features?.nosePrint,
         )
-    }
-
-    /** sealed [ParentageDetermination] を判別子と DNA 結果のペアへ写す。 */
-    private fun ParentageDetermination.toTypeAndResult(): Pair<String, String?> =
-        when (this) {
-            is ParentageDetermination.ByDna -> PARENTAGE_BY_DNA to result.name
-            ParentageDetermination.ByBloodType -> PARENTAGE_BY_BLOOD_TYPE to null
-            ParentageDetermination.ByOverseasInstitution ->
-                PARENTAGE_BY_OVERSEAS_INSTITUTION to null
-            ParentageDetermination.NotApplicable -> PARENTAGE_NOT_APPLICABLE to null
-        }
-
-    private companion object {
-        const val PARENTAGE_BY_DNA = "BY_DNA"
-        const val PARENTAGE_BY_BLOOD_TYPE = "BY_BLOOD_TYPE"
-        const val PARENTAGE_BY_OVERSEAS_INSTITUTION = "BY_OVERSEAS_INSTITUTION"
-        const val PARENTAGE_NOT_APPLICABLE = "NOT_APPLICABLE"
     }
 }
