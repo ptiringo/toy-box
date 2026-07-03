@@ -255,6 +255,25 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("horse-name-already-taken")
         }
+
+        @Test
+        fun `InspectionNotFound で 422 と inspection_id 付きの problem+json が返ること`() {
+            val inspectionId = UUID.fromString("55555555-5555-5555-5555-555555555555")
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.InspectionNotFound(inspectionId))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("inspection-not-found")
+        }
     }
 
     @Nested
