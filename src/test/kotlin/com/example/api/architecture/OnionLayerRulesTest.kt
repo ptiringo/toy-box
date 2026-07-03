@@ -67,7 +67,14 @@ class OnionLayerRulesTest {
             .haveSimpleNameEndingWith("Kt")
             .because("ドメインサービスは object / class でラップせずトップレベル関数で書く。" + "service/ への配置でドメインサービスを表現する")
 
-    /** application 層の Spring 依存は DI 用 stereotype アノテーションのみに留めること。 */
+    /**
+     * application 層の Spring 依存は宣言的アノテーション（DI 用 stereotype と @Transactional）のみに留めること。
+     *
+     * `org.springframework.transaction.annotation`（`@Transactional` 等）はメタデータのみで実行機構への
+     * 依存ではないため、stereotype と同様に許可する（#483 / ADR-0050）。`TransactionTemplate` /
+     * `PlatformTransactionManager` 等の実行機構（`org.springframework.transaction` 直下・`.support`）は
+     * 引き続き禁止する。
+     */
     @ArchTest
     val applicationDependsOnSpringOnlyForDi =
         noClasses()
@@ -77,6 +84,7 @@ class OnionLayerRulesTest {
             .dependOnClassesThat(
                 resideInAPackage("org.springframework..")
                     .and(not(resideInAPackage("org.springframework.stereotype..")))
+                    .and(not(resideInAPackage("org.springframework.transaction.annotation..")))
             )
 
     /** ユースケース（@Service）は application 層に置くこと。 */
