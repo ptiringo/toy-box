@@ -17,7 +17,7 @@
 | covering_certificate_number | varchar(255) |  | true |  |  | 種付証明書番号（種付なしは NULL） |
 | outcome_type | varchar(32) |  | true |  |  | 分娩結果の判別子（NOT_COVERED/LIVE_FOAL 等） |
 | outcome_foaling_date | date |  | true |  |  | 分娩日（生産 LIVE_FOAL のときのみ） |
-| version | bigint |  | true |  |  | 楽観ロック兼新規 insert 判定（NULL のとき新規） |
+| version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 
 ## Constraints
 

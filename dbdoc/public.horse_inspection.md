@@ -15,7 +15,7 @@
 | feature_hair_whorl | varchar(255) |  | true |  |  | 特徴記述子: 旋毛（未記録なら NULL） |
 | feature_white_markings | varchar(255) |  | true |  |  | 特徴記述子: 白徴（未記録なら NULL） |
 | feature_nose_print | varchar(255) |  | true |  |  | 特徴記述子: 鼻紋（未記録なら NULL） |
-| version | bigint |  | true |  |  | 楽観ロック兼新規 insert 判定（NULL のとき新規） |
+| version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 
 ## Constraints
 

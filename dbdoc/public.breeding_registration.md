@@ -14,7 +14,7 @@
 | breeding_role | varchar(32) |  | false |  |  | 繁殖の役割（STALLION/BROODMARE） |
 | retirement_reason | varchar(32) |  | true |  |  | 供用停止事由（供用中は NULL） |
 | retirement_occurred_on | date |  | true |  |  | 供用停止発生日（供用中は NULL） |
-| version | bigint |  | true |  |  | 楽観ロック兼新規 insert 判定（NULL のとき新規） |
+| version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 
 ## Constraints
 

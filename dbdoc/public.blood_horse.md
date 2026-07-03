@@ -22,7 +22,7 @@
 | dam_id | uuid |  | true |  |  | 母馬 ID（内国産のみ） |
 | origin_country | varchar(255) |  | true |  |  | 原産国（輸入のみ） |
 | landing_date | date |  | true |  |  | 輸入上陸日（輸入のみ） |
-| version | bigint |  | true |  |  | 楽観ロック兼新規 insert 判定（NULL のとき新規） |
+| version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 
 ## Constraints
 
