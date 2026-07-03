@@ -24,6 +24,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.time.LocalDate
 import java.util.UUID
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -262,17 +263,24 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             every { nameHorse(any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.InspectionNotFound(inspectionId))
 
-            tester
-                .post()
-                .uri(uri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body)
-                .assertThat()
+            val result =
+                tester
+                    .post()
+                    .uri(uri)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body)
+                    .exchange()
+
+            assertThat(result)
                 .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("inspection-not-found")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.inspection_id")
+                .isEqualTo(inspectionId.toString())
         }
     }
 
