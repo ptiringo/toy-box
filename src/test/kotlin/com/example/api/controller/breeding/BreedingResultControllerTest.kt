@@ -602,6 +602,16 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("breeding-report-already-submitted")
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.report_submitted_on")
+                .isEqualTo("2025-05-01")
         }
 
         @Test

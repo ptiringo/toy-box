@@ -33,10 +33,10 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 繁殖成績リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/breedingResults` に対する Create（年次レコードの起票）と、 個体へのカスタムメソッド
- * `:reportFoaling`（分娩結果報告、[AIP-136](https://google.aip.dev/136)）を提供する。Create は
- * 様式第14号の年次成績の2種類（種付した年・種付しなかった年）を、リクエストの `covering` の有無で判別する単一の Create として受ける。エラーレスポンスは RFC 9457
- * (Problem Details) 形式で返す。
+ * Google AIP のリソース指向設計に従い、コレクション `/api/breedingResults` に対する Create と、 個体へのカスタムメソッド
+ * `:reportFoaling`（分娩結果報告）・`:submitReport`（繁殖成績報告提出） （いずれも
+ * [AIP-136](https://google.aip.dev/136)）を提供する。 Create は様式第14号の年次成績2種類をリクエストの `covering` 有無で判別する単一
+ * Create として受ける。 エラーレスポンスは RFC 9457 (Problem Details) 形式で返す。
  */
 @RestController
 class BreedingResultController(
