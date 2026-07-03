@@ -1,16 +1,19 @@
 package com.example.api.architecture
 
 import com.example.api.ApiApplication
+import com.example.api.domain.shared.Command
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures.onionArchitecture
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * オニオンアーキテクチャの 4 リングに関する規約を強制するテスト。
@@ -104,4 +107,28 @@ class OnionLayerRulesTest {
             .areAnnotatedWith(Repository::class.java)
             .should()
             .resideInAPackage(INFRASTRUCTURE)
+
+    /**
+     * 書き込みユースケース（`Command` を受ける `invoke`）はトランザクション境界（`@Transactional`）を持つこと。
+     *
+     * 複数集約を書き込むユースケースでインフラ障害時の原子性が欠ける（先行 save が孤児として残る）ことを 構造的に防ぐ（#483 / ADR-0050）。入力 DTO
+     * 規約（書き込み=`Command` 封筒 / 読み取り=`〜Query`）により 書き込み系を静的に判別する。読み取り系ユースケースは対象外（readOnly
+     * トランザクションは導入しない）。
+     *
+     * `invoke` は完全一致 (`haveName`) ではなく前方一致 (`haveNameStartingWith`) で照合する。戻り値 `Result<V,
+     * E>`（kotlin-result）が inline value class のため、Kotlin コンパイラがプラットフォーム宣言の衝突回避で メソッド名をマングルする（例:
+     * `invoke-Zyo9ksc`）。完全一致では実バイトコード名と食い違い空振りする （ミューテーション検証で確認済み）。
+     */
+    @ArchTest
+    val commandHandlingInvokesAreTransactional =
+        methods()
+            .that()
+            .areDeclaredInClassesThat()
+            .resideInAPackage(APPLICATION)
+            .and()
+            .haveNameStartingWith("invoke")
+            .and()
+            .haveRawParameterTypes(Command::class.java)
+            .should()
+            .beAnnotatedWith(Transactional::class.java)
 }
