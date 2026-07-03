@@ -70,9 +70,10 @@ class JdbcHorseInspectionRepository(private val rows: HorseInspectionSpringDataR
         }
 
     /**
-     * ドメイン集約を永続化モデルへ写す。version はドメインが持たないため常に null（insert 判定）。
+     * ドメイン集約を永続化モデルへ写す。
      *
-     * [HorseInspection] は審査という INSERT-only のイベント（ADR-0041）のため update 経路を持たない。
+     * [HorseInspection] は審査という INSERT-only のイベント（ADR-0041）のため、`Entity.version`（既定の `null`）を
+     * override せず version を持たない。常に insert のみを扱い update 経路は持たない（ADR-0047）。
      */
     private fun HorseInspection.toRow(): HorseInspectionRow {
         val (parentageType, dnaResult) = parentage.toTypeAndResult()
