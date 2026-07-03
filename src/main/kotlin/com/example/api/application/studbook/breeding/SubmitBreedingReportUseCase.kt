@@ -12,6 +12,7 @@ import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 繁殖成績報告提出ユースケースの入力コマンド。
@@ -59,6 +60,7 @@ sealed interface SubmitBreedingReportUseCaseError {
  */
 @Service
 class SubmitBreedingReportUseCase(private val breedingResultRepository: BreedingResultRepository) {
+    @Transactional
     operator fun invoke(
         command: Command<SubmitBreedingReportCommand>
     ): Result<BreedingResult, SubmitBreedingReportUseCaseError> = binding {
