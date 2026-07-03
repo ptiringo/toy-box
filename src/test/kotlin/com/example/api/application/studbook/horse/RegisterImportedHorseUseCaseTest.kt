@@ -7,6 +7,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -46,7 +47,7 @@ class RegisterImportedHorseUseCaseTest {
         @Test
         fun `正しい入力のとき父母不明の輸入馬が登録され永続化される`() {
             val repository =
-                mockk<BloodHorseRepository> { every { save(any()) } answers { firstArg() } }
+                mockk<BloodHorseRepository> { every { save(any()) } answers { Ok(firstArg()) } }
             val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
             val registered = useCase(command(validPayload())).unwrap()

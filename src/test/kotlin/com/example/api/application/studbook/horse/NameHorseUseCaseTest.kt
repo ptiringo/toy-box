@@ -2,7 +2,6 @@ package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
-import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -38,9 +37,9 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns Versioned(horse, 0L)
+                    every { findById(horse.id) } returns horse
                     every { existsByName(any()) } returns false
-                    every { update(any()) } answers { Ok(firstArg()) }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
 
@@ -48,11 +47,8 @@ class NameHorseUseCaseTest {
 
             assert(registered.bloodHorse.id == horse.id)
             assert(registered.bloodHorse.name?.value == "オグリキャップ")
-            // 読み取り時点の version(0) を封筒のまま update へ運ぶ（楽観ロックの本義）
-            verify(exactly = 1) {
-                repository.update(match { it.version == 0L && it.value.name?.value == "オグリキャップ" })
-            }
-            verify(exactly = 0) { repository.save(any()) }
+            // save には命名済み（assignName 反映後）の集約が渡ること
+            verify(exactly = 1) { repository.save(match { it.name?.value == "オグリキャップ" }) }
         }
     }
 
@@ -67,7 +63,7 @@ class NameHorseUseCaseTest {
 
             assert(result.getError() == NameHorseUseCaseError.InvalidName)
             verify(exactly = 0) { repository.findById(any()) }
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
@@ -80,7 +76,7 @@ class NameHorseUseCaseTest {
             val result = useCase(command(id, "オグリキャップ"))
 
             assert(result.getError() == NameHorseUseCaseError.HorseNotFound(id))
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
@@ -88,7 +84,7 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns Versioned(horse, 0L)
+                    every { findById(horse.id) } returns horse
                     every { existsByName(HorseName.create("オグリキャップ").unwrap()) } returns true
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
@@ -96,7 +92,7 @@ class NameHorseUseCaseTest {
             val result = useCase(command(horse.id.value, "オグリキャップ"))
 
             assert(result.getError() == NameHorseUseCaseError.NameAlreadyTaken("オグリキャップ"))
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
@@ -108,7 +104,7 @@ class NameHorseUseCaseTest {
                     .aggregate
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(named.id) } returns Versioned(named, 0L)
+                    every { findById(named.id) } returns named
                     every { existsByName(any()) } returns false
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
@@ -116,16 +112,16 @@ class NameHorseUseCaseTest {
             val result = useCase(command(named.id.value, "トウカイテイオー"))
 
             assert(result.getError() == NameHorseUseCaseError.AlreadyNamed("オグリキャップ"))
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
         fun `命名後の審査が見つからないとき InspectionNotFound を返し改名が保存されない`() {
             val horse = BloodHorseFixture.bloodHorse()
-            // update をスタブしない（strict mockk）: 審査欠落で update に到達した場合は例外で即時失敗させる
+            // save をスタブしない（strict mockk）: 審査欠落で save に到達した場合は例外で即時失敗させる
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns Versioned(horse, 0L)
+                    every { findById(horse.id) } returns horse
                     every { existsByName(any()) } returns false
                 }
             val inspectionRepository =
@@ -139,7 +135,7 @@ class NameHorseUseCaseTest {
                     NameHorseUseCaseError.InspectionNotFound(horse.inspectionId.value)
             )
             // 審査が欠落した場合、改名済みの集約は保存しない（エラーなのに命名状態だけ永続化されるのを防ぐ）
-            verify(exactly = 0) { repository.update(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
 
         @Test
@@ -147,9 +143,9 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns Versioned(horse, 0L)
+                    every { findById(horse.id) } returns horse
                     every { existsByName(any()) } returns false
-                    every { update(any()) } returns Err(UpdateConflict)
+                    every { save(any()) } returns Err(UpdateConflict)
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
 

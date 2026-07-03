@@ -88,14 +88,14 @@ class NameHorseUseCase(
         val horseName =
             HorseName.create(input.name).mapError { NameHorseUseCaseError.InvalidName }.bind()
 
-        val versioned =
+        val horse =
             bloodHorseRepository
                 .findById(BloodHorseId(input.bloodHorseId))
                 .toResultOr { NameHorseUseCaseError.HorseNotFound(input.bloodHorseId) }
                 .bind()
 
         val transition =
-            nameHorse(versioned.value, horseName, bloodHorseRepository)
+            nameHorse(horse, horseName, bloodHorseRepository)
                 .mapError { error ->
                     when (error) {
                         is NameHorseError.NameAlreadyTaken ->
@@ -122,10 +122,9 @@ class NameHorseUseCase(
 
         val named =
             bloodHorseRepository
-                .update(versioned.map { transition.aggregate })
+                .save(transition.aggregate)
                 .mapError { NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId) }
                 .bind()
-                .value
         // ドメインイベントは当面 application 層内で最小ハンドリング（ログ）に留める。
         logger.info("ドメインイベント発生: {}", transition.event)
 

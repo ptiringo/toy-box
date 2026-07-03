@@ -37,8 +37,8 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 5. sealed な出自 [Origin]（内国産＝父母ID／輸入＝原産国・揚陸日）が判別子フラット化を経て双方往復できること
  * 6. 馬名（[HorseName]）の命名済み／未命名の双方が往復できること
  * 7. [BloodHorseRepository.findAllById] が複数IDをまとめて引き当てられること
- * 8. save は insert 専用で、既存集約のドメイン経由 update は update メソッドが version を進めて行うこと
- * 9. 古い version での update が UpdateConflict になること（楽観ロック）
+ * 8. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
+ * 9. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -111,8 +111,8 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
         val imported = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         val expectedOrigin = imported.origin as Origin.Imported
 
-        val saved = repository.save(imported)
-        val found = repository.findById(imported.id)?.value
+        val saved = repository.save(imported).unwrap()
+        val found = repository.findById(imported.id)
 
         assert(saved.id == imported.id)
         assert(found != null)
@@ -134,8 +134,8 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
         val foal = namedDomesticFoal()
         val expectedOrigin = foal.origin as Origin.Domestic
 
-        repository.save(foal)
-        val found = repository.findById(foal.id)?.value
+        repository.save(foal).unwrap()
+        val found = repository.findById(foal.id)
 
         assert(found != null)
         // 命名済みの馬名が往復する
@@ -150,8 +150,8 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
     @Test
     fun `findAllByIdはヒットしたIDだけをまとめて返す`() {
-        val imported = repository.save(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
-        val foal = repository.save(namedDomesticFoal())
+        val imported = repository.save(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)).unwrap()
+        val foal = repository.save(namedDomesticFoal()).unwrap()
         val missing = BloodHorseId(generateId())
 
         val found = repository.findAllById(setOf(imported.id, foal.id, missing))
@@ -180,52 +180,44 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
     @Test
     fun `既に付与済みの馬名は existsByName が true を返す`() {
-        repository.save(namedDomesticFoal()) // "オグリキャップ" で命名済み
+        repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ" で命名済み
 
         assert(repository.existsByName(HorseName.create("オグリキャップ").unwrap()))
     }
 
     @Test
     fun `未使用の馬名は existsByName が false を返す`() {
-        repository.save(namedDomesticFoal()) // "オグリキャップ"
+        repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ"
 
         assert(!repository.existsByName(HorseName.create("トウカイテイオー").unwrap()))
     }
 
     @Test
-    fun `ドメイン経由のupdateで馬名が反映されversionが進む`() {
-        val saved = repository.save(BloodHorseFixture.bloodHorse())
-        val versioned = repository.findById(saved.id)
-        assert(versioned != null)
+    fun `保存済み集約の再saveはupdateになりversionが進む`() {
+        val inserted = repository.save(BloodHorseFixture.bloodHorse()).unwrap()
+        assert(inserted.version != null)
 
-        val named =
-            versioned!!.map {
-                it.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
-            }
-        val updated = repository.update(named).unwrap()
+        val named = inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
+        val updated = repository.save(named).unwrap()
 
-        assert(updated.version > versioned.version)
-        assert(repository.findById(saved.id)!!.value.name?.value == "オグリキャップ")
+        assert(updated.version!! > inserted.version!!)
+        assert(rows.count() == 1L)
+        assert(repository.findById(inserted.id)?.name?.value == "オグリキャップ")
     }
 
     @Test
-    fun `古いversionでのupdateはUpdateConflictを返し先行の書き込みが保たれる`() {
-        val saved = repository.save(BloodHorseFixture.bloodHorse())
-        val stale = repository.findById(saved.id)!!
+    fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
+        val inserted = repository.save(BloodHorseFixture.bloodHorse()).unwrap()
         repository
-            .update(
-                stale.map { it.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate }
-            )
+            .save(inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate)
             .unwrap()
 
         val conflicted =
-            repository.update(
-                stale.map {
-                    it.assignName(HorseName.create("トウカイテイオー").unwrap()).unwrap().aggregate
-                }
+            repository.save(
+                inserted.assignName(HorseName.create("トウカイテイオー").unwrap()).unwrap().aggregate
             )
 
         assert(conflicted.getError() == UpdateConflict)
-        assert(repository.findById(saved.id)!!.value.name?.value == "オグリキャップ")
+        assert(repository.findById(inserted.id)?.name?.value == "オグリキャップ")
     }
 }

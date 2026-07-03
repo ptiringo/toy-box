@@ -1,7 +1,6 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
-import com.example.api.domain.shared.Versioned
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -20,6 +19,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -81,9 +81,9 @@ class RegisterFoalUseCaseTest {
             }
         val bloodHorseRepository =
             mockk<BloodHorseRepository> {
-                every { findById(sire.id) } returns Versioned(sire, 0L)
-                every { findById(dam.id) } returns Versioned(dam, 0L)
-                every { save(any()) } answers { firstArg() }
+                every { findById(sire.id) } returns sire
+                every { findById(dam.id) } returns dam
+                every { save(any()) } answers { Ok(firstArg()) }
             }
         val horseInspectionRepository =
             mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }
@@ -259,7 +259,7 @@ class RegisterFoalUseCaseTest {
             // 父が雌のため registerInStudBook が SireNotMale を返す
             val w = Wiring()
             val female = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
-            every { w.bloodHorseRepository.findById(w.sire.id) } returns Versioned(female, 0L)
+            every { w.bloodHorseRepository.findById(w.sire.id) } returns female
 
             val result = w.useCase()(command(w.breedingResult.id.value))
 
@@ -277,7 +277,7 @@ class RegisterFoalUseCaseTest {
             // 父が雌のため registerFoal が RegistrationFailed(SireNotMale) を返す → 審査 save に到達しない
             val w = Wiring()
             val female = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
-            every { w.bloodHorseRepository.findById(w.sire.id) } returns Versioned(female, 0L)
+            every { w.bloodHorseRepository.findById(w.sire.id) } returns female
             // inspectionRepository は save を許可しないで生成（呼ばれると例外）
             val strictInspectionRepository = mockk<HorseInspectionRepository>()
             val useCase =
