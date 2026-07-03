@@ -39,6 +39,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 6. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
  * 7. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 8. 供用停止の共在不変条件が CHECK 制約でスキーマ側にも強制されること
+ * 9. 並行削除された集約への save が UpdateConflict を返すこと
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -183,6 +184,28 @@ class JdbcBreedingRegistrationRepositoryContractTest(
 
         assert(conflicted.getError() == UpdateConflict)
         assert(repository.findById(inserted.id)?.retirement?.reason == RetirementReason.DEATH)
+    }
+
+    @Test
+    fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
+        val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        val inserted =
+            repository
+                .save(
+                    BreedingRegistration.create(
+                        BreedingRegistrationNumber.create("B-1234").unwrap(),
+                        mare,
+                    )
+                )
+                .unwrap()
+        rows.deleteAll()
+
+        val conflicted =
+            repository.save(
+                inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap()
+            )
+
+        assert(conflicted.getError() == UpdateConflict)
     }
 
     @Test

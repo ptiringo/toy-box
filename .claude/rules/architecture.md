@@ -30,7 +30,7 @@ paths:
 |-------|-----------|--------------|------------|
 | domainModel | `domain.shared` + `domain.*.model` | 純粋ライブラリのみ（kotlin-result / java-uuid-generator / jMolecules） | 禁止（jakarta / Jackson も禁止） |
 | domainService | `domain.*.service` | domainModel | 禁止 |
-| applicationService | `application` | domainModel / domainService | `org.springframework.stereotype`（`@Service` / `@Component`）と `org.springframework.transaction.annotation`（`@Transactional`）のみ |
+| applicationService | `application` | domainModel / domainService | 配線の語彙のみ: `org.springframework.stereotype`（DI）＋ `org.springframework.transaction.annotation`（宣言的 Tx 境界。[ADR-0051](../../docs/adr/0051-transactional-use-case-boundary.md)）＋ `ApplicationEventPublisher`（イベント発行。クラス単位で許可）（[ADR-0050](../../docs/adr/0050-domain-event-publication-after-commit.md)） |
 | adapter (rest) | `controller` | 内側すべて | 可 |
 | adapter (persistence) | `infrastructure` | 内側すべて | 可 |
 | adapter (mcp) | `mcp` | 内側すべて | 可 |
@@ -104,7 +104,7 @@ domain/
 
 ドメインサービス（`service/` のトップレベル関数）には jMolecules アノテーションを付けない。`@Service`（jMolecules）は型向けでトップレベル関数に付けられず、ドメインサービスであることは `service/` パッケージへの配置で表現する。
 
-**ドメインイベント**（`@DomainEvent`）は「起きたこと」を表すビルディングブロック。イミュータブル集約（`var` 禁止）は内部にイベントを溜め込めないため、状態遷移メソッドが遷移後の集約とイベントを `StateTransition<A, E>`（`domain.shared`）に同梱して返し、発行は application 層が担う（集約は純粋なまま保つ）。失敗しうる遷移は `Result<StateTransition<A, E>, エラー>` を返し失敗時はイベントを生成しない（例: `BloodHorse.assignName` → `HorseNamed`）。イベントは値としての等価性が自然なため `data class` を使ってよい（ID ベース `final equals` を持つ集約と異なり衝突しない）。他集約への参照は ID 値クラス経由。収集・発行方式の決定経緯は [ADR-0029](../../docs/adr/0029-domain-events-via-state-transition-return.md)（Spring `ApplicationEventPublisher` 連携・publish-after-commit・発生時刻 enrichment は別イシュー送り）。
+**ドメインイベント**（`@DomainEvent`）は「起きたこと」を表すビルディングブロック。イミュータブル集約（`var` 禁止）は内部にイベントを溜め込めないため、状態遷移メソッドが遷移後の集約とイベントを `StateTransition<A, E>`（`domain.shared`）に同梱して返し、発行は application 層が担う（集約は純粋なまま保つ）。失敗しうる遷移は `Result<StateTransition<A, E>, エラー>` を返し失敗時はイベントを生成しない（例: `BloodHorse.assignName` → `HorseNamed`）。イベントは値としての等価性が自然なため `data class` を使ってよい（ID ベース `final equals` を持つ集約と異なり衝突しない）。他集約への参照は ID 値クラス経由。収集方式の決定経緯は [ADR-0029](../../docs/adr/0029-domain-events-via-state-transition-return.md)。**発行**はユースケースが Spring `ApplicationEventPublisher` で行い（`@Transactional` のトランザクション内で発行）、購読はアダプタ（`infrastructure` 等）の `@TransactionalEventListener(phase = AFTER_COMMIT)` で受ける。イベントはコミット確定後にのみ届き、ロールバック時は破棄される（publish-after-commit）。リスナ内例外はコミットを取り消せないため、リスナに置けるのは失敗しても本体の書き込みに影響しない処理（通知・ログ等）に限る。決定経緯は [ADR-0050](../../docs/adr/0050-domain-event-publication-after-commit.md)（発生時刻 enrichment は #434 送り）。
 
 **コマンド**（`Command<T>`、`domain.shared`）はドメインイベント（「起きたこと」）と対をなすビルディングブロックで、ペイロード（何をしたいか）に発生時刻メタデータ（`issuedAt: Instant`、タイムゾーン非依存のドメインイベント時刻）を添える封筒。ペイロードと横断的メタデータを分離する。書き込みユースケースの入力に用い（例: `registerInStudBook(command: Command<StudBook>)`）、読み取り（クエリ）系では使わない（発生時刻は書き込みイベントの概念）。jMolecules アノテーションを持たない汎用キャリアのため `domain.shared` に置く。
 

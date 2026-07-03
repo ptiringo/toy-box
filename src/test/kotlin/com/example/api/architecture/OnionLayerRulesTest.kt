@@ -4,6 +4,7 @@ import com.example.api.ApiApplication
 import com.example.api.domain.shared.Command
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
+import com.tngtech.archunit.core.domain.JavaClass.Predicates.type
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
@@ -11,6 +12,7 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures.onionArchitecture
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -71,15 +73,17 @@ class OnionLayerRulesTest {
             .because("ドメインサービスは object / class でラップせずトップレベル関数で書く。" + "service/ への配置でドメインサービスを表現する")
 
     /**
-     * application 層の Spring 依存は宣言的アノテーション（DI 用 stereotype と @Transactional）のみに留めること。
+     * application 層の Spring 依存は「配線の語彙」の精密 allowlist に留めること。
      *
-     * `org.springframework.transaction.annotation`（`@Transactional` 等）はメタデータのみで実行機構への
-     * 依存ではないため、stereotype と同様に許可する（#483 / ADR-0050）。`TransactionTemplate` /
-     * `PlatformTransactionManager` 等の実行機構（`org.springframework.transaction` 直下・`.support`）は
-     * 引き続き禁止する。
+     * 許可するのは DI 用 stereotype（`org.springframework.stereotype..`）、宣言的トランザクション境界
+     * （`org.springframework.transaction.annotation..`。`@Transactional` 等はメタデータのみで実行機構への
+     * 依存ではないため許可する。`TransactionTemplate` / `PlatformTransactionManager` 等の実行機構
+     * （`org.springframework.transaction` 直下・`.support`）は引き続き禁止する。ADR-0051）、
+     * ドメインイベント発行（[ApplicationEventPublisher] クラス単位。`org.springframework.context..` を パッケージごと開けて
+     * `ApplicationContext` 等への依存が紛れ込むのを防ぐ）のみ。業務ロジックを Spring API に依存させないための制限（ADR-0050）。
      */
     @ArchTest
-    val applicationDependsOnSpringOnlyForDi =
+    val applicationDependsOnSpringOnlyForWiring =
         noClasses()
             .that()
             .resideInAPackage(APPLICATION)
@@ -88,6 +92,7 @@ class OnionLayerRulesTest {
                 resideInAPackage("org.springframework..")
                     .and(not(resideInAPackage("org.springframework.stereotype..")))
                     .and(not(resideInAPackage("org.springframework.transaction.annotation..")))
+                    .and(not(type(ApplicationEventPublisher::class.java)))
             )
 
     /** ユースケース（@Service）は application 層に置くこと。 */
@@ -111,7 +116,7 @@ class OnionLayerRulesTest {
     /**
      * 書き込みユースケース（`Command` を受ける `invoke`）はトランザクション境界（`@Transactional`）を持つこと。
      *
-     * 複数集約を書き込むユースケースでインフラ障害時の原子性が欠ける（先行 save が孤児として残る）ことを 構造的に防ぐ（#483 / ADR-0050）。入力 DTO
+     * 複数集約を書き込むユースケースでインフラ障害時の原子性が欠ける（先行 save が孤児として残る）ことを 構造的に防ぐ（#483 / ADR-0051）。入力 DTO
      * 規約（書き込み=`Command` 封筒 / 読み取り=`〜Query`）により 書き込み系を静的に判別する。読み取り系ユースケースは対象外（readOnly
      * トランザクションは導入しない）。
      *
