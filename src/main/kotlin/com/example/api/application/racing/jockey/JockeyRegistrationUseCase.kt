@@ -11,6 +11,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.mapError
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * ジョッキー登録ユースケースの入力コマンド。
@@ -46,6 +47,7 @@ sealed interface JockeyRegistrationError {
  */
 @Service
 class JockeyRegistrationUseCase(private val jockeyRepository: JockeyRepository) {
+    @Transactional
     operator fun invoke(
         command: Command<RegisterJockeyCommand>
     ): Result<Jockey, JockeyRegistrationError> {

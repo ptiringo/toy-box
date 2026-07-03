@@ -20,6 +20,7 @@ import com.github.michaelbull.result.toResultOr
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 種付記録ユースケースの入力コマンド。
@@ -109,6 +110,7 @@ class RecordCoveringUseCase(
     private val breedingRegistrationRepository: BreedingRegistrationRepository,
     private val breedingResultRepository: BreedingResultRepository,
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<RecordCoveringCommand>
     ): Result<BreedingResult, RecordCoveringUseCaseError> = binding {

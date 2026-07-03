@@ -22,6 +22,7 @@ import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import java.time.LocalDate
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 輸入馬血統登録ユースケースの入力コマンド。
@@ -81,6 +82,7 @@ class RegisterImportedHorseUseCase(
     private val bloodHorseRepository: BloodHorseRepository,
     private val horseInspectionRepository: HorseInspectionRepository,
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<RegisterImportedHorseCommand>
     ): Result<RegisteredBloodHorse, RegisterImportedHorseUseCaseError> = binding {
@@ -124,7 +126,7 @@ class RegisterImportedHorseUseCase(
 
         val bloodHorse = BloodHorse.createImported(entry, inspection, registrationNumber)
 
-        // 審査と軽種馬の2集約書き込みは現状トランザクション境界を持たず、インフラ障害時の原子性は #483 で対応。
+        // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
         horseInspectionRepository.save(inspection)
         val saved =
             bloodHorseRepository.save(bloodHorse).getOrElse {
