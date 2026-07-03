@@ -194,6 +194,7 @@ private fun RecordUncoveredError.toProblemDetail(): ProblemDetail =
  *
  * - 報告対象（URL パスの繁殖成績）の不在は 404 Not Found
  * - 二重報告（既に分娩結果が報告済み）は状態の競合として 409 Conflict
+ * - 更新競合（楽観ロック）は状態の競合として 409 Conflict
  */
 fun ReportFoalingUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -212,4 +213,12 @@ fun ReportFoalingUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Foaling already recorded",
                 detail = "この繁殖成績には既に分娩結果が報告されています。",
             )
+        is ReportFoalingUseCaseError.ConcurrentModification ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "concurrent-modification",
+                    title = "Concurrent modification",
+                    detail = "対象の繁殖成績が他の更新と競合しました。最新の状態を取得してやり直してください。",
+                )
+                .apply { setProperty("breeding_result_id", breedingResultId) }
     }

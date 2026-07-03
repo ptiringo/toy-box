@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.model.breeding
 
+import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -15,6 +17,30 @@ class BreedingRegistrationTest {
 
         assert(!registration.isRetired)
         assert(registration.retirement == null)
+    }
+
+    @Test
+    fun `createで生成した直後は楽観ロックversionがnull`() {
+        val registration = BreedingFixture.breedingRegistration()
+
+        assert(registration.version == null)
+    }
+
+    @Test
+    fun `retireで得た新インスタンスは楽観ロックversionを引き継ぐ`() {
+        val persisted =
+            BreedingRegistration.reconstitute(
+                id = BreedingRegistrationId(generateId()),
+                registrationNumber = BreedingRegistrationNumber.create("B-0001").unwrap(),
+                registeredHorseId = BloodHorseId(generateId()),
+                role = BreedingRole.BROODMARE,
+                retirement = null,
+                version = 3L,
+            )
+
+        val retired = persisted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap()
+
+        assert(retired.version == 3L)
     }
 
     @Test

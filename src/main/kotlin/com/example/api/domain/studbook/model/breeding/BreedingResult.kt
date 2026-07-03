@@ -132,6 +132,7 @@ private constructor(
     val breedingYear: Year,
     val covering: Covering?,
     val outcome: FoalingOutcome?,
+    override val version: Long? = null,
 ) : Entity<BreedingResultId>() {
     init {
         if (covering == null) {
@@ -176,6 +177,7 @@ private constructor(
             breedingYear = breedingYear,
             covering = covering,
             outcome = outcome,
+            version = version,
         )
 
     companion object {
@@ -275,6 +277,8 @@ private constructor(
          * の再採番も行わない。永続化アダプター（infrastructure 層）からの復元専用であり、新規生成には [create] / [createUncovered]
          * を使うこと。なお covering と区分の整合（covering の有無と [FoalingOutcome.NotCovered]）は
          * コンストラクタの不変条件（init）が引き続き保証する。
+         *
+         * @param version DB の version 列の値（楽観ロック）
          */
         fun reconstitute(
             id: BreedingResultId,
@@ -282,7 +286,8 @@ private constructor(
             breedingYear: Year,
             covering: Covering?,
             outcome: FoalingOutcome?,
+            version: Long?,
         ): BreedingResult =
-            BreedingResult(id, breedingRegistrationId, breedingYear, covering, outcome)
+            BreedingResult(id, breedingRegistrationId, breedingYear, covering, outcome, version)
     }
 }

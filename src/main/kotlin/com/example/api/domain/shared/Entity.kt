@@ -12,6 +12,14 @@ abstract class Entity<ID : Any> {
     /** エンティティ ID */
     abstract val id: ID
 
+    /**
+     * 楽観ロックの version（永続化メタデータ）。null は「まだ永続化されていない」ことを表す。
+     *
+     * 永続化層（Spring Data JDBC）が insert / update の判別と競合検出に用いる。ドメインロジックは
+     * この値で業務判断（分岐・比較）をしないこと。永続化される更新対象の集約だけが constructor プロパティで override し、それ以外は既定の null のままでよい。
+     */
+    open val version: Long? = null
+
     /** 等価判定 同じ型かつ ID が一致する場合のみ等価とみなす */
     final override fun equals(other: Any?): Boolean {
         if (this === other) {

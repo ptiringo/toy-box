@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.horse
 
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -14,8 +15,11 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrThrow
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Repository
 
 /**
@@ -49,7 +53,13 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
             horse.id to horse
         }
 
-    override fun save(bloodHorse: BloodHorse): BloodHorse = rows.save(bloodHorse.toRow()).toDomain()
+    override fun save(bloodHorse: BloodHorse): Result<BloodHorse, UpdateConflict> =
+        try {
+            Ok(rows.save(bloodHorse.toRow()).toDomain())
+        } catch (_: OptimisticLockingFailureException) {
+            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+            Err(UpdateConflict)
+        }
 
     override fun existsByName(name: HorseName): Boolean = rows.existsByName(name.value)
 
@@ -71,6 +81,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
             inspectionId = HorseInspectionId(inspectionId),
             origin = toOrigin(),
             name = name?.let { HorseName.create(it).orThrow() },
+            version = version,
         )
 
     /** 判別子と各バリアント列から sealed [Origin] を復元する。 */
@@ -91,7 +102,12 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
             else -> error("未知の origin_type です: $originType (id=$id)")
         }
 
-    /** ドメイン集約を永続化モデルへ写す。version はドメインが持たないため常に null（insert 判定。更新系は #424）。 */
+    /**
+     * ドメイン集約を永続化モデルへ写す。
+     *
+     * version は集約が保持する値をそのまま写す（null なら Spring Data JDBC が新規と判定して insert、非 null なら 楽観ロック付き
+     * update。ADR-0027 の落とし穴②③）。
+     */
     private fun BloodHorse.toRow(): BloodHorseRow {
         val base =
             BloodHorseRow(
@@ -105,6 +121,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
                 inspectionId = inspectionId.value,
                 name = name?.value,
                 originType = "",
+                version = version,
             )
         return when (val o = origin) {
             is Origin.Domestic ->

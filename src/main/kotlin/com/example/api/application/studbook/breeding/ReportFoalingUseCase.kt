@@ -36,13 +36,23 @@ sealed interface ReportFoalingUseCaseError {
      * @property current 既に報告されている分娩結果
      */
     data class AlreadyReported(val current: FoalingOutcome) : ReportFoalingUseCaseError
+
+    /**
+     * 読み取りから報告確定までの間に、対象の繁殖成績が他の更新と競合した。
+     *
+     * 楽観ロック（読み取り時点の version との不一致）による検出。最新の状態を取得して再操作すれば解消しうる。
+     *
+     * @property breedingResultId 競合した繁殖成績ID
+     */
+    data class ConcurrentModification(val breedingResultId: UUID) : ReportFoalingUseCaseError
 }
 
 /**
  * 分娩結果報告ユースケース。
  *
  * 報告対象の繁殖成績を [BreedingResultRepository] で引き当て、集約の [BreedingResult.recordFoaling] で
- * 分娩結果を確定（二重報告は不変条件違反）してから、報告済みの新インスタンスを永続化する。Controller 層は 本クラスのみに依存する。
+ * 分娩結果を確定（二重報告は不変条件違反）してから、楽観ロック付きで更新する（競合は
+ * [ReportFoalingUseCaseError.ConcurrentModification]）。Controller 層は 本クラスのみに依存する。
  *
  * @return 報告済みの [BreedingResult]、または業務ルール違反を表す [ReportFoalingUseCaseError]
  */
@@ -67,6 +77,9 @@ class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultR
                 .mapError { ReportFoalingUseCaseError.AlreadyReported(it.current) }
                 .bind()
 
-        breedingResultRepository.save(reported)
+        breedingResultRepository
+            .save(reported)
+            .mapError { ReportFoalingUseCaseError.ConcurrentModification(input.breedingResultId) }
+            .bind()
     }
 }

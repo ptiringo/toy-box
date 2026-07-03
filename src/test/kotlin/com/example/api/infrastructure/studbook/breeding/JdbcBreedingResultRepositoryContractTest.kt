@@ -1,10 +1,12 @@
 package com.example.api.infrastructure.studbook.breeding
 
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.support.PostgresContainerSupport
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.time.Year
@@ -33,6 +35,9 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 6. sealed な分娩結果（`FoalingOutcome`）の未報告・生産（分娩日あり）・産駒なし区分が往復できること
  * 7. `findByBreedingRegistrationIdAndBreedingYear` が繁殖牝馬×繁殖年で引き当てられること
  * 8. covering と区分の整合（不変条件）が CHECK 制約でスキーマ側にも強制されること
+ * 9. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
+ * 10. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
+ * 11. 並行削除された集約への save が UpdateConflict を返すこと
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -83,7 +88,7 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `種付した未報告の成績は種付ごと往復し区分はnull`() {
         val result = BreedingFixture.breedingResult()
 
-        val saved = repository.save(result)
+        val saved = repository.save(result).unwrap()
         val found = repository.findById(result.id)
 
         assert(saved.id == result.id)
@@ -105,7 +110,7 @@ class JdbcBreedingResultRepositoryContractTest(
                 .recordFoaling(FoalingOutcome.LiveFoal(foalingDate))
                 .unwrap()
 
-        repository.save(reported)
+        repository.save(reported).unwrap()
         val found = repository.findById(reported.id)
 
         assert(found != null)
@@ -119,7 +124,7 @@ class JdbcBreedingResultRepositoryContractTest(
         val reported =
             BreedingFixture.breedingResult().recordFoaling(FoalingOutcome.NotConceived).unwrap()
 
-        repository.save(reported)
+        repository.save(reported).unwrap()
         val found = repository.findById(reported.id)
 
         assert(found != null)
@@ -130,7 +135,7 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `種付せずの成績は種付なし区分NotCoveredのまま往復できる`() {
         val uncovered = BreedingFixture.uncoveredBreedingResult()
 
-        repository.save(uncovered)
+        repository.save(uncovered).unwrap()
         val found = repository.findById(uncovered.id)
 
         assert(found != null)
@@ -142,7 +147,7 @@ class JdbcBreedingResultRepositoryContractTest(
     @Test
     fun `findByBreedingRegistrationIdAndBreedingYearで繁殖牝馬と年から引き当てられる`() {
         val result = BreedingFixture.breedingResult() // breedingYear=2024
-        repository.save(result)
+        repository.save(result).unwrap()
 
         val found =
             repository.findByBreedingRegistrationIdAndBreedingYear(
@@ -173,5 +178,40 @@ class JdbcBreedingResultRepositoryContractTest(
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(BreedingResultId(generateId())) == null)
+    }
+
+    @Test
+    fun `保存済み集約の再saveはupdateになりversionが進む`() {
+        val inserted = repository.save(BreedingFixture.breedingResult()).unwrap()
+        assert(inserted.version != null)
+
+        val reported = inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()
+        val updated = repository.save(reported).unwrap()
+
+        assert(updated.version!! > inserted.version!!)
+        assert(rows.count() == 1L)
+        assert(repository.findById(inserted.id)?.outcome == FoalingOutcome.NotConceived)
+    }
+
+    @Test
+    fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
+        val inserted = repository.save(BreedingFixture.breedingResult()).unwrap()
+        repository.save(inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()).unwrap()
+
+        val conflicted = repository.save(inserted.recordFoaling(FoalingOutcome.Abortion).unwrap())
+
+        assert(conflicted.getError() == UpdateConflict)
+        assert(repository.findById(inserted.id)?.outcome == FoalingOutcome.NotConceived)
+    }
+
+    @Test
+    fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
+        val inserted = repository.save(BreedingFixture.breedingResult()).unwrap()
+        rows.deleteAll()
+
+        val conflicted =
+            repository.save(inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+
+        assert(conflicted.getError() == UpdateConflict)
     }
 }

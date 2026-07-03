@@ -23,6 +23,31 @@ class BreedingResultTest {
     }
 
     @Test
+    fun `createで生成した直後は楽観ロックversionがnullであること`() {
+        val result = BreedingFixture.breedingResult()
+
+        assert(result.version == null)
+    }
+
+    @Test
+    fun `recordFoalingで得た新インスタンスは楽観ロックversionを引き継ぐこと`() {
+        val base = BreedingFixture.breedingResult()
+        val persisted =
+            BreedingResult.reconstitute(
+                id = base.id,
+                breedingRegistrationId = base.breedingRegistrationId,
+                breedingYear = base.breedingYear,
+                covering = base.covering,
+                outcome = base.outcome,
+                version = 3L,
+            )
+
+        val reported = persisted.recordFoaling(FoalingOutcome.NotConceived).unwrap()
+
+        assert(reported.version == 3L)
+    }
+
+    @Test
     fun `分娩結果を報告すると outcome を持つ新インスタンスが返り同一性が引き継がれること`() {
         val result = BreedingFixture.breedingResult()
         val outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))

@@ -9,6 +9,7 @@ import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.service.breeding.recordUncovered
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.time.Year
@@ -75,6 +76,8 @@ class RecordUncoveredUseCase(
                 .mapError { RecordUncoveredUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        breedingResultRepository.save(breedingResult)
+        breedingResultRepository.save(breedingResult).getOrElse {
+            error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
+        }
     }
 }

@@ -258,6 +258,25 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         }
 
         @Test
+        fun `ConcurrentModification で 409 と problem+json が返ること`() {
+            val id = UUID.fromString(bloodHorseId)
+            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+                Err(NameHorseUseCaseError.ConcurrentModification(id))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("concurrent-modification")
+        }
+
+        @Test
         fun `InspectionNotFound で 422 と inspection_id 付きの problem+json が返ること`() {
             val inspectionId = UUID.fromString("55555555-5555-5555-5555-555555555555")
             every { nameHorse(any<Command<NameHorseCommand>>()) } returns

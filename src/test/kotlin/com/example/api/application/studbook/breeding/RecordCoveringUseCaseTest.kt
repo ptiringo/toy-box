@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -54,7 +55,7 @@ class RecordCoveringUseCaseTest {
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
                     every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
-                    every { save(any()) } answers { firstArg() }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 

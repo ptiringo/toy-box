@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.breeding
 
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -9,10 +10,13 @@ import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrThrow
 import java.time.LocalDate
 import java.time.Year
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Repository
 
 /**
@@ -51,8 +55,13 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             )
             ?.toDomain()
 
-    override fun save(breedingResult: BreedingResult): BreedingResult =
-        rows.save(breedingResult.toRow()).toDomain()
+    override fun save(breedingResult: BreedingResult): Result<BreedingResult, UpdateConflict> =
+        try {
+            Ok(rows.save(breedingResult.toRow()).toDomain())
+        } catch (_: OptimisticLockingFailureException) {
+            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+            Err(UpdateConflict)
+        }
 
     /** 永続化モデルからドメイン集約を再構成する（検証・採番なし。covering/区分の整合は集約の init が保証）。 */
     private fun BreedingResultRow.toDomain(): BreedingResult =
@@ -62,6 +71,7 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             breedingYear = Year.of(breedingYear),
             covering = toCovering(),
             outcome = toOutcome(),
+            version = version,
         )
 
     /** 種付列（coveringDate の有無を判別子とする）から nullable な [Covering] を復元する。 */
@@ -95,7 +105,12 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             else -> error("未知の outcome_type です: $outcomeType (id=$id)")
         }
 
-    /** ドメイン集約を永続化モデルへ写す。version はドメインが持たないため常に null（insert 判定。更新系は #424）。 */
+    /**
+     * ドメイン集約を永続化モデルへ写す。
+     *
+     * version は集約が保持する値をそのまま写す（null なら Spring Data JDBC が新規と判定して insert、非 null なら 楽観ロック付き
+     * update。ADR-0027 の落とし穴②③）。
+     */
     private fun BreedingResult.toRow(): BreedingResultRow {
         val (outcomeType, foalingDate) = outcome.toTypeAndDate()
         return BreedingResultRow(
@@ -108,6 +123,7 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             coveringCertificateNumber = covering?.certificateNumber?.value,
             outcomeType = outcomeType,
             outcomeFoalingDate = foalingDate,
+            version = version,
         )
     }
 

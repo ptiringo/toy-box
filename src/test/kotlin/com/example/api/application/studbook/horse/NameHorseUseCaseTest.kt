@@ -1,11 +1,14 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -30,13 +33,13 @@ class NameHorseUseCaseTest {
     @Nested
     inner class SuccessCase {
         @Test
-        fun `未命名の馬に命名すると馬名を持つ馬が永続化される`() {
+        fun `未命名の馬に命名すると馬名を持つ馬が楽観ロック付きで更新される`() {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
                     every { findById(horse.id) } returns horse
                     every { existsByName(any()) } returns false
-                    every { save(any()) } answers { firstArg() }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository())
 
@@ -44,7 +47,8 @@ class NameHorseUseCaseTest {
 
             assert(registered.bloodHorse.id == horse.id)
             assert(registered.bloodHorse.name?.value == "オグリキャップ")
-            verify(exactly = 1) { repository.save(any()) }
+            // save には命名済み（assignName 反映後）の集約が渡ること
+            verify(exactly = 1) { repository.save(match { it.name?.value == "オグリキャップ" }) }
         }
     }
 
@@ -132,6 +136,24 @@ class NameHorseUseCaseTest {
             )
             // 審査が欠落した場合、改名済みの集約は保存しない（エラーなのに命名状態だけ永続化されるのを防ぐ）
             verify(exactly = 0) { repository.save(any()) }
+        }
+
+        @Test
+        fun `更新が競合したとき ConcurrentModification を返す`() {
+            val horse = BloodHorseFixture.bloodHorse()
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { findById(horse.id) } returns horse
+                    every { existsByName(any()) } returns false
+                    every { save(any()) } returns Err(UpdateConflict)
+                }
+            val useCase = NameHorseUseCase(repository, inspectionRepository())
+
+            val result = useCase(command(horse.id.value, "オグリキャップ"))
+
+            assert(
+                result.getError() == NameHorseUseCaseError.ConcurrentModification(horse.id.value)
+            )
         }
     }
 }

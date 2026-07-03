@@ -7,6 +7,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -32,7 +33,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 mockk<BloodHorseRepository> { every { findById(mare.id) } returns mare }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { save(any()) } answers { firstArg() }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase =
                 RegisterBreedingRegistrationUseCase(
@@ -58,7 +59,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 mockk<BloodHorseRepository> { every { findById(stallion.id) } returns stallion }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { save(any()) } answers { firstArg() }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase =
                 RegisterBreedingRegistrationUseCase(

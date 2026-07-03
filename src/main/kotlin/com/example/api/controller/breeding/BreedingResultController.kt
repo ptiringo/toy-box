@@ -158,7 +158,7 @@ class BreedingResultController(
                 ),
                 ApiResponse(
                     responseCode = "409",
-                    description = "既に分娩結果が報告済み（二重報告）",
+                    description = "既に分娩結果が報告済み（二重報告）、または他の更新と競合した",
                     content =
                         [
                             Content(

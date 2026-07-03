@@ -7,6 +7,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationReposi
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -35,7 +36,7 @@ class RecordUncoveredUseCaseTest {
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
                     every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
-                    every { save(any()) } answers { firstArg() }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = RecordUncoveredUseCase(registrationRepository, breedingResultRepository)
 

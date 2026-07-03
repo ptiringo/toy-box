@@ -18,6 +18,7 @@ import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import java.time.LocalDate
 import org.springframework.stereotype.Service
@@ -125,6 +126,10 @@ class RegisterImportedHorseUseCase(
 
         // 審査と軽種馬の2集約書き込みは現状トランザクション境界を持たず、インフラ障害時の原子性は #483 で対応。
         horseInspectionRepository.save(inspection)
-        RegisteredBloodHorse(bloodHorseRepository.save(bloodHorse), inspection)
+        val saved =
+            bloodHorseRepository.save(bloodHorse).getOrElse {
+                error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
+            }
+        RegisteredBloodHorse(saved, inspection)
     }
 }

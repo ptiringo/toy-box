@@ -19,6 +19,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -82,7 +83,7 @@ class RegisterFoalUseCaseTest {
             mockk<BloodHorseRepository> {
                 every { findById(sire.id) } returns sire
                 every { findById(dam.id) } returns dam
-                every { save(any()) } answers { firstArg() }
+                every { save(any()) } answers { Ok(firstArg()) }
             }
         val horseInspectionRepository =
             mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }

@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.model.breeding
 
+import com.example.api.domain.shared.UpdateConflict
+import com.github.michaelbull.result.Result
 import java.time.Year
 import org.jmolecules.ddd.annotation.Repository
 
@@ -23,6 +25,11 @@ interface BreedingResultRepository {
         breedingYear: Year,
     ): BreedingResult?
 
-    /** 繁殖成績を永続化する。 */
-    fun save(breedingResult: BreedingResult): BreedingResult
+    /**
+     * 繁殖成績を永続化する。
+     *
+     * 集約の [BreedingResult.version] が null なら insert、非 null なら楽観ロック付き update になる （Spring Data JDBC の
+     * version 判別）。update が読み取り時点から他の更新と競合していた （または行が並行削除されていた）場合は [UpdateConflict] を返す。
+     */
+    fun save(breedingResult: BreedingResult): Result<BreedingResult, UpdateConflict>
 }

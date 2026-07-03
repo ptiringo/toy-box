@@ -53,6 +53,7 @@ private constructor(
     val registeredHorseId: BloodHorseId,
     val role: BreedingRole,
     val retirement: BreedingRetirement?,
+    override val version: Long? = null,
 ) : Entity<BreedingRegistrationId>() {
     /** 繁殖供用を停止済みか（供用停止が記録されているか）を返す。 */
     val isRetired: Boolean
@@ -80,7 +81,7 @@ private constructor(
 
     /** [id] と未指定の属性を引き継ぎ、指定された属性だけを差し替えた新しい [BreedingRegistration] を返す。 */
     private fun copy(retirement: BreedingRetirement? = this.retirement): BreedingRegistration =
-        BreedingRegistration(id, registrationNumber, registeredHorseId, role, retirement)
+        BreedingRegistration(id, registrationNumber, registeredHorseId, role, retirement, version)
 
     companion object {
         /**
@@ -118,6 +119,7 @@ private constructor(
          * @param registeredHorseId 繁殖登録した個体の軽種馬ID
          * @param role 付与済みの繁殖ロール
          * @param retirement 供用停止（供用中なら null）
+         * @param version DB の version 列の値（楽観ロック）
          */
         fun reconstitute(
             id: BreedingRegistrationId,
@@ -125,7 +127,15 @@ private constructor(
             registeredHorseId: BloodHorseId,
             role: BreedingRole,
             retirement: BreedingRetirement?,
+            version: Long?,
         ): BreedingRegistration =
-            BreedingRegistration(id, registrationNumber, registeredHorseId, role, retirement)
+            BreedingRegistration(
+                id,
+                registrationNumber,
+                registeredHorseId,
+                role,
+                retirement,
+                version,
+            )
     }
 }

@@ -11,6 +11,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBook
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -56,7 +57,7 @@ class RegisterInStudBookUseCaseTest {
                 mockk<BloodHorseRepository> {
                     every { findAllById(setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
-                    every { save(any()) } answers { firstArg() }
+                    every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 

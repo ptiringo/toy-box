@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
+import com.example.api.domain.shared.UpdateConflict
+import com.github.michaelbull.result.Result
 import org.jmolecules.ddd.annotation.Repository
 
 /**
@@ -15,13 +17,18 @@ interface BloodHorseRepository {
     /**
      * 複数の軽種馬IDをまとめて検索する。
      *
-     * 父・母の存在確認のように複数IDを引き当てる場面で、1件ずつの逐次 lookup（永続化層では直列往復になる）を 1 回にまとめるためのポート。見つかった分だけを ID をキーにした
-     * [Map] で返す（存在しないIDはキーに現れない）。
+     * 父・母の存在確認のように複数IDを引き当てる読み取り専用の場面で、1件ずつの逐次 lookup（永続化層では 直列往復になる）を 1 回にまとめるためのポート。 見つかった分だけを ID
+     * をキーにした [Map] で返す（存在しないIDはキーに現れない）。
      */
     fun findAllById(ids: Set<BloodHorseId>): Map<BloodHorseId, BloodHorse>
 
-    /** 軽種馬を永続化する。 */
-    fun save(bloodHorse: BloodHorse): BloodHorse
+    /**
+     * 軽種馬を永続化する。
+     *
+     * 集約の [BloodHorse.version] が null なら insert、非 null なら楽観ロック付き update になる （Spring Data JDBC の
+     * version 判別）。update が読み取り時点から他の更新と競合していた （または行が並行削除されていた）場合は [UpdateConflict] を返す。
+     */
+    fun save(bloodHorse: BloodHorse): Result<BloodHorse, UpdateConflict>
 
     /** 指定の馬名が既に他の軽種馬に付与されているかを判定する（馬名の一意性照合用）。 */
     fun existsByName(name: HorseName): Boolean

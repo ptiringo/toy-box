@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.breeding
 
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
@@ -9,6 +10,7 @@ import com.example.api.domain.studbook.model.breeding.RetirementReason
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.support.PostgresContainerSupport
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.util.UUID
@@ -34,6 +36,9 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 3. 既存行の update で `@Version` がインクリメントされること（楽観ロック兼用。落とし穴③）
  * 4. イミュータブル集約 [BreedingRegistration] を ID を保ったまま再構成（reconstitute）して往復できること
  * 5. nullable な供用停止（`BreedingRetirement`）の供用中／供用停止済みの双方が 2 列のフラット化を経て往復できること
+ * 6. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
+ * 7. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
+ * 8. 供用停止の共在不変条件が CHECK 制約でスキーマ側にも強制されること
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -91,7 +96,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         val registration =
             BreedingRegistration.create(BreedingRegistrationNumber.create("B-1234").unwrap(), mare)
 
-        val saved = repository.save(registration)
+        val saved = repository.save(registration).unwrap()
         val found = repository.findById(registration.id)
 
         // value class ID が DB 往復しても保たれ、ID ベースの等価性で同一集約とみなせる
@@ -117,7 +122,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
                 .retire(RetirementReason.DEATH, occurredOn)
                 .unwrap()
 
-        repository.save(retired)
+        repository.save(retired).unwrap()
         val found = repository.findById(retired.id)
 
         assert(found != null)
@@ -131,6 +136,53 @@ class JdbcBreedingRegistrationRepositoryContractTest(
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(BreedingRegistrationId(generateId())) == null)
+    }
+
+    @Test
+    fun `保存済み集約の再saveはupdateになりversionが進む`() {
+        val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        val inserted =
+            repository
+                .save(
+                    BreedingRegistration.create(
+                        BreedingRegistrationNumber.create("B-1234").unwrap(),
+                        mare,
+                    )
+                )
+                .unwrap()
+        assert(inserted.version != null)
+
+        val retired = inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap()
+        val updated = repository.save(retired).unwrap()
+
+        assert(updated.version!! > inserted.version!!)
+        assert(rows.count() == 1L)
+        assert(repository.findById(inserted.id)?.isRetired == true)
+    }
+
+    @Test
+    fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
+        val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        val inserted =
+            repository
+                .save(
+                    BreedingRegistration.create(
+                        BreedingRegistrationNumber.create("B-1234").unwrap(),
+                        mare,
+                    )
+                )
+                .unwrap()
+        repository
+            .save(inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap())
+            .unwrap()
+
+        val conflicted =
+            repository.save(
+                inserted.retire(RetirementReason.USE_CHANGE, LocalDate.of(2026, 5, 1)).unwrap()
+            )
+
+        assert(conflicted.getError() == UpdateConflict)
+        assert(repository.findById(inserted.id)?.retirement?.reason == RetirementReason.DEATH)
     }
 
     @Test
