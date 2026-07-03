@@ -82,7 +82,7 @@ ktfmt はフォーマッタ、detekt は静的解析ツール。detekt 設定は
 
 ### ドメイン駆動設計
 
-ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`@AggregateRoot` / `@ValueObject` / `@field:Identity` / `@Repository` / `@DomainEvent` 等）で DDD ビルディングブロックの役割を表明し、整合性は ArchUnit（`JMoleculesDddRules`）で検証する。各パターン（Value Object は `@JvmInline value class`、Entity は ID 同一性＋自己検証ファクトリ＋イミュータブル、Command／Domain Event の封筒、軽量 CQRS の Query / Read Model）の規約とコード例は **`.claude/rules/architecture.md`**（`.kt` 編集時にロード）に集約している。決定経緯は ADR を参照: ID 生成 [ADR-0005](docs/adr/0005-time-based-uuid-generation.md) / イミュータブル集約 [ADR-0009](docs/adr/0009-immutable-aggregates.md) / 自己検証ファクトリ [ADR-0014](docs/adr/0014-self-validating-factory-over-confinement.md) / ドメインイベント [ADR-0029](docs/adr/0029-domain-events-via-state-transition-return.md) / 軽量 CQRS [ADR-0031](docs/adr/0031-lightweight-cqrs-read-model.md)。
+ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`@AggregateRoot` / `@ValueObject` / `@field:Identity` / `@Repository` / `@DomainEvent` 等）で DDD ビルディングブロックの役割を表明し、整合性は ArchUnit（`JMoleculesDddRules`）で検証する。各パターン（Value Object は `@JvmInline value class`、Entity は ID 同一性＋自己検証ファクトリ＋イミュータブル、Command／Domain Event の封筒、軽量 CQRS の Query / Read Model）の規約とコード例は **`.claude/rules/architecture.md`**（`.kt` 編集時にロード）に集約している。決定経緯は ADR を参照: ID 生成 [ADR-0005](docs/adr/0005-time-based-uuid-generation.md) / イミュータブル集約 [ADR-0009](docs/adr/0009-immutable-aggregates.md) / 自己検証ファクトリ [ADR-0014](docs/adr/0014-self-validating-factory-over-confinement.md) / ドメインイベント [ADR-0029](docs/adr/0029-domain-events-via-state-transition-return.md) / イベント発行（publish-after-commit）[ADR-0050](docs/adr/0050-domain-event-publication-after-commit.md) / 軽量 CQRS [ADR-0031](docs/adr/0031-lightweight-cqrs-read-model.md)。
 
 ### パッケージ構成
 

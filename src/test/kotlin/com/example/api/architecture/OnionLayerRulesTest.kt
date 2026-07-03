@@ -3,12 +3,14 @@ package com.example.api.architecture
 import com.example.api.ApiApplication
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
+import com.tngtech.archunit.core.domain.JavaClass.Predicates.type
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures.onionArchitecture
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 
@@ -67,9 +69,16 @@ class OnionLayerRulesTest {
             .haveSimpleNameEndingWith("Kt")
             .because("ドメインサービスは object / class でラップせずトップレベル関数で書く。" + "service/ への配置でドメインサービスを表現する")
 
-    /** application 層の Spring 依存は DI 用 stereotype アノテーションのみに留めること。 */
+    /**
+     * application 層の Spring 依存は「配線の語彙」の精密 allowlist に留めること。
+     *
+     * 許可するのは DI 用 stereotype（`org.springframework.stereotype..`）、宣言的トランザクション境界
+     * （`org.springframework.transaction.annotation..`）、ドメインイベント発行（[ApplicationEventPublisher]
+     * クラス単位。`org.springframework.context..` をパッケージごと開けて `ApplicationContext` 等への依存が
+     * 紛れ込むのを防ぐ）のみ。業務ロジックを Spring API に依存させないための制限（ADR-0050）。
+     */
     @ArchTest
-    val applicationDependsOnSpringOnlyForDi =
+    val applicationDependsOnSpringOnlyForWiring =
         noClasses()
             .that()
             .resideInAPackage(APPLICATION)
@@ -77,6 +86,8 @@ class OnionLayerRulesTest {
             .dependOnClassesThat(
                 resideInAPackage("org.springframework..")
                     .and(not(resideInAPackage("org.springframework.stereotype..")))
+                    .and(not(resideInAPackage("org.springframework.transaction.annotation..")))
+                    .and(not(type(ApplicationEventPublisher::class.java)))
             )
 
     /** ユースケース（@Service）は application 層に置くこと。 */
