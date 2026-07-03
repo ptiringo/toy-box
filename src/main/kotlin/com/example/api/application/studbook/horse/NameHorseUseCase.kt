@@ -14,6 +14,7 @@ import com.github.michaelbull.result.toResultOr
 import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 馬名登録ユースケースの入力コマンド。
@@ -80,6 +81,7 @@ class NameHorseUseCase(
     private val bloodHorseRepository: BloodHorseRepository,
     private val horseInspectionRepository: HorseInspectionRepository,
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<NameHorseCommand>
     ): Result<RegisteredBloodHorse, NameHorseUseCaseError> = binding {

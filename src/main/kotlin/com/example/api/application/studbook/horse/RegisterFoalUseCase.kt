@@ -27,6 +27,7 @@ import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 生産産駒登録ユースケースの入力コマンド。
@@ -107,6 +108,7 @@ class RegisterFoalUseCase(
     private val bloodHorseRepository: BloodHorseRepository,
     private val horseInspectionRepository: HorseInspectionRepository,
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<RegisterFoalCommand>
     ): Result<RegisteredBloodHorse, RegisterFoalUseCaseError> = binding {
@@ -171,7 +173,7 @@ class RegisterFoalUseCase(
                 .mapError { RegisterFoalUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        // 審査と軽種馬の2集約書き込みは現状トランザクション境界を持たず、インフラ障害時の原子性は #483 で対応。
+        // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
         horseInspectionRepository.save(inspection)
         val saved =
             bloodHorseRepository.save(bloodHorse).getOrElse {

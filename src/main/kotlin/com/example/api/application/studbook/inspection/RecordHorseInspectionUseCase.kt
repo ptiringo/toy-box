@@ -10,6 +10,7 @@ import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.map
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 審査記録ユースケースの入力コマンド。
@@ -44,6 +45,7 @@ data class RecordHorseInspectionCommand(
 class RecordHorseInspectionUseCase(
     private val horseInspectionRepository: HorseInspectionRepository
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<RecordHorseInspectionCommand>
     ): Result<HorseInspection, InvalidMicrochipNumber> {
