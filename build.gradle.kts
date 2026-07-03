@@ -33,21 +33,21 @@ dependencies {
     // 本番ランタイムの datasource は Prisma Postgres（実 PostgreSQL v17）へ配線する（#451 / ADR-0044）。
     // ローカル/CI/smoke/テストは全て PostgreSQL（組み込み H2 は cutover で全面脱却済み）。永続化の契約
     // テストは本番ターゲットの PostgreSQL を Testcontainers で用意して検証する（ADR-0027 / #422）。
-    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    implementation(libs.spring.boot.starter.data.jdbc)
     // Flyway は starter で引く。Spring Boot 4 は autoconfig を機能別モジュールに分割しており、
     // FlywayAutoConfiguration は spring-boot-autoconfigure ではなく専用モジュール spring-boot-flyway
     // に移った。素の flyway-core だけだと autoconfig が classpath に無く、エラーも出さず migrate が
     // 走らない（#421）。starter-flyway が spring-boot-flyway(autoconfig) + spring-boot-jdbc +
     // flyway-core を引き込む。
-    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation(libs.spring.boot.starter.flyway)
     // ローカル開発（bootRun）時に compose.yaml の PostgreSQL を自動起動し datasource を自動配線する。
     // developmentOnly のため本番イメージ（bootBuildImage）・テスト classpath には載らない（#451）。
-    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+    developmentOnly(libs.spring.boot.docker.compose)
     // PostgreSQL ドライバと Flyway の PostgreSQL モジュール（Flyway 10+ は DB 別サポートをモジュール分割）。
     // 本番ランタイムは Prisma Postgres（実 PostgreSQL v17）へ接続するため runtimeOnly で本番 jar に載せる
     // （#451 / ADR-0044）。契約テスト（Testcontainers）でも runtimeOnly は testRuntimeClasspath に含まれる。
-    runtimeOnly("org.postgresql:postgresql")
-    runtimeOnly("org.flywaydb:flyway-database-postgresql")
+    runtimeOnly(libs.postgresql)
+    runtimeOnly(libs.flyway.database.postgresql)
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)
@@ -67,7 +67,7 @@ dependencies {
     // コンテナはシングルトン起動し接続先を @DynamicPropertySource（spring-test）で注入するため、
     // @ServiceConnection 用の spring-boot-testcontainers や JUnit5 拡張モジュールは要らず postgresql モジュール
     // 1 本でよい（core は推移取得）。アーティファクト ID は Testcontainers 2.0 の testcontainers-<module> 体系。
-    testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation(libs.testcontainers.postgresql)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // プロジェクト固有の detekt カスタムルール（domain/application で throw しない 等）を detekt 実行時に組み込む

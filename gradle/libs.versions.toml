@@ -32,6 +32,15 @@ spring-ai-starter-mcp-server-webmvc = { module = "org.springframework.ai:spring-
 springdoc-openapi-bom = { module = "org.springdoc:springdoc-openapi-bom", version.ref = "springdoc-openapi-bom" }
 springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui" }
 
+# 永続化（Spring Data JDBC + Flyway + PostgreSQL。ADR-0027 / ADR-0044）。
+# バージョンは Spring Boot の依存管理（BOM）に委ねるため version は指定しない
+spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose" }
+postgresql = { module = "org.postgresql:postgresql" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+
 # UUID Generator
 java-uuid-generator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "java-uuid-generator" }
 
