@@ -57,7 +57,7 @@ Spring Data JDBC を採るうえで、本プロジェクト固有の制約と衝
    > **更新（[ADR-0030](0030-jdbc-only-persistence-retire-inmemory.md) が supersede）**: 「InMemory リポジトリを残す」判断は撤回した。アプリ／ドメイン層テストは実際には mockk / Fixture でポートを差すため InMemory 実体を使っておらず、起動時の外部 DB 回避は H2 が担えるため。永続化実装は **JDBC 一本**に統一し InMemory は廃止する（集約ごとに段階移行）。
 5. **マッピング方式（spike で確定。当初案から補正）**: ドメイン集約には Spring Data のアノテーションを**付けない**。infrastructure 層に永続化モデル（`〜Row` data class）を別に置き、`@Id` / `@Version` / `@Table` / `@Column` はそこに付け、**ドメイン集約 ⇔ Row は手書きマッパーで相互変換**する。理由はオニオン規約（ArchUnit）が `domain..` の `org.springframework..` 依存を禁じており、`org.springframework.data.annotation.*` を集約に載せられないため（当初案の「集約に直接 `@Version`」「value class 用カスタムコンバータ」は採れない）。
    - **value class ID** → 別途の Spring Data カスタムコンバータは**不要**。Row は生の `UUID` 列を持ち、`JockeyId(uuid)` / `id.value` の変換は手書きマッパーが担う（永続化モデルを分離した帰結）。
-   - **採番時の insert 判定** ＆ **楽観ロック** → **Row に** `@Version` 数値列を持たせ、「version null/0 = 新規」で insert を判定しつつ楽観ロックを兼ねる（`Persistable<ID>` 実装は採らない）。version はドメインへ漏らさない（ドメインは永続化メタデータを持たない）。
+   - **採番時の insert 判定** ＆ **楽観ロック** → **Row に** `@Version` 数値列を持たせ、「version null/0 = 新規」で insert を判定しつつ楽観ロックを兼ねる（`Persistable<ID>` 実装は採らない）。version はドメインへ漏らさない（ドメインは永続化メタデータを持たない）。**→ この sub-decision は [ADR-0047](0047-aggregate-version-for-optimistic-locking.md) が部分的に上書き（更新対象集約は `Entity.version` を保持する）。**
    - **再構成（リハイドレート）** → 集約に検証・採番を行わない復元用ファクトリ（例: `Jockey.reconstitute(id, …)`）を設け、マッパーはこれで Row から集約を組み立てる。`create`（新規・自己検証・採番）とは別口にする。
 
 この決定は小さな spike（Jockey を Spring Data JDBC + H2 で 1 本通す）で確証を取って確定した。spike の結果は次節に記す。
