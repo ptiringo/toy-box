@@ -15,8 +15,8 @@ import com.example.api.domain.studbook.model.inspection.DnaParentageResult
  * 列挙子名は現状ドメインと同一だが、それは「現時点で wire 名とドメイン名が一致している」だけであり、両者の独立性は
  * このマッピング層で担保する。ドメイン enum をリネームしても、本ファイルの when 節を直せば wire 契約は不変に保てる。
  *
- * `toApi` は成功レスポンス [BloodHorseResponse] が露出する項目（性・毛色・品種）のみ用意する。DNA 判定は
- * リクエスト専用項目のためレスポンス変換を持たない。
+ * `toApi` は成功レスポンスが露出する項目に用意する。DNA 判定は審査リソース（`controller.inspection`）の
+ * レスポンスでも露出するため双方向を持つ。
  */
 
 /** 性（HTTP 契約）。 */
@@ -151,4 +151,12 @@ fun DnaParentageResultDto.toDomain(): DnaParentageResult =
         DnaParentageResultDto.CONSISTENT -> DnaParentageResult.CONSISTENT
         DnaParentageResultDto.INCONSISTENT -> DnaParentageResult.INCONSISTENT
         DnaParentageResultDto.UNTESTED -> DnaParentageResult.UNTESTED
+    }
+
+/** ドメインの DNA 判定結果を HTTP 契約の判定結果へ変換する。 */
+fun DnaParentageResult.toApi(): DnaParentageResultDto =
+    when (this) {
+        DnaParentageResult.CONSISTENT -> DnaParentageResultDto.CONSISTENT
+        DnaParentageResult.INCONSISTENT -> DnaParentageResultDto.INCONSISTENT
+        DnaParentageResult.UNTESTED -> DnaParentageResultDto.UNTESTED
     }
