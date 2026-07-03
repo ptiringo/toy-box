@@ -15,6 +15,7 @@ import com.github.michaelbull.result.toResultOr
 import java.time.Year
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 種付せず（種付しなかった年次成績）記録ユースケースの入力コマンド。
@@ -56,6 +57,7 @@ class RecordUncoveredUseCase(
     private val breedingRegistrationRepository: BreedingRegistrationRepository,
     private val breedingResultRepository: BreedingResultRepository,
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<RecordUncoveredCommand>
     ): Result<BreedingResult, RecordUncoveredUseCaseError> = binding {

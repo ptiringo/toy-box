@@ -9,6 +9,9 @@ import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
 import com.example.api.application.studbook.breeding.ReportFoalingUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
+import com.example.api.application.studbook.breeding.SubmitBreedingReportCommand
+import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCase
+import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCaseError
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
@@ -17,6 +20,7 @@ import com.example.api.domain.studbook.model.breeding.CoveringValidityError
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
+import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
 import com.example.api.domain.studbook.model.breeding.ValidityPeriod
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -44,6 +48,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var recordCovering: RecordCoveringUseCase
     @MockkBean private lateinit var recordUncovered: RecordUncoveredUseCase
     @MockkBean private lateinit var reportFoaling: ReportFoalingUseCase
+    @MockkBean private lateinit var submitReport: SubmitBreedingReportUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -490,6 +495,134 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(liveFoalBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("concurrent-modification")
+        }
+    }
+
+    @Nested
+    inner class SubmitReportCase {
+        private val breedingResultId = "44444444-4444-4444-4444-444444444444"
+        private val uri = "/api/breedingResults/$breedingResultId:submitReport"
+
+        /** 分娩結果確定済み・提出済み（2025-06-01 = 期限超過）の繁殖成績。 */
+        private fun submittedResult() =
+            BreedingFixture.breedingResult()
+                .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)))
+                .unwrap()
+                .submitReport(LocalDate.of(2025, 6, 1))
+                .unwrap()
+
+        @Test
+        fun `正常な提出で 200 OK と提出日・期限超過付きの繁殖成績が返ること`() {
+            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+                Ok(submittedResult())
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                .extractingPath("$.report_submitted_on")
+                .isEqualTo("2025-06-01")
+        }
+
+        @Test
+        fun `期限超過の提出は report_submitted_late が true で返ること`() {
+            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+                Ok(submittedResult())
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                .extractingPath("$.report_submitted_late")
+                .isEqualTo(true)
+        }
+
+        @Test
+        fun `BreedingResultNotFound で 404 と breeding_result_id 付きの problem+json が返ること`() {
+            val id = UUID.fromString(breedingResultId)
+            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+                Err(SubmitBreedingReportUseCaseError.BreedingResultNotFound(id))
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.NOT_FOUND)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.breeding_result_id")
+                .isEqualTo(id.toString())
+        }
+
+        @Test
+        fun `分娩結果未確定で 422 と problem+json が返ること`() {
+            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+                Err(
+                    SubmitBreedingReportUseCaseError.PreconditionViolated(
+                        SubmitBreedingReportError.OutcomeNotRecorded
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("breeding-report-outcome-not-recorded")
+        }
+
+        @Test
+        fun `提出済みで 409 と既存提出日付きの problem+json が返ること`() {
+            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+                Err(
+                    SubmitBreedingReportUseCaseError.PreconditionViolated(
+                        SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1))
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("breeding-report-already-submitted")
+
+            tester
+                .post()
+                .uri(uri)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.report_submitted_on")
+                .isEqualTo("2025-05-01")
+        }
+
+        @Test
+        fun `ConcurrentModification で 409 と problem+json が返ること`() {
+            val id = UUID.fromString(breedingResultId)
+            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+                Err(SubmitBreedingReportUseCaseError.ConcurrentModification(id))
+
+            tester
+                .post()
+                .uri(uri)
                 .assertThat()
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)

@@ -18,6 +18,7 @@
 | outcome_type | varchar(32) |  | true |  |  | 分娩結果の判別子（NOT_COVERED/LIVE_FOAL 等） |
 | outcome_foaling_date | date |  | true |  |  | 分娩日（生産 LIVE_FOAL のときのみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
+| report_submitted_on | date |  | true |  |  | 繁殖成績報告書（様式第14号）の提出日（未提出は NULL） |
 
 ## Constraints
 
@@ -26,6 +27,7 @@
 | chk_breeding_result_covering | CHECK | CHECK ((((covering_stallion_id IS NULL) AND (covering_date IS NULL) AND (covering_certificate_number IS NULL) AND (covering_place IS NULL)) OR ((covering_stallion_id IS NOT NULL) AND (covering_date IS NOT NULL) AND (covering_certificate_number IS NOT NULL)))) |
 | chk_breeding_result_foaling_date | CHECK | CHECK (((outcome_foaling_date IS NULL) OR ((outcome_type)::text = 'LIVE_FOAL'::text))) |
 | chk_breeding_result_outcome_covering | CHECK | CHECK ((((covering_date IS NULL) AND ((outcome_type)::text = 'NOT_COVERED'::text)) OR ((covering_date IS NOT NULL) AND ((outcome_type IS NULL) OR ((outcome_type)::text <> 'NOT_COVERED'::text))))) |
+| chk_breeding_result_report_needs_outcome | CHECK | CHECK (((report_submitted_on IS NULL) OR (outcome_type IS NOT NULL))) |
 | breeding_result_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 
 ## Indexes
@@ -51,6 +53,7 @@ erDiagram
   varchar_32_ outcome_type
   date outcome_foaling_date
   bigint version
+  date report_submitted_on
 }
 ```
 

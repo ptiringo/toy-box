@@ -22,6 +22,8 @@ import org.springframework.data.relational.core.mapping.Table
  *   null。
  * - 分娩結果（sealed `FoalingOutcome?`）は判別子 [outcomeType]（enum 名）と、`LiveFoal` のみが持つ分娩日
  *   [outcomeFoalingDate] にフラット化する。種付した年で未報告なら outcomeType は null。
+ * - [reportSubmittedOn] は繁殖成績報告書（様式第14号）の提出日（未提出は null）。「提出済みなら分娩結果確定済み」の整合は CHECK
+ *   制約でスキーマ側にも強制する（V8 参照）。
  * - covering の有無と区分（NotCovered）・分娩日の整合は CHECK 制約でスキーマ側にも強制する（V4 参照）。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する。
  */
@@ -36,5 +38,6 @@ data class BreedingResultRow(
     @Column("covering_certificate_number") val coveringCertificateNumber: String? = null,
     @Column("outcome_type") val outcomeType: String? = null,
     @Column("outcome_foaling_date") val outcomeFoalingDate: LocalDate? = null,
+    @Column("report_submitted_on") val reportSubmittedOn: LocalDate? = null,
     @Version @Column("version") val version: Long? = null,
 )

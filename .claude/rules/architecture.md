@@ -30,7 +30,7 @@ paths:
 |-------|-----------|--------------|------------|
 | domainModel | `domain.shared` + `domain.*.model` | 純粋ライブラリのみ（kotlin-result / java-uuid-generator / jMolecules） | 禁止（jakarta / Jackson も禁止） |
 | domainService | `domain.*.service` | domainModel | 禁止 |
-| applicationService | `application` | domainModel / domainService | 配線の語彙のみ: `org.springframework.stereotype`（DI）＋ `org.springframework.transaction.annotation`（宣言的 Tx 境界）＋ `ApplicationEventPublisher`（イベント発行。クラス単位で許可）（[ADR-0050](../../docs/adr/0050-domain-event-publication-after-commit.md)） |
+| applicationService | `application` | domainModel / domainService | 配線の語彙のみ: `org.springframework.stereotype`（DI）＋ `org.springframework.transaction.annotation`（宣言的 Tx 境界。[ADR-0051](../../docs/adr/0051-transactional-use-case-boundary.md)）＋ `ApplicationEventPublisher`（イベント発行。クラス単位で許可）（[ADR-0050](../../docs/adr/0050-domain-event-publication-after-commit.md)） |
 | adapter (rest) | `controller` | 内側すべて | 可 |
 | adapter (persistence) | `infrastructure` | 内側すべて | 可 |
 | adapter (mcp) | `mcp` | 内側すべて | 可 |
@@ -39,6 +39,7 @@ paths:
 - アダプター同士（`controller` ⇔ `infrastructure` ⇔ `mcp`）の参照は禁止
 - `@RestController` は `controller`、`@Service` は `application`、Spring の `@Repository`（ポート実装）は `infrastructure` に置く
 - `@McpTool` を持つ Spring Bean は `mcp` に置く（application 層に直付けしない）。ArchUnit は `ArchSupport.kt` の `adapter("mcp", MCP)` で `mcp` を adapter リングとして強制する（[ADR-0035](../../docs/adr/0035-mcp-interface-adapter.md)）
+- **書き込みユースケース（`Command` を受ける `invoke`）には `@Transactional` を付与しトランザクション境界とする**（複数集約書き込みの失敗時原子性。ArchUnit `commandHandlingInvokesAreTransactional` で強制、読み取り系は対象外。[ADR-0051](../../docs/adr/0051-transactional-use-case-boundary.md)）。実行機構（`TransactionTemplate` 等）への依存は引き続き禁止
 
 ### ドメインモデルとドメインサービスの分け方
 

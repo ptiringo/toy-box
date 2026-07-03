@@ -71,6 +71,7 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             breedingYear = Year.of(breedingYear),
             covering = toCovering(),
             outcome = toOutcome(),
+            reportSubmittedOn = reportSubmittedOn,
             version = version,
         )
 
@@ -123,6 +124,7 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             coveringCertificateNumber = covering?.certificateNumber?.value,
             outcomeType = outcomeType,
             outcomeFoalingDate = foalingDate,
+            reportSubmittedOn = reportSubmittedOn,
             version = version,
         )
     }
