@@ -39,6 +39,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 7. [BloodHorseRepository.findAllById] が複数IDをまとめて引き当てられること
  * 8. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
  * 9. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
+ * 10. 並行削除された集約への save が UpdateConflict を返すこと
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -219,5 +220,18 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
         assert(conflicted.getError() == UpdateConflict)
         assert(repository.findById(inserted.id)?.name?.value == "オグリキャップ")
+    }
+
+    @Test
+    fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
+        val inserted = repository.save(BloodHorseFixture.bloodHorse()).unwrap()
+        rows.deleteAll()
+
+        val conflicted =
+            repository.save(
+                inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
+            )
+
+        assert(conflicted.getError() == UpdateConflict)
     }
 }

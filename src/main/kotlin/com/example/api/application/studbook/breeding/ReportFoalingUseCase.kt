@@ -11,6 +11,7 @@ import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 分娩結果報告ユースケースの入力コマンド。
@@ -58,6 +59,7 @@ sealed interface ReportFoalingUseCaseError {
  */
 @Service
 class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultRepository) {
+    @Transactional
     operator fun invoke(
         command: Command<ReportFoalingCommand>
     ): Result<BreedingResult, ReportFoalingUseCaseError> = binding {

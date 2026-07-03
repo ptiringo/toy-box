@@ -13,6 +13,7 @@ import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 繁殖登録ユースケースの入力コマンド。
@@ -54,6 +55,7 @@ class RegisterBreedingRegistrationUseCase(
     private val bloodHorseRepository: BloodHorseRepository,
     private val breedingRegistrationRepository: BreedingRegistrationRepository,
 ) {
+    @Transactional
     operator fun invoke(
         command: Command<RegisterBreedingRegistrationCommand>
     ): Result<BreedingRegistration, RegisterBreedingRegistrationUseCaseError> = binding {
