@@ -4,6 +4,8 @@ import com.example.api.application.studbook.breeding.RecordCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
 import com.example.api.application.studbook.breeding.ReportFoalingUseCase
+import com.example.api.application.studbook.breeding.SubmitBreedingReportCommand
+import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCase
 import com.example.api.controller.breeding.problem.toProblemDetail
 import com.example.api.controller.breeding.request.RecordBreedingResultRequest
 import com.example.api.controller.breeding.request.ReportFoalingRequest
@@ -41,6 +43,7 @@ class BreedingResultController(
     private val recordCovering: RecordCoveringUseCase,
     private val recordUncovered: RecordUncoveredUseCase,
     private val reportFoaling: ReportFoalingUseCase,
+    private val submitReport: SubmitBreedingReportUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -181,4 +184,68 @@ class BreedingResultController(
             .orThrowProblem()
             .toResponse()
     }
+
+    @Operation(
+        summary = "繁殖成績報告を提出する",
+        description =
+            "繁殖成績報告書（様式第14号）の年次提出を記録し、更新後の繁殖成績リソースを返す。提出日時はサーバー時刻" +
+                "（コマンドの発生時刻）を日本の暦日に写した提出日として扱う。期限（繁殖年の翌年5/31）超過の提出も" +
+                "拒否せず受理し、期限超過（report_submitted_late）として応答に表れる。業務ルール違反時は RFC 9457 " +
+                "形式の problem+json を返す。",
+        tags = ["BreedingResult"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "提出成功（更新後の繁殖成績リソースを返す。期限超過でも成功する）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BreedingResultResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "提出対象の繁殖成績が存在しない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "409",
+                    description = "既に提出済み（二重提出）、または他の更新と競合した",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "422",
+                    description = "分娩結果が未確定のため提出できない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/api/breedingResults/{breedingResultId}:submitReport")
+    fun submitReport(@PathVariable breedingResultId: UUID): BreedingResultResponse =
+        submitReport(Command.now(SubmitBreedingReportCommand(breedingResultId), clock))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
 }
