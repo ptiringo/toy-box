@@ -11,7 +11,7 @@
 | id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
 | first_name | varchar(255) |  | false |  |  | 名 |
 | last_name | varchar(255) |  | false |  |  | 姓 |
-| version | bigint |  | true |  |  | 楽観ロック兼新規 insert 判定（NULL のとき新規） |
+| version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 
 ## Constraints
 
