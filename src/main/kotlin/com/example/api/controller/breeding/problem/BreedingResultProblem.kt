@@ -3,10 +3,12 @@ package com.example.api.controller.breeding.problem
 import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
+import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.studbook.model.breeding.CoveringValidityError
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
+import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
@@ -221,4 +223,52 @@ fun ReportFoalingUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "対象の繁殖成績が他の更新と競合しました。最新の状態を取得してやり直してください。",
                 )
                 .apply { setProperty("breeding_result_id", breedingResultId) }
+    }
+
+/**
+ * [SubmitBreedingReportUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail]
+ * に変換する。
+ *
+ * - 提出対象（URL パスの繁殖成績）の不在は 404 Not Found
+ * - 分娩結果の未確定は、整った入力だが意味的に処理できないため 422 Unprocessable Entity
+ * - 二重提出・更新競合（楽観ロック）は状態の競合として 409 Conflict
+ */
+fun SubmitBreedingReportUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        is SubmitBreedingReportUseCaseError.BreedingResultNotFound ->
+            problem(
+                    status = HttpStatus.NOT_FOUND,
+                    code = "breeding-result-not-found",
+                    title = "Breeding result not found",
+                    detail = "提出対象として指定された繁殖成績が存在しません。",
+                )
+                .apply { setProperty("breeding_result_id", breedingResultId) }
+        is SubmitBreedingReportUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+        is SubmitBreedingReportUseCaseError.ConcurrentModification ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "concurrent-modification",
+                    title = "Concurrent modification",
+                    detail = "対象の繁殖成績が他の更新と競合しました。最新の状態を取得してやり直してください。",
+                )
+                .apply { setProperty("breeding_result_id", breedingResultId) }
+    }
+
+private fun SubmitBreedingReportError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        SubmitBreedingReportError.OutcomeNotRecorded ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                code = "breeding-report-outcome-not-recorded",
+                title = "Foaling outcome not recorded",
+                detail = "分娩結果が未確定のため繁殖成績報告を提出できません。",
+            )
+        is SubmitBreedingReportError.ReportAlreadySubmitted ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "breeding-report-already-submitted",
+                    title = "Breeding report already submitted",
+                    detail = "この繁殖成績の報告は既に提出されています。",
+                )
+                .apply { setProperty("report_submitted_on", submittedOn) }
     }

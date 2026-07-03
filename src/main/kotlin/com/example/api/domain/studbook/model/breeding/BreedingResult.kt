@@ -27,6 +27,26 @@ import org.jmolecules.ddd.annotation.ValueObject
 data class FoalingAlreadyRecorded(val current: FoalingOutcome)
 
 /**
+ * 繁殖成績報告の提出（[BreedingResult.submitReport]）の前提条件違反。
+ *
+ * 提出の前提は2系統ある。(1) 分娩結果（成績）が確定していること — 登録規程第25条ただし書き（成績が確定しない
+ * ため期限内に提出できない場合は確定後速やかに提出する）の裏返しで、未確定のまま提出はできない （[OutcomeNotRecorded]）。(2) 未提出であること —
+ * 年次の報告書の提出は繁殖年ごとに一度 （[ReportAlreadySubmitted]）。なお期限（翌年5/31）超過は前提条件違反ではない（拒否せず受理して記録する。
+ * [BreedingReportDeadline] 参照）。
+ */
+sealed interface SubmitBreedingReportError {
+    /** 分娩結果が未確定（outcome が null）のため提出できない。 */
+    data object OutcomeNotRecorded : SubmitBreedingReportError
+
+    /**
+     * 既に提出済みの繁殖成績へ重ねて提出しようとした。
+     *
+     * @property submittedOn 既に記録されている提出日
+     */
+    data class ReportAlreadySubmitted(val submittedOn: LocalDate) : SubmitBreedingReportError
+}
+
+/**
  * 種付記録（ドメインサービス recordCovering）の前提条件違反。
  *
  * 種付記録の前提は3系統ある。(1) 配合の登録ロール（繁殖牝馬 × 種牡馬）＝単一インスタンスの構築時不変条件で、 ファクトリ [BreedingResult.create]
@@ -123,6 +143,7 @@ sealed interface RecordUncoveredError {
  * @property covering その年の種付。種付せずの年は null
  * @property outcome その年の分娩結果。種付した年は未報告なら null・報告は [recordFoaling] で行う。種付せずの年は
  *   [FoalingOutcome.NotCovered]
+ * @property reportSubmittedOn 繁殖成績報告書（様式第14号）の提出日。未提出は null。提出は [submitReport] で行う
  */
 @AggregateRoot
 class BreedingResult
@@ -132,6 +153,7 @@ private constructor(
     val breedingYear: Year,
     val covering: Covering?,
     val outcome: FoalingOutcome?,
+    val reportSubmittedOn: LocalDate? = null,
     override val version: Long? = null,
 ) : Entity<BreedingResultId>() {
     init {
@@ -144,6 +166,9 @@ private constructor(
                 "種付した年の繁殖年は種付日の年と一致しなければならない。"
             }
             require(outcome != FoalingOutcome.NotCovered) { "種付した繁殖成績の区分は NotCovered であってはならない。" }
+        }
+        if (reportSubmittedOn != null) {
+            require(outcome != null) { "繁殖成績報告の提出済みの成績は分娩結果が確定していなければならない。" }
         }
     }
 
@@ -169,14 +194,42 @@ private constructor(
         }
     }
 
+    /** 提出が期限（翌年5/31、[BreedingReportDeadline]）超過だったか。未提出なら null。導出値であり保存しない。 */
+    val reportSubmittedLate: Boolean?
+        get() = reportSubmittedOn?.let { BreedingReportDeadline.of(breedingYear).isMissedBy(it) }
+
+    /**
+     * 繁殖成績報告書（様式第14号）の年次提出を記録した新しい [BreedingResult] を返す。
+     *
+     * 提出は繁殖年ごとに一度だけ行える。既に提出済みなら [SubmitBreedingReportError.ReportAlreadySubmitted]、
+     * 分娩結果が未確定（outcome が null）なら [SubmitBreedingReportError.OutcomeNotRecorded] を返し、写像を 行わない（元の
+     * [BreedingResult] も不変）。期限（翌年5/31）超過の提出は拒否せず受理する（登録規程第25条 ただし書き。超過かどうかは [reportSubmittedLate]
+     * が導出する）。成功時は [reportSubmittedOn] のみ差し替え、 [id] を含む他の属性は引き継ぐ。
+     *
+     * @param submittedOn 提出日（日本の暦日。[BreedingReportDeadline.submissionDateOf] で写した値を渡す）
+     * @return 提出済みの新しい [BreedingResult]、または前提条件違反を表す [SubmitBreedingReportError]
+     */
+    fun submitReport(submittedOn: LocalDate): Result<BreedingResult, SubmitBreedingReportError> {
+        val current = reportSubmittedOn
+        return when {
+            current != null -> Err(SubmitBreedingReportError.ReportAlreadySubmitted(current))
+            outcome == null -> Err(SubmitBreedingReportError.OutcomeNotRecorded)
+            else -> Ok(copy(reportSubmittedOn = submittedOn))
+        }
+    }
+
     /** [id] と未指定の属性を引き継ぎ、指定された属性だけを差し替えた新しい [BreedingResult] を返す。 */
-    private fun copy(outcome: FoalingOutcome? = this.outcome): BreedingResult =
+    private fun copy(
+        outcome: FoalingOutcome? = this.outcome,
+        reportSubmittedOn: LocalDate? = this.reportSubmittedOn,
+    ): BreedingResult =
         BreedingResult(
             id = id,
             breedingRegistrationId = breedingRegistrationId,
             breedingYear = breedingYear,
             covering = covering,
             outcome = outcome,
+            reportSubmittedOn = reportSubmittedOn,
             version = version,
         )
 
@@ -278,6 +331,7 @@ private constructor(
          * を使うこと。なお covering と区分の整合（covering の有無と [FoalingOutcome.NotCovered]）は
          * コンストラクタの不変条件（init）が引き続き保証する。
          *
+         * @param reportSubmittedOn 繁殖成績報告書の提出日（未提出は null）
          * @param version DB の version 列の値（楽観ロック）
          */
         fun reconstitute(
@@ -286,8 +340,17 @@ private constructor(
             breedingYear: Year,
             covering: Covering?,
             outcome: FoalingOutcome?,
+            reportSubmittedOn: LocalDate? = null,
             version: Long?,
         ): BreedingResult =
-            BreedingResult(id, breedingRegistrationId, breedingYear, covering, outcome, version)
+            BreedingResult(
+                id,
+                breedingRegistrationId,
+                breedingYear,
+                covering,
+                outcome,
+                reportSubmittedOn,
+                version,
+            )
     }
 }

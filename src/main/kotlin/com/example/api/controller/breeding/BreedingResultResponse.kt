@@ -21,6 +21,8 @@ import java.util.UUID
  * @property coveringPlace 種付が行われた場所。種付せずの年は null
  * @property certificateNumber 種付証明書番号。種付せずの年は null
  * @property outcome 分娩結果。種付した年で未報告なら null
+ * @property reportSubmittedOn 繁殖成績報告書（様式第14号）の提出日。未提出は null
+ * @property reportSubmittedLate 提出が期限（繁殖年の翌年5/31）超過だったか。未提出は null
  */
 data class BreedingResultResponse(
     val id: UUID,
@@ -31,6 +33,8 @@ data class BreedingResultResponse(
     val coveringPlace: String?,
     val certificateNumber: String?,
     val outcome: FoalingOutcomeResponse?,
+    val reportSubmittedOn: LocalDate?,
+    val reportSubmittedLate: Boolean?,
 )
 
 /** [BreedingResult] を繁殖成績リソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */
@@ -44,4 +48,6 @@ fun BreedingResult.toResponse(): BreedingResultResponse =
         coveringPlace = covering?.coveringPlace?.value,
         certificateNumber = covering?.certificateNumber?.value,
         outcome = outcome?.toResponse(),
+        reportSubmittedOn = reportSubmittedOn,
+        reportSubmittedLate = reportSubmittedLate,
     )

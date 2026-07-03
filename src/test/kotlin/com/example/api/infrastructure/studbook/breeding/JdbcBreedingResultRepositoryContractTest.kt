@@ -214,4 +214,51 @@ class JdbcBreedingResultRepositoryContractTest(
 
         assert(conflicted.getError() == UpdateConflict)
     }
+
+    @Test
+    fun `提出済みの成績は提出日ごと往復できる`() {
+        val submitted =
+            BreedingFixture.breedingResult()
+                .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 1)))
+                .unwrap()
+                .submitReport(LocalDate.of(2025, 5, 30))
+                .unwrap()
+
+        repository.save(submitted).unwrap()
+        val found = repository.findById(submitted.id)
+
+        assert(found != null)
+        assert(found!!.reportSubmittedOn == LocalDate.of(2025, 5, 30))
+        assert(found.reportSubmittedLate == false)
+    }
+
+    @Test
+    fun `未提出の成績はreport_submitted_onがnullで往復する`() {
+        val unsubmitted = BreedingFixture.breedingResult()
+
+        repository.save(unsubmitted).unwrap()
+        val found = repository.findById(unsubmitted.id)
+
+        assert(found != null)
+        assert(found!!.reportSubmittedOn == null)
+        assert(found.reportSubmittedLate == null)
+    }
+
+    @Test
+    fun `分娩結果未確定なのに提出日を持つ行はCHECK制約で拒否される`() {
+        // 種付済み・分娩結果未報告（outcome_type IS NULL）なのに提出日がある不整合行
+        val row =
+            BreedingResultRow(
+                id = generateId(),
+                breedingRegistrationId = generateId(),
+                breedingYear = 2024,
+                coveringStallionId = generateId(),
+                coveringDate = LocalDate.of(2024, 4, 1),
+                coveringCertificateNumber = "C-2024-0001",
+                outcomeType = null,
+                reportSubmittedOn = LocalDate.of(2025, 5, 1),
+            )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
 }
