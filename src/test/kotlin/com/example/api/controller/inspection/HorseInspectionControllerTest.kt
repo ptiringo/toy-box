@@ -24,6 +24,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.slot
 import java.util.UUID
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -216,15 +217,15 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
             every { findHorseInspection(FindHorseInspectionQuery(id)) } returns
                 Err(HorseInspectionNotFound(id))
 
-            tester
-                .get()
-                .uri("/api/horseInspections/$id")
-                .assertThat()
+            val result = tester.get().uri("/api/horseInspections/$id").exchange()
+
+            assertThat(result)
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("horse-inspection-not-found")
+            assertThat(result).bodyJson().extractingPath("$.inspection_id").isEqualTo(id.toString())
         }
     }
 }
