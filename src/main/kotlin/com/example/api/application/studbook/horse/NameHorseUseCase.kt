@@ -12,8 +12,9 @@ import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
-import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 馬名登録ユースケースの入力コマンド。
@@ -70,15 +71,18 @@ sealed interface NameHorseUseCaseError {
  * で命名状態を遷移させてから楽観ロック付きで更新する（競合は [NameHorseUseCaseError.ConcurrentModification]）。血統登録 →
  * 馬名登録という順序関係は、対象が 既に永続化済みの [BloodHorse] であることを引当が要求することで自然に満たされる。
  *
- * 状態遷移が同梱して返すドメインイベント（`HorseNamed`）は、ここ application 層で受け取って最小限に扱う （現状はログ）。Spring の
- * `ApplicationEventPublisher` への接続や永続化と整合した publish-after-commit は スコープ外（別イシュー送り。ADR-0029）。
+ * 状態遷移が同梱して返すドメインイベント（`HorseNamed`）は、更新の保存後に [ApplicationEventPublisher] で発行する。 ユースケース全体を
+ * `@Transactional` で 1 トランザクションに収めており、`AFTER_COMMIT` 購読者へはコミット確定後にのみ届く
+ * （publish-after-commit。失敗遷移・業務エラー時はイベント自体を生成せず発行もされない）。決定経緯は ADR-0050。
  *
  * @return 命名された [RegisteredBloodHorse]、または業務ルール違反を表す [NameHorseUseCaseError]
  */
 @Service
+@Transactional
 class NameHorseUseCase(
     private val bloodHorseRepository: BloodHorseRepository,
     private val horseInspectionRepository: HorseInspectionRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     operator fun invoke(
         command: Command<NameHorseCommand>
@@ -125,13 +129,9 @@ class NameHorseUseCase(
                 .save(transition.aggregate)
                 .mapError { NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId) }
                 .bind()
-        // ドメインイベントは当面 application 層内で最小ハンドリング（ログ）に留める。
-        logger.info("ドメインイベント発生: {}", transition.event)
+        // 発行はトランザクション内で行うが、AFTER_COMMIT 購読者への配送はコミット確定後（ADR-0050）。
+        eventPublisher.publishEvent(transition.event)
 
         RegisteredBloodHorse(named, inspection)
-    }
-
-    private companion object {
-        private val logger = LoggerFactory.getLogger(NameHorseUseCase::class.java)
     }
 }
