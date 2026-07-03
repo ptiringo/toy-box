@@ -27,5 +27,5 @@
 ## Consequences（帰結）
 
 - 審査＋軽種馬の 2 集約書き込み（`RegisterInStudBookUseCase` / `RegisterFoalUseCase` / `RegisterImportedHorseUseCase`）はインフラ障害時も原子的になる。ロールバックは統合テスト（`RegisterHorseTransactionRollbackTest`、Testcontainers PostgreSQL）で検証する。
-- ドメインイベント発行基盤（#433 / [ADR-0029](0029-domain-events-via-state-transition-return.md)）が想定する publish-after-commit（`ApplicationEventPublisher` + `@TransactionalEventListener(AFTER_COMMIT)`）は「発行時点でアクティブなトランザクションが存在する」ことを前提とし、本決定はその前提をそのまま満たす。
+- ドメインイベント発行基盤（#433）は publish-after-commit（`ApplicationEventPublisher` + `@TransactionalEventListener(AFTER_COMMIT)`）で [ADR-0050](0050-domain-event-publication-after-commit.md) として実装済みであり、「発行時点でアクティブなトランザクションが存在する」ことを前提とする。本決定はその前提を全書き込みユースケースへ広げる。
 - 同一トランザクションで触る集約が増えるほど楽観ロック競合（[ADR-0047](0047-aggregate-version-for-optimistic-locking.md)）の面は広がる。「1 トランザクション 1 集約」の古典則は、集約境界を疑う設計圧力としては引き続き意識する（本プロジェクトは単一 DB のモジュラーモノリスであり、結果整合性・saga の複雑さを払う理由がない）。
