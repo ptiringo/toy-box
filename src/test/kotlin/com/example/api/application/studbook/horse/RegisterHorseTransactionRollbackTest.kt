@@ -35,8 +35,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  *
  * 審査（HorseInspection）→ 軽種馬（BloodHorse）の 2 集約書き込みで、2 番目の save がインフラ障害で 失敗したとき、先行した審査 save
  * がロールバックされ孤児が残らないことを、実 PostgreSQL （Testcontainers）と実トランザクションマネージャで検証する。障害は BloodHorseRepository の
- *
- * @Primary デコレータ Bean で注入する（microchip_number に一意制約が無く実 DB 制約では再現できないため）。
+ * `@Primary` デコレータ Bean で注入する（microchip_number に一意制約が無く実 DB 制約では再現できないため）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)

@@ -36,8 +36,8 @@ data class RecordHorseInspectionCommand(
  * に検証変換し、[HorseInspection.create] で採番・生成して保存する。
  *
  * 失敗のしかたはマイクロチップ形式不正の 1 種類のみのため、専用の sealed は作らずドメインの [InvalidMicrochipNumber]
- * をそのまま返す（error-handling.md「1 種類なら単一型」。増えたら sealed へ昇格）。 単一集約の save のみでトランザクション論点はなく、`create`
- * はドメインイベントを返さない。
+ * をそのまま返す（error-handling.md「1 種類なら単一型」。増えたら sealed へ昇格）。単一集約の save のみで
+ * トランザクション論点はないが、書き込みユースケースの規約一様性（ADR-0051）のため `@Transactional` を付与する。`create` はドメインイベントを返さない。
  *
  * @return 保存後の [HorseInspection]、またはマイクロチップ形式不正を表す [InvalidMicrochipNumber]
  */

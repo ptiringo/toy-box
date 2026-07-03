@@ -123,6 +123,10 @@ class OnionLayerRulesTest {
      * `invoke` は完全一致 (`haveName`) ではなく前方一致 (`haveNameStartingWith`) で照合する。戻り値 `Result<V,
      * E>`（kotlin-result）が inline value class のため、Kotlin コンパイラがプラットフォーム宣言の衝突回避で メソッド名をマングルする（例:
      * `invoke-Zyo9ksc`）。完全一致では実バイトコード名と食い違い空振りする （ミューテーション検証で確認済み）。
+     *
+     * 前方一致に加えて `haveRawParameterTypes(Command)` を AND 条件に置くことで、前方一致の広すぎる当たりを `Command`
+     * 封筒を受け取るメソッドだけに絞り安全にしている。裏返すと、`Command` 封筒を受けない書き込みメソッドや 多引数の `invoke` はこのガードの対象外（規約＝「書き込みは
+     * `Command` 単項 `invoke`」に依存する）。
      */
     @ArchTest
     val commandHandlingInvokesAreTransactional =

@@ -78,7 +78,6 @@ sealed interface NameHorseUseCaseError {
  * @return 命名された [RegisteredBloodHorse]、または業務ルール違反を表す [NameHorseUseCaseError]
  */
 @Service
-@Transactional
 class NameHorseUseCase(
     private val bloodHorseRepository: BloodHorseRepository,
     private val horseInspectionRepository: HorseInspectionRepository,
