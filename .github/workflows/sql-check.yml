@@ -13,12 +13,14 @@ on:
       - 'src/main/resources/db/migration/**'
       - '.sqlfluff'
       - '.squawk.toml'
+      - 'scripts/check-migration-validate-separation.sh'
   push:
     branches: [ main ]
     paths:
       - 'src/main/resources/db/migration/**'
       - '.sqlfluff'
       - '.squawk.toml'
+      - 'scripts/check-migration-validate-separation.sh'
   workflow_dispatch:
 
 jobs:
@@ -52,3 +54,6 @@ jobs:
 
     - name: squawk migration safety
       run: squawk src/main/resources/db/migration/*.sql
+
+    - name: VALIDATE CONSTRAINT separation check
+      run: scripts/check-migration-validate-separation.sh
