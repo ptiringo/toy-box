@@ -58,6 +58,7 @@
 | BreedingRole | 繁殖ロール | （enum） | 繁殖登録で付与されるロール。雄=種牡馬（`STALLION`）／雌=繁殖牝馬（`BROODMARE`）。性から定まる。 | jMolecules 非付与のためカタログには出ない。Stallion/Broodmare は別個体でなくこのロール |
 | BreedingResult | 繁殖成績 | 集約ルート | 種付年ごとの「種付〜分娩」の年次レコード。「繁殖成績報告書」（様式第14号）1 行に対応。年次提出（`submitReport`）の提出日と期限超過の導出を持つ。 | — |
 | BreedingReportDeadline | 繁殖成績報告の提出期限 | 値オブジェクト | 繁殖成績報告書（様式第14号）の提出期限＝繁殖年の翌年5/31（登録規程第25条）。期限超過の提出は拒否せず受理し、超過をドメインの事実として記録する（同条ただし書き）。 | 期限は日本の暦日（Asia/Tokyo）で締まる |
+| CoveringReportDeadline | 種付成績報告の提出期限 | 値オブジェクト | 種付成績報告書（様式第13号）の提出期限＝種付年の当年9/30（登録規程第25条(1)）。期限超過の提出は拒否せず受理し、超過をドメインの事実として記録する。 | 期限は日本の暦日（Asia/Tokyo）で締まる。牝側 `BreedingReportDeadline`（翌年5/31）と非対称 |
 | Covering | 種付 | 値オブジェクト | 種牡馬を繁殖牝馬に交配したという事実。種牡馬は `BloodHorseId` 参照。種付日・種付場所（`coveringPlace`）を持つ。 | — |
 | CoveringCertificateNumber | 種付証明書番号 | 値オブジェクト | 種付の**事実**を証明する種付証明書の番号。 | 禁止: 種畜証明書（`StudCertificate`）と混同しない。別書面 |
 | StudCertificate | 種畜証明書 | 値オブジェクト | 種雄馬が繁殖に供されることを証する書面。有効区域（`validRegions`）と有効期間（`validPeriod`）を持ち、種付がその内側で行われたかを `authorizes` で検証する（第9条第1項(1)）。 | 禁止: 種付証明書（`CoveringCertificateNumber`）と混同しない |
@@ -189,6 +190,7 @@ graph LR
 | CoatColor | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Covering | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
+| CoveringReportDeadline | 値オブジェクト | domain.studbook.model.breeding |
 | DateOfBirth | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | DnaParentageResult | 値オブジェクト | domain.studbook.model.inspection |
 | FoalIdentity | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
