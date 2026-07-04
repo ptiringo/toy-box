@@ -83,6 +83,14 @@ pre-commit:
       run: mise exec -- squawk {staged_files}
       tags: lint
 
+    # VALIDATE CONSTRAINT の別マイグレーション分離チェック（ADR-0052 / #539）。
+    # 同一ファイルに ADD CONSTRAINT と VALIDATE CONSTRAINT が同居すると、Flyway の
+    # 1 マイグレーション = 1 トランザクション適用下ではロック格下げが効かないため fail する。
+    validate-constraint-separation:
+      glob: "src/main/resources/db/migration/*.sql"
+      run: scripts/check-migration-validate-separation.sh {staged_files}
+      tags: lint
+
 pre-push:
   commands:
     # プッシュ前に全体のテストを実行
