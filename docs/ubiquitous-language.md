@@ -168,8 +168,12 @@ graph LR
 
 | 用語 | 種別 | パッケージ |
 | --- | --- | --- |
+| Group | 集約ルート | domain.sakamichi.model.group |
 | Member | 集約ルート | domain.sakamichi.model |
+| GroupId | 値オブジェクト | domain.sakamichi.model.group |
+| GroupName | 値オブジェクト | domain.sakamichi.model.group |
 | MemberId | 値オブジェクト | domain.sakamichi.model |
+| MemberName | 値オブジェクト | domain.sakamichi.model.member |
 
 ### studbook
 
