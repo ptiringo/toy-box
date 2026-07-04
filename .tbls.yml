@@ -34,7 +34,7 @@ lint:
   requireTriggerComment:
     enabled: true # トリガー未使用（対象ゼロ）
   duplicateRelations:
-    enabled: true # DB 外部キー未使用で関連ゼロ（対象ゼロ）
+    enabled: true # ADR-0052 で FK 導入済み。同一テーブル対の重複関連を検知する
   requireForeignKeyIndex:
     enabled: true # ADR-0052 で FK 導入済み。FK 列の index 有無を検査する
   labelStyleBigQuery:

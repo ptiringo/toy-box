@@ -29,13 +29,7 @@ class StudbookSeeder(
 ) {
     /** [horse] が参照する審査行（inspection_id の親）を最小構成で永続化する。 */
     fun seedInspectionFor(horse: BloodHorse) {
-        inspectionRows.save(
-            HorseInspectionRow(
-                id = horse.inspectionId.value,
-                microchipNumber = "392140000000001",
-                parentageType = "NOT_APPLICABLE",
-            )
-        )
+        seedInspectionRow(horse.inspectionId.value)
     }
 
     /** 馬を審査行ごと永続化して返す（父・母・種牡馬・繁殖登録対象馬用）。 */
