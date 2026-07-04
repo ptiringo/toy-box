@@ -1,0 +1,96 @@
+package com.example.api.infrastructure.studbook
+
+import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.breeding.BreedingRegistration
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
+import com.example.api.infrastructure.studbook.breeding.BreedingRegistrationRow
+import com.example.api.infrastructure.studbook.breeding.BreedingRegistrationSpringDataRepository
+import com.example.api.infrastructure.studbook.breeding.JdbcBreedingRegistrationRepository
+import com.example.api.infrastructure.studbook.horse.BloodHorseRow
+import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
+import com.example.api.infrastructure.studbook.horse.JdbcBloodHorseRepository
+import com.example.api.infrastructure.studbook.inspection.HorseInspectionRow
+import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
+import com.github.michaelbull.result.unwrap
+import java.time.LocalDate
+import java.util.UUID
+
+/**
+ * FK backstop（ADR-0052）を満たすように、テスト対象行が参照する親行を先に永続化するテスト用シーダ。
+ *
+ * 集約フィクスチャ（Object Mother）は親集約をメモリ上にしか組まないため、FK 導入後はテストが 参照先を先に DB へ入れる必要がある。集約用（seedHorse /
+ * seedRegistration）と、生 Row の フィクスチャ用に任意 ID の親行だけ作る row 系（seedInspectionRow / seedHorseRow /
+ * seedRegistrationRow）の 2 系統を提供する。
+ */
+class StudbookSeeder(
+    private val inspectionRows: HorseInspectionSpringDataRepository,
+    private val horseRows: BloodHorseSpringDataRepository,
+    private val registrationRows: BreedingRegistrationSpringDataRepository,
+) {
+    /** [horse] が参照する審査行（inspection_id の親）を最小構成で永続化する。 */
+    fun seedInspectionFor(horse: BloodHorse) {
+        inspectionRows.save(
+            HorseInspectionRow(
+                id = horse.inspectionId.value,
+                microchipNumber = "392140000000001",
+                parentageType = "NOT_APPLICABLE",
+            )
+        )
+    }
+
+    /** 馬を審査行ごと永続化して返す（父・母・種牡馬・繁殖登録対象馬用）。 */
+    fun seedHorse(horse: BloodHorse): BloodHorse {
+        seedInspectionFor(horse)
+        return JdbcBloodHorseRepository(horseRows).save(horse).unwrap()
+    }
+
+    /** 繁殖登録を永続化して返す。対象馬は事前に [seedHorse] しておくこと。 */
+    fun seedRegistration(registration: BreedingRegistration): BreedingRegistration =
+        JdbcBreedingRegistrationRepository(registrationRows).save(registration).unwrap()
+
+    /** 任意 ID の審査行を作り ID を返す（生 Row フィクスチャの inspection_id 用）。 */
+    fun seedInspectionRow(id: UUID = generateId()): UUID {
+        inspectionRows.save(
+            HorseInspectionRow(
+                id = id,
+                microchipNumber = "392140000000001",
+                parentageType = "NOT_APPLICABLE",
+            )
+        )
+        return id
+    }
+
+    /** 任意 ID の馬行（輸入馬の最小構成）を審査行ごと作り ID を返す（生 Row の sire/dam・種牡馬用）。 */
+    fun seedHorseRow(id: UUID = generateId(), sex: String = "MALE"): UUID {
+        horseRows.save(
+            BloodHorseRow(
+                id = id,
+                registrationNumber = "2020900001",
+                sex = sex,
+                coatColor = "BAY",
+                breedType = "THOROUGHBRED",
+                dateOfBirth = LocalDate.of(2020, 4, 10),
+                breeder = "Coolmore",
+                inspectionId = seedInspectionRow(),
+                originType = "IMPORTED",
+                originCountry = "アイルランド",
+                landingDate = LocalDate.of(2024, 9, 1),
+            )
+        )
+        return id
+    }
+
+    /** 任意 ID の繁殖登録行を対象馬・審査行ごと作り ID を返す（生 Row の breeding_registration_id 用）。 */
+    fun seedRegistrationRow(id: UUID = generateId(), role: String = "BROODMARE"): UUID {
+        registrationRows.save(
+            BreedingRegistrationRow(
+                id = id,
+                registrationNumber = "B-0001",
+                registeredHorseId =
+                    seedHorseRow(sex = if (role == "STALLION") "MALE" else "FEMALE"),
+                breedingRole = role,
+            )
+        )
+        return id
+    }
+}
