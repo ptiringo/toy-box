@@ -20,7 +20,8 @@ class ToyBoxRuleSetProvider : RuleSetProvider {
         RuleSet(
             ruleSetId,
             mapOf<RuleName, (Config) -> Rule>(
-                RuleName("NoThrowInDomainAndApplication") to ::NoThrowInDomainAndApplication
+                RuleName("NoThrowInDomainAndApplication") to ::NoThrowInDomainAndApplication,
+                RuleName("NoSilentMapError") to ::NoSilentMapError,
             ),
         )
 

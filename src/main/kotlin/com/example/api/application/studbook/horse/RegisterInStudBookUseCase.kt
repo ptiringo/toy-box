@@ -1,6 +1,8 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -15,6 +17,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.StudBookEntry
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
+import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Result
@@ -106,15 +109,19 @@ class RegisterInStudBookUseCase(
 
         val registrationNumber =
             PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { RegisterInStudBookUseCaseError.InvalidRegistrationNumber }
+                .mapError { _: BlankPedigreeRegistrationNumber ->
+                    RegisterInStudBookUseCaseError.InvalidRegistrationNumber
+                }
                 .bind()
         val microchipNumber =
             MicrochipNumber.create(input.microchipNumber)
-                .mapError { RegisterInStudBookUseCaseError.InvalidMicrochipNumber }
+                .mapError { _: InvalidMicrochipNumber ->
+                    RegisterInStudBookUseCaseError.InvalidMicrochipNumber
+                }
                 .bind()
         val breeder =
             Breeder.create(input.breeder)
-                .mapError { RegisterInStudBookUseCaseError.BlankBreeder }
+                .mapError { _: BlankBreeder -> RegisterInStudBookUseCaseError.BlankBreeder }
                 .bind()
 
         // 父・母を 1 回の一括 lookup で引き当てる（逐次往復と sireId==damId の二重取得を避ける）。

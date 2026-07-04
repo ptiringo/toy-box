@@ -1,9 +1,11 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
+import com.example.api.domain.studbook.model.horse.bloodhorse.InvalidHorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.NameHorseError
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.service.horse.nameHorse
@@ -90,7 +92,9 @@ class NameHorseUseCase(
         val input = command.payload
 
         val horseName =
-            HorseName.create(input.name).mapError { NameHorseUseCaseError.InvalidName }.bind()
+            HorseName.create(input.name)
+                .mapError { _: InvalidHorseName -> NameHorseUseCaseError.InvalidName }
+                .bind()
 
         val horse =
             bloodHorseRepository
@@ -127,7 +131,9 @@ class NameHorseUseCase(
         val named =
             bloodHorseRepository
                 .save(transition.aggregate)
-                .mapError { NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId) }
+                .mapError { _: UpdateConflict ->
+                    NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId)
+                }
                 .bind()
         // 発行はトランザクション内で行うが、AFTER_COMMIT 購読者への配送はコミット確定後（ADR-0050）。
         eventPublisher.publishEvent(transition.event)

@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.breeding.BreedingReportDeadline
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
@@ -82,7 +83,7 @@ class SubmitBreedingReportUseCase(private val breedingResultRepository: Breeding
 
         breedingResultRepository
             .save(submitted)
-            .mapError {
+            .mapError { _: UpdateConflict ->
                 SubmitBreedingReportUseCaseError.ConcurrentModification(input.breedingResultId)
             }
             .bind()
