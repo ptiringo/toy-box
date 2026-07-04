@@ -16,6 +16,13 @@
 ```mermaid
 erDiagram
 
+"public.breeding_registration" }o--|| "public.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES blood_horse(id)"
+"public.blood_horse" }o--o| "public.blood_horse" : "FOREIGN KEY (dam_id) REFERENCES blood_horse(id)"
+"public.blood_horse" }o--o| "public.blood_horse" : "FOREIGN KEY (sire_id) REFERENCES blood_horse(id)"
+"public.blood_horse" }o--|| "public.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES horse_inspection(id)"
+"public.breeding_result" }o--|| "public.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES breeding_registration(id)"
+"public.breeding_result" }o--o| "public.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES blood_horse(id)"
+"public.covering_report" }o--|| "public.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES breeding_registration(id)"
 
 "public.jockey" {
   uuid id
@@ -26,7 +33,7 @@ erDiagram
 "public.breeding_registration" {
   uuid id
   varchar_255_ registration_number
-  uuid registered_horse_id
+  uuid registered_horse_id FK
   varchar_32_ breeding_role
   varchar_32_ retirement_reason
   date retirement_occurred_on
@@ -40,20 +47,20 @@ erDiagram
   varchar_32_ breed_type
   date date_of_birth
   varchar_255_ breeder
-  uuid inspection_id
+  uuid inspection_id FK
   varchar_255_ name
   varchar_16_ origin_type
-  uuid sire_id
-  uuid dam_id
+  uuid sire_id FK
+  uuid dam_id FK
   varchar_255_ origin_country
   date landing_date
   bigint version
 }
 "public.breeding_result" {
   uuid id
-  uuid breeding_registration_id
+  uuid breeding_registration_id FK
   integer breeding_year
-  uuid covering_stallion_id
+  uuid covering_stallion_id FK
   date covering_date
   varchar_255_ covering_place
   varchar_255_ covering_certificate_number
@@ -74,7 +81,7 @@ erDiagram
 }
 "public.covering_report" {
   uuid id
-  uuid stallion_breeding_registration_id
+  uuid stallion_breeding_registration_id FK
   integer covering_year
   date submitted_on
   bigint version

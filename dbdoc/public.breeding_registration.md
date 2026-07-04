@@ -8,9 +8,9 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
+| id | uuid |  | false | [public.breeding_result](public.breeding_result.md) [public.covering_report](public.covering_report.md) |  | 識別子（外部採番の UUIDv7） |
 | registration_number | varchar(255) |  | false |  |  | 登録番号 |
-| registered_horse_id | uuid |  | false |  |  | 登録対象の血統馬 ID |
+| registered_horse_id | uuid |  | false |  | [public.blood_horse](public.blood_horse.md) | 登録対象の血統馬 ID |
 | breeding_role | varchar(32) |  | false |  |  | 繁殖の役割（STALLION/BROODMARE） |
 | retirement_reason | varchar(32) |  | true |  |  | 供用停止事由（供用中は NULL） |
 | retirement_occurred_on | date |  | true |  |  | 供用停止発生日（供用中は NULL） |
@@ -22,26 +22,68 @@
 | ---- | ---- | ---------- |
 | chk_breeding_registration_retirement_coexistence | CHECK | CHECK ((((retirement_reason IS NULL) AND (retirement_occurred_on IS NULL)) OR ((retirement_reason IS NOT NULL) AND (retirement_occurred_on IS NOT NULL)))) |
 | breeding_registration_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| fk_breeding_registration_registered_horse | FOREIGN KEY | FOREIGN KEY (registered_horse_id) REFERENCES blood_horse(id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | breeding_registration_pkey | CREATE UNIQUE INDEX breeding_registration_pkey ON public.breeding_registration USING btree (id) |
+| ix_breeding_registration_registered_horse_id | CREATE INDEX ix_breeding_registration_registered_horse_id ON public.breeding_registration USING btree (registered_horse_id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
+"public.breeding_result" }o--|| "public.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES breeding_registration(id)"
+"public.covering_report" }o--|| "public.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES breeding_registration(id)"
+"public.breeding_registration" }o--|| "public.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES blood_horse(id)"
 
 "public.breeding_registration" {
   uuid id
   varchar_255_ registration_number
-  uuid registered_horse_id
+  uuid registered_horse_id FK
   varchar_32_ breeding_role
   varchar_32_ retirement_reason
   date retirement_occurred_on
+  bigint version
+}
+"public.breeding_result" {
+  uuid id
+  uuid breeding_registration_id FK
+  integer breeding_year
+  uuid covering_stallion_id FK
+  date covering_date
+  varchar_255_ covering_place
+  varchar_255_ covering_certificate_number
+  varchar_32_ outcome_type
+  date outcome_foaling_date
+  bigint version
+  date report_submitted_on
+}
+"public.covering_report" {
+  uuid id
+  uuid stallion_breeding_registration_id FK
+  integer covering_year
+  date submitted_on
+  bigint version
+}
+"public.blood_horse" {
+  uuid id
+  varchar_255_ registration_number
+  varchar_16_ sex
+  varchar_32_ coat_color
+  varchar_32_ breed_type
+  date date_of_birth
+  varchar_255_ breeder
+  uuid inspection_id FK
+  varchar_255_ name
+  varchar_16_ origin_type
+  uuid sire_id FK
+  uuid dam_id FK
+  varchar_255_ origin_country
+  date landing_date
   bigint version
 }
 ```

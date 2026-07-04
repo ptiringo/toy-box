@@ -2,7 +2,11 @@ package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.infrastructure.studbook.StudbookSeeder
+import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
+import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.deleteAllStudbookTables
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
@@ -26,16 +30,24 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 class JdbcBreedingResultSummaryQueriesContractTest(
     private val jdbcClient: JdbcClient,
     private val rows: BreedingResultSpringDataRepository,
+    private val inspectionRows: HorseInspectionSpringDataRepository,
+    private val horseRows: BloodHorseSpringDataRepository,
+    private val registrationRows: BreedingRegistrationSpringDataRepository,
 ) : PostgresContainerSupport() {
 
     private val queries = JdbcBreedingResultSummaryQueries(jdbcClient)
+    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
 
     private val stallion = generateId()
     private val otherStallion = generateId()
+    private lateinit var registrationId: UUID
 
     @BeforeEach
     fun cleanUp() {
-        rows.deleteAll()
+        deleteAllStudbookTables(jdbcClient)
+        seeder.seedHorseRow(id = stallion, sex = "MALE")
+        seeder.seedHorseRow(id = otherStallion, sex = "MALE")
+        registrationId = seeder.seedRegistrationRow()
     }
 
     /** 種付あり行を作る。outcomeType=null は未報告。LIVE_FOAL のみ分娩日を持つ。 */
@@ -47,7 +59,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     ) =
         BreedingResultRow(
             id = generateId(),
-            breedingRegistrationId = generateId(),
+            breedingRegistrationId = registrationId,
             breedingYear = year,
             coveringStallionId = stallionId,
             coveringDate = LocalDate.of(year, 4, 1),
@@ -61,7 +73,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     private fun notCovered(year: Int) =
         BreedingResultRow(
             id = generateId(),
-            breedingRegistrationId = generateId(),
+            breedingRegistrationId = registrationId,
             breedingYear = year,
             outcomeType = "NOT_COVERED",
         )

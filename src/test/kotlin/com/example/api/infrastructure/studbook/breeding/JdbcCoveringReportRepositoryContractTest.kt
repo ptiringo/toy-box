@@ -3,8 +3,15 @@ package com.example.api.infrastructure.studbook.breeding
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
+import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.CoveringReportId
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.infrastructure.studbook.StudbookSeeder
+import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
+import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -14,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -33,19 +41,34 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JdbcCoveringReportRepositoryContractTest(
-    private val rows: CoveringReportSpringDataRepository
+    private val rows: CoveringReportSpringDataRepository,
+    private val inspectionRows: HorseInspectionSpringDataRepository,
+    private val horseRows: BloodHorseSpringDataRepository,
+    private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcCoveringReportRepository(rows)
+    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
 
     @BeforeEach
     fun cleanUp() {
-        rows.deleteAll()
+        deleteAllStudbookTables(jdbcClient)
+    }
+
+    /** 親（種牡馬とその繁殖登録）を seed 済みの繁殖登録を返す。 */
+    private fun seededStallionRegistration(): BreedingRegistration {
+        val stallion = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
+        return seeder.seedRegistration(BreedingFixture.stallionRegistration(stallion = stallion))
     }
 
     @Test
     fun `新規の種付成績報告はversionがnullなのでinsertされ属性ごと往復できる`() {
-        val report = BreedingFixture.coveringReport(submittedOn = LocalDate.of(2024, 10, 1))
+        val report =
+            BreedingFixture.coveringReport(
+                stallionRegistration = seededStallionRegistration(),
+                submittedOn = LocalDate.of(2024, 10, 1),
+            )
 
         val saved = repository.save(report).unwrap()
         val found = repository.findById(report.id)
@@ -62,7 +85,10 @@ class JdbcCoveringReportRepositoryContractTest(
 
     @Test
     fun `findByStallionRegistrationIdAndCoveringYearで種牡馬と年から引き当てられる`() {
-        val report = BreedingFixture.coveringReport() // coveringYear=2024
+        val report =
+            BreedingFixture.coveringReport(
+                stallionRegistration = seededStallionRegistration()
+            ) // coveringYear=2024
         repository.save(report).unwrap()
 
         val found =
@@ -84,7 +110,7 @@ class JdbcCoveringReportRepositoryContractTest(
     @Test
     fun `同一種牡馬×同一種付年の二重insertはUNIQUE制約で拒否される`() {
         // ドメインサービスの一意性検証をすり抜ける read-then-insert 並行競合（#532）の backstop。
-        val stallionRegistration = BreedingFixture.stallionRegistration()
+        val stallionRegistration = seededStallionRegistration()
         repository
             .save(BreedingFixture.coveringReport(stallionRegistration = stallionRegistration))
             .unwrap()
@@ -95,13 +121,31 @@ class JdbcCoveringReportRepositoryContractTest(
 
     @Test
     fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
-        val inserted = repository.save(BreedingFixture.coveringReport()).unwrap()
+        val stallionRegistration = seededStallionRegistration()
+        val inserted =
+            repository
+                .save(BreedingFixture.coveringReport(stallionRegistration = stallionRegistration))
+                .unwrap()
         rows.deleteAll()
 
         // version 非 null の集約の save は update 経路になり、対象行が無いので競合として検出される
         val conflicted = repository.save(inserted)
 
         assert(conflicted.getError() == UpdateConflict)
+    }
+
+    @Test
+    fun `存在しない繁殖登録を参照する行はFK制約で拒否される`() {
+        val orphan =
+            CoveringReportRow(
+                id = generateId(),
+                stallionBreedingRegistrationId = generateId(),
+                coveringYear = 2024,
+                submittedOn = LocalDate.of(2024, 9, 30),
+                version = null,
+            )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(orphan) }
     }
 
     @Test

@@ -3,9 +3,16 @@ package com.example.api.infrastructure.studbook.breeding
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
+import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.infrastructure.studbook.StudbookSeeder
+import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
+import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -16,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -42,21 +50,56 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JdbcBreedingResultRepositoryContractTest(
-    private val rows: BreedingResultSpringDataRepository
+    private val rows: BreedingResultSpringDataRepository,
+    private val inspectionRows: HorseInspectionSpringDataRepository,
+    private val horseRows: BloodHorseSpringDataRepository,
+    private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcBreedingResultRepository(rows)
+    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
 
     @BeforeEach
     fun cleanUp() {
-        rows.deleteAll()
+        deleteAllStudbookTables(jdbcClient)
+    }
+
+    /** 親（繁殖牝馬の登録と種牡馬）を seed 済みの、分娩結果未報告の成績を組む。 */
+    private fun seededBreedingResult(): BreedingResult {
+        val broodmareRegistration =
+            BreedingFixture.breedingRegistration(
+                broodmare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+            )
+        val stallionRegistration =
+            BreedingFixture.stallionRegistration(
+                stallion = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
+            )
+        seeder.seedRegistration(broodmareRegistration)
+        seeder.seedRegistration(stallionRegistration)
+        return BreedingFixture.breedingResult(
+            broodmareRegistration = broodmareRegistration,
+            stallionRegistration = stallionRegistration,
+        )
+    }
+
+    /** 親（繁殖牝馬の登録）を seed 済みの、種付せず成績を組む。 */
+    private fun seededUncoveredResult(): BreedingResult {
+        val broodmareRegistration =
+            BreedingFixture.breedingRegistration(
+                broodmare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+            )
+        seeder.seedRegistration(broodmareRegistration)
+        return BreedingFixture.uncoveredBreedingResult(
+            broodmareRegistration = broodmareRegistration
+        )
     }
 
     /** 種付せず（covering 全 NULL・区分 NOT_COVERED）の整合した行。CHECK 制約を満たす最小行。 */
     private fun uncoveredRow(id: UUID = generateId()) =
         BreedingResultRow(
             id = id,
-            breedingRegistrationId = generateId(),
+            breedingRegistrationId = seeder.seedRegistrationRow(),
             breedingYear = 2024,
             outcomeType = "NOT_COVERED",
         )
@@ -86,7 +129,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `種付した未報告の成績は種付ごと往復し区分はnull`() {
-        val result = BreedingFixture.breedingResult()
+        val result = seededBreedingResult()
 
         val saved = repository.save(result).unwrap()
         val found = repository.findById(result.id)
@@ -106,9 +149,7 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `生産を報告した成績は分娩日ごと往復できる`() {
         val foalingDate = LocalDate.of(2025, 3, 1)
         val reported =
-            BreedingFixture.breedingResult()
-                .recordFoaling(FoalingOutcome.LiveFoal(foalingDate))
-                .unwrap()
+            seededBreedingResult().recordFoaling(FoalingOutcome.LiveFoal(foalingDate)).unwrap()
 
         repository.save(reported).unwrap()
         val found = repository.findById(reported.id)
@@ -121,8 +162,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `産駒なし区分を報告した成績は区分が往復し分娩日を持たない`() {
-        val reported =
-            BreedingFixture.breedingResult().recordFoaling(FoalingOutcome.NotConceived).unwrap()
+        val reported = seededBreedingResult().recordFoaling(FoalingOutcome.NotConceived).unwrap()
 
         repository.save(reported).unwrap()
         val found = repository.findById(reported.id)
@@ -133,7 +173,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `種付せずの成績は種付なし区分NotCoveredのまま往復できる`() {
-        val uncovered = BreedingFixture.uncoveredBreedingResult()
+        val uncovered = seededUncoveredResult()
 
         repository.save(uncovered).unwrap()
         val found = repository.findById(uncovered.id)
@@ -146,7 +186,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `findByBreedingRegistrationIdAndBreedingYearで繁殖牝馬と年から引き当てられる`() {
-        val result = BreedingFixture.breedingResult() // breedingYear=2024
+        val result = seededBreedingResult() // breedingYear=2024
         repository.save(result).unwrap()
 
         val found =
@@ -176,13 +216,20 @@ class JdbcBreedingResultRepositoryContractTest(
     }
 
     @Test
+    fun `存在しない繁殖登録を参照する行はFK制約で拒否される`() {
+        val orphan = uncoveredRow().copy(breedingRegistrationId = generateId())
+
+        assertThrows<DataIntegrityViolationException> { rows.save(orphan) }
+    }
+
+    @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(BreedingResultId(generateId())) == null)
     }
 
     @Test
     fun `保存済み集約の再saveはupdateになりversionが進む`() {
-        val inserted = repository.save(BreedingFixture.breedingResult()).unwrap()
+        val inserted = repository.save(seededBreedingResult()).unwrap()
         assert(inserted.version != null)
 
         val reported = inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()
@@ -195,7 +242,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
-        val inserted = repository.save(BreedingFixture.breedingResult()).unwrap()
+        val inserted = repository.save(seededBreedingResult()).unwrap()
         repository.save(inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()).unwrap()
 
         val conflicted = repository.save(inserted.recordFoaling(FoalingOutcome.Abortion).unwrap())
@@ -206,7 +253,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
-        val inserted = repository.save(BreedingFixture.breedingResult()).unwrap()
+        val inserted = repository.save(seededBreedingResult()).unwrap()
         rows.deleteAll()
 
         val conflicted =
@@ -218,7 +265,7 @@ class JdbcBreedingResultRepositoryContractTest(
     @Test
     fun `提出済みの成績は提出日ごと往復できる`() {
         val submitted =
-            BreedingFixture.breedingResult()
+            seededBreedingResult()
                 .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 1)))
                 .unwrap()
                 .submitReport(LocalDate.of(2025, 5, 30))
@@ -234,7 +281,7 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `未提出の成績はreport_submitted_onがnullで往復する`() {
-        val unsubmitted = BreedingFixture.breedingResult()
+        val unsubmitted = seededBreedingResult()
 
         repository.save(unsubmitted).unwrap()
         val found = repository.findById(unsubmitted.id)
@@ -250,9 +297,9 @@ class JdbcBreedingResultRepositoryContractTest(
         val row =
             BreedingResultRow(
                 id = generateId(),
-                breedingRegistrationId = generateId(),
+                breedingRegistrationId = seeder.seedRegistrationRow(),
                 breedingYear = 2024,
-                coveringStallionId = generateId(),
+                coveringStallionId = seeder.seedHorseRow(sex = "MALE"),
                 coveringDate = LocalDate.of(2024, 4, 1),
                 coveringCertificateNumber = "C-2024-0001",
                 outcomeType = null,

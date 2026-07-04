@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.deleteAllStudbookTables
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
@@ -38,7 +39,7 @@ class JdbcHorseInspectionQueriesContractTest(
 
     @BeforeEach
     fun cleanUp() {
-        rows.deleteAll()
+        deleteAllStudbookTables(jdbcClient)
     }
 
     @Test

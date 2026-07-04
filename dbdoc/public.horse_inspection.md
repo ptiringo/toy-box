@@ -8,7 +8,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
+| id | uuid |  | false | [public.blood_horse](public.blood_horse.md) |  | 識別子（外部採番の UUIDv7） |
 | microchip_number | varchar(64) |  | false |  |  | マイクロチップ番号 |
 | parentage_type | varchar(32) |  | false |  |  | 親子判定の判別子（BY_DNA/BY_BLOOD_TYPE/BY_OVERSEAS_INSTITUTION/NOT_APPLICABLE） |
 | dna_parentage_result | varchar(16) |  | true |  |  | DNA 親子判定結果（BY_DNA のときのみ） |
@@ -35,6 +35,7 @@
 ```mermaid
 erDiagram
 
+"public.blood_horse" }o--|| "public.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES horse_inspection(id)"
 
 "public.horse_inspection" {
   uuid id
@@ -44,6 +45,23 @@ erDiagram
   varchar_255_ feature_hair_whorl
   varchar_255_ feature_white_markings
   varchar_255_ feature_nose_print
+  bigint version
+}
+"public.blood_horse" {
+  uuid id
+  varchar_255_ registration_number
+  varchar_16_ sex
+  varchar_32_ coat_color
+  varchar_32_ breed_type
+  date date_of_birth
+  varchar_255_ breeder
+  uuid inspection_id FK
+  varchar_255_ name
+  varchar_16_ origin_type
+  uuid sire_id FK
+  uuid dam_id FK
+  varchar_255_ origin_country
+  date landing_date
   bigint version
 }
 ```

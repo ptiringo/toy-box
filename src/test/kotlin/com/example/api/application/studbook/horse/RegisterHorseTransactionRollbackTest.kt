@@ -11,10 +11,13 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.infrastructure.studbook.StudbookSeeder
+import com.example.api.infrastructure.studbook.breeding.BreedingRegistrationSpringDataRepository
 import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
 import com.example.api.infrastructure.studbook.horse.JdbcBloodHorseRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
 import java.time.Instant
@@ -27,6 +30,7 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.dao.DataAccessResourceFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -45,7 +49,11 @@ class RegisterHorseTransactionRollbackTest(
     private val failingRepository: FailingBloodHorseRepository,
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val bloodHorseRows: BloodHorseSpringDataRepository,
+    private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
+
+    private val seeder = StudbookSeeder(inspectionRows, bloodHorseRows, registrationRows)
 
     @TestConfiguration
     class FailingSaveConfiguration {
@@ -59,8 +67,7 @@ class RegisterHorseTransactionRollbackTest(
     @BeforeEach
     fun cleanUp() {
         failingRepository.failOnSave = false
-        inspectionRows.deleteAll()
-        bloodHorseRows.deleteAll()
+        deleteAllStudbookTables(jdbcClient)
     }
 
     @Test
@@ -77,15 +84,20 @@ class RegisterHorseTransactionRollbackTest(
 
     @Test
     fun `内国産血統登録で軽種馬の保存がインフラ障害で失敗すると先行する審査の保存もロールバックされる`() {
-        val sire = failingRepository.save(BloodHorseFixture.bloodHorse(sex = Sex.MALE)).unwrap()
-        val dam = failingRepository.save(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)).unwrap()
+        val sireFixture = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+        val damFixture = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        seeder.seedInspectionFor(sireFixture)
+        seeder.seedInspectionFor(damFixture)
+        val sire = failingRepository.save(sireFixture).unwrap()
+        val dam = failingRepository.save(damFixture).unwrap()
         failingRepository.failOnSave = true
 
         assertThrows<DataAccessResourceFailureException> {
             registerInStudBook(command(domesticCommand(sire, dam)))
         }
 
-        assert(inspectionRows.count() == 0L) { "審査が孤児として残っている" }
+        // 父・母の審査（seed 分の 2 行）は残り、ロールバックされた仔馬の審査は残らない
+        assert(inspectionRows.count() == 2L) { "仔馬の審査が孤児として残っている" }
         assert(bloodHorseRows.count() == 2L) { "父・母の 2 頭だけが残るはず" }
     }
 
