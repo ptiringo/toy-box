@@ -135,6 +135,20 @@ class JdbcCoveringReportRepositoryContractTest(
     }
 
     @Test
+    fun `存在しない繁殖登録を参照する行はFK制約で拒否される`() {
+        val orphan =
+            CoveringReportRow(
+                id = generateId(),
+                stallionBreedingRegistrationId = generateId(),
+                coveringYear = 2024,
+                submittedOn = LocalDate.of(2024, 9, 30),
+                version = null,
+            )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(orphan) }
+    }
+
+    @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(CoveringReportId(generateId())) == null)
     }

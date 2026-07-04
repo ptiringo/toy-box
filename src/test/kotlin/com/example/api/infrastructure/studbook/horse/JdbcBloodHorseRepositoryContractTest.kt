@@ -191,6 +191,15 @@ class JdbcBloodHorseRepositoryContractTest(
     }
 
     @Test
+    fun `存在しない審査を参照する行はFK制約で拒否される`() {
+        // マッパー／ユースケースは常に親を先に保存するが、FK（ADR-0052）が DB 単独でも
+        // 壊れた参照の混入を拒否することを担保する。
+        val orphan = domesticRow().copy(inspectionId = generateId())
+
+        assertThrows<DataIntegrityViolationException> { rows.save(orphan) }
+    }
+
+    @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(BloodHorseId(generateId())) == null)
     }

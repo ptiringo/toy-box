@@ -216,6 +216,13 @@ class JdbcBreedingResultRepositoryContractTest(
     }
 
     @Test
+    fun `存在しない繁殖登録を参照する行はFK制約で拒否される`() {
+        val orphan = uncoveredRow().copy(breedingRegistrationId = generateId())
+
+        assertThrows<DataIntegrityViolationException> { rows.save(orphan) }
+    }
+
+    @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
         assert(repository.findById(BreedingResultId(generateId())) == null)
     }
