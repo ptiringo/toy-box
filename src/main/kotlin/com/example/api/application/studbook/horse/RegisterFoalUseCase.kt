@@ -5,6 +5,8 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationReposi
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
@@ -16,6 +18,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
+import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
@@ -116,14 +119,14 @@ class RegisterFoalUseCase(
 
         val registrationNumber =
             PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { RegisterFoalUseCaseError.InvalidRegistrationNumber }
+                .mapError { _: BlankPedigreeRegistrationNumber ->
+                    RegisterFoalUseCaseError.InvalidRegistrationNumber
+                }
                 .bind()
-        val microchipNumber =
-            MicrochipNumber.create(input.microchipNumber)
-                .mapError { RegisterFoalUseCaseError.InvalidMicrochipNumber }
-                .bind()
-        val breeder =
-            Breeder.create(input.breeder).mapError { RegisterFoalUseCaseError.BlankBreeder }.bind()
+        // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
+        // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
+        val inspection = buildInspection(input).bind()
+        val foalIdentity = buildFoalIdentity(input).bind()
 
         val breedingResult =
             breedingResultRepository
@@ -152,22 +155,6 @@ class RegisterFoalUseCase(
                 .toResultOr { RegisterFoalUseCaseError.DamNotFound(damId.value) }
                 .bind()
 
-        val foalIdentity =
-            FoalIdentity(
-                sex = input.sex,
-                coatColor = input.coatColor,
-                breedType = input.breedType,
-                breeder = breeder,
-            )
-
-        // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
-        // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
-        val inspection =
-            HorseInspection.create(
-                microchipNumber = microchipNumber,
-                parentage = ParentageDetermination.ByDna(input.dnaParentage),
-            )
-
         val bloodHorse =
             registerFoal(breedingResult, sire, dam, foalIdentity, inspection, registrationNumber)
                 .mapError { RegisterFoalUseCaseError.PreconditionViolated(it) }
@@ -180,6 +167,38 @@ class RegisterFoalUseCase(
                 error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
             }
         RegisteredBloodHorse(saved, inspection)
+    }
+
+    /** 仔馬の個体識別を組み立てる（生産者を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
+    private fun buildFoalIdentity(
+        input: RegisterFoalCommand
+    ): Result<FoalIdentity, RegisterFoalUseCaseError> = binding {
+        val breeder =
+            Breeder.create(input.breeder)
+                .mapError { _: BlankBreeder -> RegisterFoalUseCaseError.BlankBreeder }
+                .bind()
+        FoalIdentity(
+            sex = input.sex,
+            coatColor = input.coatColor,
+            breedType = input.breedType,
+            breeder = breeder,
+        )
+    }
+
+    /** 審査を組み立てる（マイクロチップ番号を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
+    private fun buildInspection(
+        input: RegisterFoalCommand
+    ): Result<HorseInspection, RegisterFoalUseCaseError> = binding {
+        val microchipNumber =
+            MicrochipNumber.create(input.microchipNumber)
+                .mapError { _: InvalidMicrochipNumber ->
+                    RegisterFoalUseCaseError.InvalidMicrochipNumber
+                }
+                .bind()
+        HorseInspection.create(
+            microchipNumber = microchipNumber,
+            parentage = ParentageDetermination.ByDna(input.dnaParentage),
+        )
     }
 
     /**

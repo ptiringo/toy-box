@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.horse
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankOriginCountry
+import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
@@ -14,6 +17,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrati
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
+import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Result
@@ -90,19 +94,25 @@ class RegisterImportedHorseUseCase(
 
         val registrationNumber =
             PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { RegisterImportedHorseUseCaseError.InvalidRegistrationNumber }
+                .mapError { _: BlankPedigreeRegistrationNumber ->
+                    RegisterImportedHorseUseCaseError.InvalidRegistrationNumber
+                }
                 .bind()
         val microchipNumber =
             MicrochipNumber.create(input.microchipNumber)
-                .mapError { RegisterImportedHorseUseCaseError.InvalidMicrochipNumber }
+                .mapError { _: InvalidMicrochipNumber ->
+                    RegisterImportedHorseUseCaseError.InvalidMicrochipNumber
+                }
                 .bind()
         val breeder =
             Breeder.create(input.breeder)
-                .mapError { RegisterImportedHorseUseCaseError.BlankBreeder }
+                .mapError { _: BlankBreeder -> RegisterImportedHorseUseCaseError.BlankBreeder }
                 .bind()
         val originCountry =
             OriginCountry.create(input.originCountry)
-                .mapError { RegisterImportedHorseUseCaseError.BlankOriginCountry }
+                .mapError { _: BlankOriginCountry ->
+                    RegisterImportedHorseUseCaseError.BlankOriginCountry
+                }
                 .bind()
 
         val entry =

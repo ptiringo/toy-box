@@ -1,6 +1,7 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.breeding.BlankBreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -63,7 +64,9 @@ class RegisterBreedingRegistrationUseCase(
 
         val registrationNumber =
             BreedingRegistrationNumber.create(input.registrationNumber)
-                .mapError { RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber }
+                .mapError { _: BlankBreedingRegistrationNumber ->
+                    RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber
+                }
                 .bind()
 
         val horse =

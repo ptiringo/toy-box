@@ -38,3 +38,9 @@ toy-box:
   NoThrowInDomainAndApplication:
     active: true
     excludes: ['**/src/test/**', '**/src/testFixtures/**']
+  # mapError のラムダは変換元エラーを参照するか型を明示する（_: 変換元エラー型 ->）。
+  # 単一エラー型の握りつぶしは sealed 昇格時に無音で誤変換になるため、型明示をトリップワイヤとして強制する。
+  # テストコードは対象外。
+  NoSilentMapError:
+    active: true
+    excludes: ['**/src/test/**', '**/src/testFixtures/**']

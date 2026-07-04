@@ -1,12 +1,17 @@
 package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.breeding.BlankBreedingRegion
+import com.example.api.domain.studbook.model.breeding.BlankCoveringCertificateNumber
+import com.example.api.domain.studbook.model.breeding.BlankStudCertificateNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
+import com.example.api.domain.studbook.model.breeding.InvalidStudCertificate
+import com.example.api.domain.studbook.model.breeding.InvalidValidityPeriod
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.example.api.domain.studbook.model.breeding.StudCertificate
 import com.example.api.domain.studbook.model.breeding.StudCertificateNumber
@@ -118,12 +123,16 @@ class RecordCoveringUseCase(
 
         val certificateNumber =
             CoveringCertificateNumber.create(input.certificateNumber)
-                .mapError { RecordCoveringUseCaseError.InvalidCertificateNumber }
+                .mapError { _: BlankCoveringCertificateNumber ->
+                    RecordCoveringUseCaseError.InvalidCertificateNumber
+                }
                 .bind()
 
         val coveringPlace =
             BreedingRegion.create(input.coveringPlace)
-                .mapError { RecordCoveringUseCaseError.InvalidCoveringPlace }
+                .mapError { _: BlankBreedingRegion ->
+                    RecordCoveringUseCaseError.InvalidCoveringPlace
+                }
                 .bind()
 
         val studCertificate = buildStudCertificate(input.studCertificate).bind()
@@ -172,25 +181,36 @@ class RecordCoveringUseCase(
     ): Result<StudCertificate, RecordCoveringUseCaseError> = binding {
         val number =
             StudCertificateNumber.create(input.number)
-                .mapError { RecordCoveringUseCaseError.InvalidStudCertificateNumber }
+                .mapError { _: BlankStudCertificateNumber ->
+                    RecordCoveringUseCaseError.InvalidStudCertificateNumber
+                }
                 .bind()
 
         val validRegions = mutableSetOf<BreedingRegion>()
         for (region in input.validRegions) {
             validRegions.add(
                 BreedingRegion.create(region)
-                    .mapError { RecordCoveringUseCaseError.InvalidValidRegion }
+                    .mapError { _: BlankBreedingRegion ->
+                        RecordCoveringUseCaseError.InvalidValidRegion
+                    }
                     .bind()
             )
         }
 
         val validityPeriod =
             ValidityPeriod.create(input.validPeriodStart, input.validPeriodEnd)
-                .mapError { RecordCoveringUseCaseError.InvalidValidityPeriod }
+                .mapError { _: InvalidValidityPeriod ->
+                    RecordCoveringUseCaseError.InvalidValidityPeriod
+                }
                 .bind()
 
         StudCertificate.create(number, validRegions, validityPeriod)
-            .mapError { RecordCoveringUseCaseError.EmptyValidRegions }
+            .mapError {
+                when (it) {
+                    InvalidStudCertificate.NoValidRegion ->
+                        RecordCoveringUseCaseError.EmptyValidRegions
+                }
+            }
             .bind()
     }
 }
