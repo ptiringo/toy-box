@@ -13,8 +13,8 @@ paths:
 - `V<n+1>__validate_xxx_check.sql` — `VALIDATE CONSTRAINT` のみ（他の DDL を同居させない）
 
 Flyway は各マイグレーションを 1 トランザクションで適用するため、同一ファイルに同居させると
-`ADD CONSTRAINT` の ACCESS EXCLUSIVE ロックがコミットまで残り、`VALIDATE` の
-SHARE UPDATE EXCLUSIVE への格下げが効かない（無停止効果が出ない）。
+`ADD CONSTRAINT` のロック（CHECK は ACCESS EXCLUSIVE、FK は SHARE ROW EXCLUSIVE）がコミットまで残り、
+`VALIDATE` の SHARE UPDATE EXCLUSIVE への格下げが効かない（無停止効果が出ない）。
 テーブル規模によらず常に分離する（閾値なし）。
 
 - 同居は `scripts/check-migration-validate-separation.sh` が検出し、

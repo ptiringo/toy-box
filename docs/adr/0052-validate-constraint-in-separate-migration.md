@@ -8,7 +8,7 @@
 
 既存行のあるテーブルへ CHECK 制約を遡及追加した V6（#522）・V8（#455）・V9（#531、version NOT NULL 遡及付与の中間 CHECK）は、`ADD CONSTRAINT ... NOT VALID` → `VALIDATE CONSTRAINT` の 2 段階を**同一マイグレーションファイル内**で実行し、コメントで「書き込みを止めない」と謳っていた。
 
-しかし PR #537 の最終レビューで指摘されたとおり、Flyway は各マイグレーションを 1 トランザクションで適用するため、`ADD CONSTRAINT` が取得した ACCESS EXCLUSIVE ロックはコミットまで保持される。同一トランザクション内の `VALIDATE CONSTRAINT` は SHARE UPDATE EXCLUSIVE へ「格下げ」されず、フルスキャン検証中もテーブルは排他ロックされたまま。つまり同一ファイル内の 2 段階は無停止効果を発揮していない（見かけ倒し）。V6/V8/V9 のコメント「VALIDATE CONSTRAINT で既存行を後追い検証する（SHARE UPDATE EXCLUSIVE・書き込みを止めない）」は**同一トランザクション内では事実誤認**だった。
+しかし PR #537 の最終レビューで指摘されたとおり、Flyway は各マイグレーションを 1 トランザクションで適用するため、`ADD CONSTRAINT` が取得したロック（CHECK は ACCESS EXCLUSIVE、FK は SHARE ROW EXCLUSIVE — いずれも書き込みをブロック）はコミットまで保持される。同一トランザクション内の `VALIDATE CONSTRAINT` は SHARE UPDATE EXCLUSIVE へ「格下げ」されず、フルスキャン検証中もテーブルは排他ロックされたまま。つまり同一ファイル内の 2 段階は無停止効果を発揮していない（見かけ倒し）。V6/V8/V9 のコメント「VALIDATE CONSTRAINT で既存行を後追い検証する（SHARE UPDATE EXCLUSIVE・書き込みを止めない）」は**同一トランザクション内では事実誤認**だった。
 
 現状は `SET LOCAL lock_timeout = '5s'` と行数の少なさで実害はほぼゼロだが、「安全パターンを踏んだ」という誤った安心がテーブル成長後の将来マイグレーションへ複製され続けるリスクがある（#539）。
 
@@ -19,7 +19,9 @@
 - `V<n>__add_xxx_check.sql` — `ADD CONSTRAINT ... NOT VALID` まで
 - `V<n+1>__validate_xxx_check.sql` — `VALIDATE CONSTRAINT` のみ
 
-分離すれば Flyway が連続適用しても別トランザクションになるため、`ADD ... NOT VALID` のコミットで排他ロックが解け、後続の `VALIDATE` は SHARE UPDATE EXCLUSIVE のみで走る（本来の無停止効果が出る）。
+分離すれば Flyway が連続適用しても別トランザクションになるため、`ADD ... NOT VALID` のコミットで排他ロックが解け、後続の `VALIDATE` は SHARE UPDATE EXCLUSIVE で走り、書き込みを止めない（FK の VALIDATE は参照先テーブルに ROW SHARE も取るが、これも書き込みと競合しない）。
+
+なお本規約は Flyway の既定（`group=false`、各マイグレーションを個別トランザクションで適用）を前提とする。`spring.flyway.group=true` は全 pending マイグレーションを 1 トランザクションへ束ね、分離してもロックが解放されなくなるため、有効化する場合は本 ADR を再訪すること。
 
 - **閾値は設けない**: テーブル規模による分岐は人の判断と allowlist 運用を呼び込み、誤った安心の複製リスクが残る。一律ルールなら機械チェック可能。
 - **VALIDATE 専用マイグレーションには他の DDL を同居させない**: そのトランザクションのロックを SHARE UPDATE EXCLUSIVE のみに保つため。

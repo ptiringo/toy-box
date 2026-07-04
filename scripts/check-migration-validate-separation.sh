@@ -42,8 +42,16 @@ for f in "$@"; do
     *" $base "*) continue ;;
   esac
 
-  # 改行・連続空白を単一スペースへ畳み、複数行に跨る DDL も一律に照合できるようにする
-  content=$(tr -s '[:space:]' ' ' <"$f")
+  # 存在しないパス（手動実行の typo 等）は NG 形式で報告して残りの検査を続行する
+  if [ ! -f "$f" ]; then
+    echo "NG: $f: ファイルが読めません（存在しないパス）" >&2
+    status=1
+    continue
+  fi
+
+  # 行コメント（-- 以降）を剥がしてから改行・連続空白を単一スペースへ畳み、
+  # コメント内の ADD/VALIDATE 言及を誤検出せず、複数行 DDL も一律に照合できるようにする
+  content=$(sed 's/--.*$//' "$f" | tr -s '[:space:]' ' ')
 
   # VALIDATE CONSTRAINT の対象制約名を抽出する（無ければこのファイルは合格）
   names=$(printf '%s' "$content" \
