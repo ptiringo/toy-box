@@ -229,12 +229,14 @@ graph LR
 | BloodHorseRepository | リポジトリポート | domain.studbook.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
 | BreedingResultRepository | リポジトリポート | domain.studbook.model.breeding |
+| CoveringReportRepository | リポジトリポート | domain.studbook.model.breeding |
 | HorseInspectionRepository | リポジトリポート | domain.studbook.model.inspection |
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
 | nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
 | recordUncovered | ドメインサービス | domain.studbook.service.breeding |
 | registerFoal | ドメインサービス | domain.studbook.service.horse |
+| submitCoveringReport | ドメインサービス | domain.studbook.service.breeding |
 
 ### tennis
 
