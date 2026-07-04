@@ -1,4 +1,4 @@
-# 0052. 集約間の ID 参照に外部キー制約を backstop として張る
+# 0053. 集約間の ID 参照に外部キー制約を backstop として張る
 
 - Status: Accepted
 - Date: 2026-07-04
@@ -24,7 +24,7 @@ FK を張らない立場には根拠があった。DDD では集約が整合性�
 - **役割分担**: 参照整合性の一次担保はこれまで通りドメイン層が担う（親の引き当て検証は [ADR-0021](0021-parent-not-found-unprocessable-entity.md) / [ADR-0022](0022-domain-service-repository-for-set-invariants.md)）。FK はアプリ検証をすり抜けた壊れた参照を DB が最後に止める多層防御であり、業務フローの検証を FK 違反例外に頼らない。
 - **DDD との整理**: FK は O/R マッピングにも save 単位にも影響せず、集約間 ID 参照・集約単位の保存というアプリの姿はそのまま。「集約 = 永続化境界」（ADR-0027/0030）と矛盾しない。集約**内**の関係はフラット化（ADR-0043）のままで、FK の対象は集約**間**参照のみ。
 - **参照アクション**: `ON DELETE` / `ON UPDATE` は既定（NO ACTION）。削除ユースケースが存在しないため削除セマンティクスは設計せず、必要が生じたら再訪する。`DEFERRABLE` も使わない（ユースケースは親→子の順で保存する）。
-- **既存テーブルへの追加手順**: V6/V8 の前例に従い、`SET LOCAL` タイムアウト＋ `ADD CONSTRAINT ... NOT VALID` → `VALIDATE CONSTRAINT` の 2 段で行う（#539 の規約検討が確定したらそちらに従う）。
+- **既存テーブルへの追加手順**: [ADR-0052](0052-validate-constraint-in-separate-migration.md)（#539）に従い、`ADD CONSTRAINT ... NOT VALID`（＋ FK 列 index）のマイグレーションと、`VALIDATE CONSTRAINT` のみの後続マイグレーションの 2 ファイルへ分離する（同一ファイルに同居させるとロックの格下げが効かず無停止効果が出ない。機械チェックで強制される）。
 - **FK 列の index**: PostgreSQL は FK 列に index を自動作成しないため、FK 追加とセットで参照列の index を張る（`.tbls.yml` の `requireForeignKeyIndex` lint で強制）。既存 index（UNIQUE 制約由来を含む）の先頭列が FK 列を担保する場合は追加しない。
 - **今後の規約**: 新しい集約間参照列を追加するときは FK と index を同時に張る。
 

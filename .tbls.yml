@@ -23,7 +23,7 @@ exclude:
 # lint ルールは可能な限り有効化する方針（crit レビュー: 基本的に全て true）。
 # ただし現スキーマに対して「違反ゼロで通せる」ものだけを true にする（CI の tbls lint ゲートを割らないため）。
 # 残りは該当機能（外部キー / ラベル / ビューポイント / index・制約コメント）を導入した時点で有効化する。
-# 外部キーは ADR-0052 で導入済み。スキーマ名前空間の方針は別 Issue（#509）で検討中。
+# 外部キーは ADR-0053 で導入済み。スキーマ名前空間の方針は別 Issue（#509）で検討中。
 lint:
   # コメント必須（スキーマを一次情報とする）。
   requireTableComment:
@@ -34,9 +34,9 @@ lint:
   requireTriggerComment:
     enabled: true # トリガー未使用（対象ゼロ）
   duplicateRelations:
-    enabled: true # ADR-0052 で FK 導入済み。同一テーブル対の重複関連を検知する
+    enabled: true # ADR-0053 で FK 導入済み。同一テーブル対の重複関連を検知する
   requireForeignKeyIndex:
-    enabled: true # ADR-0052 で FK 導入済み。FK 列の index 有無を検査する
+    enabled: true # ADR-0053 で FK 導入済み。FK 列の index 有無を検査する
   labelStyleBigQuery:
     enabled: true # tbls ラベル未使用（対象ゼロ）
   columnCount:
@@ -44,7 +44,7 @@ lint:
     max: 50 # 現状の最大は blood_horse の 15 列。上限は緩めに設定
   # 以下は現スキーマだと違反が出て tbls lint が落ちるため、対応が済むまで無効（理由を明記）。
   unrelatedTable:
-    enabled: true # 集約間 FK（ADR-0052）導入済み。関連を持たないテーブルの混入を検知する
+    enabled: true # 集約間 FK（ADR-0053）導入済み。関連を持たないテーブルの混入を検知する
     exclude:
       - jockey # racing コンテキストの単一集約でコンテキスト内に関連先が無く構造的に unrelated（意図的）
   requireIndexComment:

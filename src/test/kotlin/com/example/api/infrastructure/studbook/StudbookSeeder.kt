@@ -16,7 +16,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 /**
- * FK backstop（ADR-0052）を満たすように、テスト対象行が参照する親行を先に永続化するテスト用シーダ。
+ * FK backstop（ADR-0053）を満たすように、テスト対象行が参照する親行を先に永続化するテスト用シーダ。
  *
  * 集約フィクスチャ（Object Mother）は親集約をメモリ上にしか組まないため、FK 導入後はテストが 参照先を先に DB へ入れる必要がある。集約用（seedHorse /
  * seedRegistration）と、生 Row の フィクスチャ用に任意 ID の親行だけ作る row 系（seedInspectionRow / seedHorseRow /
