@@ -8,18 +8,18 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
+| id | uuid |  | false | [public.breeding_registration](public.breeding_registration.md) [public.blood_horse](public.blood_horse.md) [public.breeding_result](public.breeding_result.md) |  | 識別子（外部採番の UUIDv7） |
 | registration_number | varchar(255) |  | false |  |  | 登録番号 |
 | sex | varchar(16) |  | false |  |  | 性別（ドメイン enum 名） |
 | coat_color | varchar(32) |  | false |  |  | 毛色（ドメイン enum 名） |
 | breed_type | varchar(32) |  | false |  |  | 品種区分（ドメイン enum 名） |
 | date_of_birth | date |  | false |  |  | 生年月日 |
 | breeder | varchar(255) |  | false |  |  | 生産者 |
-| inspection_id | uuid |  | false |  |  | 個体識別審査（horse_inspection）の ID |
+| inspection_id | uuid |  | false |  | [public.horse_inspection](public.horse_inspection.md) | 個体識別審査（horse_inspection）の ID |
 | name | varchar(255) |  | true |  |  | 馬名（未命名なら NULL） |
 | origin_type | varchar(16) |  | false |  |  | 出自の判別子（DOMESTIC/IMPORTED） |
-| sire_id | uuid |  | true |  |  | 父馬 ID（内国産のみ） |
-| dam_id | uuid |  | true |  |  | 母馬 ID（内国産のみ） |
+| sire_id | uuid |  | true |  | [public.blood_horse](public.blood_horse.md) | 父馬 ID（内国産のみ） |
+| dam_id | uuid |  | true |  | [public.blood_horse](public.blood_horse.md) | 母馬 ID（内国産のみ） |
 | origin_country | varchar(255) |  | true |  |  | 原産国（輸入のみ） |
 | landing_date | date |  | true |  |  | 輸入上陸日（輸入のみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
@@ -30,18 +30,29 @@
 | ---- | ---- | ---------- |
 | chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL)))) |
 | blood_horse_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (dam_id) REFERENCES blood_horse(id) |
+| fk_blood_horse_sire | FOREIGN KEY | FOREIGN KEY (sire_id) REFERENCES blood_horse(id) |
+| fk_blood_horse_inspection | FOREIGN KEY | FOREIGN KEY (inspection_id) REFERENCES horse_inspection(id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | blood_horse_pkey | CREATE UNIQUE INDEX blood_horse_pkey ON public.blood_horse USING btree (id) |
+| ix_blood_horse_inspection_id | CREATE INDEX ix_blood_horse_inspection_id ON public.blood_horse USING btree (inspection_id) |
+| ix_blood_horse_sire_id | CREATE INDEX ix_blood_horse_sire_id ON public.blood_horse USING btree (sire_id) |
+| ix_blood_horse_dam_id | CREATE INDEX ix_blood_horse_dam_id ON public.blood_horse USING btree (dam_id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
+"public.breeding_registration" }o--|| "public.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES blood_horse(id)"
+"public.blood_horse" }o--o| "public.blood_horse" : "FOREIGN KEY (dam_id) REFERENCES blood_horse(id)"
+"public.blood_horse" }o--o| "public.blood_horse" : "FOREIGN KEY (sire_id) REFERENCES blood_horse(id)"
+"public.breeding_result" }o--o| "public.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES blood_horse(id)"
+"public.blood_horse" }o--|| "public.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES horse_inspection(id)"
 
 "public.blood_horse" {
   uuid id
@@ -51,13 +62,45 @@ erDiagram
   varchar_32_ breed_type
   date date_of_birth
   varchar_255_ breeder
-  uuid inspection_id
+  uuid inspection_id FK
   varchar_255_ name
   varchar_16_ origin_type
-  uuid sire_id
-  uuid dam_id
+  uuid sire_id FK
+  uuid dam_id FK
   varchar_255_ origin_country
   date landing_date
+  bigint version
+}
+"public.breeding_registration" {
+  uuid id
+  varchar_255_ registration_number
+  uuid registered_horse_id FK
+  varchar_32_ breeding_role
+  varchar_32_ retirement_reason
+  date retirement_occurred_on
+  bigint version
+}
+"public.breeding_result" {
+  uuid id
+  uuid breeding_registration_id FK
+  integer breeding_year
+  uuid covering_stallion_id FK
+  date covering_date
+  varchar_255_ covering_place
+  varchar_255_ covering_certificate_number
+  varchar_32_ outcome_type
+  date outcome_foaling_date
+  bigint version
+  date report_submitted_on
+}
+"public.horse_inspection" {
+  uuid id
+  varchar_64_ microchip_number
+  varchar_32_ parentage_type
+  varchar_16_ dna_parentage_result
+  varchar_255_ feature_hair_whorl
+  varchar_255_ feature_white_markings
+  varchar_255_ feature_nose_print
   bigint version
 }
 ```

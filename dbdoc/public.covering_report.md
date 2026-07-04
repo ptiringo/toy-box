@@ -9,7 +9,7 @@
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
 | id | uuid |  | false |  |  | 種付成績報告ID（外部採番の UUIDv7） |
-| stallion_breeding_registration_id | uuid |  | false |  |  | 提出した種牡馬の繁殖登録ID |
+| stallion_breeding_registration_id | uuid |  | false |  | [public.breeding_registration](public.breeding_registration.md) | 提出した種牡馬の繁殖登録ID |
 | covering_year | integer |  | false |  |  | 種付年（java.time.Year の int 値。報告対象年） |
 | submitted_on | date |  | false |  |  | 提出日（日本の暦日）。期限（当年9/30）超過かは導出値のため保存しない |
 | version | bigint |  | false |  |  | 楽観ロック兼 insert 判定用の version |
@@ -18,6 +18,7 @@
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
+| fk_covering_report_stallion_registration | FOREIGN KEY | FOREIGN KEY (stallion_breeding_registration_id) REFERENCES breeding_registration(id) |
 | covering_report_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | uq_covering_report_stallion_year | UNIQUE | UNIQUE (stallion_breeding_registration_id, covering_year) |
 
@@ -33,12 +34,22 @@
 ```mermaid
 erDiagram
 
+"public.covering_report" }o--|| "public.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES breeding_registration(id)"
 
 "public.covering_report" {
   uuid id
-  uuid stallion_breeding_registration_id
+  uuid stallion_breeding_registration_id FK
   integer covering_year
   date submitted_on
+  bigint version
+}
+"public.breeding_registration" {
+  uuid id
+  varchar_255_ registration_number
+  uuid registered_horse_id FK
+  varchar_32_ breeding_role
+  varchar_32_ retirement_reason
+  date retirement_occurred_on
   bigint version
 }
 ```
