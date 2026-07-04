@@ -9,7 +9,11 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.infrastructure.studbook.StudbookSeeder
+import com.example.api.infrastructure.studbook.breeding.BreedingRegistrationSpringDataRepository
+import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -19,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -43,14 +48,19 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
-class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDataRepository) :
-    PostgresContainerSupport() {
+class JdbcBloodHorseRepositoryContractTest(
+    private val rows: BloodHorseSpringDataRepository,
+    private val inspectionRows: HorseInspectionSpringDataRepository,
+    private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+) : PostgresContainerSupport() {
 
     private val repository = JdbcBloodHorseRepository(rows)
+    private val seeder = StudbookSeeder(inspectionRows, rows, registrationRows)
 
     @BeforeEach
     fun cleanUp() {
-        rows.deleteAll()
+        deleteAllStudbookTables(jdbcClient)
     }
 
     private fun domesticRow(id: UUID = generateId()) =
@@ -62,16 +72,16 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
             breedType = "THOROUGHBRED",
             dateOfBirth = LocalDate.of(2023, 3, 15),
             breeder = "ノーザンファーム",
-            inspectionId = generateId(),
+            inspectionId = seeder.seedInspectionRow(),
             originType = "DOMESTIC",
-            sireId = generateId(),
-            damId = generateId(),
+            sireId = seeder.seedHorseRow(sex = "MALE"),
+            damId = seeder.seedHorseRow(sex = "FEMALE"),
         )
 
-    /** 内国産の父母を持つ命名済みの軽種馬を組み立てる（前提条件を満たす父=雄・母=雌・品種/ DNA 整合）。 */
+    /** 内国産の父母を持つ命名済みの軽種馬を組み立てる（前提条件を満たす父=雄・母=雌・品種/ DNA 整合）。父母・仔馬自身の審査行は seed 済み。 */
     private fun namedDomesticFoal(): BloodHorse {
-        val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
-        val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        val sire = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
+        val dam = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
         val foal =
             BloodHorse.create(
                     sire = sire,
@@ -81,6 +91,7 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
                     registrationNumber = PedigreeRegistrationNumber.create("2023109999").unwrap(),
                 )
                 .unwrap()
+        seeder.seedInspectionFor(foal)
         return foal.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
     }
 
@@ -91,7 +102,8 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
         assert(saved.id == id)
         assert(saved.version != null)
-        assert(rows.count() == 1L)
+        // domesticRow() が FK 前提で seed する父・母の 2 行 + 対象行の 1 行 = 3 行
+        assert(rows.count() == 3L)
         assert(rows.findById(id).isPresent)
     }
 
@@ -103,13 +115,15 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
         assert(updated.id == inserted.id)
         assert(updated.version!! > inserted.version!!)
-        assert(rows.count() == 1L)
+        // domesticRow() が FK 前提で seed する父・母の 2 行 + 対象行の 1 行 = 3 行（update なので増減なし）
+        assert(rows.count() == 3L)
         assert(rows.findById(inserted.id).orElseThrow().coatColor == "CHESTNUT")
     }
 
     @Test
     fun `輸入馬は出自Importedと未命名のまま往復できる`() {
         val imported = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        seeder.seedInspectionFor(imported)
         val expectedOrigin = imported.origin as Origin.Imported
 
         val saved = repository.save(imported).unwrap()
@@ -151,7 +165,9 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
     @Test
     fun `findAllByIdはヒットしたIDだけをまとめて返す`() {
-        val imported = repository.save(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)).unwrap()
+        val importedFixture = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        seeder.seedInspectionFor(importedFixture)
+        val imported = repository.save(importedFixture).unwrap()
         val foal = repository.save(namedDomesticFoal()).unwrap()
         val missing = BloodHorseId(generateId())
 
@@ -195,7 +211,9 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
     @Test
     fun `保存済み集約の再saveはupdateになりversionが進む`() {
-        val inserted = repository.save(BloodHorseFixture.bloodHorse()).unwrap()
+        val fixture = BloodHorseFixture.bloodHorse()
+        seeder.seedInspectionFor(fixture)
+        val inserted = repository.save(fixture).unwrap()
         assert(inserted.version != null)
 
         val named = inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
@@ -208,7 +226,9 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
     @Test
     fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
-        val inserted = repository.save(BloodHorseFixture.bloodHorse()).unwrap()
+        val fixture = BloodHorseFixture.bloodHorse()
+        seeder.seedInspectionFor(fixture)
+        val inserted = repository.save(fixture).unwrap()
         repository
             .save(inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate)
             .unwrap()
@@ -224,7 +244,9 @@ class JdbcBloodHorseRepositoryContractTest(private val rows: BloodHorseSpringDat
 
     @Test
     fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
-        val inserted = repository.save(BloodHorseFixture.bloodHorse()).unwrap()
+        val fixture = BloodHorseFixture.bloodHorse()
+        seeder.seedInspectionFor(fixture)
+        val inserted = repository.save(fixture).unwrap()
         rows.deleteAll()
 
         val conflicted =
