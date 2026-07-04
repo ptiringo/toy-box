@@ -72,4 +72,12 @@ object BreedingFixture {
         broodmareRegistration: BreedingRegistration = breedingRegistration(),
         breedingYear: Year = Year.of(2024),
     ): BreedingResult = BreedingResult.createUncovered(broodmareRegistration, breedingYear).unwrap()
+
+    /** 既定値を持つ、種付成績報告（様式第13号の年次提出記録）の [CoveringReport] を生成する。 */
+    fun coveringReport(
+        stallionRegistration: BreedingRegistration = stallionRegistration(),
+        coveringYear: Year = Year.of(2024),
+        submittedOn: LocalDate = LocalDate.of(2024, 9, 30),
+    ): CoveringReport =
+        CoveringReport.create(stallionRegistration, coveringYear, submittedOn).unwrap()
 }
