@@ -9,6 +9,7 @@
 | [public.blood_horse](public.blood_horse.md) | 15 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
 | [public.breeding_result](public.breeding_result.md) | 11 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
 | [public.horse_inspection](public.horse_inspection.md) | 8 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
+| [public.covering_report](public.covering_report.md) | 5 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
 
 ## Relations
 
@@ -69,6 +70,13 @@ erDiagram
   varchar_255_ feature_hair_whorl
   varchar_255_ feature_white_markings
   varchar_255_ feature_nose_print
+  bigint version
+}
+"public.covering_report" {
+  uuid id
+  uuid stallion_breeding_registration_id
+  integer covering_year
+  date submitted_on
   bigint version
 }
 ```
