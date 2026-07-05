@@ -122,8 +122,8 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 
 ### sakamichi コンテキスト（エンターテイメント）
 
-坂道シリーズ（乃木坂46・櫻坂46・日向坂46）のグループとメンバーの在籍（加入・卒業・期生）を扱う。
-権威ソースの所在と用語の詳細は `.claude/skills/sakamichi-sources/` を参照。
+坂道シリーズ（乃木坂46・櫻坂46・日向坂46）のグループとメンバーの在籍（加入・卒業・期生）、シングルごとの
+選抜編成を扱う。権威ソースの所在と用語の詳細は `.claude/skills/sakamichi-sources/` を参照。
 
 | 用語 | 定義 | 補足 |
 | --- | --- | --- |
@@ -132,8 +132,15 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 | 期生（`Generation`） | 加入時期で区切るコホート（1期生・2期生…） | 加入時に固定。**グループごとに独立採番**（横断で一意でない） |
 | 加入 / 卒業 | メンバーの参加 ／ 離脱の状態遷移（`Member.graduate`） | 卒業日は加入日以降。契約解除等の非円満離脱は「卒業」と区別しうるが未モデル化 |
 | 在籍状態（`Membership`） | 在籍中（`Active`）／卒業済み（`Graduated`）の相互排他 | sealed で型強制（ADR-0020 の流儀） |
+| シングル（`Single`） | グループが発表する作品。選抜を内包する集約ルート | 発表元グループは `GroupId` の ID 参照。発表後の編成変更等の状態遷移は未モデル化 |
+| 作品番号（`SingleNumber`） | n 枚目（1 以上の整数） | **グループごとに独立採番**（横断で一意でない）。グループ内の重複禁止は集合制約のため未モデル化（必要時に ADR-0022 の流儀でドメインサービスへ） |
+| 表題（`SingleTitle`） | シングルの表題曲の曲名 | カップリング曲は未モデル化 |
+| 選抜（`Senbatsu`） | シングル表題曲を歌う選ばれたメンバーの集合とフォーメーション | **シングル単位の一時的編成**（グループ・メンバーの恒久属性にしない）。不変条件: メンバー重複なし・立ち位置の定員 1 人・センター必須 |
+| 立ち位置（`Position`） | フォーメーション上の位置。センター（`Center`）とそれ以外（`Spot`＝列 × 列内番号）の相互排他 | シングルごとに変わる。1 列目が最前列。センターと `Spot` の空間的重なりは未検証（探索段階の割り切り） |
+| 選抜の枠（`SenbatsuSlot`） | 立ち位置 × メンバーの割り当て 1 件 | メンバーは `MemberId` の ID 参照 |
 
-**禁止語・注意**: 「選抜」はグループの恒久属性ではなくシングル単位の一時的編成（未モデル化・#364 段階 3）。
+**禁止語・注意**: 「選抜」をグループやメンバーの恒久属性として扱わない（シングル単位の一時的編成。⇔ アンダー＝非選抜、未モデル化）。
+「選抜対象メンバーが当該グループに在籍中であること」の検証は集約またぎのため `Senbatsu` では守らない（#551 のドメインサービスへ）。
 「桜坂46」は誤記（正しくは旧字の「櫻坂46」）。
 
 ### tennis コンテキスト（スポーツ）
@@ -182,6 +189,7 @@ graph LR
 | --- | --- | --- |
 | Group | 集約ルート | domain.sakamichi.model.group |
 | Member | 集約ルート | domain.sakamichi.model.member |
+| Single | 集約ルート | domain.sakamichi.model.single |
 | Generation | 値オブジェクト | domain.sakamichi.model.member |
 | GroupId | 値オブジェクト | domain.sakamichi.model.group |
 | GroupName | 値オブジェクト | domain.sakamichi.model.group |
@@ -190,6 +198,14 @@ graph LR
 | Membership | 値オブジェクト | domain.sakamichi.model.member |
 | Membership.Active | 値オブジェクト | domain.sakamichi.model.member |
 | Membership.Graduated | 値オブジェクト | domain.sakamichi.model.member |
+| Position | 値オブジェクト | domain.sakamichi.model.single |
+| Position.Center | 値オブジェクト | domain.sakamichi.model.single |
+| Position.Spot | 値オブジェクト | domain.sakamichi.model.single |
+| Senbatsu | 値オブジェクト | domain.sakamichi.model.single |
+| SenbatsuSlot | 値オブジェクト | domain.sakamichi.model.single |
+| SingleId | 値オブジェクト | domain.sakamichi.model.single |
+| SingleNumber | 値オブジェクト | domain.sakamichi.model.single |
+| SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
 
 ### studbook
 
