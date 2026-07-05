@@ -16,7 +16,9 @@ abstract class Entity<ID : Any> {
      * 楽観ロックの version（永続化メタデータ）。null は「まだ永続化されていない」ことを表す。
      *
      * 永続化層（Spring Data JDBC）が insert / update の判別と競合検出に用いる。ドメインロジックは
-     * この値で業務判断（分岐・比較）をしないこと。永続化される更新対象の集約だけが constructor プロパティで override し、それ以外は既定の null のままでよい。
+     * この値で業務判断（分岐・比較）をしないこと。永続化される更新対象の集約だけが constructor プロパティで override し、それ以外は既定の null
+     * のままでよい。業務判断の禁止は ArchUnit（`versionIsNotUsedForBusinessDecisions`）で機械強制している（集約自身の `copy`
+     * による引き回しは自己参照として対象外）。
      */
     open val version: Long? = null
 
