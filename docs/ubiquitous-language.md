@@ -122,7 +122,19 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 
 ### sakamichi コンテキスト（エンターテイメント）
 
-探索段階。`Member`（メンバー）/ `MemberId` のみ。用語の整備は今後。
+坂道シリーズ（乃木坂46・櫻坂46・日向坂46）のグループとメンバーの在籍（加入・卒業・期生）を扱う。
+権威ソースの所在と用語の詳細は `.claude/skills/sakamichi-sources/` を参照。
+
+| 用語 | 定義 | 補足 |
+| --- | --- | --- |
+| グループ（`Group`） | 坂道シリーズのアイドルグループ | 改名（欅坂46→櫻坂46 等）の状態遷移は未モデル化。漢字「欅坂46」とひらがな「けやき坂46」は**別グループ** |
+| メンバー（`Member`） | グループに加入した個人。生成＝加入 | 在籍（所属・期生・在籍状態）はメンバー側が持つ。「メンバーは常に 1 グループのみ所属」前提（兼任の歴史的事例と昇格判断は #364 参照） |
+| 期生（`Generation`） | 加入時期で区切るコホート（1期生・2期生…） | 加入時に固定。**グループごとに独立採番**（横断で一意でない） |
+| 加入 / 卒業 | メンバーの参加 ／ 離脱の状態遷移（`Member.graduate`） | 卒業日は加入日以降。契約解除等の非円満離脱は「卒業」と区別しうるが未モデル化 |
+| 在籍状態（`Membership`） | 在籍中（`Active`）／卒業済み（`Graduated`）の相互排他 | sealed で型強制（ADR-0020 の流儀） |
+
+**禁止語・注意**: 「選抜」はグループの恒久属性ではなくシングル単位の一時的編成（未モデル化・#364 段階 3）。
+「桜坂46」は誤記（正しくは旧字の「櫻坂46」）。
 
 ### tennis コンテキスト（スポーツ）
 
@@ -169,11 +181,15 @@ graph LR
 | 用語 | 種別 | パッケージ |
 | --- | --- | --- |
 | Group | 集約ルート | domain.sakamichi.model.group |
-| Member | 集約ルート | domain.sakamichi.model |
+| Member | 集約ルート | domain.sakamichi.model.member |
+| Generation | 値オブジェクト | domain.sakamichi.model.member |
 | GroupId | 値オブジェクト | domain.sakamichi.model.group |
 | GroupName | 値オブジェクト | domain.sakamichi.model.group |
-| MemberId | 値オブジェクト | domain.sakamichi.model |
+| MemberId | 値オブジェクト | domain.sakamichi.model.member |
 | MemberName | 値オブジェクト | domain.sakamichi.model.member |
+| Membership | 値オブジェクト | domain.sakamichi.model.member |
+| Membership.Active | 値オブジェクト | domain.sakamichi.model.member |
+| Membership.Graduated | 値オブジェクト | domain.sakamichi.model.member |
 
 ### studbook
 
