@@ -1,7 +1,9 @@
 package com.example.api.architecture
 
+import com.example.api.domain.shared.Entity
 import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.core.domain.JavaClass
+import com.tngtech.archunit.core.domain.JavaMethodCall
 import com.tngtech.archunit.core.domain.JavaModifier
 import com.tngtech.archunit.library.dependencies.SliceAssignment
 import com.tngtech.archunit.library.dependencies.SliceIdentifier
@@ -60,6 +62,23 @@ internal val isDomainEnum =
 internal val isSyntheticClass =
     DescribedPredicate.describe<JavaClass>("合成クラス") { javaClass ->
         javaClass.modifiers.contains(JavaModifier.SYNTHETIC)
+    }
+
+/**
+ * 自クラス以外の [Entity] サブタイプの `version` を読む getter 呼び出し（`getVersion()`）であること。
+ *
+ * Kotlin のプロパティ読み取りはバイトコードでは getter 呼び出しになるため、`getVersion()` の呼び出しを 検出すれば `version`
+ * の参照を捕捉できる。集約自身の手書き `copy` が `version = version` で値を 引き回すのは正当（永続化メタデータの維持）なので、呼び出し元クラスと呼び出し先 owner
+ * クラスが同一の 自己参照は対象外とする。[DomainModelingRulesTest.versionIsNotUsedForBusinessDecisions] と メタテスト
+ * [EntityVersionReadRuleTest] で共有する。
+ */
+internal val readsEntityVersionOfAnotherClass =
+    DescribedPredicate.describe<JavaMethodCall>("自クラス以外の Entity.version を読む getVersion() 呼び出し") {
+        call ->
+        call.target.name == "getVersion" &&
+            call.target.rawParameterTypes.isEmpty() &&
+            call.target.owner.isAssignableTo(Entity::class.java) &&
+            call.origin.owner != call.target.owner
     }
 
 /**
