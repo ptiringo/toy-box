@@ -78,7 +78,13 @@ domain/
 │   │   └── race/                #   Race, RaceResult, ...
 │   └── service/                 # ドメインサービスリング
 │       └── race/                #   confirmRaceResult
-├── sakamichi/model/
+├── sakamichi/                   # エンターテイメントコンテキスト（坂道シリーズ）
+│   ├── model/                   # ドメインモデルリング
+│   │   ├── group/               #   Group, GroupId, GroupName
+│   │   ├── member/              #   Member, Generation, Membership, ...
+│   │   └── single/              #   Single, Senbatsu, Position, ...
+│   └── service/                 # ドメインサービスリング
+│       └── single/              #   releaseSingle
 └── tennis/model/
 ```
 
