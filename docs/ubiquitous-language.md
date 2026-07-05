@@ -139,8 +139,14 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 | 立ち位置（`Position`） | フォーメーション上の位置。センター（`Center`）とそれ以外（`Spot`＝列 × 列内番号）の相互排他 | シングルごとに変わる。1 列目が最前列。センターと `Spot` の空間的重なりは未検証（探索段階の割り切り） |
 | 選抜の枠（`SenbatsuSlot`） | 立ち位置 × メンバーの割り当て 1 件 | メンバーは `MemberId` の ID 参照 |
 
+#### ドメインサービス（複数集約をまたぐ操作）
+
+| 用語（関数） | 和名 | 定義 |
+| --- | --- | --- |
+| releaseSingle | シングルを発売する | 選抜を編成してシングルを成立させる入口。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Senbatsu.create` → `Single.create` へ橋渡しする（studbook の `registerFoal` 型）。 |
+
 **禁止語・注意**: 「選抜」をグループやメンバーの恒久属性として扱わない（シングル単位の一時的編成。⇔ アンダー＝非選抜、未モデル化）。
-「選抜対象メンバーが当該グループに在籍中であること」の検証は集約またぎのため `Senbatsu` では守らない（#551 のドメインサービスへ）。
+「選抜対象メンバーが当該グループに在籍中であること」の検証は集約またぎのため `Senbatsu` では守らない（`releaseSingle` が封じ込める）。
 「桜坂46」は誤記（正しくは旧字の「櫻坂46」）。
 
 ### tennis コンテキスト（スポーツ）
@@ -206,6 +212,7 @@ graph LR
 | SingleId | 値オブジェクト | domain.sakamichi.model.single |
 | SingleNumber | 値オブジェクト | domain.sakamichi.model.single |
 | SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
+| releaseSingle | ドメインサービス | domain.sakamichi.service.single |
 
 ### studbook
 
