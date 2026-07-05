@@ -6,6 +6,7 @@ import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods
 import org.jmolecules.architecture.cqrs.QueryModel
 import org.jmolecules.archunit.JMoleculesDddRules
@@ -118,4 +119,24 @@ class DomainModelingRulesTest {
                 "集約は data class を使わない。ID ベースの final equals / hashCode と衝突するため、" +
                     "private constructor ＋手書き copy で同一性を引き継いだ新インスタンスへ写像する（ADR-0009）"
             )
+
+    /**
+     * `Entity.version`（楽観ロックの永続化メタデータ）を業務判断（分岐・比較）に使わないこと。
+     *
+     * domain / application 層のプロダクションコードから、自クラス以外の Entity サブタイプの `version` を読む getter
+     * 呼び出しを禁止する（ADR-0047。Kotlin のプロパティ読み取りはバイトコードでは `getVersion()` 呼び出しになる）。集約自身の手書き `copy` の
+     * `version = version` 引き回しは自己参照 として対象外。infrastructure はマッパーが正当に読むため対象外とする。
+     *
+     * 既知の限界（レビュー担保）: 集約が自分自身の `version` で業務分岐する誤用は `copy` の自己参照と
+     * 区別できず検出できない。プロパティ参照（`::version`）・リフレクション経由も検出外。 ルールが実際に違反を検出することは [EntityVersionReadRuleTest]
+     * で別途担保する。
+     */
+    @ArchTest
+    val versionIsNotUsedForBusinessDecisions =
+        noClasses()
+            .that()
+            .resideInAnyPackage(DOMAIN, APPLICATION)
+            .should()
+            .callMethodWhere(readsEntityVersionOfAnotherClass)
+            .because("version は楽観ロックの永続化メタデータであり、業務判断（分岐・比較）に使わない（ADR-0047）")
 }
