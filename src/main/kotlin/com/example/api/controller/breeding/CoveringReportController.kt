@@ -10,6 +10,7 @@ import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import org.springframework.http.HttpStatus
@@ -80,7 +81,11 @@ class CoveringReportController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/coveringReports")
-    fun submit(@RequestBody request: SubmitCoveringReportRequest): CoveringReportResponse =
+    fun submit(
+        @OperationRequestBody(description = "提出する種付成績報告（種牡馬の繁殖登録ID・種付年）")
+        @RequestBody
+        request: SubmitCoveringReportRequest
+    ): CoveringReportResponse =
         submitCoveringReport(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()

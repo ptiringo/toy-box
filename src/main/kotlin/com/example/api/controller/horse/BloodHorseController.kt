@@ -12,8 +12,10 @@ import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import java.util.UUID
@@ -42,6 +44,7 @@ class BloodHorseController(
     private val clock: Clock,
 ) {
     @Operation(
+        operationId = "registerBloodHorse",
         summary = "軽種馬を血統登録する",
         description = "父母を指定して血統登録を行い、誕生した軽種馬を返す。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
         tags = ["BloodHorse"],
@@ -84,7 +87,11 @@ class BloodHorseController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses")
-    fun register(@RequestBody request: RegisterBloodHorseRequest): BloodHorseResponse =
+    fun register(
+        @OperationRequestBody(description = "血統登録する軽種馬の登録申請フォーム")
+        @RequestBody
+        request: RegisterBloodHorseRequest
+    ): BloodHorseResponse =
         registerInStudBook(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
@@ -124,7 +131,11 @@ class BloodHorseController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses:registerImported")
-    fun registerImported(@RequestBody request: RegisterImportedHorseRequest): BloodHorseResponse =
+    fun registerImported(
+        @OperationRequestBody(description = "血統登録する輸入馬・基礎輸入馬の登録申請フォーム")
+        @RequestBody
+        request: RegisterImportedHorseRequest
+    ): BloodHorseResponse =
         registerImportedHorse(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
@@ -185,8 +196,8 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/bloodHorses/{bloodHorseId}:registerName")
     fun registerName(
-        @PathVariable bloodHorseId: UUID,
-        @RequestBody request: RegisterHorseNameRequest,
+        @Parameter(description = "馬名を登録する軽種馬の生 UUID") @PathVariable bloodHorseId: UUID,
+        @OperationRequestBody(description = "馬名") @RequestBody request: RegisterHorseNameRequest,
     ): BloodHorseResponse =
         nameHorse(Command.now(request.toCommand(bloodHorseId), clock))
             .mapError { it.toProblemDetail() }

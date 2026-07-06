@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -20,6 +21,7 @@ import org.springframework.http.ProblemDetail
  * @property outcome 分娩結果の区分
  * @property foalingDate 分娩日。生産のときは必須、それ以外は無視される
  */
+@Schema(description = "分娩結果報告リクエスト")
 data class ReportFoalingRequest(val outcome: FoalingOutcomeDto, val foalingDate: LocalDate?)
 
 /**

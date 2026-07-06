@@ -2,6 +2,7 @@ package com.example.api.controller.jockey
 
 import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.domain.racing.model.jockey.Jockey
+import io.swagger.v3.oas.annotations.media.Schema
 import java.util.UUID
 
 /**
@@ -14,6 +15,7 @@ import java.util.UUID
  * @property firstName 名
  * @property lastName 姓
  */
+@Schema(description = "ジョッキーリソースの表現")
 data class JockeyResponse(val id: UUID, val firstName: String, val lastName: String)
 
 /** [Jockey] をジョッキーリソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */

@@ -10,6 +10,7 @@ import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import org.springframework.http.HttpStatus
@@ -33,6 +34,7 @@ class BreedingRegistrationController(
     private val clock: Clock,
 ) {
     @Operation(
+        operationId = "registerBreedingRegistration",
         summary = "繁殖登録を成立させる",
         description =
             "血統登録済みの個体を繁殖の用に供するための繁殖登録を成立させ、成立した繁殖登録リソースを返す。" +
@@ -79,7 +81,9 @@ class BreedingRegistrationController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/breedingRegistrations")
     fun register(
-        @RequestBody request: RegisterBreedingRegistrationRequest
+        @OperationRequestBody(description = "成立させる繁殖登録（対象個体・繁殖登録番号）")
+        @RequestBody
+        request: RegisterBreedingRegistrationRequest
     ): BreedingRegistrationResponse =
         registerBreedingRegistration(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }

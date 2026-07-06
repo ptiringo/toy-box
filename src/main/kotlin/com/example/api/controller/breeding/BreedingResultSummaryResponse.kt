@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultSummaryView
+import io.swagger.v3.oas.annotations.media.Schema
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -12,6 +13,7 @@ import java.util.UUID
  *
  * @property conceptionRate 受胎率(%) 小数1桁、[productionRate] 生産率(%) 小数1桁
  */
+@Schema(description = "繁殖成績の年次集計リソースの表現")
 data class BreedingResultSummaryResponse(
     val stallionId: UUID,
     val breedingYear: Int,

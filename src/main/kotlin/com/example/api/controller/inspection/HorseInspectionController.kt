@@ -10,8 +10,10 @@ import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import java.util.UUID
@@ -39,6 +41,7 @@ class HorseInspectionController(
     private val clock: Clock,
 ) {
     @Operation(
+        operationId = "recordHorseInspection",
         summary = "審査を記録する",
         description = "確定済みの審査（個体識別・親子判定）を記録する。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
         tags = ["HorseInspection"],
@@ -70,13 +73,18 @@ class HorseInspectionController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/horseInspections")
-    fun record(@RequestBody request: RecordHorseInspectionRequest): HorseInspectionResponse =
+    fun record(
+        @OperationRequestBody(description = "記録する審査（個体識別・親子判定）")
+        @RequestBody
+        request: RecordHorseInspectionRequest
+    ): HorseInspectionResponse =
         recordHorseInspection(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
 
     @Operation(
+        operationId = "getHorseInspection",
         summary = "審査を取得する",
         description = "ID で審査を取得する。対象が存在しなければ RFC 9457 形式の problem+json を返す。",
         tags = ["HorseInspection"],
@@ -107,7 +115,9 @@ class HorseInspectionController(
             ],
     )
     @GetMapping("/api/horseInspections/{id}")
-    fun get(@PathVariable id: UUID): HorseInspectionResponse =
+    fun get(
+        @Parameter(description = "取得する審査の生 UUID") @PathVariable id: UUID
+    ): HorseInspectionResponse =
         findHorseInspection(FindHorseInspectionQuery(id))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()

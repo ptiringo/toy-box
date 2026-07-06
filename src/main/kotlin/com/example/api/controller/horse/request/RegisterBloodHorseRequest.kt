@@ -6,6 +6,7 @@ import com.example.api.controller.horse.CoatColorDto
 import com.example.api.controller.horse.DnaParentageResultDto
 import com.example.api.controller.horse.SexDto
 import com.example.api.controller.horse.toDomain
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
 
@@ -29,6 +30,7 @@ import java.util.UUID
  * @property registrationNumber 交付される血統登録番号
  */
 @Suppress("LongParameterList") // 登録申請フォーム相当の境界入力であり、項目の分割はかえって意味を損なう
+@Schema(description = "軽種馬血統登録リクエスト")
 data class RegisterBloodHorseRequest(
     val sireId: UUID,
     val damId: UUID,

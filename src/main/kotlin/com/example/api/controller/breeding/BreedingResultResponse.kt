@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.domain.studbook.model.breeding.BreedingResult
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
 
@@ -24,6 +25,7 @@ import java.util.UUID
  * @property reportSubmittedOn 繁殖成績報告書（様式第14号）の提出日。未提出は null
  * @property reportSubmittedLate 提出が期限（繁殖年の翌年5/31）超過だったか。未提出は null
  */
+@Schema(description = "繁殖成績リソースの表現")
 data class BreedingResultResponse(
     val id: UUID,
     val breedingRegistrationId: UUID,

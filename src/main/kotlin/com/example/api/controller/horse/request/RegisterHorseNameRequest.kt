@@ -1,6 +1,7 @@
 package com.example.api.controller.horse.request
 
 import com.example.api.application.studbook.horse.NameHorseCommand
+import io.swagger.v3.oas.annotations.media.Schema
 import java.util.UUID
 
 /**
@@ -11,7 +12,7 @@ import java.util.UUID
  *
  * @property name 付与する馬名
  */
-data class RegisterHorseNameRequest(val name: String)
+@Schema(description = "馬名登録リクエスト") data class RegisterHorseNameRequest(val name: String)
 
 /** リクエストボディと URL パスの軽種馬IDを馬名登録ユースケースの入力コマンドへ変換する。 */
 fun RegisterHorseNameRequest.toCommand(bloodHorseId: UUID): NameHorseCommand =

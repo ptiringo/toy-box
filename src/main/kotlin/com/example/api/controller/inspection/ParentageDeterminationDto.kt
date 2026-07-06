@@ -51,15 +51,19 @@ sealed interface ParentageDeterminationDto {
      *
      * @property dnaParentageResult DNA 型による判定結果
      */
+    @Schema(description = "DNA 型による親子判定")
     data class ByDna(val dnaParentageResult: DnaParentageResultDto) : ParentageDeterminationDto
 
     /** 血液型検査によるフォールバック。追加フィールドなし（詳細は #267）。 */
+    @Schema(description = "血液型検査によるフォールバック判定。追加フィールドなし（詳細は #267）")
     data object ByBloodType : ParentageDeterminationDto
 
     /** 承認海外機関の判定によるフォールバック。追加フィールドなし（詳細は #267）。 */
+    @Schema(description = "承認海外機関の判定によるフォールバック判定。追加フィールドなし（詳細は #267）")
     data object ByOverseasInstitution : ParentageDeterminationDto
 
     /** 親子判定の対象外（父母不明等）。追加フィールドなし。 */
+    @Schema(description = "親子判定の対象外（父母不明等）。追加フィールドなし")
     data object NotApplicable : ParentageDeterminationDto
 }
 

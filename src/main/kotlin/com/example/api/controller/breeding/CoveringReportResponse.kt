@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.domain.studbook.model.breeding.CoveringReport
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
 
@@ -16,6 +17,7 @@ import java.util.UUID
  * @property submittedOn 提出日（日本の暦日）
  * @property submittedLate 提出が期限（種付年の当年9/30）超過だったか
  */
+@Schema(description = "種付成績報告リソースの表現")
 data class CoveringReportResponse(
     val id: UUID,
     val stallionBreedingRegistrationId: UUID,

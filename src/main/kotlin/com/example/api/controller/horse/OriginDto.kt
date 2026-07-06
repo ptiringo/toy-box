@@ -35,6 +35,7 @@ sealed interface OriginDto {
      * @property sireId 父（雄）の生 UUID
      * @property damId 母（雌）の生 UUID
      */
+    @Schema(description = "内国産馬の出自")
     data class Domestic(val sireId: UUID, val damId: UUID) : OriginDto
 
     /**
@@ -43,6 +44,7 @@ sealed interface OriginDto {
      * @property country 原産国名
      * @property landingDate 揚陸日
      */
+    @Schema(description = "輸入馬・基礎輸入馬の出自")
     data class Imported(val country: String, val landingDate: LocalDate) : OriginDto
 }
 

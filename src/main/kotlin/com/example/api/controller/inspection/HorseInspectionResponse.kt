@@ -2,6 +2,7 @@ package com.example.api.controller.inspection
 
 import com.example.api.application.studbook.inspection.HorseInspectionView
 import com.example.api.domain.studbook.model.inspection.HorseInspection
+import io.swagger.v3.oas.annotations.media.Schema
 import java.util.UUID
 
 /**
@@ -15,6 +16,7 @@ import java.util.UUID
  * @property parentage 親子判定
  * @property features 特徴記述子。未記録なら null
  */
+@Schema(description = "審査リソースの表現")
 data class HorseInspectionResponse(
     val id: UUID,
     val microchipNumber: String,

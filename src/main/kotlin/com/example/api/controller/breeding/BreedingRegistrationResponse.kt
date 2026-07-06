@@ -2,6 +2,7 @@ package com.example.api.controller.breeding
 
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRetirement
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
 
@@ -19,6 +20,7 @@ import java.util.UUID
  * @property role 繁殖登録によって付与されたロール（種牡馬／繁殖牝馬）
  * @property retirement 供用停止。供用中なら null、供用停止済みなら事由と発生日を持つ
  */
+@Schema(description = "繁殖登録リソースの表現")
 data class BreedingRegistrationResponse(
     val id: UUID,
     val registrationNumber: String,
@@ -33,6 +35,7 @@ data class BreedingRegistrationResponse(
  * @property reason 供用停止の事由
  * @property occurredOn 事由が発生した日
  */
+@Schema(description = "繁殖供用停止の表現")
 data class BreedingRetirementResponse(val reason: RetirementReasonDto, val occurredOn: LocalDate)
 
 /** [BreedingRegistration] を繁殖登録リソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */

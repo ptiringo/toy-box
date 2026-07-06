@@ -1,6 +1,7 @@
 package com.example.api.controller.horse
 
 import com.example.api.application.studbook.horse.RegisteredBloodHorse
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
 
@@ -26,6 +27,7 @@ import java.util.UUID
  * @property name 馬名。未命名なら null
  */
 @Suppress("LongParameterList") // resource 全体を返すため項目数が多いのは必然
+@Schema(description = "軽種馬リソースの表現")
 data class BloodHorseResponse(
     val id: UUID,
     val registrationNumber: String,

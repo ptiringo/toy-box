@@ -324,6 +324,38 @@ openApi {
     }
 }
 
+// vacuum は mise(aqua backend) 管理で素の PATH に乗らないため、tbls（tblsBin）と同じ流儀で
+// `mise which vacuum` により絶対パスを解決する（タスク実現時に評価され、不要なタスクでは走らない）。
+val vacuumBin =
+    providers
+        .exec { commandLine("mise", "which", "vacuum") }
+        .standardOutput
+        .asText
+        .map(String::trim)
+
+// 生成済みの OpenAPI 仕様を vacuum で lint する。生成（アプリ起動・Docker 依存）が重いため
+// check / pre-push には載せず、CI の独立ワークフロー（openapi-lint.yml）専用とする
+// （checkDbDoc / e2eTest と同じ扱い。ADR-0054）。
+tasks.register<Exec>("lintOpenApiDocs") {
+    description = "OpenAPI 仕様を生成し vacuum で lint する（CI 専用。check には載せない）"
+    group = "verification"
+    dependsOn("generateOpenApiDocs")
+    workingDir = layout.projectDirectory.asFile
+    commandLine(
+        vacuumBin.get(),
+        "lint",
+        "--ruleset",
+        "config/vacuum/ruleset.yaml",
+        "--ignore-file",
+        "config/vacuum/ignore.yaml",
+        "--fail-severity",
+        "warn",
+        "--details",
+        "--no-banner",
+        "build/openapi.json",
+    )
+}
+
 // springdoc-openapi-gradle-plugin（gradle-execfork-plugin 経由）は Task を直接プロパティとして
 // 保持するため Configuration Cache と非互換（org.gradle.api.Task はシリアライズ不可）。
 // org.gradle.configuration-cache.problems=fail のもとでは通常のビルドが丸ごと失敗するため、
