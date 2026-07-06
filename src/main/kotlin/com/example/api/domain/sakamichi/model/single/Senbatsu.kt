@@ -51,9 +51,9 @@ sealed interface SenbatsuError {
 @ValueObject
 @ConsistentCopyVisibility
 data class Senbatsu private constructor(val slots: List<SenbatsuSlot>) {
-    /** センターに立つメンバーのID。 */
-    val center: MemberId
-        get() = slots.first { it.position == Position.Center }.memberId
+    /** センターに立つメンバーのIDの集合（W センター時は 2 人）。 */
+    val centers: Set<MemberId>
+        get() = slots.filter { it.position == Position.Center }.map { it.memberId }.toSet()
 
     /** 選抜されたメンバーのIDの集合。 */
     val memberIds: Set<MemberId>

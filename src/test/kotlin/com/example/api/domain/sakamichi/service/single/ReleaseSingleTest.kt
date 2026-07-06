@@ -47,7 +47,7 @@ class ReleaseSingleTest {
         assert(single.groupId == group.id)
         assert(single.number == number)
         assert(single.title == title)
-        assert(single.senbatsu.center == centerMember.id)
+        assert(single.senbatsu.centers == setOf(centerMember.id))
         assert(single.senbatsu.memberIds == setOf(centerMember.id, otherMember.id))
     }
 

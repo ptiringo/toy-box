@@ -26,7 +26,7 @@ class SenbatsuTest {
         val senbatsu = Senbatsu.create(slots).unwrap()
 
         assert(senbatsu.slots == slots)
-        assert(senbatsu.center == centerMember)
+        assert(senbatsu.centers == setOf(centerMember))
         assert(senbatsu.memberIds == setOf(centerMember, otherMember))
     }
 
@@ -36,7 +36,7 @@ class SenbatsuTest {
 
         val senbatsu = Senbatsu.create(listOf(SenbatsuSlot(Position.Center, centerMember))).unwrap()
 
-        assert(senbatsu.center == centerMember)
+        assert(senbatsu.centers == setOf(centerMember))
         assert(senbatsu.memberIds == setOf(centerMember))
     }
 
