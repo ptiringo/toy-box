@@ -6,7 +6,7 @@ import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import org.junit.jupiter.api.Test
 
-/** Senbatsu 値オブジェクトの不変条件（メンバー重複なし・立ち位置の定員 1 人・センター必須）のユニットテスト。 */
+/** Senbatsu 値オブジェクトの不変条件（メンバー重複なし・Center 以外の立ち位置の定員 1 人・センター 1〜2 人）のユニットテスト。 */
 class SenbatsuTest {
     private fun memberId(): MemberId = MemberId(generateId())
 
@@ -97,5 +97,22 @@ class SenbatsuTest {
         val error = Senbatsu.create(slots).getError()
 
         assert(error == SenbatsuError.CenterMissing)
+    }
+
+    @Test
+    fun `センターが3人以上いると TooManyCenters を返す`() {
+        val center1 = memberId()
+        val center2 = memberId()
+        val center3 = memberId()
+        val slots =
+            listOf(
+                SenbatsuSlot(Position.Center, center1),
+                SenbatsuSlot(Position.Center, center2),
+                SenbatsuSlot(Position.Center, center3),
+            )
+
+        val error = Senbatsu.create(slots).getError()
+
+        assert(error == SenbatsuError.TooManyCenters(setOf(center1, center2, center3)))
     }
 }
