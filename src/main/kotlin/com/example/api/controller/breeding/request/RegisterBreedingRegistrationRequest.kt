@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding.request
 
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationCommand
+import io.swagger.v3.oas.annotations.media.Schema
 import java.util.UUID
 
 /**
@@ -12,6 +13,7 @@ import java.util.UUID
  * @property bloodHorseId 繁殖登録する個体（血統登録済み）の軽種馬ID
  * @property registrationNumber 交付される繁殖登録番号
  */
+@Schema(description = "繁殖登録リクエスト")
 data class RegisterBreedingRegistrationRequest(
     val bloodHorseId: UUID,
     val registrationNumber: String,

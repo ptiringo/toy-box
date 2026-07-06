@@ -1,6 +1,7 @@
 package com.example.api.controller.inspection
 
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
+import io.swagger.v3.oas.annotations.media.Schema
 
 /**
  * 審査リソースの「特徴記述子」の表現（HTTP 契約）。
@@ -12,6 +13,7 @@ import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
  * @property whiteMarkings 白斑（四肢別）の記述
  * @property nosePrint 鼻紋の記述
  */
+@Schema(description = "審査リソースの特徴記述子（旋毛・白斑・鼻紋。いずれも任意）")
 data class IdentificationFeaturesDto(
     val hairWhorl: String?,
     val whiteMarkings: String?,

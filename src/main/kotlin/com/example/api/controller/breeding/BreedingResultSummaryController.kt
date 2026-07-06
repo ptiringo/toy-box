@@ -4,6 +4,7 @@ import com.example.api.application.studbook.breeding.FindBreedingResultSummaryQu
 import com.example.api.application.studbook.breeding.FindBreedingResultSummaryUseCase
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -55,7 +56,9 @@ class BreedingResultSummaryController(
             ],
     )
     @GetMapping("/api/breedingResultSummaries")
-    fun list(@RequestParam stallionId: UUID): List<BreedingResultSummaryResponse> =
+    fun list(
+        @Parameter(description = "集計対象の種牡馬の生 UUID") @RequestParam stallionId: UUID
+    ): List<BreedingResultSummaryResponse> =
         findBreedingResultSummary(FindBreedingResultSummaryQuery(BloodHorseId(stallionId))).map {
             it.toResponse()
         }

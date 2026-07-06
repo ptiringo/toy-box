@@ -4,6 +4,7 @@ import com.example.api.application.studbook.inspection.RecordHorseInspectionComm
 import com.example.api.controller.inspection.IdentificationFeaturesDto
 import com.example.api.controller.inspection.ParentageDeterminationDto
 import com.example.api.controller.inspection.toDomain
+import io.swagger.v3.oas.annotations.media.Schema
 
 /**
  * `POST /api/horseInspections` のリクエストボディ。
@@ -15,6 +16,7 @@ import com.example.api.controller.inspection.toDomain
  * @property parentage 親子判定
  * @property features 特徴記述子（任意）
  */
+@Schema(description = "審査記録リクエスト")
 data class RecordHorseInspectionRequest(
     val microchipNumber: String,
     val parentage: ParentageDeterminationDto,

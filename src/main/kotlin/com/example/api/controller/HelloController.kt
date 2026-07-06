@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class HelloController {
-    data class HelloResponse(val message: String)
+    @Schema(description = "Hello World エンドポイントのレスポンス") data class HelloResponse(val message: String)
 
     @Operation(
         summary = "Hello World エンドポイント",

@@ -1,0 +1,15 @@
+# 意図的に無視する lint 指摘の明示（#327 / ADR-0054）。
+component-description:
+  # springdoc-openapi は @Content の Schema(implementation = ProblemDetail::class) から
+  # org.springframework.http.ProblemDetail のフィールドを直接リフレクションしてコンポーネントを
+  # 生成する。Spring Framework 本体のクラスであり、@Schema(description = ...) を型定義に
+  # 付与できない（呼び出し側の @Schema に description を添えても生成される共有コンポーネントへは
+  # 反映されないことを実機で確認済み）。
+  - $.components.schemas['ProblemDetail']
+  # springdoc.show-actuator による自動公開エンドポイント（/actuator）のレスポンススキーマで、
+  # Spring Boot Actuator の Link 型から自動生成される。actuator 由来でありコードで直せない。
+  - $.components.schemas['Link']
+# circular-references（discriminated union の oneOf + allOf に由来する polymorphic circular
+# reference。ADR-0020）は経路文字列のハードコードではなく、`lintOpenApiDocs` タスクの
+# `vacuum lint --ignore-polymorph-circle-ref` フラグでカテゴリごと無視する。
+# sealed バリアントの追加・変更で経路がずれても壊れない構造的な抑制のため、ここには置かない。

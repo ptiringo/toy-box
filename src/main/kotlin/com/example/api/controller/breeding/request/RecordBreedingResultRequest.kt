@@ -7,6 +7,7 @@ import com.example.api.controller.problem
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
@@ -26,6 +27,7 @@ import org.springframework.http.ProblemDetail
  * @property breedingYear 繁殖年。種付せず（[covering] が null）のとき必須。種付ありなら無視される
  * @property covering その年の種付。種付せずの年は null
  */
+@Schema(description = "繁殖成績の年次レコード起票リクエスト（種付記録／種付せず）")
 data class RecordBreedingResultRequest(
     val breedingRegistrationId: UUID,
     val breedingYear: Int?,
@@ -43,6 +45,7 @@ data class RecordBreedingResultRequest(
  * @property certificateNumber 種付証明書番号
  * @property studCertificate 種牡馬の種畜証明書（種付の有効性検証の与件）
  */
+@Schema(description = "種付の入力")
 data class CoveringRequest(
     val stallionRegistrationId: UUID,
     val coveringDate: LocalDate,
@@ -59,6 +62,7 @@ data class CoveringRequest(
  * @property validPeriodStart 有効期間の起点（当日を含む）
  * @property validPeriodEnd 有効期間の終点（当日を含む）
  */
+@Schema(description = "種畜証明書の入力")
 data class StudCertificateRequest(
     val number: String,
     val validRegions: List<String>,

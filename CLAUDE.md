@@ -54,6 +54,10 @@ mise exec -- shellcheck .claude/hooks/*.sh .claude/hooks/lib/*.sh .devcontainer/
 # DB スキーマドキュメント（tbls）の生成・検査
 ./gradlew generateDbDoc   # dbdoc/ を再生成（手動）
 ./gradlew checkDbDoc      # tbls diff（鮮度）+ tbls lint（コメント必須）を検査
+
+# OpenAPI 仕様の生成・lint（vacuum。CI 専用ゲート、ローカル実行には Docker が必要）
+./gradlew generateOpenApiDocs   # build/openapi.json を書き出す（forked bootRun + docker-compose）
+./gradlew lintOpenApiDocs       # 生成 + vacuum lint（ルールは config/vacuum/ruleset.yaml）
 ```
 
 ktfmt はフォーマッタ、detekt は静的解析ツール。detekt 設定は `config/detekt/detekt.yml`（`buildUponDefaultConfig = true` でデフォルトに上書き、雛形再生成は `./gradlew detektGenerateConfig`）、レポートは `build/reports/detekt/`。プロジェクト固有のカスタムルール（例: ドメイン / アプリケーション層で `throw` しない）は `:detekt-rules` モジュールで定義し `detektPlugins` で組み込む（詳細は `.claude/rules/architecture.md`）。
@@ -177,7 +181,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 ### mise
 
-セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `zizmor` / `gitleaks`）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
+セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `vacuum`＝OpenAPI lint / `zizmor` / `gitleaks`）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
 
 **Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出する。
 
@@ -209,6 +213,8 @@ LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"   # 特定コマン
 ## OpenAPI/Swagger
 
 `springdoc-openapi` で API ドキュメントを自動生成する（Swagger UI: `/swagger-ui.html`、OpenAPI JSON: `/v3/api-docs`）。コントローラーのメソッドに `@Operation` / `@ApiResponse` / `@Content` 等を付与してドキュメント化し、全体定義 `@OpenAPIDefinition`（タイトル・タグ等）は `ApiApplication.kt` に置く。
+
+仕様の品質（summary 記述漏れ・operationId 命名等）は vacuum による lint で CI ゲートする（`openapi-lint.yml`、ルールは `config/vacuum/ruleset.yaml`、意図的な除外は `config/vacuum/ignore.yaml`。採否は [ADR-0054](docs/adr/0054-vacuum-openapi-lint.md)）。`OpenApiTest` は配線スモークとして残す。
 
 ## Spring Boot Actuator
 

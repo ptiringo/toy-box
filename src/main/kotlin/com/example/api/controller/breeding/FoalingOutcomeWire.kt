@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
 /*
@@ -49,6 +50,7 @@ enum class FoalingOutcomeDto {
  * @property kind 分娩結果の区分
  * @property foalingDate 分娩日。生産（[FoalingOutcomeDto.LIVE_FOAL]）のときのみ非 null
  */
+@Schema(description = "分娩結果のリソース表現")
 data class FoalingOutcomeResponse(val kind: FoalingOutcomeDto, val foalingDate: LocalDate?)
 
 /** ドメインの分娩結果を HTTP 契約のリソース表現へ変換する。 */

@@ -62,3 +62,4 @@
 | [0051](0051-transactional-use-case-boundary.md) | トランザクション境界は application 層ユースケースの宣言的 @Transactional で置く | Accepted |
 | [0052](0052-validate-constraint-in-separate-migration.md) | VALIDATE CONSTRAINT は後続の別マイグレーションへ分離する | Accepted |
 | [0053](0053-foreign-key-backstop-across-aggregates.md) | 集約間の ID 参照に外部キー制約を backstop として張る | Accepted |
+| [0054](0054-vacuum-openapi-lint.md) | OpenAPI 仕様の lint に vacuum を採用し CI でドキュメント品質をゲートする | Accepted |

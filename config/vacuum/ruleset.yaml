@@ -1,0 +1,48 @@
+# OpenAPI 仕様の lint ルール（vacuum、Spectral 互換形式。#327 / ADR-0054）
+# ベースは vacuum 同梱の recommended ルールセット。固有ルールは実効の高いものだけを
+# 少数追加する（ProblemDetail スキーマ参照の強制など凝ったルールは後続 Issue へ）。
+extends: [[spectral:oas, recommended]]
+rules:
+  # @Operation の summary 付け忘れを検出する（組み込みルールは operation-description のみ）
+  operation-summary:
+    description: 全ての operation に summary を記述する
+    given: $.paths[*][get,put,post,delete,options,head,patch,trace]
+    severity: error
+    then:
+      field: summary
+      function: truthy
+  # operationId は camelCase（springdoc がハンドラメソッド名から生成するため通常は満たされる。
+  # @Operation(operationId = ...) の手動指定によるドリフトを検出する）
+  operation-operationId-camel-case:
+    description: operationId は camelCase で命名する
+    given: $.paths[*][get,put,post,delete,options,head,patch,trace].operationId
+    severity: error
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-zA-Z0-9]*$"
+  # --- recommended ルールのうち、本プロジェクトに合わないため無効化するもの（#327 判断ルール 3） ---
+  # URL コレクション識別子の casing は AIP-122 に従い camelCase を正式採用している
+  # （.claude/rules/api-design.md、ADR-0012）。kebab-case を要求する recommended ルールは
+  # この設計判断と正面から矛盾し、全 11 件が /api/horseInspections 等の複数語コレクション名に
+  # 横断的にかかる。是正は実際の URL（@GetMapping/@PostMapping）変更＝API 契約の破壊的変更を
+  # 要し、OpenAPI ドキュメント注釈の補強という本 Issue のスコープを超えるため無効化する。
+  paths-kebab-case: false
+  # 生成される OpenAPI 仕様のほぼ全プロパティ・メディアタイプに example を要求するルール
+  # （73 件、違反の最大母数）。値の性質上 example は恣意的にならざるを得ず、探索的な
+  # sandbox API のドキュメントとして全フィールドに手作業で追加する投資対効果が低いため無効化する。
+  oas3-missing-example: false
+  # 相互排他な属性集合を discriminated union（oneOf + discriminatorProperty）で表す設計
+  # （ADR-0020）を springdoc が allOf でコード生成する際、追加フィールドを持たないバリアント
+  # （例: ParentageDeterminationDto.ByBloodType）は `allOf: [$ref]` という単一要素になる。
+  # これは springdoc のポリモーフィズム表現の副産物であり、oneOf 設計を放棄しない限り解消できない
+  # ため無効化する。
+  no-unnecessary-combinator: false
+  # circular-references は Spectral 互換の `rules:` では無効化できない vacuum 組み込みの構造
+  # チェックのため、ここでの `false` 指定は効かない（実行時のルール数に変化がないことで確認済み）。
+  # 上記と同じ oneOf + allOf のポリモーフィズム表現で、親 interface（例: OriginDto）が oneOf で
+  # バリアント（例: Domestic）を参照し、バリアントが allOf で親を参照し返すため $ref グラフ上は
+  # 循環に見える（無限再帰ではなく discriminated union の定型パターン。ADR-0020）。個別の循環経路
+  # 文字列をハードコードすると sealed バリアントの追加・変更で経路がずれ壊れるため、`vacuum lint`
+  # の CLI フラグ `--ignore-polymorph-circle-ref`（`lintOpenApiDocs` タスクに設定済み）で
+  # polymorphic circular reference カテゴリごと無視する。

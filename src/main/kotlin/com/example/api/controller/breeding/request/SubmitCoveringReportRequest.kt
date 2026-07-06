@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding.request
 
 import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
+import io.swagger.v3.oas.annotations.media.Schema
 import java.util.UUID
 
 /**
@@ -11,6 +12,7 @@ import java.util.UUID
  * @property stallionBreedingRegistrationId 提出する種牡馬の繁殖登録ID
  * @property coveringYear 報告対象の種付年
  */
+@Schema(description = "種付成績報告提出リクエスト")
 data class SubmitCoveringReportRequest(
     val stallionBreedingRegistrationId: UUID,
     val coveringYear: Int,

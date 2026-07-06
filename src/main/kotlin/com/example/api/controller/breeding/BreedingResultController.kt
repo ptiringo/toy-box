@@ -16,8 +16,10 @@ import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import java.util.UUID
@@ -47,6 +49,7 @@ class BreedingResultController(
     private val clock: Clock,
 ) {
     @Operation(
+        operationId = "recordBreedingResult",
         summary = "繁殖成績の年次レコードを起こす（種付記録／種付せず）",
         description =
             "繁殖登録済みの牝馬の年次成績を起こす。リクエストの covering が非 null なら種付を記録し（分娩結果は未報告）、" +
@@ -102,7 +105,11 @@ class BreedingResultController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/breedingResults")
-    fun record(@RequestBody request: RecordBreedingResultRequest): BreedingResultResponse {
+    fun record(
+        @OperationRequestBody(description = "起票する繁殖成績の年次レコード（種付記録／種付せず）")
+        @RequestBody
+        request: RecordBreedingResultRequest
+    ): BreedingResultResponse {
         val covering = request.covering
         return if (covering != null) {
             recordCovering(Command.now(request.toCoveringCommand(covering), clock))
@@ -175,8 +182,8 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/breedingResults/{breedingResultId}:reportFoaling")
     fun reportFoaling(
-        @PathVariable breedingResultId: UUID,
-        @RequestBody request: ReportFoalingRequest,
+        @Parameter(description = "分娩結果を報告する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
+        @OperationRequestBody(description = "報告する分娩結果") @RequestBody request: ReportFoalingRequest,
     ): BreedingResultResponse {
         val outcome = request.toOutcome().orThrowProblem()
         return reportFoaling(Command.now(ReportFoalingCommand(breedingResultId, outcome), clock))
@@ -243,7 +250,9 @@ class BreedingResultController(
     )
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/breedingResults/{breedingResultId}:submitReport")
-    fun submitReport(@PathVariable breedingResultId: UUID): BreedingResultResponse =
+    fun submitReport(
+        @Parameter(description = "繁殖成績報告を提出する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID
+    ): BreedingResultResponse =
         submitReport(Command.now(SubmitBreedingReportCommand(breedingResultId), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()

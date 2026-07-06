@@ -10,8 +10,10 @@ import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import java.util.UUID
@@ -38,6 +40,7 @@ class JockeyController(
     private val clock: Clock,
 ) {
     @Operation(
+        operationId = "registerJockey",
         summary = "ジョッキーを登録する",
         description = "ジョッキーを新規登録する。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
         tags = ["Jockey"],
@@ -80,13 +83,18 @@ class JockeyController(
     )
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/jockeys")
-    fun register(@RequestBody request: RegisterJockeyRequest): JockeyResponse {
+    fun register(
+        @OperationRequestBody(description = "登録するジョッキーの氏名")
+        @RequestBody
+        request: RegisterJockeyRequest
+    ): JockeyResponse {
         val command = Command.now(RegisterJockeyCommand(request.firstName, request.lastName), clock)
         val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
         return jockey.toResponse()
     }
 
     @Operation(
+        operationId = "getJockey",
         summary = "ジョッキーを取得する",
         description = "ID でジョッキーを取得する。対象が存在しなければ RFC 9457 形式の problem+json を返す。",
         tags = ["Jockey"],
@@ -117,7 +125,7 @@ class JockeyController(
             ],
     )
     @GetMapping("/api/jockeys/{id}")
-    fun get(@PathVariable id: UUID): JockeyResponse {
+    fun get(@Parameter(description = "取得するジョッキーの生 UUID") @PathVariable id: UUID): JockeyResponse {
         val view =
             findJockey(FindJockeyQuery(id)).mapError { it.toProblemDetail() }.orThrowProblem()
         return view.toResponse()
