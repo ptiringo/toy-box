@@ -41,6 +41,22 @@ class SenbatsuTest {
     }
 
     @Test
+    fun `W センター（2人）の選抜を編成できる`() {
+        val center1 = memberId()
+        val center2 = memberId()
+        val slots =
+            listOf(
+                SenbatsuSlot(Position.Center, center1),
+                SenbatsuSlot(Position.Center, center2),
+                SenbatsuSlot(spot(row = 1, numberInRow = 1), memberId()),
+            )
+
+        val senbatsu = Senbatsu.create(slots).unwrap()
+
+        assert(senbatsu.centers == setOf(center1, center2))
+    }
+
+    @Test
     fun `同一メンバーが複数の立ち位置に選ばれていると DuplicateMember を返す`() {
         val duplicated = memberId()
         val slots =

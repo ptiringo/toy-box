@@ -16,7 +16,7 @@ data object InvalidPosition
  */
 @ValueObject
 sealed interface Position {
-    /** センター（フォーメーションの中心。選抜に必ず 1 人置く）。 */
+    /** センター（フォーメーションの中心。選抜に 1〜2 人置く。2 人は W センター）。 */
     @ValueObject data object Center : Position
 
     /**

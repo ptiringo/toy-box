@@ -69,7 +69,11 @@ data class Senbatsu private constructor(val slots: List<SenbatsuSlot>) {
         fun create(slots: List<SenbatsuSlot>): Result<Senbatsu, SenbatsuError> {
             val duplicateMembers = slots.groupBy { it.memberId }.filterValues { it.size > 1 }.keys
             val overCapacityPositions =
-                slots.groupBy { it.position }.filterValues { it.size > 1 }.keys
+                slots
+                    .filter { it.position != Position.Center }
+                    .groupBy { it.position }
+                    .filterValues { it.size > 1 }
+                    .keys
             return when {
                 duplicateMembers.isNotEmpty() ->
                     Err(SenbatsuError.DuplicateMember(duplicateMembers))
