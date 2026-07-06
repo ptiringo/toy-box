@@ -34,15 +34,23 @@ sealed interface SenbatsuError {
      */
     data class PositionOverCapacity(val positions: Set<Position>) : SenbatsuError
 
-    /** センターが不在（選抜にはセンターを必ず 1 人置く）。 */
+    /** センターが不在（選抜にはセンターを 1 人以上置く）。 */
     data object CenterMissing : SenbatsuError
+
+    /**
+     * センターが 3 人以上いる（W センターまで＝上限 2 人）。
+     *
+     * @property memberIds センターに割り当てられたメンバー全員のIDの集合（違反の全体像）
+     */
+    data class TooManyCenters(val memberIds: Set<MemberId>) : SenbatsuError
 }
 
 /**
  * 選抜。シングル表題曲を歌う選ばれたメンバーの集合と、そのフォーメーション（立ち位置の割り当て）。
  *
  * 選抜はグループの恒久属性ではなくシングル単位の一時的編成であり（sakamichi-sources §4）、[Single] 集約が VO として内包する。メンバーは別集約のため
- * [MemberId] 経由の ID 参照で保持する。不変条件（同一メンバーの 重複なし・立ち位置の定員 1 人・センター必須）は生成ファクトリ [create] が検証する（ADR-0014）。
+ * [MemberId] 経由の ID 参照で保持する。不変条件 （同一メンバーの重複なし・`Center` 以外の立ち位置の定員 1 人・センター 1〜2 人）は生成ファクトリ [create]
+ * が検証する（ADR-0014）。
  *
  * 「選抜対象メンバーが当該グループに在籍中であること」は既存の Member 集約群をまたぐ前提条件のため 本 VO では守らない（ドメインサービスへ封じ込める。#551）。
  *
@@ -51,9 +59,9 @@ sealed interface SenbatsuError {
 @ValueObject
 @ConsistentCopyVisibility
 data class Senbatsu private constructor(val slots: List<SenbatsuSlot>) {
-    /** センターに立つメンバーのID。 */
-    val center: MemberId
-        get() = slots.first { it.position == Position.Center }.memberId
+    /** センターに立つメンバーのIDの集合（W センター時は 2 人）。 */
+    val centers: Set<MemberId>
+        get() = slots.filter { it.position == Position.Center }.map { it.memberId }.toSet()
 
     /** 選抜されたメンバーのIDの集合。 */
     val memberIds: Set<MemberId>
@@ -61,7 +69,7 @@ data class Senbatsu private constructor(val slots: List<SenbatsuSlot>) {
 
     companion object {
         /**
-         * 不変条件（同一メンバーの重複なし・立ち位置の定員 1 人・センター必須）を検証して [Senbatsu] を生成する。
+         * 不変条件（同一メンバーの重複なし・`Center` 以外の立ち位置の定員 1 人・センター 1〜2 人）を 検証して [Senbatsu] を生成する。
          *
          * @param slots 選抜の枠（立ち位置 × メンバー）の並び
          * @return 編成された [Senbatsu]、または不変条件違反を表す [SenbatsuError]
@@ -69,13 +77,20 @@ data class Senbatsu private constructor(val slots: List<SenbatsuSlot>) {
         fun create(slots: List<SenbatsuSlot>): Result<Senbatsu, SenbatsuError> {
             val duplicateMembers = slots.groupBy { it.memberId }.filterValues { it.size > 1 }.keys
             val overCapacityPositions =
-                slots.groupBy { it.position }.filterValues { it.size > 1 }.keys
+                slots
+                    .filter { it.position != Position.Center }
+                    .groupBy { it.position }
+                    .filterValues { it.size > 1 }
+                    .keys
+            val centerMemberIds =
+                slots.filter { it.position == Position.Center }.map { it.memberId }.toSet()
             return when {
                 duplicateMembers.isNotEmpty() ->
                     Err(SenbatsuError.DuplicateMember(duplicateMembers))
                 overCapacityPositions.isNotEmpty() ->
                     Err(SenbatsuError.PositionOverCapacity(overCapacityPositions))
-                slots.none { it.position == Position.Center } -> Err(SenbatsuError.CenterMissing)
+                centerMemberIds.isEmpty() -> Err(SenbatsuError.CenterMissing)
+                centerMemberIds.size > 2 -> Err(SenbatsuError.TooManyCenters(centerMemberIds))
                 else -> Ok(Senbatsu(slots))
             }
         }
