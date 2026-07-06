@@ -303,3 +303,35 @@ tasks.register<JavaExec>("checkDbDoc") {
     systemProperty("tbls.bin", tblsBin.get())
     args("check")
 }
+
+// --- OpenAPI 仕様の書き出しと lint（#327） ---
+// generateOpenApiDocs はアプリを forked bootRun でバックグラウンド起動し、/v3/api-docs を
+// build/openapi.json へ書き出す（出力先・ファイル名はプラグインのデフォルト）。datasource は
+// ローカル bootRun と同じく spring-boot-docker-compose が compose.yaml の PostgreSQL を
+// 自動供給する（Docker が必要）。生成物は build 成果物でありコミットしない（ADR-0054）。
+// ローカル開発中のアプリ（8080）と衝突しないよう forked 起動は専用ポート 8090 を使う。
+openApi {
+    apiDocsUrl.set("http://localhost:8090/v3/api-docs")
+    // CI のコールドスタート（PostgreSQL イメージ pull + Flyway 適用 + アプリ起動）を見込んで
+    // デフォルト 30 秒から延長する。
+    waitTimeInSeconds.set(120)
+    customBootRun {
+        args.set(listOf("--server.port=8090"))
+        // forked プロセスの既定 workingDir（build/tmp/forkedSpringBootRun）には compose.yaml が無く、
+        // spring-boot-docker-compose がそこを探して見つからず起動失敗する。プロジェクトルートを指定して
+        // ローカル bootRun と同じく compose.yaml を発見できるようにする。
+        workingDir.set(layout.projectDirectory)
+    }
+}
+
+// springdoc-openapi-gradle-plugin（gradle-execfork-plugin 経由）は Task を直接プロパティとして
+// 保持するため Configuration Cache と非互換（org.gradle.api.Task はシリアライズ不可）。
+// org.gradle.configuration-cache.problems=fail のもとでは通常のビルドが丸ごと失敗するため、
+// 関連タスクを個別に非対応と宣言し、これらのタスクだけ CC を使わず実行させる。
+listOf("forkedSpringBootRun", "generateOpenApiDocs", "forkedSpringBootStop").forEach { taskName ->
+    tasks.named(taskName) {
+        notCompatibleWithConfigurationCache(
+            "springdoc-openapi-gradle-plugin(gradle-execfork-plugin) が Task を直接保持し CC 非対応のため"
+        )
+    }
+}
