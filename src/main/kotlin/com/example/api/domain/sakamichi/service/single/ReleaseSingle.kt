@@ -83,7 +83,7 @@ sealed interface ReleaseSingleError {
     /**
      * 委譲先の選抜編成（[Senbatsu.create]）の不変条件違反を wrap したもの。
      *
-     * 個別バリアント（メンバー重複・立ち位置の定員超過・センター不在）は [SenbatsuError] を参照する。
+     * 個別バリアントは [SenbatsuError] を参照する。
      */
     data class InvalidSenbatsu(val cause: SenbatsuError) : ReleaseSingleError
 }
