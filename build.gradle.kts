@@ -348,6 +348,7 @@ tasks.register<Exec>("lintOpenApiDocs") {
         "config/vacuum/ruleset.yaml",
         "--ignore-file",
         "config/vacuum/ignore.yaml",
+        "--ignore-polymorph-circle-ref",
         "--fail-severity",
         "warn",
         "--details",

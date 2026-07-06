@@ -43,4 +43,6 @@ rules:
   # 上記と同じ oneOf + allOf のポリモーフィズム表現で、親 interface（例: OriginDto）が oneOf で
   # バリアント（例: Domestic）を参照し、バリアントが allOf で親を参照し返すため $ref グラフ上は
   # 循環に見える（無限再帰ではなく discriminated union の定型パターン。ADR-0020）。個別の循環経路
-  # を `config/vacuum/ignore.yaml` の circular-references で無視する。
+  # 文字列をハードコードすると sealed バリアントの追加・変更で経路がずれ壊れるため、`vacuum lint`
+  # の CLI フラグ `--ignore-polymorph-circle-ref`（`lintOpenApiDocs` タスクに設定済み）で
+  # polymorphic circular reference カテゴリごと無視する。

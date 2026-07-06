@@ -9,12 +9,7 @@ component-description:
   # springdoc.show-actuator による自動公開エンドポイント（/actuator）のレスポンススキーマで、
   # Spring Boot Actuator の Link 型から自動生成される。actuator 由来でありコードで直せない。
   - $.components.schemas['Link']
-circular-references:
-  # 相互排他な属性集合を discriminated union（oneOf + discriminatorProperty）で表す設計
-  # （ADR-0020）を springdoc が allOf でコード生成すると、親 interface がバリアントを oneOf
-  # で参照し、バリアントが allOf で親を参照し返すため $ref グラフ上は循環に見える。
-  # 実際には無限再帰ではなく discriminated union の定型パターンであり、oneOf 設計を
-  # 放棄しない限り解消できないため無視する（vacuum generate-ignorefile が出す
-  # 循環の実際の連鎖をそのまま使う）。
-  - RecordHorseInspectionRequest -> ParentageDeterminationDto -> ByDna -> ParentageDeterminationDto
-  - BloodHorseResponse -> OriginDto -> Domestic -> OriginDto
+# circular-references（discriminated union の oneOf + allOf に由来する polymorphic circular
+# reference。ADR-0020）は経路文字列のハードコードではなく、`lintOpenApiDocs` タスクの
+# `vacuum lint --ignore-polymorph-circle-ref` フラグでカテゴリごと無視する。
+# sealed バリアントの追加・変更で経路がずれても壊れない構造的な抑制のため、ここには置かない。
