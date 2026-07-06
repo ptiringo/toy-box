@@ -71,3 +71,11 @@ vacuum 側が担う役割分担とする。
 - ローカルで `lintOpenApiDocs` を実行するには Docker が必要（CI 専用ゲートのためローカル実行は任意）。
 - 開発用アプリと compose サービスを起動したまま `generateOpenApiDocs` を実行すると compose サービスを
   共有し、生成完了時に停止されうる（既知の挙動。ポートは 8090 に分離済みでアプリ同士は衝突しない）。
+- vacuum 組み込みの circular-references チェック（ポリモーフィック循環参照）は `ruleset.yaml` の `rules:`
+  では無効化できないため、`lintOpenApiDocs` に `--ignore-polymorph-circle-ref` フラグを設定してカテゴリ
+  ごと無視する。当初は `ignore.yaml` に参照チェーン文字列をハードコードしていたが、sealed バリアント
+  （判別共用体の追加）で連鎖がずれると壊れるためフラグ方式へ切り替えた。この循環参照は
+  sealed Origin + discriminated 部分オブジェクトの設計（[ADR-0020](0020-sealed-origin-and-discriminated-origin-subobject.md)）
+  に由来するもので、`config/vacuum/ruleset.yaml` / `config/vacuum/ignore.yaml` のコメントも同 ADR を参照している。
+- **関連 ADR**: [ADR-0020](0020-sealed-origin-and-discriminated-origin-subobject.md)（sealed Origin +
+  discriminated 部分オブジェクト。本 ADR の循環参照 ignore/ルール判断の起源）。
