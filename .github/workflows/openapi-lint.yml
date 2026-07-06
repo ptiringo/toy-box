@@ -1,0 +1,72 @@
+# OpenAPI lint ワークフロー（#327 / ADR-0054）
+#
+# 目的: springdoc が生成する OpenAPI 仕様（build/openapi.json）を vacuum で lint し、
+# API ドキュメント品質（記述漏れ・命名の一貫性）のドリフトを CI で防ぐ。
+# 生成はアプリの forked bootRun を伴い、datasource は spring-boot-docker-compose が
+# compose.yaml の PostgreSQL を供給する（Docker は ubuntu-latest に同梱）。
+# 重い（アプリ起動を伴う）ため check / pre-commit には載せず、この独立ワークフローが唯一のゲート。
+
+name: OpenAPI Lint
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/main/**'
+      - 'config/vacuum/**'
+      - 'build.gradle.kts'
+      - 'gradle/**'
+      - 'compose.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - '.github/workflows/openapi-lint.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/main/**'
+      - 'config/vacuum/**'
+      - 'build.gradle.kts'
+      - 'gradle/**'
+      - 'compose.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - '.github/workflows/openapi-lint.yml'
+  workflow_dispatch:
+
+jobs:
+  openapi-lint:
+    runs-on: ubuntu-latest
+    name: vacuum lint
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          java-version-file: '.java-version'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          cache-provider: basic
+
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
+          # インストール対象から外す（除外理由は mise.ci.toml を参照）。
+          MISE_ENV: ci
+
+      - name: Verify vacuum
+        run: vacuum version
+
+      - name: Generate and lint OpenAPI spec
+        run: ./gradlew lintOpenApiDocs --stacktrace
