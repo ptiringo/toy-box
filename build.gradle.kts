@@ -245,14 +245,13 @@ configurations["e2eTestRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly
 dependencies { "e2eTestImplementation"(libs.karate.core) }
 
 // CI 独立ジョブ専用のタスク。check / pre-push には意図的に載せない（速い内側ループを保つ）。
-val e2eTest by
-    tasks.registering(Test::class) {
-        description = "Karate によるブラックボックス API E2E テスト（CI 独立ジョブ専用。check/pre-push には載せない）"
-        group = "verification"
-        testClassesDirs = sourceSets["e2eTest"].output.classesDirs
-        classpath = sourceSets["e2eTest"].runtimeClasspath
-        shouldRunAfter(tasks.named("test"))
-    }
+tasks.register<Test>("e2eTest") {
+    description = "Karate によるブラックボックス API E2E テスト（CI 独立ジョブ専用。check/pre-push には載せない）"
+    group = "verification"
+    testClassesDirs = sourceSets["e2eTest"].output.classesDirs
+    classpath = sourceSets["e2eTest"].runtimeClasspath
+    shouldRunAfter(tasks.named("test"))
+}
 
 // --- DB スキーマドキュメント生成（tbls, #447） ---
 // 専用ソースセットに隔離する（ArchUnit は src/test のみ走査、Kover は test タスク紐付けのため、
