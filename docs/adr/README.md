@@ -57,6 +57,7 @@
 | [0045](0045-tbls-db-schema-docs.md) | DB スキーマドキュメントに tbls を採用し CI でドリフトとコメント必須をゲートする | Accepted |
 | [0046](0046-adopt-kotlin-lsp-plugin.md) | Claude Code の Kotlin LSP プラグインを採用し kotlin-lsp を mise http バックエンドで配布する | Accepted |
 | [0047](0047-aggregate-version-for-optimistic-locking.md) | 楽観ロックの version は集約が保持し save を一本化する | Accepted |
+| [0048](0048-per-context-db-schema-namespaces.md) | DB スキーマ名前空間を境界づけられたコンテキスト別に分割する | Accepted |
 | [0049](0049-decline-atlas-keep-flyway-toolchain.md) | Atlas（schema-as-code）を現時点では不採用とし Flyway 中心のスキーマツールチェーンを維持する | Accepted |
 | [0050](0050-domain-event-publication-after-commit.md) | ドメインイベントは ApplicationEventPublisher で発行し AFTER_COMMIT で購読する | Accepted |
 | [0051](0051-transactional-use-case-boundary.md) | トランザクション境界は application 層ユースケースの宣言的 @Transactional で置く | Accepted |
