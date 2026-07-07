@@ -4,12 +4,12 @@ import com.example.api.domain.sakamichi.model.group.Group
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberId
 import com.example.api.domain.sakamichi.model.member.Membership
-import com.example.api.domain.sakamichi.model.single.Position
-import com.example.api.domain.sakamichi.model.single.Senbatsu
-import com.example.api.domain.sakamichi.model.single.SenbatsuError
-import com.example.api.domain.sakamichi.model.single.SenbatsuSlot
+import com.example.api.domain.sakamichi.model.release.Position
+import com.example.api.domain.sakamichi.model.release.ReleaseNumber
+import com.example.api.domain.sakamichi.model.release.Senbatsu
+import com.example.api.domain.sakamichi.model.release.SenbatsuError
+import com.example.api.domain.sakamichi.model.release.SenbatsuSlot
 import com.example.api.domain.sakamichi.model.single.Single
-import com.example.api.domain.sakamichi.model.single.SingleNumber
 import com.example.api.domain.sakamichi.model.single.SingleTitle
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
@@ -36,7 +36,7 @@ import com.github.michaelbull.result.mapError
  */
 fun releaseSingle(
     group: Group,
-    number: SingleNumber,
+    number: ReleaseNumber,
     title: SingleTitle,
     lineup: List<Pair<Position, Member>>,
 ): Result<Single, ReleaseSingleError> {
