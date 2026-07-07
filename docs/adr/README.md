@@ -48,7 +48,7 @@
 | [0036](0036-gcp-operation-guardrails.md) | Claude Code からの GCP 操作ガードレールを permissions + 最小権限 SA で構成する | Accepted |
 | [0037](0037-devcontainer-egress-firewall.md) | devcontainer の egress を firewall で default-deny + 許可リストに制限する | Accepted |
 | [0038](0038-inspection-subdomain-aggregate.md) | 審査（個体識別・親子判定）を独立集約とし識別子の出所を審査側へ一本化する | Accepted |
-| [0039](0039-e2e-api-tests-with-karate.md) | ブラックボックス API E2E テストに Karate を採用する | Accepted |
+| [0039](0039-e2e-api-tests-with-karate.md) | ブラックボックス API E2E テストに Karate を採用する | Superseded by ADR-0056 |
 | [0040](0040-coverage-gate-operation-model.md) | カバレッジゲートの運用モデルを excludes 反転 + LINE/BRANCH 2 ボーンド + 手動ラチェットで構成する | Accepted |
 | [0041](0041-immutable-data-model-as-modeling-discipline.md) | イミュータブルデータモデルを永続化機構ではなくモデリング規律として部分採用する | Accepted |
 | [0042](0042-defer-external-id-policy-keep-raw-uuid.md) | 外部公開 ID は当面 生 UUID 据え置きとし、不透明化・別 ID 体系の導入を遅延する | Accepted |
@@ -64,3 +64,5 @@
 | [0052](0052-validate-constraint-in-separate-migration.md) | VALIDATE CONSTRAINT は後続の別マイグレーションへ分離する | Accepted |
 | [0053](0053-foreign-key-backstop-across-aggregates.md) | 集約間の ID 参照に外部キー制約を backstop として張る | Accepted |
 | [0054](0054-vacuum-openapi-lint.md) | OpenAPI 仕様の lint に vacuum を採用し CI でドキュメント品質をゲートする | Accepted |
+| [0055](0055-patch-coverage-diff-cover-gate.md) | 差分カバレッジ（patch coverage）を diff-cover で 90% ハードゲートする | Accepted |
+| [0056](0056-drop-karate-native-resttestclient-e2e.md) | E2E から Karate を撤退し RestTestClient で書き直す | Accepted |

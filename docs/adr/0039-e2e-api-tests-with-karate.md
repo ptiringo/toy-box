@@ -1,8 +1,10 @@
 # 0039. ブラックボックス API E2E テストに Karate を採用する
 
-- Status: Accepted
+- Status: Superseded by ADR-0056
 - Date: 2026-06-30
 - Deciders: Matsui
+
+> **Superseded**: Karate は用途に対して過大で、`karate-core` 2.x のメジャーアップ（deprecation）が `allWarningsAsErrors` 下で CI を壊した。E2E は素の Spring ネイティブ（`RestTestClient`）へ載せ替えた。詳細は [ADR-0056](0056-drop-karate-native-resttestclient-e2e.md)。
 
 ## Context（背景・課題）
 
