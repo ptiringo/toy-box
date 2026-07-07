@@ -1,29 +1,89 @@
 package com.example.api.e2e
 
 import com.example.api.support.PostgresContainerSupport
-import com.intuit.karate.Runner
+import com.jayway.jsonpath.JsonPath
 import org.junit.jupiter.api.Test
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.http.MediaType
+import org.springframework.test.context.TestConstructor
+import org.springframework.test.context.TestConstructor.AutowireMode
+import org.springframework.test.web.servlet.client.RestTestClient
 
 /**
- * ジョッキー API のブラックボックス E2E（Karate）。
+ * ジョッキー API のブラックボックス E2E。
  *
  * アプリを実 port で起動し（@SpringBootTest RANDOM_PORT）、Testcontainers PostgreSQL を
- * [PostgresContainerSupport] 経由で実配線したまま、HTTP 越しに .feature シナリオを流す。 controller → application →
+ * [PostgresContainerSupport] 経由で実配線したまま、[RestTestClient] で HTTP 越しに叩く。 controller → application →
  * infrastructure → 実 DB の結線を本物で検証する。
+ *
+ * Karate（`.feature` ＋ Runner）から素の Spring ネイティブ（RestTestClient）へ載せ替えた（ADR-0056）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class JockeyApiE2eTest : PostgresContainerSupport() {
-
-    @LocalServerPort private var port: Int = 0
+@AutoConfigureRestTestClient
+@TestConstructor(autowireMode = AutowireMode.ALL)
+class JockeyApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
 
     @Test
-    fun `ジョッキー API の E2E シナリオが全て通ること`() {
-        val results =
-            Runner.path("classpath:e2e/jockey.feature")
-                .systemProperty("karate.server.port", port.toString())
-                .parallel(1)
-        assert(results.failCount == 0) { results.errorMessages }
+    fun `存在しない ID の照会は 404 と RFC9457 problem+json を返す`() {
+        val missingId = "00000000-0000-0000-0000-000000000000"
+        restTestClient
+            .get()
+            .uri("/api/jockeys/{id}", missingId)
+            .exchange()
+            .expectStatus()
+            .isNotFound
+            .expectHeader()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody()
+            .jsonPath("$.type")
+            .isEqualTo("urn:problem-type:jockey-not-found")
+            .jsonPath("$.title")
+            .isEqualTo("Jockey not found")
+            .jsonPath("$.status")
+            .isEqualTo(404)
+            .jsonPath("$.detail")
+            .isEqualTo("指定された ID のジョッキーは存在しません。")
+            .jsonPath("$.jockey_id")
+            .isEqualTo(missingId)
+    }
+
+    @Test
+    fun `登録したジョッキーを ID で照会できる（write→read 往復）`() {
+        // 登録（書き込み）。実 DB へ INSERT され、201 でリソース表現が返る。
+        val createdBody =
+            restTestClient
+                .post()
+                .uri("/api/jockeys")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("first_name" to "Yutaka", "last_name" to "Take"))
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .jsonPath("$.first_name")
+                .isEqualTo("Yutaka")
+                .jsonPath("$.last_name")
+                .isEqualTo("Take")
+                .jsonPath("$.id")
+                .isNotEmpty
+                .returnResult()
+                .responseBody
+        val jockeyId = JsonPath.read<String>(String(createdBody!!), "$.id")
+
+        // 照会（実 DB から別リクエストで読み戻す）。write→read の往復を本物の結線で検証する。
+        restTestClient
+            .get()
+            .uri("/api/jockeys/{id}", jockeyId)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.id")
+            .isEqualTo(jockeyId)
+            .jsonPath("$.first_name")
+            .isEqualTo("Yutaka")
+            .jsonPath("$.last_name")
+            .isEqualTo("Take")
     }
 }

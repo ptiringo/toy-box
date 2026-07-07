@@ -183,7 +183,7 @@ kover {
                         "com.example.api.domain.racing.model.race",
                         "com.example.api.domain.racing.service",
                         "com.example.api.domain.tennis",
-                        // e2eTest ソースセットのクラス（Karate ランナー等）を除外。
+                        // e2eTest ソースセットのクラス（E2E テスト本体）を除外。
                         // アプリケーションロジックではなくテスト基盤コードのため。
                         "com.example.api.e2e",
                         // dbdoc ソースセットの tbls ドキュメント生成ロジックを除外。
@@ -225,9 +225,10 @@ kover {
     }
 }
 
-// --- E2E（Karate によるブラックボックス API テスト） ---
+// --- E2E（ブラックボックス API テスト） ---
 // 専用ソースセットに隔離する。ArchUnit は src/test のみ走査し、Kover は test タスクに紐づくため、
 // E2E は規約検査・カバレッジゲートのいずれの対象にもならない（探索的な E2E がゲートを揺らさない）。
+// アプリを実 port で起動し（@SpringBootTest RANDOM_PORT + RestTestClient）、HTTP 越しに叩く（ADR-0056）。
 sourceSets {
     create("e2eTest") {
         // main の出力を載せることで @SpringBootApplication などのアプリ設定クラスをスキャンできる。
@@ -242,11 +243,9 @@ configurations["e2eTestImplementation"].extendsFrom(configurations["testImplemen
 
 configurations["e2eTestRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
 
-dependencies { "e2eTestImplementation"(libs.karate.core) }
-
 // CI 独立ジョブ専用のタスク。check / pre-push には意図的に載せない（速い内側ループを保つ）。
 tasks.register<Test>("e2eTest") {
-    description = "Karate によるブラックボックス API E2E テスト（CI 独立ジョブ専用。check/pre-push には載せない）"
+    description = "ブラックボックス API E2E テスト（RestTestClient。CI 独立ジョブ専用。check/pre-push には載せない）"
     group = "verification"
     testClassesDirs = sourceSets["e2eTest"].output.classesDirs
     classpath = sourceSets["e2eTest"].runtimeClasspath

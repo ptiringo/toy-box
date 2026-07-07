@@ -1,4 +1,4 @@
-# Pull Request / main push 時に Karate のブラックボックス API E2E テストを独立ジョブで実行する。
+# Pull Request / main push 時にブラックボックス API E2E テスト（RestTestClient）を独立ジョブで実行する。
 # 既存「API Tests」(api-tests.yml＝ユニット/slice ゲート) とは分離し、遅い E2E を内側ループから切り離す。
 name: E2E API Tests
 run-name: E2E API Tests for ${{ github.ref }}
@@ -14,7 +14,7 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    name: E2E (Karate)
+    name: E2E
     timeout-minutes: 20
     permissions:
       contents: read
@@ -35,5 +35,5 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Run E2E (Karate) tests
+      - name: Run E2E tests
         run: ./gradlew e2eTest --stacktrace

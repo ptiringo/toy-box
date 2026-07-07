@@ -16,7 +16,7 @@ paths:
 | domainService | `domain.*.service` | 純粋ユニット。集約はテスト用 Fixture で組む（モック不要） | `RegisterInStudBookTest` |
 | applicationService | `application` | ユニット。Repository ポートを mockk でスタブし、ユースケースの分岐と失敗バリアントを検証 | `RegisterInStudBookUseCaseTest` / `JockeyRegistrationUseCaseTest` |
 | adapter (rest) | `controller` | `@WebMvcTest` + `MockMvcTester` の slice テスト。HTTP 入出力と ProblemDetail 描画を検証 | `BloodHorseControllerTest` / `GlobalExceptionHandlerTest` |
-| 横断 | — | ArchUnit（規約）／ OpenAPI 契約／ `@SpringBootTest` 統合（最小限）／ **E2E（Karate・実配線・ゲート外）** | `architecture/` の `〜RulesTest` 群 / `OpenApiTest` / `HealthEndpointTest` / `JockeyApiE2eTest` |
+| 横断 | — | ArchUnit（規約）／ OpenAPI 契約／ `@SpringBootTest` 統合（最小限）／ **E2E（RestTestClient・実配線・ゲート外）** | `architecture/` の `〜RulesTest` 群 / `OpenApiTest` / `HealthEndpointTest` / `JockeyApiE2eTest` |
 
 方針:
 
@@ -36,7 +36,7 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 
 ## E2E（ブラックボックス API テスト・ゲート外）
 
-全層を実配線したまま HTTP 越しに叩く E2E は Karate で書く（`src/e2eTest`、決定は [ADR-0039](../../docs/adr/0039-e2e-api-tests-with-karate.md)）。`@SpringBootTest(RANDOM_PORT)` + Testcontainers PostgreSQL でアプリを起動し、`.feature` のシナリオを流す。遅く探索的なため **ArchUnit / Kover / `check` / pre-push のいずれの対象にもしない**（独立ソースセット `e2eTest` + タスク `e2eTest`）。CI は独立ワークフロー `e2e-tests.yml` で回す。ローカルは必要時に `./gradlew e2eTest`。網羅はここで広げず内側リングで担保する（ピラミッドの底を厚く）。
+全層を実配線したまま HTTP 越しに叩く E2E は素の Spring ネイティブ（`RestTestClient`）で書く（`src/e2eTest`、決定は [ADR-0056](../../docs/adr/0056-drop-karate-native-resttestclient-e2e.md)。Karate は [ADR-0039](../../docs/adr/0039-e2e-api-tests-with-karate.md) で採用したが用途に対し過大なため撤退）。`@SpringBootTest(RANDOM_PORT)` + `@AutoConfigureRestTestClient` + Testcontainers PostgreSQL でアプリを起動し、`RestTestClient` でシナリオを流す（`HealthEndpointTest` と同型）。遅く探索的なため **ArchUnit / Kover / `check` / pre-push のいずれの対象にもしない**（独立ソースセット `e2eTest` + タスク `e2eTest`）。CI は独立ワークフロー `e2e-tests.yml` で回す。ローカルは必要時に `./gradlew e2eTest`。網羅はここで広げず内側リングで担保する（ピラミッドの底を厚く）。
 
 ## カバレッジハーネス（Kover）
 
@@ -58,7 +58,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 - **自動ラチェット機構は持たない**（YAGNI）。手動で引き上げる。
 
 探索除外パッケージ（`build.gradle.kts` の `variant("mature")` の `excludes` が唯一の出所。ここは要約）:
-`domain.racing.model.race` / `domain.racing.service` / `domain.tennis` / `e2e`（Karate テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）。
+`domain.racing.model.race` / `domain.racing.service` / `domain.tennis` / `e2e`（E2E テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）。
 
 集約ゲート（本見直し）は成熟領域全体の絶対水準を守り、patch coverage（[#437](https://github.com/ptiringo/toy-box/issues/437)）は新規・変更コードのカバレッジを別途課す補完関係にある。
 
