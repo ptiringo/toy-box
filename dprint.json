@@ -1,0 +1,30 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "lineWidth": 100,
+  "indentWidth": 2,
+  "useTabs": false,
+  "newLineKind": "lf",
+  "json": {},
+  "toml": {},
+  "yaml": {},
+  "includes": [
+    "**/*.toml",
+    "**/*.json",
+    "**/*.jsonc",
+    "**/*.yml",
+    "**/*.yaml"
+  ],
+  "excludes": [
+    "**/build/**",
+    "**/.gradle/**",
+    ".claude/worktrees/**",
+    ".devcontainer/devcontainer-lock.json",
+    ".claude/settings.local.json",
+    "mise.lock"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/json-0.23.0.wasm",
+    "https://plugins.dprint.dev/toml-0.7.0.wasm",
+    "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm"
+  ]
+}
