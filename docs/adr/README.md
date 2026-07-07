@@ -66,3 +66,4 @@
 | [0054](0054-vacuum-openapi-lint.md) | OpenAPI 仕様の lint に vacuum を採用し CI でドキュメント品質をゲートする | Accepted |
 | [0055](0055-patch-coverage-diff-cover-gate.md) | 差分カバレッジ（patch coverage）を diff-cover で 90% ハードゲートする | Accepted |
 | [0056](0056-drop-karate-native-resttestclient-e2e.md) | E2E から Karate を撤退し RestTestClient で書き直す | Accepted |
+| [0057](0057-gradle-build-health-tooling-not-adopted.md) | Gradle build 健全性チェックの常設ツールは現時点で採用しない | Accepted |
