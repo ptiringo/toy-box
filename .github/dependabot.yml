@@ -1,4 +1,8 @@
 version: 2
+# グルーピング方針（#381）:
+# - minor / patch の低リスク更新はエコシステムごとに 1 グループへ束ね、PR ノイズを削減する。
+# - major 更新はグループから外し個別 PR に残す（破壊的変更をまとめてレビューを難しくしない）。
+# - 例外的に高リスク・手作業を伴う依存（Spring Boot / Kotlin プラグイン）は個別・専用グループに分離する。
 updates:
   # Enable updates for Gradle dependencies
   - package-ecosystem: "gradle"
@@ -7,10 +11,23 @@ updates:
       interval: "weekly"
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
-    # Group Kotlin plugins together (Spring manages other Kotlin dependencies)
     groups:
+      # Kotlin プラグインは KGP 互換（Spring / detekt / ktfmt）で手作業が要りがちなので分離し、
+      # 一般グループ（gradle-minor-patch）を軽く緑に保つ。2 プラグインは常に同一版で足並みを揃える。
       kotlin:
         patterns:
+          - "org.jetbrains.kotlin.jvm"
+          - "org.jetbrains.kotlin.plugin.spring"
+      # 残りの minor / patch を集約。Spring Boot は Spring 管理 BOM を巻き込むため個別（除外）、
+      # Kotlin プラグインは上の専用グループへ回す（除外）。major も個別 PR に残る。
+      gradle-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "org.springframework.boot"
           - "org.jetbrains.kotlin.jvm"
           - "org.jetbrains.kotlin.plugin.spring"
 
@@ -21,6 +38,21 @@ updates:
       interval: "weekly"
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
+    groups:
+      # codeql-action の init / analyze / upload-sarif はバージョン完全一致が必須。
+      # 分割更新すると "Loaded a configuration file for version X, but running version Y" で
+      # CI が壊れる（#560）。major も含め全 update-type で常に束ね、齟齬を構造的に防ぐ。
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
+      # 残りの Actions の minor / patch を集約。major は個別 PR に残る。
+      # codeql-action はグループ定義順で先勝ちのため、このグループには入らない。
+      github-actions:
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
 
   # Enable updates for Terraform providers
   - package-ecosystem: "terraform"
@@ -28,3 +60,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # /infra は実質 hashicorp/google 単一プロバイダ。minor / patch を集約、major は個別 PR に残る。
+      terraform:
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
