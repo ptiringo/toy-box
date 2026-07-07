@@ -192,6 +192,9 @@ kover {
                     )
                 }
             }
+            // diff-cover に食わせる excludes 適用済み XML。onCheck=false で check には載せない
+            // （生成は CI/ローカルで明示タスク実行する）。
+            xml { onCheck = false }
             log {
                 groupBy = kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.APPLICATION
                 coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE

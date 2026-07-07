@@ -62,6 +62,24 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 
 集約ゲート（本見直し）は成熟領域全体の絶対水準を守り、patch coverage（[#437](https://github.com/ptiringo/toy-box/issues/437)）は新規・変更コードのカバレッジを別途課す補完関係にある。
 
+### 差分ゲート（patch coverage・diff-cover）
+
+集約ゲート（成熟領域全体の絶対水準）を補完し、PR で変更した行のカバレッジを個別に検証するのが差分ゲートである（[ADR-0055](../../docs/adr/0055-patch-coverage-diff-cover-gate.md)）。母集団が厚い集約ゲートだけでは新規変更行のテスト漏れが薄まって見逃されるため、変更行そのものに閾値を課す。
+
+- **[diff-cover](https://github.com/Bachmann1234/diff-cover)**（pipx, 10.3.0, mise 管理）で変更行カバレッジを算出し、`--fail-under 90` で 90% 未満の PR を落とす。
+- 入力は `koverVerifyMature` と同じ `mature` variant の XML（`build/reports/kover/reportMature.xml`）。探索領域（`excludes` denylist、出所は `build.gradle.kts` に一元化）は mature XML の時点で除外済みのため、差分ゲートにも自動で継承される。
+- CI（`api-tests.yml`）は **PR ジョブ限定**で実行する（`github.event_name == 'pull_request'`）。main への push では走らせない（push でも走る `koverVerifyMature` が最終防波堤）。
+
+ローカル確認:
+
+```bash
+./gradlew koverXmlReportMature
+mise exec -- diff-cover build/reports/kover/reportMature.xml \
+  --compare-branch origin/main --src-roots src/main/kotlin --fail-under 90
+```
+
+`--src-roots src/main/kotlin` は必須（省略するとソースパスを解決できずレポートが空になる）。
+
 ### 実行
 
 ```bash
@@ -70,7 +88,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 ./gradlew check                # ktfmt + detekt + test + koverVerifyMature を一括実行
 ```
 
-CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け、`koverLog` / `koverLogMature` の数値を PR の Job Summary に出す（外部サービス不使用）。
+CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け、PR ジョブでは続けて差分ゲート（diff-cover）も検証する。`koverLog` / `koverLogMature` の数値と差分ゲートの Markdown レポートは、いずれも PR の Job Summary に出す（外部サービス不使用）。
 
 ## 当面の宿題（カバレッジの穴）
 

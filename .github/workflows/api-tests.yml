@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
@@ -37,6 +38,11 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           cache-provider: basic
+
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          MISE_ENV: ci
 
       - name: Run ktfmt check
         run: ./gradlew ktfmtCheck --stacktrace
@@ -55,6 +61,30 @@ jobs:
       # 成熟パッケージの行カバレッジ下限（ラチェット）を検証する。下回るとここで失敗する。
       - name: Verify coverage gate
         run: ./gradlew koverVerifyMature --stacktrace
+
+      # 変更行カバレッジ（patch coverage）ゲート。PR で触った行の 90% 未満で落とす(#437, ADR-0055)。
+      # 探索領域(denylist)は mature XML に載らないため分母から自動で外れる。
+      - name: Verify patch coverage
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          ./gradlew koverXmlReportMature --stacktrace
+          mise exec -- diff-cover build/reports/kover/reportMature.xml \
+            --compare-branch "origin/$BASE_REF" \
+            --src-roots src/main/kotlin \
+            --fail-under 90 \
+            --markdown-report diff-cover.md
+
+      # 変更行カバレッジの Markdown を Job Summary に出す（落ちても見えるよう always()）。
+      - name: Report patch coverage
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          {
+            echo '## 🎯 差分カバレッジ（変更行）'
+            echo ''
+            cat diff-cover.md 2>/dev/null || echo '（レポートなし）'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # 全体／成熟ゲートの行カバレッジを PR の Job Summary に出す（外部サービス不要）。
       # ゲートが落ちても数値が見えるよう always() で実行する。
