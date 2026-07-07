@@ -7,20 +7,20 @@ name: SQL Check
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
     types: [opened, synchronize, reopened]
     paths:
-      - 'src/main/resources/db/migration/**'
-      - '.sqlfluff'
-      - '.squawk.toml'
-      - 'scripts/check-migration-validate-separation.sh'
+      - "src/main/resources/db/migration/**"
+      - ".sqlfluff"
+      - ".squawk.toml"
+      - "scripts/check-migration-validate-separation.sh"
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'src/main/resources/db/migration/**'
-      - '.sqlfluff'
-      - '.squawk.toml'
-      - 'scripts/check-migration-validate-separation.sh'
+      - "src/main/resources/db/migration/**"
+      - ".sqlfluff"
+      - ".squawk.toml"
+      - "scripts/check-migration-validate-separation.sh"
   workflow_dispatch:
 
 jobs:
@@ -32,28 +32,28 @@ jobs:
       contents: read
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      with:
-        persist-credentials: false
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
-    - name: Install mise
-      uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
-      env:
-        # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
-        # インストール対象から外す（除外理由は mise.ci.toml を参照。#510 回帰の修正）。
-        MISE_ENV: ci
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
+          # インストール対象から外す（除外理由は mise.ci.toml を参照。#510 回帰の修正）。
+          MISE_ENV: ci
 
-    - name: Verify tool versions
-      run: |
-        squawk --version
-        sqlfluff --version
+      - name: Verify tool versions
+        run: |
+          squawk --version
+          sqlfluff --version
 
-    - name: sqlfluff lint
-      run: sqlfluff lint src/main/resources/db/migration
+      - name: sqlfluff lint
+        run: sqlfluff lint src/main/resources/db/migration
 
-    - name: squawk migration safety
-      run: squawk src/main/resources/db/migration/*.sql
+      - name: squawk migration safety
+        run: squawk src/main/resources/db/migration/*.sql
 
-    - name: VALIDATE CONSTRAINT separation check
-      run: scripts/check-migration-validate-separation.sh
+      - name: VALIDATE CONSTRAINT separation check
+        run: scripts/check-migration-validate-separation.sh

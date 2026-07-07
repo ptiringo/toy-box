@@ -8,26 +8,26 @@ name: DB Doc Check
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
     types: [opened, synchronize, reopened]
     paths:
-      - 'src/main/resources/db/migration/**'
-      - '.tbls.yml'
-      - 'dbdoc/**'
-      - 'src/dbdoc/**'
-      - 'build.gradle.kts'
-      - 'mise.toml'
-      - 'mise.lock'
+      - "src/main/resources/db/migration/**"
+      - ".tbls.yml"
+      - "dbdoc/**"
+      - "src/dbdoc/**"
+      - "build.gradle.kts"
+      - "mise.toml"
+      - "mise.lock"
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'src/main/resources/db/migration/**'
-      - '.tbls.yml'
-      - 'dbdoc/**'
-      - 'src/dbdoc/**'
-      - 'build.gradle.kts'
-      - 'mise.toml'
-      - 'mise.lock'
+      - "src/main/resources/db/migration/**"
+      - ".tbls.yml"
+      - "dbdoc/**"
+      - "src/dbdoc/**"
+      - "build.gradle.kts"
+      - "mise.toml"
+      - "mise.lock"
   workflow_dispatch:
 
 jobs:
@@ -46,8 +46,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
-          java-version-file: '.java-version'
-          distribution: 'temurin'
+          java-version-file: ".java-version"
+          distribution: "temurin"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0

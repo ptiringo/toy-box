@@ -5,10 +5,10 @@ run-name: API Tests for ${{ github.ref }}
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, reopened ]
+    branches: [main]
+    types: [opened, synchronize, reopened]
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -27,8 +27,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
-          java-version-file: '.java-version'
-          distribution: 'temurin'
+          java-version-file: ".java-version"
+          distribution: "temurin"
 
       - name: Set up Gradle
         # cache-provider: basic は Gradle User Home（依存・wrapper・ローカル build cache の

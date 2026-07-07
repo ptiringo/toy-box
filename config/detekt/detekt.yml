@@ -26,9 +26,9 @@ style:
     active: true
     forbiddenImports:
       - reason:
-          'kotlin.test は使用禁止。テストには org.junit.jupiter.api.Test と
-          Power Assert (kotlin.assert) を使用すること（CLAUDE.md テスト規約参照）。'
-        value: 'kotlin.test.*'
+          "kotlin.test は使用禁止。テストには org.junit.jupiter.api.Test と
+          Power Assert (kotlin.assert) を使用すること（CLAUDE.md テスト規約参照）。"
+        value: "kotlin.test.*"
 
 # toy-box プロジェクト固有のカスタムルールセット（detekt-rules モジュールで定義）。
 toy-box:
@@ -37,10 +37,10 @@ toy-box:
   # テストコード（fixture 等で throw しうる）は path で除外する。
   NoThrowInDomainAndApplication:
     active: true
-    excludes: ['**/src/test/**', '**/src/testFixtures/**']
+    excludes: ["**/src/test/**", "**/src/testFixtures/**"]
   # mapError のラムダは変換元エラーを参照するか型を明示する（_: 変換元エラー型 ->）。
   # 単一エラー型の握りつぶしは sealed 昇格時に無音で誤変換になるため、型明示をトリップワイヤとして強制する。
   # テストコードは対象外。
   NoSilentMapError:
     active: true
-    excludes: ['**/src/test/**', '**/src/testFixtures/**']
+    excludes: ["**/src/test/**", "**/src/testFixtures/**"]

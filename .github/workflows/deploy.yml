@@ -6,8 +6,8 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'infra/**'
-      - '**/*.md'
+      - "infra/**"
+      - "**/*.md"
   workflow_dispatch:
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
-          java-version-file: '.java-version'
-          distribution: 'temurin'
+          java-version-file: ".java-version"
+          distribution: "temurin"
 
       # デプロイ用ワークフローでは cache poisoning（PR 由来の汚染キャッシュ経由で
       # 成果物が改竄されるリスク）を避けるためキャッシュを無効化する。
@@ -90,4 +90,4 @@ jobs:
             SPRING_DATASOURCE_USERNAME=spring-datasource-username:latest
             SPRING_DATASOURCE_PASSWORD=spring-datasource-password:latest
           secrets_update_strategy: overwrite
-          flags: '--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 --cpu-boost --min-instances=0 --max-instances=3 --execution-environment=gen2'
+          flags: "--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 --cpu-boost --min-instances=0 --max-instances=3 --execution-environment=gen2"
