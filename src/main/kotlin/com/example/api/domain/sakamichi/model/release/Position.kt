@@ -12,7 +12,7 @@ data object InvalidPosition
  * 選抜フォーメーション上の立ち位置。
  *
  * センター（[Center]）とそれ以外の立ち位置（[Spot]）は相互排他であり、sealed interface で型として 強制する（`Membership`
- * と同じ流儀・ADR-0020）。立ち位置はシングルごとに変わる（グループやメンバーの 恒久属性ではない。sakamichi-sources §4）。
+ * と同じ流儀・ADR-0020）。立ち位置は作品ごと（シングル・アルバム共通）に変わる（グループやメンバーの 恒久属性ではない。sakamichi-sources §4）。
  */
 @ValueObject
 sealed interface Position {
