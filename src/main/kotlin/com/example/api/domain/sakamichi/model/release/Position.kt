@@ -1,4 +1,4 @@
-package com.example.api.domain.sakamichi.model.single
+package com.example.api.domain.sakamichi.model.release
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

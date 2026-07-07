@@ -1,6 +1,8 @@
 package com.example.api.domain.sakamichi.model.single
 
 import com.example.api.domain.sakamichi.model.group.GroupId
+import com.example.api.domain.sakamichi.model.release.ReleaseNumber
+import com.example.api.domain.sakamichi.model.release.Senbatsu
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.generateId
 import java.util.UUID
@@ -31,7 +33,7 @@ class Single
 private constructor(
     @field:Identity override val id: SingleId,
     val groupId: GroupId,
-    val number: SingleNumber,
+    val number: ReleaseNumber,
     val title: SingleTitle,
     val senbatsu: Senbatsu,
 ) : Entity<SingleId>() {
@@ -49,7 +51,7 @@ private constructor(
          */
         fun create(
             groupId: GroupId,
-            number: SingleNumber,
+            number: ReleaseNumber,
             title: SingleTitle,
             senbatsu: Senbatsu,
         ): Single =

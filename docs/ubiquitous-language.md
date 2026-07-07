@@ -204,13 +204,13 @@ graph LR
 | Membership | 値オブジェクト | domain.sakamichi.model.member |
 | Membership.Active | 値オブジェクト | domain.sakamichi.model.member |
 | Membership.Graduated | 値オブジェクト | domain.sakamichi.model.member |
-| Position | 値オブジェクト | domain.sakamichi.model.single |
-| Position.Center | 値オブジェクト | domain.sakamichi.model.single |
-| Position.Spot | 値オブジェクト | domain.sakamichi.model.single |
-| Senbatsu | 値オブジェクト | domain.sakamichi.model.single |
-| SenbatsuSlot | 値オブジェクト | domain.sakamichi.model.single |
+| Position | 値オブジェクト | domain.sakamichi.model.release |
+| Position.Center | 値オブジェクト | domain.sakamichi.model.release |
+| Position.Spot | 値オブジェクト | domain.sakamichi.model.release |
+| ReleaseNumber | 値オブジェクト | domain.sakamichi.model.release |
+| Senbatsu | 値オブジェクト | domain.sakamichi.model.release |
+| SenbatsuSlot | 値オブジェクト | domain.sakamichi.model.release |
 | SingleId | 値オブジェクト | domain.sakamichi.model.single |
-| SingleNumber | 値オブジェクト | domain.sakamichi.model.single |
 | SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
 | releaseSingle | ドメインサービス | domain.sakamichi.service.single |
 

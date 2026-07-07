@@ -5,9 +5,9 @@ import com.example.api.domain.sakamichi.model.group.GroupName
 import com.example.api.domain.sakamichi.model.member.Generation
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberName
-import com.example.api.domain.sakamichi.model.single.Position
-import com.example.api.domain.sakamichi.model.single.SenbatsuError
-import com.example.api.domain.sakamichi.model.single.SingleNumber
+import com.example.api.domain.sakamichi.model.release.Position
+import com.example.api.domain.sakamichi.model.release.ReleaseNumber
+import com.example.api.domain.sakamichi.model.release.SenbatsuError
 import com.example.api.domain.sakamichi.model.single.SingleTitle
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 class ReleaseSingleTest {
     private val group = Group.create(GroupName.create("乃木坂46").unwrap())
     private val otherGroup = Group.create(GroupName.create("櫻坂46").unwrap())
-    private val number = SingleNumber.create(1).unwrap()
+    private val number = ReleaseNumber.create(1).unwrap()
     private val title = SingleTitle.create("ぐるぐるカーテン").unwrap()
 
     private fun activeMember(group: Group, familyName: String = "齋藤"): Member =
