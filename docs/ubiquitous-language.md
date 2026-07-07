@@ -193,9 +193,12 @@ graph LR
 
 | 用語 | 種別 | パッケージ |
 | --- | --- | --- |
+| Album | 集約ルート | domain.sakamichi.model.album |
 | Group | 集約ルート | domain.sakamichi.model.group |
 | Member | 集約ルート | domain.sakamichi.model.member |
 | Single | 集約ルート | domain.sakamichi.model.single |
+| AlbumId | 値オブジェクト | domain.sakamichi.model.album |
+| AlbumTitle | 値オブジェクト | domain.sakamichi.model.album |
 | Generation | 値オブジェクト | domain.sakamichi.model.member |
 | GroupId | 値オブジェクト | domain.sakamichi.model.group |
 | GroupName | 値オブジェクト | domain.sakamichi.model.group |
