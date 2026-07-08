@@ -219,6 +219,7 @@ graph LR
 | ReleaseNumber | 値オブジェクト | domain.sakamichi.model.release |
 | SingleId | 値オブジェクト | domain.sakamichi.model.single |
 | SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
+| TrackNumber | 値オブジェクト | domain.sakamichi.model.release |
 | releaseAlbum | ドメインサービス | domain.sakamichi.service.album |
 | releaseSingle | ドメインサービス | domain.sakamichi.service.single |
 
