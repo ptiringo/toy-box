@@ -154,6 +154,91 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("sire-not-male")
         }
+
+        @Test
+        fun `DamNotFound で 422 と damId 付きの problem+json が返ること`() {
+            val damId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(RegisterInStudBookUseCaseError.DamNotFound(damId))
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.dam_id")
+                .isEqualTo(damId.toString())
+        }
+
+        @Test
+        fun `前提条件違反（DamNotFemale）が 422 と problem+json に変換されること`() {
+            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(
+                    RegisterInStudBookUseCaseError.PreconditionViolated(
+                        RegisterInStudBookError.DamNotFemale
+                    )
+                )
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("dam-not-female")
+        }
+
+        @Test
+        fun `前提条件違反（ParentageNotConfirmed）が 422 と problem+json に変換されること`() {
+            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(
+                    RegisterInStudBookUseCaseError.PreconditionViolated(
+                        RegisterInStudBookError.ParentageNotConfirmed
+                    )
+                )
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("parentage-not-confirmed")
+        }
+
+        @Test
+        fun `前提条件違反（BreedMismatch）が 422 と problem+json に変換されること`() {
+            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(
+                    RegisterInStudBookUseCaseError.PreconditionViolated(
+                        RegisterInStudBookError.BreedMismatch
+                    )
+                )
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("breed-mismatch")
+        }
     }
 
     @Nested
