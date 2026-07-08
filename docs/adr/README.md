@@ -68,3 +68,4 @@
 | [0056](0056-drop-karate-native-resttestclient-e2e.md) | E2E から Karate を撤退し RestTestClient で書き直す | Accepted |
 | [0057](0057-gradle-build-health-tooling-not-adopted.md) | Gradle build 健全性チェックの常設ツールは現時点で採用しない | Accepted |
 | [0058](0058-non-senbatsu-formation-role.md) | 非選抜（アンダー）を作品単位の Formation ロールとしてモデル化する | Accepted |
+| [0059](0059-sakamichi-tracklist-and-headline-track.md) | 収録曲をトラックリストで持ち見出し曲をトラックの一種として表現する | Accepted |
