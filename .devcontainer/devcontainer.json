@@ -54,7 +54,7 @@
 
   "customizations": {
     // 主対象。Kotlin/Gradle は IntelliJ に同梱のため、プロジェクトの品質ツールに対応する
-    // プラグインのみ宣言する。Gradle JVM はコンテナ内 JDK（mise 提供の temurin-21）を指す。
+    // プラグインのみ宣言する。Gradle JVM はコンテナ内 JDK（mise 提供の temurin-25）を指す。
     "jetbrains": {
       "backend": "IntelliJ",
       "plugins": [

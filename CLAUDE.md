@@ -4,7 +4,7 @@
 
 Kotlin Spring Boot (Spring MVC + Virtual Thread) を使用した API プロジェクトです。複数のドメインモデル（競馬、エンターテイメント、テニス）を探索する sandbox プロジェクトとして開発されています。
 
-JDK 21 の Virtual Thread (`spring.threads.virtual.enabled=true`) を有効化することで、ブロッキング JDBC 等の同期 IO を素直に書きながらスレッド占有を避ける構成を採用しています。WebFlux / Reactor / coroutine ベースのリアクティブ流派ではありません。
+JDK 21 で正式化された Virtual Thread (`spring.threads.virtual.enabled=true`) を有効化することで、ブロッキング JDBC 等の同期 IO を素直に書きながらスレッド占有を避ける構成を採用しています（ビルド toolchain は JDK 25）。WebFlux / Reactor / coroutine ベースのリアクティブ流派ではありません。
 
 ## 開発コマンド
 
@@ -187,9 +187,9 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 ### mise
 
-セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `vacuum`＝OpenAPI lint / `zizmor` / `gitleaks` / `dprint`＝設定ファイル整形）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
+セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 25）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `vacuum`＝OpenAPI lint / `zizmor` / `gitleaks` / `dprint`＝設定ファイル整形）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
 
-**Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出する。
+**Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言（`languageVersion = 25`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出する。
 
 ### Lefthook
 

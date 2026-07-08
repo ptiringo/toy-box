@@ -19,7 +19,7 @@
 
 ### ツールバージョンの出所は `mise.toml` のみ
 
-devcontainer はバージョンを二重管理しない。mise feature は **mise 本体だけ**を入れ、ツール実体（java(temurin-21) / actionlint / editorconfig-checker / fnox / gitleaks / lefthook / terraform / zizmor）は `post-create.sh` の `mise install` が `mise.toml` に従って導入する。バージョンを変えたいときは `mise.toml` だけを編集する。
+devcontainer はバージョンを二重管理しない。mise feature は **mise 本体だけ**を入れ、ツール実体（java(temurin-25) / actionlint / editorconfig-checker / fnox / gitleaks / lefthook / terraform / zizmor）は `post-create.sh` の `mise install` が `mise.toml` に従って導入する。バージョンを変えたいときは `mise.toml` だけを編集する。
 
 ### PATH への載り方
 
@@ -31,7 +31,7 @@ devcontainer はバージョンを二重管理しない。mise feature は **mis
 
 ### IntelliJ IDEA（主シナリオ）
 
-JetBrains Gateway もしくは IntelliJ 内蔵の Dev Containers サポートからリポジトリを開く。Gradle JVM はコンテナ内 JDK（mise が提供する temurin-21）を指すように設定する。`customizations.jetbrains.plugins` で ktfmt / detekt プラグインを宣言済み。
+JetBrains Gateway もしくは IntelliJ 内蔵の Dev Containers サポートからリポジトリを開く。Gradle JVM はコンテナ内 JDK（mise が提供する temurin-25）を指すように設定する。`customizations.jetbrains.plugins` で ktfmt / detekt プラグインを宣言済み。
 
 ### VS Code / Codespaces
 
