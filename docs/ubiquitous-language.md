@@ -218,7 +218,6 @@ graph LR
 | Position.Spot | 値オブジェクト | domain.sakamichi.model.release |
 | ReleaseNumber | 値オブジェクト | domain.sakamichi.model.release |
 | SingleId | 値オブジェクト | domain.sakamichi.model.single |
-| SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
 | Track | 値オブジェクト | domain.sakamichi.model.release |
 | TrackNumber | 値オブジェクト | domain.sakamichi.model.release |
 | TrackTitle | 値オブジェクト | domain.sakamichi.model.release |
