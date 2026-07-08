@@ -72,6 +72,10 @@ pre-commit:
       tags: security
 
     # dprint による設定ファイル（TOML/JSON/YAML）の整形チェック（ADR-0058 / #328）
+    # glob の `{,**/}` はルート直下と入れ子の両方に一致させるため（lefthook の `**/` は 1 階層以上を要求する）。
+    # スコープの正は dprint.json の includes/excludes 側。ここでの exclude は devcontainer-lock.json のみ明示し、
+    # 他の除外（build/**・.gradle/**・worktrees・settings.local.json）は gitignore と dprint.json が backstop する
+    # （それら配下の追跡設定ファイルが将来 stage されると dprint が「No files found」で exit する余地がある点に留意）。
     dprint:
       glob: "{,**/}*.{toml,json,jsonc,yml,yaml}"
       exclude:

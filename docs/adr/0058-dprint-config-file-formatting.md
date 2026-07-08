@@ -44,10 +44,11 @@ vacuum を選好したのと同じ論点）に沿わせたい。
 - **`.editorconfig` との整合**: dprint は `.editorconfig` を自動では読まないため、`dprint.json` の global 設定
   （`newLineKind = lf`・末尾改行・`indentWidth`）を `.editorconfig` に合わせる。`.editorconfig` は Kotlin 以外に
   indent 規則を持たないため、dprint 出力（LF・末尾改行・行末空白なし）は `editorconfig-checker` と衝突しない。
-- **プラグイン供給と再現性**: dprint プラグインは `plugins.dprint.dev` の**バージョン付き Wasm URL**（不変
-  アーティファクト）を `dprint.json` から参照してピンする（`dprint config add` が最新版 URL を書き込む）。
-  版付き URL 自体が実体を一意に固定するため再現性が保たれる。これは `mise.toml` の `http:` backend
-  （tfctl / kotlin-lsp を版付き URL＋sha256 で固定）と同じ「版で固定する」哲学に連なる。
+- **プラグイン供給と再現性**: dprint プラグインは `plugins.dprint.dev` の**バージョン付き Wasm URL に
+  SHA-256 checksum を付して**（`url@<sha256>` 形式）`dprint.json` でピンする。版付き URL で実体を一意に
+  指し、checksum で取得物の同一性を検証する二重の固定で再現性を担保する。これは `mise.toml` の `http:`
+  backend（tfctl / kotlin-lsp を版付き URL＋sha256 で固定）や `mise.lock` の per-platform sha256 と同じ
+  「版＋ハッシュで固定する」哲学に揃える。
 - **ゲートの場所**: 設定ファイルのみが対象でビルド不要＝軽量なので、lefthook pre-commit（staged 限定）と
   CI の双方に載せられる。関心ごとに独立ワークフローを並べる既存の流儀（editorconfig-check.yml /
   shellcheck.yml / sql-check.yml / terraform-check.yml）に従い、独立ワークフロー `dprint-check.yml` とする。
@@ -63,8 +64,8 @@ vacuum を選好したのと同じ論点）に沿わせたい。
 ### ツール採用
 
 **dprint を採用し、設定ファイル（TOML / JSON / YAML）を整形する**（mise 管理）。`dprint.json` に
-`json` / `toml` / `pretty_yaml` の 3 プラグインをバージョン付き URL でピンする。Markdown 等の追加プラグインは
-今回入れない（YAGNI）。
+`json` / `toml` / `pretty_yaml` の 3 プラグインをバージョン付き URL＋SHA-256 checksum（`url@<sha256>`）で
+ピンする。Markdown 等の追加プラグインは今回入れない（YAGNI）。
 
 ### スコープ
 
@@ -99,8 +100,8 @@ ktfmt は現状（`com.ncorti.ktfmt.gradle` プラグイン）を維持する。
 - Node ツールチェーンを導入せず、Node-free / mise 単一バイナリの方針を保つ。将来 JS/TS を扱う必要が
   生じても、その判断は本 ADR とは独立に再検討する。
 - ソートは未導入のため、依存の並び替え等は手動。必要になれば後続 Issue で段階導入する。
-- dprint プラグインは初回に `plugins.dprint.dev` から取得する（ネットワーク要）。checksum ピンで再現性を
-  担保し、CI ではプラグインキャッシュを検討する。
+- dprint プラグインは初回に `plugins.dprint.dev` から取得する（ネットワーク要）。版付き URL＋SHA-256
+  checksum で再現性・同一性を担保し、CI ではプラグインキャッシュを検討する。
 - **関連 ADR**: [ADR-0054](0054-vacuum-openapi-lint.md)（vacuum。単一バイナリ / aqua 管理 / 独立ワークフローで
   CI ゲートという同じ論点）、[ADR-0057](0057-gradle-build-health-tooling-not-adopted.md)（#329。近接時期の
   ビルド健全性 tooling の採否判断）。
