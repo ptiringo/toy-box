@@ -48,6 +48,10 @@ mise exec -- sqlfluff lint src/main/resources/db/migration   # 書式・スタ�
 mise exec -- sqlfluff fix src/main/resources/db/migration    # 自動整形
 mise exec -- squawk src/main/resources/db/migration/*.sql    # マイグレーション安全性
 
+# dprint による設定ファイル（TOML/JSON/YAML）の整形チェック / 自動整形
+mise exec -- dprint check
+mise exec -- dprint fmt
+
 # シェルスクリプトの lint（ShellCheck）
 mise exec -- shellcheck .claude/hooks/*.sh .claude/hooks/lib/*.sh .devcontainer/*.sh scripts/*.sh
 
@@ -61,6 +65,8 @@ mise exec -- shellcheck .claude/hooks/*.sh .claude/hooks/lib/*.sh .devcontainer/
 ```
 
 ktfmt はフォーマッタ、detekt は静的解析ツール。detekt 設定は `config/detekt/detekt.yml`（`buildUponDefaultConfig = true` でデフォルトに上書き、雛形再生成は `./gradlew detektGenerateConfig`）、レポートは `build/reports/detekt/`。プロジェクト固有のカスタムルール（例: ドメイン / アプリケーション層で `throw` しない）は `:detekt-rules` モジュールで定義し `detektPlugins` で組み込む（詳細は `.claude/rules/architecture.md`）。detekt はソースコードの静的解析を担い、依存の更新追従は Dependabot が担う。ビルド構成の健全性（未使用依存の棚卸し等）を機械強制する常設ツール（nebula.lint / dependency-analysis 等）は現時点では不採用（実機評価の結果、Kotlin DSL 非対応や Spring Boot での偽陽性で費用対効果が合わず。[ADR-0057](docs/adr/0057-gradle-build-health-tooling-not-adopted.md)）。
+
+設定ファイル（TOML/JSON/YAML）の整形は dprint が担う（`json`/`toml`/`pretty_yaml` プラグイン、コメント保持、Node 非依存）。採否は [ADR-0058](docs/adr/0058-dprint-config-file-formatting.md)。
 
 ### 単一テストの実行
 
@@ -181,7 +187,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 ### mise
 
-セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `vacuum`＝OpenAPI lint / `zizmor` / `gitleaks`）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
+セットアップは `mise install`、確認は `mise list`（未導入なら [mise インストール手順](https://mise.jdx.dev/getting-started.html)）。管理ツール（詳細は `mise.toml`）: ビルド用 JDK（`java` Temurin 21）、lint / 解析（`actionlint` / `editorconfig-checker` / `shellcheck` / `sqlfluff` / `squawk` / `vacuum`＝OpenAPI lint / `zizmor` / `gitleaks` / `dprint`＝設定ファイル整形）、DB スキーマドキュメント生成（`tbls`。採否は [ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）、Git フック（`lefthook`）、シークレット（`fnox`）、インフラ（`terraform` と HCP Terraform 操作 CLI の `tfctl`。tfctl の採否は [ADR-0034](docs/adr/0034-adopt-tfctl-cli.md)）、コードインテリジェンス（`kotlin-lsp`＝Claude Code の Kotlin LSP プラグインが要求する JetBrains 公式 Language Server。採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
 
 **Java バージョン管理について**: JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言（`languageVersion = 21`）。実体の JDK は mise が提供し、Gradle の toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出する。
 
