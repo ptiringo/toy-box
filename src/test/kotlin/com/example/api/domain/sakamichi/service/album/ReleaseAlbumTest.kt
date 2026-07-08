@@ -6,9 +6,9 @@ import com.example.api.domain.sakamichi.model.group.GroupName
 import com.example.api.domain.sakamichi.model.member.Generation
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberName
+import com.example.api.domain.sakamichi.model.release.FormationError
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.SenbatsuError
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -87,6 +87,6 @@ class ReleaseAlbumTest {
 
         val error = releaseAlbum(group, number, title, lineup).getError()
 
-        assert(error == ReleaseAlbumError.InvalidSenbatsu(SenbatsuError.CenterMissing))
+        assert(error == ReleaseAlbumError.InvalidSenbatsu(FormationError.CenterMissing))
     }
 }

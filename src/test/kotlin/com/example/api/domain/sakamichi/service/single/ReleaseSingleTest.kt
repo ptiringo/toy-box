@@ -5,9 +5,9 @@ import com.example.api.domain.sakamichi.model.group.GroupName
 import com.example.api.domain.sakamichi.model.member.Generation
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberName
+import com.example.api.domain.sakamichi.model.release.FormationError
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.SenbatsuError
 import com.example.api.domain.sakamichi.model.single.SingleTitle
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
@@ -82,12 +82,24 @@ class ReleaseSingleTest {
     }
 
     @Test
+    fun `非選抜に他グループ在籍のメンバーが混じると MembersNotInGroup を返す`() {
+        val foreign = activeMember(otherGroup, "森田")
+        val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
+        val underLineup = listOf(Position.Center to foreign)
+
+        val error =
+            releaseSingle(group, number, title, lineup, nonSenbatsuLineup = underLineup).getError()
+
+        assert(error == ReleaseSingleError.MembersNotInGroup(setOf(foreign.id)))
+    }
+
+    @Test
     fun `センター不在は InvalidSenbatsu に包んで返す`() {
         val lineup = listOf(spot(row = 1, numberInRow = 1) to activeMember(group))
 
         val error = releaseSingle(group, number, title, lineup).getError()
 
-        assert(error == ReleaseSingleError.InvalidSenbatsu(SenbatsuError.CenterMissing))
+        assert(error == ReleaseSingleError.InvalidSenbatsu(FormationError.CenterMissing))
     }
 
     @Test
@@ -101,8 +113,68 @@ class ReleaseSingleTest {
         assert(
             error ==
                 ReleaseSingleError.InvalidSenbatsu(
-                    SenbatsuError.DuplicateMember(setOf(duplicated.id))
+                    FormationError.DuplicateMember(setOf(duplicated.id))
                 )
         )
+    }
+
+    @Test
+    fun `非選抜編成を伴うシングルが成立する`() {
+        val center = activeMember(group, "齋藤")
+        val other = activeMember(group, "白石")
+        val underCenter = activeMember(group, "秋元")
+        val lineup = listOf(Position.Center to center, spot(row = 1, numberInRow = 1) to other)
+        val underLineup = listOf(Position.Center to underCenter)
+
+        val single = releaseSingle(group, number, title, lineup, underLineup).unwrap()
+
+        assert(single.senbatsu.memberIds == setOf(center.id, other.id))
+        assert(single.nonSenbatsu?.centers == setOf(underCenter.id))
+        assert(single.nonSenbatsu?.memberIds == setOf(underCenter.id))
+    }
+
+    @Test
+    fun `非選抜編成を渡さなければ nonSenbatsu は null になる`() {
+        val lineup = listOf(Position.Center to activeMember(group))
+
+        val single = releaseSingle(group, number, title, lineup).unwrap()
+
+        assert(single.nonSenbatsu == null)
+    }
+
+    @Test
+    fun `同一メンバーが選抜と非選抜の両方にいると MembersInBothFormations を返す`() {
+        val both = activeMember(group, "齋藤")
+        val lineup =
+            listOf(
+                Position.Center to both,
+                spot(row = 1, numberInRow = 1) to activeMember(group, "白石"),
+            )
+        val underLineup = listOf(Position.Center to both)
+
+        val error = releaseSingle(group, number, title, lineup, underLineup).getError()
+
+        assert(error == ReleaseSingleError.MembersInBothFormations(setOf(both.id)))
+    }
+
+    @Test
+    fun `非選抜に卒業済みメンバーが混じると MembersNotActive を返す`() {
+        val graduated = graduatedMember(group, "西野")
+        val lineup = listOf(Position.Center to activeMember(group))
+        val underLineup = listOf(Position.Center to graduated)
+
+        val error = releaseSingle(group, number, title, lineup, underLineup).getError()
+
+        assert(error == ReleaseSingleError.MembersNotActive(setOf(graduated.id)))
+    }
+
+    @Test
+    fun `非選抜編成のセンター不在は InvalidNonSenbatsu に包んで返す`() {
+        val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
+        val underLineup = listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石"))
+
+        val error = releaseSingle(group, number, title, lineup, underLineup).getError()
+
+        assert(error == ReleaseSingleError.InvalidNonSenbatsu(FormationError.CenterMissing))
     }
 }
