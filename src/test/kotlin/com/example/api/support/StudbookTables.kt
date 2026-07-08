@@ -11,11 +11,11 @@ import org.springframework.jdbc.core.simple.JdbcClient
  */
 fun deleteAllStudbookTables(jdbcClient: JdbcClient) {
     listOf(
-            "covering_report",
-            "breeding_result",
-            "breeding_registration",
-            "blood_horse",
-            "horse_inspection",
+            "studbook.covering_report",
+            "studbook.breeding_result",
+            "studbook.breeding_registration",
+            "studbook.blood_horse",
+            "studbook.horse_inspection",
         )
         .forEach { table -> jdbcClient.sql("DELETE FROM $table").update() }
 }

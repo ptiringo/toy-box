@@ -19,7 +19,7 @@ import org.springframework.data.relational.core.mapping.Table
  * - 「種牡馬×種付年」の一意性は UNIQUE 制約でスキーマ側にも強制する（V10 参照）。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する。
  */
-@Table("covering_report")
+@Table(schema = "studbook", name = "covering_report")
 data class CoveringReportRow(
     @Id @Column("id") val id: UUID,
     @Column("stallion_breeding_registration_id") val stallionBreedingRegistrationId: UUID,

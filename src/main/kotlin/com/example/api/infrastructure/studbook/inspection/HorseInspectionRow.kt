@@ -18,7 +18,7 @@ import org.springframework.data.relational.core.mapping.Table
  *   フラット化する。特徴記述子（nullable `IdentificationFeatures`）は feature_* 列に nullable でフラット化する。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する。
  */
-@Table("horse_inspection")
+@Table(schema = "studbook", name = "horse_inspection")
 data class HorseInspectionRow(
     @Id @Column("id") val id: UUID,
     @Column("microchip_number") val microchipNumber: String,

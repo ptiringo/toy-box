@@ -25,7 +25,7 @@ class JdbcHorseInspectionQueries(private val jdbcClient: JdbcClient) : HorseInsp
                 """
                 SELECT id, microchip_number, parentage_type, dna_parentage_result,
                     feature_hair_whorl, feature_white_markings, feature_nose_print
-                FROM horse_inspection
+                FROM studbook.horse_inspection
                 WHERE id = :id
                 """
                     .trimIndent()

@@ -27,7 +27,7 @@ import org.springframework.data.relational.core.mapping.Table
  * - covering の有無と区分（NotCovered）・分娩日の整合は CHECK 制約でスキーマ側にも強制する（V4 参照）。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する。
  */
-@Table("breeding_result")
+@Table(schema = "studbook", name = "breeding_result")
 data class BreedingResultRow(
     @Id @Column("id") val id: UUID,
     @Column("breeding_registration_id") val breedingRegistrationId: UUID,

@@ -1,4 +1,4 @@
-# public.breeding_result
+# studbook.breeding_result
 
 ## Description
 
@@ -9,9 +9,9 @@
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
 | id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
-| breeding_registration_id | uuid |  | false |  | [public.breeding_registration](public.breeding_registration.md) | 対象の繁殖登録 ID |
+| breeding_registration_id | uuid |  | false |  | [studbook.breeding_registration](studbook.breeding_registration.md) | 対象の繁殖登録 ID |
 | breeding_year | integer |  | false |  |  | 繁殖年（java.time.Year の int 値） |
-| covering_stallion_id | uuid |  | true |  | [public.blood_horse](public.blood_horse.md) | 種付種牡馬 ID（種付なしは NULL） |
+| covering_stallion_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 種付種牡馬 ID（種付なしは NULL） |
 | covering_date | date |  | true |  |  | 種付日（種付なしは NULL） |
 | covering_place | varchar(255) |  | true |  |  | 種付場所（任意） |
 | covering_certificate_number | varchar(255) |  | true |  |  | 種付証明書番号（種付なしは NULL） |
@@ -28,27 +28,27 @@
 | chk_breeding_result_foaling_date | CHECK | CHECK (((outcome_foaling_date IS NULL) OR ((outcome_type)::text = 'LIVE_FOAL'::text))) |
 | chk_breeding_result_outcome_covering | CHECK | CHECK ((((covering_date IS NULL) AND ((outcome_type)::text = 'NOT_COVERED'::text)) OR ((covering_date IS NOT NULL) AND ((outcome_type IS NULL) OR ((outcome_type)::text <> 'NOT_COVERED'::text))))) |
 | chk_breeding_result_report_needs_outcome | CHECK | CHECK (((report_submitted_on IS NULL) OR (outcome_type IS NOT NULL))) |
-| fk_breeding_result_breeding_registration | FOREIGN KEY | FOREIGN KEY (breeding_registration_id) REFERENCES breeding_registration(id) |
-| fk_breeding_result_covering_stallion | FOREIGN KEY | FOREIGN KEY (covering_stallion_id) REFERENCES blood_horse(id) |
+| fk_breeding_result_breeding_registration | FOREIGN KEY | FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id) |
+| fk_breeding_result_covering_stallion | FOREIGN KEY | FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id) |
 | breeding_result_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
-| breeding_result_pkey | CREATE UNIQUE INDEX breeding_result_pkey ON public.breeding_result USING btree (id) |
-| ix_breeding_result_registration_year | CREATE INDEX ix_breeding_result_registration_year ON public.breeding_result USING btree (breeding_registration_id, breeding_year) |
-| ix_breeding_result_covering_stallion_id | CREATE INDEX ix_breeding_result_covering_stallion_id ON public.breeding_result USING btree (covering_stallion_id) |
+| breeding_result_pkey | CREATE UNIQUE INDEX breeding_result_pkey ON studbook.breeding_result USING btree (id) |
+| ix_breeding_result_registration_year | CREATE INDEX ix_breeding_result_registration_year ON studbook.breeding_result USING btree (breeding_registration_id, breeding_year) |
+| ix_breeding_result_covering_stallion_id | CREATE INDEX ix_breeding_result_covering_stallion_id ON studbook.breeding_result USING btree (covering_stallion_id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"public.breeding_result" }o--|| "public.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES breeding_registration(id)"
-"public.breeding_result" }o--o| "public.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES blood_horse(id)"
+"studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
+"studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
 
-"public.breeding_result" {
+"studbook.breeding_result" {
   uuid id
   uuid breeding_registration_id FK
   integer breeding_year
@@ -61,7 +61,7 @@ erDiagram
   bigint version
   date report_submitted_on
 }
-"public.breeding_registration" {
+"studbook.breeding_registration" {
   uuid id
   varchar_255_ registration_number
   uuid registered_horse_id FK
@@ -70,7 +70,7 @@ erDiagram
   date retirement_occurred_on
   bigint version
 }
-"public.blood_horse" {
+"studbook.blood_horse" {
   uuid id
   varchar_255_ registration_number
   varchar_16_ sex

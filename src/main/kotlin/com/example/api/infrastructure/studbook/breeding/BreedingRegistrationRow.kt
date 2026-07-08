@@ -22,7 +22,7 @@ import org.springframework.data.relational.core.mapping.Table
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する （外部採番で `@Id`
  *   が常に非 null でも insert/update を正しく判別できる。ADR-0027 の落とし穴②③）。
  */
-@Table("breeding_registration")
+@Table(schema = "studbook", name = "breeding_registration")
 data class BreedingRegistrationRow(
     @Id @Column("id") val id: UUID,
     @Column("registration_number") val registrationNumber: String,

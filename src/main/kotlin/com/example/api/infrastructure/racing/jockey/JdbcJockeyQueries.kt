@@ -22,7 +22,7 @@ class JdbcJockeyQueries(private val jdbcClient: JdbcClient) : JockeyQueries {
 
     override fun findById(id: JockeyId): JockeyView? =
         jdbcClient
-            .sql("SELECT id, first_name, last_name FROM jockey WHERE id = :id")
+            .sql("SELECT id, first_name, last_name FROM racing.jockey WHERE id = :id")
             .param("id", id.value)
             .query { rs, _ ->
                 JockeyView(
