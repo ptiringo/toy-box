@@ -7,14 +7,14 @@ name: Terraform Check
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
     types: [opened, synchronize, reopened]
     paths:
-      - 'infra/**'
+      - "infra/**"
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'infra/**'
+      - "infra/**"
   workflow_dispatch:
 
 defaults:
@@ -32,49 +32,49 @@ jobs:
       security-events: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      with:
-        persist-credentials: false
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
-    - name: Install mise
-      uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
-      env:
-        # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
-        # インストール対象から外す（除外理由は mise.ci.toml を参照。#510 回帰の修正）。
-        MISE_ENV: ci
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
+          # インストール対象から外す（除外理由は mise.ci.toml を参照。#510 回帰の修正）。
+          MISE_ENV: ci
 
-    - name: Verify Terraform version
-      run: terraform version
+      - name: Verify Terraform version
+        run: terraform version
 
-    - name: Initialize Terraform
-      # -backend=false フラグは、CI上でバックエンド設定を無視し、プロバイダーのみを初期化するために使用しています。
-      # これにより、リモートステートへのアクセス不要でvalidateやfmt等のチェックが可能です。
-      run: terraform init -backend=false
+      - name: Initialize Terraform
+        # -backend=false フラグは、CI上でバックエンド設定を無視し、プロバイダーのみを初期化するために使用しています。
+        # これにより、リモートステートへのアクセス不要でvalidateやfmt等のチェックが可能です。
+        run: terraform init -backend=false
 
-    - name: Terraform Format Check
-      run: terraform fmt -check -recursive
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
 
-    - name: Terraform Validation
-      run: terraform validate
+      - name: Terraform Validation
+        run: terraform validate
 
-    # tflint による lint（ADR-0017 / #377 フェーズ1: recommended preset、--init 不要）。
-    # mise 管理の tflint を使う。GCP ruleset を足すフェーズ2 で --init + キャッシュを導入する。
-    - name: Run tflint
-      run: tflint --recursive
+      # tflint による lint（ADR-0017 / #377 フェーズ1: recommended preset、--init 不要）。
+      # mise 管理の tflint を使う。GCP ruleset を足すフェーズ2 で --init + キャッシュを導入する。
+      - name: Run tflint
+        run: tflint --recursive
 
-    # Trivy による IaC セキュリティ misconfig スキャン（ADR-0017 / #378）。
-    # findings があれば --exit-code 1 で job を落とす hard gate。SARIF は生成後に exit するため、
-    # 後段の upload は if: always() で必ず実行する。working-directory: infra なので出力は infra/trivy.sarif。
-    - name: Run Trivy IaC scan
-      run: trivy config . --format sarif --output trivy.sarif --exit-code 1
+      # Trivy による IaC セキュリティ misconfig スキャン（ADR-0017 / #378）。
+      # findings があれば --exit-code 1 で job を落とす hard gate。SARIF は生成後に exit するため、
+      # 後段の upload は if: always() で必ず実行する。working-directory: infra なので出力は infra/trivy.sarif。
+      - name: Run Trivy IaC scan
+        run: trivy config . --format sarif --output trivy.sarif --exit-code 1
 
-    # SARIF を Code Scanning へアップロード（codeql.yml と同じ pin を流用）。
-    # uses ステップは working-directory の影響を受けずリポジトリ root から走るため、
-    # sarif_file は root 相対の infra/trivy.sarif。category で CodeQL と区別する。
-    - name: Upload Trivy SARIF to Code Scanning
-      if: always()
-      uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
-      with:
-        sarif_file: infra/trivy.sarif
-        category: trivy-iac
+      # SARIF を Code Scanning へアップロード（codeql.yml と同じ pin を流用）。
+      # uses ステップは working-directory の影響を受けずリポジトリ root から走るため、
+      # sarif_file は root 相対の infra/trivy.sarif。category で CodeQL と区別する。
+      - name: Upload Trivy SARIF to Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
+        with:
+          sarif_file: infra/trivy.sarif
+          category: trivy-iac

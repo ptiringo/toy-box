@@ -1,0 +1,53 @@
+# dprint による設定ファイル（TOML/JSON/YAML）整形チェックワークフロー
+#
+# 目的: 設定ファイルの変更時に dprint check を実行し、ローカルの pre-commit と同じ
+# 整形ゲートを CI でも担保する（ADR-0058 / #328）。
+
+name: dprint Check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "**/*.toml"
+      - "**/*.json"
+      - "**/*.jsonc"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "dprint.json"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.toml"
+      - "**/*.json"
+      - "**/*.jsonc"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "dprint.json"
+  workflow_dispatch:
+
+jobs:
+  dprint-check:
+    runs-on: ubuntu-latest
+    name: dprint Format Check
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          MISE_ENV: ci
+
+      - name: Verify dprint version
+        run: dprint --version
+
+      - name: dprint check
+        run: dprint check
