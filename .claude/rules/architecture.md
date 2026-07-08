@@ -80,10 +80,13 @@ domain/
 │       └── race/                #   confirmRaceResult
 ├── sakamichi/                   # エンターテイメントコンテキスト（坂道シリーズ）
 │   ├── model/                   # ドメインモデルリング
+│   │   ├── album/               #   Album, AlbumTitle
 │   │   ├── group/               #   Group, GroupId, GroupName
 │   │   ├── member/              #   Member, Generation, Membership, ...
-│   │   └── single/              #   Single, Senbatsu, Position, ...
+│   │   ├── release/             #   Formation, FormationSlot, Position, ReleaseNumber（作品共通の編成語彙）
+│   │   └── single/              #   Single, SingleTitle
 │   └── service/                 # ドメインサービスリング
+│       ├── album/               #   releaseAlbum
 │       └── single/              #   releaseSingle
 └── tennis/model/
 ```
