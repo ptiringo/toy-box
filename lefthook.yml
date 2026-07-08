@@ -71,6 +71,14 @@ pre-commit:
       run: cd infra && mise exec -- trivy config . --exit-code 1 --quiet
       tags: security
 
+    # dprint による設定ファイル（TOML/JSON/YAML）の整形チェック（ADR-0058 / #328）
+    dprint:
+      glob: "{,**/}*.{toml,json,jsonc,yml,yaml}"
+      exclude:
+        - ".devcontainer/devcontainer-lock.json"
+      run: mise exec -- dprint check {staged_files}
+      tags: format
+
     # sqlfluff による SQL の書式・スタイルチェック
     sqlfluff:
       glob: "**/*.sql"
