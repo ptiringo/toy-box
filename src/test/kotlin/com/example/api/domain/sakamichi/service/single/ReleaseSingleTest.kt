@@ -82,6 +82,18 @@ class ReleaseSingleTest {
     }
 
     @Test
+    fun `非選抜に他グループ在籍のメンバーが混じると MembersNotInGroup を返す`() {
+        val foreign = activeMember(otherGroup, "森田")
+        val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
+        val underLineup = listOf(Position.Center to foreign)
+
+        val error =
+            releaseSingle(group, number, title, lineup, nonSenbatsuLineup = underLineup).getError()
+
+        assert(error == ReleaseSingleError.MembersNotInGroup(setOf(foreign.id)))
+    }
+
+    @Test
     fun `センター不在は InvalidSenbatsu に包んで返す`() {
         val lineup = listOf(spot(row = 1, numberInRow = 1) to activeMember(group))
 

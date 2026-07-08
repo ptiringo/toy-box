@@ -121,9 +121,9 @@ sealed interface ReleaseSingleError {
     /**
      * 同一メンバーが選抜と非選抜の両方の編成に含まれている（同一作品で両立しない）。
      *
-     * @property members 両方の編成に現れたメンバーのIDの集合
+     * @property memberIds 両方の編成に現れたメンバーのIDの集合
      */
-    data class MembersInBothFormations(val members: Set<MemberId>) : ReleaseSingleError
+    data class MembersInBothFormations(val memberIds: Set<MemberId>) : ReleaseSingleError
 
     /**
      * 委譲先の非選抜編成（[Formation.create]）の不変条件違反を wrap したもの。
