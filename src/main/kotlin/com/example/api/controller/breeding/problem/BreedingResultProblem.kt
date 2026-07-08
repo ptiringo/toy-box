@@ -69,7 +69,7 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
             )
         is RecordCoveringUseCaseError.BreedingRegistrationNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "breeding-registration-not-found",
                     title = "Breeding registration not found",
                     detail = "種付対象として指定された繁殖登録が存在しません。",
@@ -77,7 +77,7 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
                 .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
         is RecordCoveringUseCaseError.StallionRegistrationNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "stallion-registration-not-found",
                     title = "Stallion registration not found",
                     detail = "配合相手として指定された種牡馬の繁殖登録が存在しません。",
@@ -90,14 +90,14 @@ private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
     when (this) {
         RecordCoveringError.NotBroodmare ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "not-broodmare",
                 title = "Registration is not a broodmare",
                 detail = "種付対象として指定された繁殖登録のロールが繁殖牝馬ではありません。",
             )
         RecordCoveringError.NotStallion ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "not-stallion",
                 title = "Registration is not a stallion",
                 detail = "配合相手として指定された繁殖登録のロールが種牡馬ではありません。",
@@ -126,7 +126,7 @@ private fun CoveringValidityError.toProblemDetail(): ProblemDetail =
     when (this) {
         is CoveringValidityError.OutsideValidPeriod ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "covering-outside-valid-period",
                     title = "Covering outside the stud certificate's valid period",
                     detail = "種付日が種畜証明書の有効期間外です。",
@@ -138,7 +138,7 @@ private fun CoveringValidityError.toProblemDetail(): ProblemDetail =
                 }
         is CoveringValidityError.OutsideValidRegion ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "covering-outside-valid-region",
                     title = "Covering outside the stud certificate's valid region",
                     detail = "種付場所が種畜証明書の有効区域外です。",
@@ -160,7 +160,7 @@ fun RecordUncoveredUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
         is RecordUncoveredUseCaseError.BreedingRegistrationNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "breeding-registration-not-found",
                     title = "Breeding registration not found",
                     detail = "種付せずの記録対象として指定された繁殖登録が存在しません。",
@@ -173,7 +173,7 @@ private fun RecordUncoveredError.toProblemDetail(): ProblemDetail =
     when (this) {
         RecordUncoveredError.NotBroodmare ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "not-broodmare",
                 title = "Registration is not a broodmare",
                 detail = "種付せずの記録対象として指定された繁殖登録のロールが繁殖牝馬ではありません。",
@@ -258,7 +258,7 @@ private fun SubmitBreedingReportError.toProblemDetail(): ProblemDetail =
     when (this) {
         SubmitBreedingReportError.OutcomeNotRecorded ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "breeding-report-outcome-not-recorded",
                 title = "Foaling outcome not recorded",
                 detail = "分娩結果が未確定のため繁殖成績報告を提出できません。",

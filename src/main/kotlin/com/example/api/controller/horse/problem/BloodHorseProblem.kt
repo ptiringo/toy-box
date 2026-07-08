@@ -60,7 +60,7 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 .apply { setProperty("name", name) }
         is NameHorseUseCaseError.InspectionNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "inspection-not-found",
                     title = "Inspection not found",
                     detail = "命名対象の軽種馬に紐づく審査が見つかりません。",
@@ -108,7 +108,7 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
             )
         is RegisterInStudBookUseCaseError.SireNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "sire-not-found",
                     title = "Sire not found",
                     detail = "父として指定された軽種馬が存在しません。",
@@ -116,7 +116,7 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                 .apply { setProperty("sire_id", sireId) }
         is RegisterInStudBookUseCaseError.DamNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "dam-not-found",
                     title = "Dam not found",
                     detail = "母として指定された軽種馬が存在しません。",
@@ -129,28 +129,28 @@ private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
     when (this) {
         RegisterInStudBookError.SireNotMale ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "sire-not-male",
                 title = "Sire is not male",
                 detail = "父として指定された軽種馬が雄ではありません。",
             )
         RegisterInStudBookError.DamNotFemale ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "dam-not-female",
                 title = "Dam is not female",
                 detail = "母として指定された軽種馬が雌ではありません。",
             )
         RegisterInStudBookError.ParentageNotConfirmed ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "parentage-not-confirmed",
                 title = "Parentage not confirmed",
                 detail = "申告された父母との DNA 型による親子判定が確認できません。",
             )
         RegisterInStudBookError.BreedMismatch ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "breed-mismatch",
                 title = "Breed mismatch",
                 detail = "仔の品種が父母の品種と整合しません。",

@@ -17,7 +17,7 @@ fun SubmitCoveringReportUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
         is SubmitCoveringReportUseCaseError.StallionRegistrationNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "stallion-registration-not-found",
                     title = "Stallion registration not found",
                     detail = "提出者として指定された種牡馬の繁殖登録が存在しません。",
@@ -32,7 +32,7 @@ private fun SubmitCoveringReportError.toProblemDetail(): ProblemDetail =
     when (this) {
         SubmitCoveringReportError.NotStallion ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "not-stallion",
                 title = "Registration is not a stallion",
                 detail = "提出者として指定された繁殖登録のロールが種牡馬ではありません。",

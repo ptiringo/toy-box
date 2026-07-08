@@ -93,7 +93,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
-            .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+            .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
             .bodyJson()
             .extractingPath("$.blood_horse_id")
