@@ -56,10 +56,10 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
-        env:
-          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
-          # インストール対象から外す（除外理由は mise.ci.toml を参照。#510 回帰の修正）。
-          MISE_ENV: ci
+        with:
+          # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
+          # 必要なのは tbls のみ（JDK は setup-java が供給）。
+          install_args: "aqua:k1LoW/tbls"
 
       - name: Verify tbls
         run: tbls version
