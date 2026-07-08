@@ -1,7 +1,7 @@
 package com.example.api.domain.sakamichi.service.album
 
 import com.example.api.domain.sakamichi.model.album.Album
-import com.example.api.domain.sakamichi.model.album.AlbumTitle
+import com.example.api.domain.sakamichi.model.album.AlbumError
 import com.example.api.domain.sakamichi.model.group.Group
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberId
@@ -11,28 +11,32 @@ import com.example.api.domain.sakamichi.model.release.FormationError
 import com.example.api.domain.sakamichi.model.release.FormationSlot
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
+import com.example.api.domain.sakamichi.model.release.TrackNumber
+import com.example.api.domain.sakamichi.model.release.Tracklist
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.map
+import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.mapError
 
 /**
  * アルバムを発売し、選抜（リード曲フォーメーション）を編成する（[Album] を成立させる入口）。
  *
  * 集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中であること」を封じ込める（[releaseSingle] と対称）。 検証は (1)
- * 全員が在籍中（[Membership.Active]）、(2) 全員の所属が [group] と一致、(3) 選抜の構造的不変条件 （[Formation.create]
- * へ委譲）の順で行い、違反者が複数いる場合はまとめて返す。
+ * 全員が在籍中（[Membership.Active]）、(2) 全員の所属が [group] と一致、(3) 選抜の構造的不変条件 （[Formation.create] へ委譲）、(4)
+ * 見出し∈トラックリスト（[Album.create] へ委譲）の順で行い、違反者が 複数いる場合はまとめて返す。
  *
  * @param group 発売元のグループ（選抜対象メンバーの在籍先であること）
  * @param number 作品番号（n 枚目。シングルとは独立採番）
- * @param title リード曲名
+ * @param tracklist 全収録曲
+ * @param headlineTrackNumber 見出し曲（リード曲）のトラック番号
  * @param lineup 選抜の編成（立ち位置 × メンバーの並び）
  * @return 成立した [Album]、または前提条件違反を表す [ReleaseAlbumError]
  */
 fun releaseAlbum(
     group: Group,
     number: ReleaseNumber,
-    title: AlbumTitle,
+    tracklist: Tracklist,
+    headlineTrackNumber: TrackNumber,
     lineup: List<Pair<Position, Member>>,
 ): Result<Album, ReleaseAlbumError> {
     val members = lineup.map { (_, member) -> member }
@@ -46,13 +50,15 @@ fun releaseAlbum(
                     lineup.map { (position, member) -> FormationSlot(position, member.id) }
                 )
                 .mapError { ReleaseAlbumError.InvalidSenbatsu(it) }
-                .map { senbatsu ->
+                .andThen { senbatsu ->
                     Album.create(
-                        groupId = group.id,
-                        number = number,
-                        title = title,
-                        senbatsu = senbatsu,
-                    )
+                            groupId = group.id,
+                            number = number,
+                            tracklist = tracklist,
+                            headlineTrackNumber = headlineTrackNumber,
+                            senbatsu = senbatsu,
+                        )
+                        .mapError { ReleaseAlbumError.InvalidHeadlineTrack(it) }
                 }
     }
 }
@@ -72,4 +78,7 @@ sealed interface ReleaseAlbumError {
 
     /** 委譲先の選抜編成（[Formation.create]）の不変条件違反を wrap したもの。 */
     data class InvalidSenbatsu(val cause: FormationError) : ReleaseAlbumError
+
+    /** 委譲先の [Album.create] の見出し不在（[AlbumError]）を wrap したもの。 */
+    data class InvalidHeadlineTrack(val cause: AlbumError) : ReleaseAlbumError
 }

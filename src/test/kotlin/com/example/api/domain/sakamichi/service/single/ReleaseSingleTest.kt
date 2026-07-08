@@ -8,7 +8,11 @@ import com.example.api.domain.sakamichi.model.member.MemberName
 import com.example.api.domain.sakamichi.model.release.FormationError
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.single.SingleTitle
+import com.example.api.domain.sakamichi.model.release.Track
+import com.example.api.domain.sakamichi.model.release.TrackNumber
+import com.example.api.domain.sakamichi.model.release.TrackTitle
+import com.example.api.domain.sakamichi.model.release.Tracklist
+import com.example.api.domain.sakamichi.model.single.SingleError
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -19,7 +23,14 @@ class ReleaseSingleTest {
     private val group = Group.create(GroupName.create("乃木坂46").unwrap())
     private val otherGroup = Group.create(GroupName.create("櫻坂46").unwrap())
     private val number = ReleaseNumber.create(1).unwrap()
-    private val title = SingleTitle.create("ぐるぐるカーテン").unwrap()
+    private val tracklist =
+        Tracklist.create(
+                listOf(
+                    Track(TrackNumber.create(1).unwrap(), TrackTitle.create("ぐるぐるカーテン").unwrap())
+                )
+            )
+            .unwrap()
+    private val headlineTrackNumber = TrackNumber.create(1).unwrap()
 
     private fun activeMember(group: Group, familyName: String = "齋藤"): Member =
         Member.create(
@@ -42,11 +53,12 @@ class ReleaseSingleTest {
         val lineup =
             listOf(Position.Center to centerMember, spot(row = 1, numberInRow = 1) to otherMember)
 
-        val single = releaseSingle(group, number, title, lineup).unwrap()
+        val single = releaseSingle(group, number, tracklist, headlineTrackNumber, lineup).unwrap()
 
         assert(single.groupId == group.id)
         assert(single.number == number)
-        assert(single.title == title)
+        assert(single.tracklist == tracklist)
+        assert(single.headlineTitle == TrackTitle.create("ぐるぐるカーテン").unwrap())
         assert(single.senbatsu.centers == setOf(centerMember.id))
         assert(single.senbatsu.memberIds == setOf(centerMember.id, otherMember.id))
     }
@@ -62,7 +74,7 @@ class ReleaseSingleTest {
                 spot(row = 1, numberInRow = 2) to graduated2,
             )
 
-        val error = releaseSingle(group, number, title, lineup).getError()
+        val error = releaseSingle(group, number, tracklist, headlineTrackNumber, lineup).getError()
 
         assert(error == ReleaseSingleError.MembersNotActive(setOf(graduated1.id, graduated2.id)))
     }
@@ -76,7 +88,7 @@ class ReleaseSingleTest {
                 spot(row = 1, numberInRow = 1) to foreign,
             )
 
-        val error = releaseSingle(group, number, title, lineup).getError()
+        val error = releaseSingle(group, number, tracklist, headlineTrackNumber, lineup).getError()
 
         assert(error == ReleaseSingleError.MembersNotInGroup(setOf(foreign.id)))
     }
@@ -88,7 +100,15 @@ class ReleaseSingleTest {
         val underLineup = listOf(Position.Center to foreign)
 
         val error =
-            releaseSingle(group, number, title, lineup, nonSenbatsuLineup = underLineup).getError()
+            releaseSingle(
+                    group,
+                    number,
+                    tracklist,
+                    headlineTrackNumber,
+                    lineup,
+                    nonSenbatsuLineup = underLineup,
+                )
+                .getError()
 
         assert(error == ReleaseSingleError.MembersNotInGroup(setOf(foreign.id)))
     }
@@ -97,7 +117,7 @@ class ReleaseSingleTest {
     fun `センター不在は InvalidSenbatsu に包んで返す`() {
         val lineup = listOf(spot(row = 1, numberInRow = 1) to activeMember(group))
 
-        val error = releaseSingle(group, number, title, lineup).getError()
+        val error = releaseSingle(group, number, tracklist, headlineTrackNumber, lineup).getError()
 
         assert(error == ReleaseSingleError.InvalidSenbatsu(FormationError.CenterMissing))
     }
@@ -108,13 +128,27 @@ class ReleaseSingleTest {
         val lineup =
             listOf(Position.Center to duplicated, spot(row = 1, numberInRow = 1) to duplicated)
 
-        val error = releaseSingle(group, number, title, lineup).getError()
+        val error = releaseSingle(group, number, tracklist, headlineTrackNumber, lineup).getError()
 
         assert(
             error ==
                 ReleaseSingleError.InvalidSenbatsu(
                     FormationError.DuplicateMember(setOf(duplicated.id))
                 )
+        )
+    }
+
+    @Test
+    fun `見出しがトラックリストに無いと InvalidHeadlineTrack に包んで返す`() {
+        val lineup = listOf(Position.Center to activeMember(group))
+
+        val error =
+            releaseSingle(group, number, tracklist, TrackNumber.create(2).unwrap(), lineup)
+                .getError()
+
+        assert(
+            error ==
+                ReleaseSingleError.InvalidHeadlineTrack(SingleError.HeadlineTrackNotInTracklist)
         )
     }
 
@@ -126,7 +160,9 @@ class ReleaseSingleTest {
         val lineup = listOf(Position.Center to center, spot(row = 1, numberInRow = 1) to other)
         val underLineup = listOf(Position.Center to underCenter)
 
-        val single = releaseSingle(group, number, title, lineup, underLineup).unwrap()
+        val single =
+            releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, underLineup)
+                .unwrap()
 
         assert(single.senbatsu.memberIds == setOf(center.id, other.id))
         assert(single.nonSenbatsu?.centers == setOf(underCenter.id))
@@ -137,7 +173,7 @@ class ReleaseSingleTest {
     fun `非選抜編成を渡さなければ nonSenbatsu は null になる`() {
         val lineup = listOf(Position.Center to activeMember(group))
 
-        val single = releaseSingle(group, number, title, lineup).unwrap()
+        val single = releaseSingle(group, number, tracklist, headlineTrackNumber, lineup).unwrap()
 
         assert(single.nonSenbatsu == null)
     }
@@ -152,7 +188,9 @@ class ReleaseSingleTest {
             )
         val underLineup = listOf(Position.Center to both)
 
-        val error = releaseSingle(group, number, title, lineup, underLineup).getError()
+        val error =
+            releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, underLineup)
+                .getError()
 
         assert(error == ReleaseSingleError.MembersInBothFormations(setOf(both.id)))
     }
@@ -163,7 +201,9 @@ class ReleaseSingleTest {
         val lineup = listOf(Position.Center to activeMember(group))
         val underLineup = listOf(Position.Center to graduated)
 
-        val error = releaseSingle(group, number, title, lineup, underLineup).getError()
+        val error =
+            releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, underLineup)
+                .getError()
 
         assert(error == ReleaseSingleError.MembersNotActive(setOf(graduated.id)))
     }
@@ -173,7 +213,9 @@ class ReleaseSingleTest {
         val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
         val underLineup = listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石"))
 
-        val error = releaseSingle(group, number, title, lineup, underLineup).getError()
+        val error =
+            releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, underLineup)
+                .getError()
 
         assert(error == ReleaseSingleError.InvalidNonSenbatsu(FormationError.CenterMissing))
     }

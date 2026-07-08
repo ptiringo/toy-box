@@ -132,11 +132,13 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 | 期生（`Generation`） | 加入時期で区切るコホート（1期生・2期生…） | 加入時に固定。**グループごとに独立採番**（横断で一意でない） |
 | 加入 / 卒業 | メンバーの参加 ／ 離脱の状態遷移（`Member.graduate`） | 卒業日は加入日以降。契約解除等の非円満離脱は「卒業」と区別しうるが未モデル化 |
 | 在籍状態（`Membership`） | 在籍中（`Active`）／卒業済み（`Graduated`）の相互排他 | sealed で型強制（ADR-0020 の流儀） |
-| シングル（`Single`） | グループが発表する作品。選抜と任意の非選抜を内包する集約ルート | 発表元グループは `GroupId` の ID 参照。発表後の編成変更等の状態遷移は未モデル化 |
+| シングル（`Single`） | グループが発表する作品。全収録曲（`Tracklist`）と見出し曲（表題曲）・選抜・任意の非選抜を内包する集約ルート | 見出し曲は `headlineTrackNumber` で指す。発表元グループは `GroupId` の ID 参照。発表後の編成変更等の状態遷移は未モデル化 |
 | 作品番号（`ReleaseNumber`） | n 枚目（1 以上の整数） | **グループごと、かつシングル/アルバムで独立採番**（別集約なので同番号でも衝突しない）。グループ内の重複禁止は集合制約のため未モデル化（必要時に ADR-0022 の流儀でドメインサービスへ） |
-| 表題（`SingleTitle`） | シングルの表題曲の曲名 | カップリング曲は未モデル化 |
-| アルバム（`Album`） | グループが発表する作品。リード曲の選抜を内包する集約ルート | 発表元グループは `GroupId` の ID 参照。シングルとは独立採番。収録曲（トラックリスト）は未モデル化（別 Issue） |
-| リード曲名（`AlbumTitle`） | アルバムのリード曲（代表曲）の曲名 | シングルの表題曲（`SingleTitle`）と呼称が異なる別概念 |
+| 収録曲（`Track`） | 作品に収録された 1 曲＝トラック番号 × 曲名 | 見出し曲もトラックの一種。曲ごとのフォーメーションは未モデル化（見出し曲の編成のみ作品集約が持つ） |
+| 曲名（`TrackTitle`） | 収録曲の曲名（非ブランク・100 文字以内） | 表題曲/リード曲/カップリング曲を区別しない共通 VO。旧 `SingleTitle` / `AlbumTitle` を統合 |
+| トラック番号（`TrackNumber`） | 作品内の収録曲の通し番号（1 以上） | 作品内で 1..n の連番・重複なしは `Tracklist.create` が検証 |
+| 収録曲一覧（`Tracklist`） | 作品の全収録曲を通し番号で保持する VO | 不変条件: 空でない・番号が 1..n の連番・重複なし。曲名の重複は許容（別バージョン等の余地）。順序はトラック番号で定まる |
+| アルバム（`Album`） | グループが発表する作品。全収録曲（`Tracklist`）と見出し曲（リード曲）・選抜を内包する集約ルート | 見出し曲は `headlineTrackNumber` で指す。発表元グループは `GroupId` の ID 参照。シングルとは独立採番 |
 | 選抜（`Formation` の `senbatsu` ロール） | シングル表題曲/アルバムリード曲を歌う編成 | シングル・アルバム共通の作品編成語彙（`domain.sakamichi.model.release`）。**作品単位の一時的編成**（グループ・メンバーの恒久属性にしない）。不変条件: メンバー重複なし・`Center` 以外の立ち位置の定員 1 人・センター 1〜2 人（W センター許容） |
 | 非選抜（`Formation` の `nonSenbatsu` ロール） | 表題曲を歌わないメンバーの編成（アンダー曲等）。`Single` が任意で内包（不在＝全員選抜） | グループ別の呼称（乃木坂=アンダー / 櫻坂=BACKS / 日向坂=ひなた坂46）は `Group.nonSenbatsuAppellation`（`非選抜活動体の呼称`）としてモデル化済み（#582）。センターを持つ（アンダーセンター等）。排他（選抜と同一メンバー不可）は `releaseSingle` が検証 |
 | 非選抜活動体の呼称（`Group.nonSenbatsuAppellation`） | グループ別の非選抜編成の呼び名（乃木坂46=アンダー／櫻坂46=BACKS／日向坂46=ひなた坂46） | `Group` の**任意属性**（`domain.sakamichi.model.group`）。呼称を持たないグループ/時期は null。**時間軸を持たない**（いつから適用かは作品側の関心・#583）。作品・編成・ライブとの結び付けは持たない。典拠は `.claude/skills/sakamichi-sources`（参照日 2026-07-08） |
@@ -147,8 +149,8 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 
 | 用語（関数） | 和名 | 定義 |
 | --- | --- | --- |
-| releaseSingle | シングルを発売する | 選抜を編成してシングルを成立させる入口。非選抜編成（`nonSenbatsuLineup`）を任意で受け取り、選抜との排他・両編成の在籍を検証する。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Single.create` へ橋渡しする（studbook の `registerFoal` 型）。 |
-| releaseAlbum | アルバムを発売する | 選抜（リード曲フォーメーション）を編成してアルバムを成立させる入口。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Album.create` へ橋渡しする（`releaseSingle` と対称）。 |
+| releaseSingle | シングルを発売する | 検証済みの `tracklist`（`Tracklist`）と見出し曲の `headlineTrackNumber` を受け取り、選抜を編成してシングルを成立させる入口。非選抜編成（`nonSenbatsuLineup`）を任意で受け取り、選抜との排他・両編成の在籍を検証する。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Single.create` へ橋渡しする（studbook の `registerFoal` 型）。見出し∈トラックリストの検証自体は `Single.create` に委譲する。 |
+| releaseAlbum | アルバムを発売する | 検証済みの `tracklist`（`Tracklist`）と見出し曲の `headlineTrackNumber` を受け取り、選抜（リード曲フォーメーション）を編成してアルバムを成立させる入口。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Album.create` へ橋渡しする（`releaseSingle` と対称）。見出し∈トラックリストの検証自体は `Album.create` に委譲する。 |
 
 **禁止語・注意**: 「選抜」をグループやメンバーの恒久属性として扱わない（作品単位（シングル/アルバム共通）の一時的編成。⇔ 非選抜（アンダー）＝`Formation` の `nonSenbatsu` ロールとしてモデル化済み（#556）。呼称は `Group.nonSenbatsuAppellation` としてモデル化済み（#582））。
 「選抜対象メンバーが当該グループに在籍中であること」の検証は集約またぎのため `Formation` では守らない（`releaseSingle` / `releaseAlbum` が封じ込める）。
@@ -203,7 +205,6 @@ graph LR
 | Member | 集約ルート | domain.sakamichi.model.member |
 | Single | 集約ルート | domain.sakamichi.model.single |
 | AlbumId | 値オブジェクト | domain.sakamichi.model.album |
-| AlbumTitle | 値オブジェクト | domain.sakamichi.model.album |
 | Formation | 値オブジェクト | domain.sakamichi.model.release |
 | FormationSlot | 値オブジェクト | domain.sakamichi.model.release |
 | Generation | 値オブジェクト | domain.sakamichi.model.member |
@@ -220,7 +221,10 @@ graph LR
 | Position.Spot | 値オブジェクト | domain.sakamichi.model.release |
 | ReleaseNumber | 値オブジェクト | domain.sakamichi.model.release |
 | SingleId | 値オブジェクト | domain.sakamichi.model.single |
-| SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
+| Track | 値オブジェクト | domain.sakamichi.model.release |
+| TrackNumber | 値オブジェクト | domain.sakamichi.model.release |
+| TrackTitle | 値オブジェクト | domain.sakamichi.model.release |
+| Tracklist | 値オブジェクト | domain.sakamichi.model.release |
 | releaseAlbum | ドメインサービス | domain.sakamichi.service.album |
 | releaseSingle | ドメインサービス | domain.sakamichi.service.single |
 
