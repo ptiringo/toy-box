@@ -43,6 +43,9 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          # http backend ツール（kotlin-lsp/tfctl）を config から外す（mise.ci.toml。#510）。
+          MISE_ENV: ci
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
           # 必要なのは dprint のみ。

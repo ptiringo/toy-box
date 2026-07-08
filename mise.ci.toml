@@ -1,9 +1,9 @@
 # CI 用オーバーレイ設定（config environment）。CI のワークフローで `MISE_ENV=ci` を与えると
 # base の mise.toml に加えて本ファイルが読み込まれる（ローカル開発では読み込まれない）。
 #
-# 適用先は copilot-setup-steps.yml のみ。他の mise-action ジョブは install_args で必要ツールだけを
-# スコープ入れするため http backend ツールに触れず、本オーバーレイを要しない（#464）。フル導入する
-# copilot-setup-steps だけが下記の除外を必要とする。
+# 全 mise-action ジョブが `MISE_ENV=ci` を渡す。各ジョブはさらに install_args で必要ツールだけを
+# スコープ入れするが（#464）、config 上に残る http backend ツールを --locked 時に解決しようとして
+# 警告／失敗するのを防ぐため、本オーバーレイで config から外す（install_args とは役割が別）。
 #
 # http backend で供給する kotlin-lsp / tfctl は、mise が per-platform の SHA を mise.lock に
 # 永続化しない（`mise lock` が書かない）ため `mise install --locked`（Linux CI）を満たせず、
