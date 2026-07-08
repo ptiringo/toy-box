@@ -21,4 +21,20 @@ class GroupTest {
 
         assert(first.id != second.id)
     }
+
+    @Test
+    fun `非選抜活動体の呼称ありで生成すると属性に反映される`() {
+        val appellation = NonSenbatsuAppellation.create("アンダー").unwrap()
+
+        val group = Group.create(name, appellation)
+
+        assert(group.nonSenbatsuAppellation == appellation)
+    }
+
+    @Test
+    fun `呼称を省略すると null になる`() {
+        val group = Group.create(name)
+
+        assert(group.nonSenbatsuAppellation == null)
+    }
 }
