@@ -22,6 +22,11 @@ jobs:
 
       - name: Set up mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
+          # インストール対象から外す（mise が per-platform SHA を mise.lock に永続化せず
+          # `mise install --locked` を満たせない。#510 回帰。どちらも Copilot 環境では不要）。
+          MISE_ENV: ci
 
       - name: Set up lefthook
         run: lefthook install
