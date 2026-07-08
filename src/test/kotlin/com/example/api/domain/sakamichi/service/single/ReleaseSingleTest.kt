@@ -12,6 +12,7 @@ import com.example.api.domain.sakamichi.model.release.Track
 import com.example.api.domain.sakamichi.model.release.TrackNumber
 import com.example.api.domain.sakamichi.model.release.TrackTitle
 import com.example.api.domain.sakamichi.model.release.Tracklist
+import com.example.api.domain.sakamichi.model.single.SingleError
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -147,10 +148,7 @@ class ReleaseSingleTest {
 
         assert(
             error ==
-                ReleaseSingleError.InvalidHeadlineTrack(
-                    com.example.api.domain.sakamichi.model.single.SingleError
-                        .HeadlineTrackNotInTracklist
-                )
+                ReleaseSingleError.InvalidHeadlineTrack(SingleError.HeadlineTrackNotInTracklist)
         )
     }
 

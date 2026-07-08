@@ -6,7 +6,7 @@
 
 ## Context（背景・課題）
 
-[#556](https://github.com/ptiringo/toy-box/issues/556) まで、sakamichi の作品（`Single` / `Album`）は見出し曲（表題曲/リード曲）だけを `title`（`SingleTitle` / `AlbumTitle`）＋見出し曲の選抜（`Formation`）として保持し、収録曲（カップリング曲・アルバム曲・曲順）はスコープ外だった。[#565](https://github.com/ptiringo/toy-box/issues/565) で収録曲をモデル化するにあたり、見出し曲を「別枠」で残すか「トラックの一種」に寄せるかの線引きが必要になった。
+[#555](https://github.com/ptiringo/toy-box/issues/555) まで、sakamichi の作品（`Single` / `Album`）は見出し曲（表題曲/リード曲）だけを `title`（`SingleTitle` / `AlbumTitle`）＋見出し曲の選抜（`Formation`）として保持し、収録曲（カップリング曲・アルバム曲・曲順）はスコープ外だった。[#565](https://github.com/ptiringo/toy-box/issues/565) で収録曲をモデル化するにあたり、見出し曲を「別枠」で残すか「トラックの一種」に寄せるかの線引きが必要になった。
 
 ## Decision（決定）
 
@@ -27,4 +27,4 @@
 
 - [ADR-0009](0009-immutable-aggregates.md) / [ADR-0014](0014-self-validating-factory-over-confinement.md): 集約・VO の責務分担
 - [#565](https://github.com/ptiringo/toy-box/issues/565): 起票元。収録曲モデル化
-- [#364](https://github.com/ptiringo/toy-box/issues/364): 関連 Issue
+- [#364](https://github.com/ptiringo/toy-box/issues/364): 親テーマ（sakamichi モデリング）
