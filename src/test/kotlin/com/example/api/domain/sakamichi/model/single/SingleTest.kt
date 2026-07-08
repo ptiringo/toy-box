@@ -3,10 +3,10 @@ package com.example.api.domain.sakamichi.model.single
 import com.example.api.domain.sakamichi.model.group.Group
 import com.example.api.domain.sakamichi.model.group.GroupName
 import com.example.api.domain.sakamichi.model.member.MemberId
+import com.example.api.domain.sakamichi.model.release.Formation
+import com.example.api.domain.sakamichi.model.release.FormationSlot
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.Senbatsu
-import com.example.api.domain.sakamichi.model.release.SenbatsuSlot
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.unwrap
 import org.junit.jupiter.api.Test
@@ -17,7 +17,7 @@ class SingleTest {
     private val number = ReleaseNumber.create(1).unwrap()
     private val title = SingleTitle.create("ぐるぐるカーテン").unwrap()
     private val senbatsu =
-        Senbatsu.create(listOf(SenbatsuSlot(Position.Center, MemberId(generateId())))).unwrap()
+        Formation.create(listOf(FormationSlot(Position.Center, MemberId(generateId())))).unwrap()
 
     private fun createSingle(): Single =
         Single.create(groupId = group.id, number = number, title = title, senbatsu = senbatsu)

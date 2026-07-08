@@ -4,11 +4,11 @@ import com.example.api.domain.sakamichi.model.group.Group
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberId
 import com.example.api.domain.sakamichi.model.member.Membership
+import com.example.api.domain.sakamichi.model.release.Formation
+import com.example.api.domain.sakamichi.model.release.FormationError
+import com.example.api.domain.sakamichi.model.release.FormationSlot
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.Senbatsu
-import com.example.api.domain.sakamichi.model.release.SenbatsuError
-import com.example.api.domain.sakamichi.model.release.SenbatsuSlot
 import com.example.api.domain.sakamichi.model.single.Single
 import com.example.api.domain.sakamichi.model.single.SingleTitle
 import com.github.michaelbull.result.Err
@@ -20,12 +20,12 @@ import com.github.michaelbull.result.mapError
  * シングルを発売し、選抜を編成する（[Single] を成立させる入口）。
  *
  * **集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中であること」を封じ込める**（studbook の registerFoal 型。#364 段階 4）。この前提は
- * [Member] 単体でも [Senbatsu] 単体でも守れないため、協力集約 （[group] と選抜対象の [Member]
- * 群）を引数で受け取って検証し、[Senbatsu.create] → [Single.create] へ
+ * [Member] 単体でも [Formation] 単体でも守れないため、協力集約 （[group] と選抜対象の [Member]
+ * 群）を引数で受け取って検証し、[Formation.create] → [Single.create] へ
  * 橋渡しする。既存レコード集合への問い合わせは不要なのでリポジトリポートは受け取らない（ADR-0022 の例外に 該当しない）。
  *
  * 検証は (1) 全員が在籍中（[Membership.Active]）であること、(2) 全員の所属が [group] と一致すること、 (3)
- * 選抜の構造的不変条件（[Senbatsu.create] へ委譲）の順で行い、違反したメンバーが複数いる場合は まとめて返す。検証済みメンバーの ID を [SenbatsuSlot]
+ * 選抜の構造的不変条件（[Formation.create] へ委譲）の順で行い、違反したメンバーが複数いる場合は まとめて返す。検証済みメンバーの ID を [FormationSlot]
  * へ写すため、成立した選抜のメンバー参照は 必ず本検証を通過している。
  *
  * @param group 発売元のグループ（選抜対象メンバーの在籍先であること）
@@ -47,7 +47,9 @@ fun releaseSingle(
         notActive.isNotEmpty() -> Err(ReleaseSingleError.MembersNotActive(notActive))
         notInGroup.isNotEmpty() -> Err(ReleaseSingleError.MembersNotInGroup(notInGroup))
         else ->
-            Senbatsu.create(lineup.map { (position, member) -> SenbatsuSlot(position, member.id) })
+            Formation.create(
+                    lineup.map { (position, member) -> FormationSlot(position, member.id) }
+                )
                 .mapError { ReleaseSingleError.InvalidSenbatsu(it) }
                 .map { senbatsu ->
                     Single.create(
@@ -81,9 +83,9 @@ sealed interface ReleaseSingleError {
     data class MembersNotInGroup(val memberIds: Set<MemberId>) : ReleaseSingleError
 
     /**
-     * 委譲先の選抜編成（[Senbatsu.create]）の不変条件違反を wrap したもの。
+     * 委譲先の選抜編成（[Formation.create]）の不変条件違反を wrap したもの。
      *
-     * 個別バリアントは [SenbatsuError] を参照する。
+     * 個別バリアントは [FormationError] を参照する。
      */
-    data class InvalidSenbatsu(val cause: SenbatsuError) : ReleaseSingleError
+    data class InvalidSenbatsu(val cause: FormationError) : ReleaseSingleError
 }

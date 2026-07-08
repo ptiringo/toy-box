@@ -5,9 +5,9 @@ import com.example.api.domain.sakamichi.model.group.GroupName
 import com.example.api.domain.sakamichi.model.member.Generation
 import com.example.api.domain.sakamichi.model.member.Member
 import com.example.api.domain.sakamichi.model.member.MemberName
+import com.example.api.domain.sakamichi.model.release.FormationError
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.SenbatsuError
 import com.example.api.domain.sakamichi.model.single.SingleTitle
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
@@ -87,7 +87,7 @@ class ReleaseSingleTest {
 
         val error = releaseSingle(group, number, title, lineup).getError()
 
-        assert(error == ReleaseSingleError.InvalidSenbatsu(SenbatsuError.CenterMissing))
+        assert(error == ReleaseSingleError.InvalidSenbatsu(FormationError.CenterMissing))
     }
 
     @Test
@@ -101,7 +101,7 @@ class ReleaseSingleTest {
         assert(
             error ==
                 ReleaseSingleError.InvalidSenbatsu(
-                    SenbatsuError.DuplicateMember(setOf(duplicated.id))
+                    FormationError.DuplicateMember(setOf(duplicated.id))
                 )
         )
     }

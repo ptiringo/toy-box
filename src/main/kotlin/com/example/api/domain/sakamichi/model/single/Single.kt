@@ -1,8 +1,8 @@
 package com.example.api.domain.sakamichi.model.single
 
 import com.example.api.domain.sakamichi.model.group.GroupId
+import com.example.api.domain.sakamichi.model.release.Formation
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.Senbatsu
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.generateId
 import java.util.UUID
@@ -16,7 +16,7 @@ import org.jmolecules.ddd.annotation.ValueObject
 /**
  * シングル（グループが発表する作品）を表す集約ルート。
  *
- * 選抜（[Senbatsu]）はグループの恒久属性ではなくシングル単位の一時的編成のため、本集約が VO として 内包する（sakamichi-sources
+ * 選抜（[Formation]）はグループの恒久属性ではなくシングル単位の一時的編成のため、本集約が VO として 内包する（sakamichi-sources
  * §4）。発表元のグループは別集約のため [GroupId] 経由の ID 参照で保持する。
  *
  * 状態はイミュータブルに扱う（ADR-0009）。コンストラクタは private とし、生成は [create] に限る。
@@ -35,13 +35,13 @@ private constructor(
     val groupId: GroupId,
     val number: ReleaseNumber,
     val title: SingleTitle,
-    val senbatsu: Senbatsu,
+    val senbatsu: Formation,
 ) : Entity<SingleId>() {
     companion object {
         /**
          * シングルを生成する。
          *
-         * 検証済みの VO を受け取るため失敗せず、[Single] をそのまま返す。選抜の構造的不変条件は [Senbatsu.create]
+         * 検証済みの VO を受け取るため失敗せず、[Single] をそのまま返す。選抜の構造的不変条件は [Formation.create]
          * が、選抜対象メンバーの在籍検証はドメインサービス（#551）が担う。
          *
          * @param groupId 発表元グループのID
@@ -53,7 +53,7 @@ private constructor(
             groupId: GroupId,
             number: ReleaseNumber,
             title: SingleTitle,
-            senbatsu: Senbatsu,
+            senbatsu: Formation,
         ): Single =
             Single(
                 id = SingleId(generateId()),

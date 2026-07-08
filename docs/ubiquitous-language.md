@@ -202,6 +202,8 @@ graph LR
 | Single | 集約ルート | domain.sakamichi.model.single |
 | AlbumId | 値オブジェクト | domain.sakamichi.model.album |
 | AlbumTitle | 値オブジェクト | domain.sakamichi.model.album |
+| Formation | 値オブジェクト | domain.sakamichi.model.release |
+| FormationSlot | 値オブジェクト | domain.sakamichi.model.release |
 | Generation | 値オブジェクト | domain.sakamichi.model.member |
 | GroupId | 値オブジェクト | domain.sakamichi.model.group |
 | GroupName | 値オブジェクト | domain.sakamichi.model.group |
@@ -214,8 +216,6 @@ graph LR
 | Position.Center | 値オブジェクト | domain.sakamichi.model.release |
 | Position.Spot | 値オブジェクト | domain.sakamichi.model.release |
 | ReleaseNumber | 値オブジェクト | domain.sakamichi.model.release |
-| Senbatsu | 値オブジェクト | domain.sakamichi.model.release |
-| SenbatsuSlot | 値オブジェクト | domain.sakamichi.model.release |
 | SingleId | 値オブジェクト | domain.sakamichi.model.single |
 | SingleTitle | 値オブジェクト | domain.sakamichi.model.single |
 | releaseAlbum | ドメインサービス | domain.sakamichi.service.album |

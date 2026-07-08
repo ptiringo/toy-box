@@ -2,17 +2,17 @@ package com.example.api.domain.sakamichi.model.album
 
 import com.example.api.domain.sakamichi.model.group.GroupId
 import com.example.api.domain.sakamichi.model.member.MemberId
+import com.example.api.domain.sakamichi.model.release.Formation
+import com.example.api.domain.sakamichi.model.release.FormationSlot
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
-import com.example.api.domain.sakamichi.model.release.Senbatsu
-import com.example.api.domain.sakamichi.model.release.SenbatsuSlot
 import com.github.michaelbull.result.getOrThrow
 import java.util.UUID
 import org.junit.jupiter.api.Test
 
 class AlbumTest {
-    private fun senbatsu(): Senbatsu =
-        Senbatsu.create(listOf(SenbatsuSlot(Position.Center, MemberId(UUID.randomUUID()))))
+    private fun senbatsu(): Formation =
+        Formation.create(listOf(FormationSlot(Position.Center, MemberId(UUID.randomUUID()))))
             .getOrThrow { AssertionError("fixture senbatsu should be valid") }
 
     private fun releaseNumber(n: Int): ReleaseNumber =
