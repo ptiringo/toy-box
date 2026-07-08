@@ -27,6 +27,7 @@ import org.jmolecules.ddd.annotation.ValueObject
  * @property number 作品番号（n 枚目。グループ内での連番）
  * @property title 表題（表題曲の曲名）
  * @property senbatsu 選抜（表題曲を歌う編成）
+ * @property nonSenbatsu 非選抜編成（アンダー等）。無い場合は null（全員選抜）
  */
 @AggregateRoot
 class Single
@@ -36,6 +37,7 @@ private constructor(
     val number: ReleaseNumber,
     val title: SingleTitle,
     val senbatsu: Formation,
+    val nonSenbatsu: Formation?,
 ) : Entity<SingleId>() {
     companion object {
         /**
@@ -48,12 +50,14 @@ private constructor(
          * @param number 作品番号（n 枚目）
          * @param title 表題
          * @param senbatsu 選抜
+         * @param nonSenbatsu 非選抜編成（アンダー等）。全員選抜の場合は指定しない（null）
          */
         fun create(
             groupId: GroupId,
             number: ReleaseNumber,
             title: SingleTitle,
             senbatsu: Formation,
+            nonSenbatsu: Formation? = null,
         ): Single =
             Single(
                 id = SingleId(generateId()),
@@ -61,6 +65,7 @@ private constructor(
                 number = number,
                 title = title,
                 senbatsu = senbatsu,
+                nonSenbatsu = nonSenbatsu,
             )
     }
 }

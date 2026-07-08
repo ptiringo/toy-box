@@ -18,6 +18,8 @@ class SingleTest {
     private val title = SingleTitle.create("ぐるぐるカーテン").unwrap()
     private val senbatsu =
         Formation.create(listOf(FormationSlot(Position.Center, MemberId(generateId())))).unwrap()
+    private val nonSenbatsu =
+        Formation.create(listOf(FormationSlot(Position.Center, MemberId(generateId())))).unwrap()
 
     private fun createSingle(): Single =
         Single.create(groupId = group.id, number = number, title = title, senbatsu = senbatsu)
@@ -35,5 +37,24 @@ class SingleTest {
     @Test
     fun `生成のたびに異なるIDが採番される`() {
         assert(createSingle().id != createSingle().id)
+    }
+
+    @Test
+    fun `非選抜編成を指定するとそれを保持する`() {
+        val single =
+            Single.create(
+                groupId = group.id,
+                number = number,
+                title = title,
+                senbatsu = senbatsu,
+                nonSenbatsu = nonSenbatsu,
+            )
+
+        assert(single.nonSenbatsu == nonSenbatsu)
+    }
+
+    @Test
+    fun `非選抜編成を指定しなければ null になる`() {
+        assert(createSingle().nonSenbatsu == null)
     }
 }
