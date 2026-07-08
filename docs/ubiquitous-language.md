@@ -202,7 +202,6 @@ graph LR
 | Member | 集約ルート | domain.sakamichi.model.member |
 | Single | 集約ルート | domain.sakamichi.model.single |
 | AlbumId | 値オブジェクト | domain.sakamichi.model.album |
-| AlbumTitle | 値オブジェクト | domain.sakamichi.model.album |
 | Formation | 値オブジェクト | domain.sakamichi.model.release |
 | FormationSlot | 値オブジェクト | domain.sakamichi.model.release |
 | Generation | 値オブジェクト | domain.sakamichi.model.member |
