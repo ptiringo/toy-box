@@ -48,4 +48,11 @@ class TracklistTest {
 
         assert(error == TracklistError.NonContiguousNumbers(setOf(1, 3)))
     }
+
+    @Test
+    fun `トラック番号の昇順に整列される`() {
+        val tracklist = Tracklist.create(listOf(track(2, "B"), track(1, "A"))).unwrap()
+
+        assert(tracklist.tracks.map { it.number.value } == listOf(1, 2))
+    }
 }

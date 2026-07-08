@@ -56,7 +56,7 @@ data class Tracklist private constructor(val tracks: List<Track>) {
                 duplicates.isNotEmpty() -> Err(TracklistError.DuplicateNumber(duplicates))
                 actualNumbers != expectedNumbers ->
                     Err(TracklistError.NonContiguousNumbers(actualNumbers))
-                else -> Ok(Tracklist(tracks))
+                else -> Ok(Tracklist(tracks.sortedBy { it.number.value }))
             }
         }
     }
