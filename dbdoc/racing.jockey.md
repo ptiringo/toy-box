@@ -1,4 +1,4 @@
-# public.jockey
+# racing.jockey
 
 ## Description
 
@@ -23,7 +23,7 @@
 
 | Name | Definition |
 | ---- | ---------- |
-| jockey_pkey | CREATE UNIQUE INDEX jockey_pkey ON public.jockey USING btree (id) |
+| jockey_pkey | CREATE UNIQUE INDEX jockey_pkey ON racing.jockey USING btree (id) |
 
 ## Relations
 
@@ -31,7 +31,7 @@
 erDiagram
 
 
-"public.jockey" {
+"racing.jockey" {
   uuid id
   varchar_255_ first_name
   varchar_255_ last_name

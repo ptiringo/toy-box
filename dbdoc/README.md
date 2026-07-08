@@ -4,33 +4,33 @@
 
 | Name | Columns | Comment | Type |
 | ---- | ------- | ------- | ---- |
-| [public.jockey](public.jockey.md) | 4 | 騎手（JRA 競馬コンテキスト） | BASE TABLE |
-| [public.breeding_registration](public.breeding_registration.md) | 7 | 繁殖登録（軽種馬登録コンテキスト） | BASE TABLE |
-| [public.blood_horse](public.blood_horse.md) | 15 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
-| [public.breeding_result](public.breeding_result.md) | 11 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
-| [public.horse_inspection](public.horse_inspection.md) | 8 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
-| [public.covering_report](public.covering_report.md) | 5 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
+| [racing.jockey](racing.jockey.md) | 4 | 騎手（JRA 競馬コンテキスト） | BASE TABLE |
+| [studbook.breeding_registration](studbook.breeding_registration.md) | 7 | 繁殖登録（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.blood_horse](studbook.blood_horse.md) | 15 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.breeding_result](studbook.breeding_result.md) | 11 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.horse_inspection](studbook.horse_inspection.md) | 8 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.covering_report](studbook.covering_report.md) | 5 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"public.breeding_registration" }o--|| "public.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES blood_horse(id)"
-"public.blood_horse" }o--o| "public.blood_horse" : "FOREIGN KEY (dam_id) REFERENCES blood_horse(id)"
-"public.blood_horse" }o--o| "public.blood_horse" : "FOREIGN KEY (sire_id) REFERENCES blood_horse(id)"
-"public.blood_horse" }o--|| "public.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES horse_inspection(id)"
-"public.breeding_result" }o--|| "public.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES breeding_registration(id)"
-"public.breeding_result" }o--o| "public.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES blood_horse(id)"
-"public.covering_report" }o--|| "public.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES breeding_registration(id)"
+"studbook.breeding_registration" }o--|| "studbook.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES studbook.blood_horse(id)"
+"studbook.blood_horse" }o--o| "studbook.blood_horse" : "FOREIGN KEY (dam_id) REFERENCES studbook.blood_horse(id)"
+"studbook.blood_horse" }o--o| "studbook.blood_horse" : "FOREIGN KEY (sire_id) REFERENCES studbook.blood_horse(id)"
+"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id)"
+"studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
+"studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
+"studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
 
-"public.jockey" {
+"racing.jockey" {
   uuid id
   varchar_255_ first_name
   varchar_255_ last_name
   bigint version
 }
-"public.breeding_registration" {
+"studbook.breeding_registration" {
   uuid id
   varchar_255_ registration_number
   uuid registered_horse_id FK
@@ -39,7 +39,7 @@ erDiagram
   date retirement_occurred_on
   bigint version
 }
-"public.blood_horse" {
+"studbook.blood_horse" {
   uuid id
   varchar_255_ registration_number
   varchar_16_ sex
@@ -56,7 +56,7 @@ erDiagram
   date landing_date
   bigint version
 }
-"public.breeding_result" {
+"studbook.breeding_result" {
   uuid id
   uuid breeding_registration_id FK
   integer breeding_year
@@ -69,7 +69,7 @@ erDiagram
   bigint version
   date report_submitted_on
 }
-"public.horse_inspection" {
+"studbook.horse_inspection" {
   uuid id
   varchar_64_ microchip_number
   varchar_32_ parentage_type
@@ -79,7 +79,7 @@ erDiagram
   varchar_255_ feature_nose_print
   bigint version
 }
-"public.covering_report" {
+"studbook.covering_report" {
   uuid id
   uuid stallion_breeding_registration_id FK
   integer covering_year

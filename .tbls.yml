@@ -23,7 +23,7 @@ exclude:
 # lint ルールは可能な限り有効化する方針（crit レビュー: 基本的に全て true）。
 # ただし現スキーマに対して「違反ゼロで通せる」ものだけを true にする（CI の tbls lint ゲートを割らないため）。
 # 残りは該当機能（外部キー / ラベル / ビューポイント / index・制約コメント）を導入した時点で有効化する。
-# 外部キーは ADR-0053 で導入済み。スキーマ名前空間の方針は別 Issue（#509）で検討中。
+# 外部キーは ADR-0053 で導入済み。DB スキーマはコンテキスト別に分割済み（#569 / ADR-0048。studbook / racing）。
 lint:
   # コメント必須（スキーマを一次情報とする）。
   requireTableComment:
@@ -46,7 +46,9 @@ lint:
   unrelatedTable:
     enabled: true # 集約間 FK（ADR-0053）導入済み。関連を持たないテーブルの混入を検知する
     exclude:
-      - jockey # racing コンテキストの単一集約でコンテキスト内に関連先が無く構造的に unrelated（意図的）
+      # スキーマ分割（#569 / ADR-0048）後、tbls はテーブルをスキーマ修飾名で扱うため
+      # racing.jockey と完全修飾する（旧 public 単一スキーマ時代の bare 名 `jockey` は非マッチになる）。
+      - racing.jockey # racing コンテキストの単一集約でコンテキスト内に関連先が無く構造的に unrelated（意図的）
   requireIndexComment:
     enabled: false # PK 由来の暗黙 index にコメントが無く落ちる（index コメント追加で有効化）
   requireConstraintComment:

@@ -42,7 +42,7 @@ class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
                         AND outcome_type <> 'NOT_COVERED'
                     ) AS conceived,
                     COUNT(*) FILTER (WHERE outcome_type = 'LIVE_FOAL') AS live_foals
-                FROM breeding_result
+                FROM studbook.breeding_result
                 WHERE covering_stallion_id = :stallionId
                 GROUP BY covering_stallion_id, breeding_year
                 ORDER BY breeding_year

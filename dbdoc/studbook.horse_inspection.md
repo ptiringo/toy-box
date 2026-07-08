@@ -1,4 +1,4 @@
-# public.horse_inspection
+# studbook.horse_inspection
 
 ## Description
 
@@ -8,7 +8,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false | [public.blood_horse](public.blood_horse.md) |  | 識別子（外部採番の UUIDv7） |
+| id | uuid |  | false | [studbook.blood_horse](studbook.blood_horse.md) |  | 識別子（外部採番の UUIDv7） |
 | microchip_number | varchar(64) |  | false |  |  | マイクロチップ番号 |
 | parentage_type | varchar(32) |  | false |  |  | 親子判定の判別子（BY_DNA/BY_BLOOD_TYPE/BY_OVERSEAS_INSTITUTION/NOT_APPLICABLE） |
 | dna_parentage_result | varchar(16) |  | true |  |  | DNA 親子判定結果（BY_DNA のときのみ） |
@@ -28,16 +28,16 @@
 
 | Name | Definition |
 | ---- | ---------- |
-| horse_inspection_pkey | CREATE UNIQUE INDEX horse_inspection_pkey ON public.horse_inspection USING btree (id) |
+| horse_inspection_pkey | CREATE UNIQUE INDEX horse_inspection_pkey ON studbook.horse_inspection USING btree (id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"public.blood_horse" }o--|| "public.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES horse_inspection(id)"
+"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id)"
 
-"public.horse_inspection" {
+"studbook.horse_inspection" {
   uuid id
   varchar_64_ microchip_number
   varchar_32_ parentage_type
@@ -47,7 +47,7 @@ erDiagram
   varchar_255_ feature_nose_print
   bigint version
 }
-"public.blood_horse" {
+"studbook.blood_horse" {
   uuid id
   varchar_255_ registration_number
   varchar_16_ sex
