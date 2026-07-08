@@ -29,7 +29,7 @@ fun RegisterBreedingRegistrationUseCaseError.toProblemDetail(): ProblemDetail =
             )
         is RegisterBreedingRegistrationUseCaseError.HorseNotFound ->
             problem(
-                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
                     code = "blood-horse-not-found",
                     title = "Blood horse not found",
                     detail = "繁殖登録の対象として指定された軽種馬が存在しません。",
