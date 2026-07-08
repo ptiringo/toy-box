@@ -14,7 +14,7 @@ group = "com.example"
 
 version = "0.0.1-SNAPSHOT"
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
 repositories { mavenCentral() }
 
@@ -101,6 +101,14 @@ tasks.withType<Test> {
     }
 }
 
+// bootBuildImage（Paketo buildpacks）が本番コンテナへ載せる JRE のメジャーバージョンを明示する。
+// 未指定だと Liberica buildpack の既定 LTS（現状 21）が選ばれ、toolchain 25 でコンパイルした bytecode
+// （major 69）を JRE 21 が読めず UnsupportedClassVersionError で起動失敗する。toolchain と揃えて 25 に
+// 固定し、container-smoke-test.yml が本番相当のメモリ制約で起動を検証する。
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
+    environment.put("BP_JVM_VERSION", "25")
+}
+
 ktfmt {
     // Kotlin 公式コーディング規約準拠（4 space indent / 100 char limit）
     kotlinLangStyle()
@@ -116,7 +124,7 @@ detekt {
 }
 
 tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
-    jvmTarget = "21"
+    jvmTarget = "25"
     reports {
         html.required.set(true)
         // checkstyle が detekt 2.x の XML 互換レポート

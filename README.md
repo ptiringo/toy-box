@@ -4,7 +4,7 @@ Kotlin + Spring Boot で複数のドメインモデル（競馬・エンター�
 
 ## 特徴
 
-- **Spring MVC + Virtual Thread**: JDK 21 の Virtual Thread（`spring.threads.virtual.enabled=true`）を有効化し、ブロッキング IO を素直な同期コードで書きつつスレッド占有を避ける構成。WebFlux / Reactor / coroutine のリアクティブ流派は採らない（→ [ADR-0002](docs/adr/0002-virtual-thread-over-reactive.md)）。
+- **Spring MVC + Virtual Thread**: JDK 21 で正式化された Virtual Thread（`spring.threads.virtual.enabled=true`）を有効化し、ブロッキング IO を素直な同期コードで書きつつスレッド占有を避ける構成。WebFlux / Reactor / coroutine のリアクティブ流派は採らない（→ [ADR-0002](docs/adr/0002-virtual-thread-over-reactive.md)）。
 - **オニオンアーキテクチャ（4 リング）**: domainModel / domainService / applicationService / adapter。依存の向きを ArchUnit で機械的に強制。
 - **DDD（jMolecules）**: Entity / Value Object / Repository ポートなどの役割をアノテーションで表明し、整合性を ArchUnit で検証。
 - **品質ゲート**: ktfmt（フォーマット）/ detekt（静的解析）/ Kover（カバレッジ・ラチェット）/ ArchUnit（アーキテクチャ規約）を CI と pre-commit で自動チェック。
@@ -15,7 +15,7 @@ Kotlin + Spring Boot で複数のドメインモデル（競馬・エンター�
 |---|---|
 | 言語 | Kotlin 2.3 |
 | フレームワーク | Spring Boot 4.1（Spring MVC + Virtual Thread） |
-| ビルド | Gradle（Kotlin DSL）/ JDK 21 |
+| ビルド | Gradle（Kotlin DSL）/ JDK 25 |
 | API ドキュメント | springdoc-openapi（Swagger UI） |
 | DDD メタデータ | jMolecules |
 | エラー表現 | kotlin-result（`Result<V, E>`） |
@@ -32,7 +32,7 @@ Kotlin + Spring Boot で複数のドメインモデル（競馬・エンター�
 
 ### 前提
 
-ツールバージョンは [mise](https://mise.jdx.dev/) で管理しています。mise を導入のうえ、以下で一式（JDK 21 ほか）をセットアップします。
+ツールバージョンは [mise](https://mise.jdx.dev/) で管理しています。mise を導入のうえ、以下で一式（JDK 25 ほか）をセットアップします。
 
 ```bash
 mise install        # mise.toml 記載のツールを導入
@@ -45,7 +45,7 @@ mise を活性化済みのシェル（または Claude Code セッション）�
 
 ローカルへの個別セットアップの代わりに、[Dev Container](https://containers.dev/)（`.devcontainer/`）でも開発環境を立ち上げられます。**IntelliJ IDEA（JetBrains Gateway / Dev Containers 連携）を主シナリオ**とし、VS Code / GitHub Codespaces からも利用できます。
 
-- JDK 21 + mise 管理ツール一式が揃った状態でコンテナが起動し、`./gradlew check` まで通ります。
+- JDK 25 + mise 管理ツール一式が揃った状態でコンテナが起動し、`./gradlew check` まで通ります。
 - ツールバージョンの出所は引き続き `mise.toml`（devcontainer 側で二重管理しません）。コンテナ作成時に `mise install` / `lefthook install` が自動実行されます。
 - Claude Code CLI を同梱しており、コンテナ内でもそのまま利用できます（mise 管理ツールは PATH に通ります）。
 

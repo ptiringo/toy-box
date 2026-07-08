@@ -7,7 +7,7 @@ plugins {
 // 本体（root）の detektPlugins から project 依存で取り込まれ、detekt 実行時にカスタムルールを提供する。
 repositories { mavenCentral() }
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
 // 本体（root）と同じく、コンパイラ警告をエラー扱いにして警告ゼロ運用を強制する。
 kotlin { compilerOptions { allWarningsAsErrors = true } }
