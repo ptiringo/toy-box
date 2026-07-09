@@ -141,7 +141,7 @@ class ReleaseAlbumTest {
         val center = activeMember(group, "齋藤")
         val underCenter = activeMember(group, "秋元")
         val lineup = listOf(Position.Center to center)
-        val under = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to underCenter))
+        val under = underTrack1 to listOf(Position.Center to underCenter)
 
         val album =
             releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
@@ -160,7 +160,7 @@ class ReleaseAlbumTest {
                 Position.Center to both,
                 spot(row = 1, numberInRow = 1) to activeMember(group, "白石"),
             )
-        val under = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to both))
+        val under = underTrack1 to listOf(Position.Center to both)
 
         val error =
             releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
@@ -173,10 +173,7 @@ class ReleaseAlbumTest {
     fun `非選抜曲のセンター不在は InvalidNonSenbatsuTrack に包んで返す`() {
         val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
         val under =
-            NonSenbatsuTrackLineup(
-                underTrack1,
-                listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石")),
-            )
+            underTrack1 to listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石"))
 
         val error =
             releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))

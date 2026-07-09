@@ -35,7 +35,7 @@ import com.github.michaelbull.result.mapError
  * @param tracklist 全収録曲
  * @param headlineTrackNumber 見出し曲（表題曲）のトラック番号
  * @param lineup 選抜の編成（立ち位置 × メンバーの並び）
- * @param nonSenbatsuTracks 非選抜曲の編成入力の並び。空なら非選抜曲なし（全員選抜）
+ * @param nonSenbatsuTracks 非選抜曲の編成入力の並び（トラック番号 to 立ち位置つきメンバーの並び）。空なら非選抜曲なし（全員選抜）
  * @return 成立した [Single]、または前提条件違反を表す [ReleaseSingleError]
  */
 fun releaseSingle(
@@ -44,9 +44,9 @@ fun releaseSingle(
     tracklist: Tracklist,
     headlineTrackNumber: TrackNumber,
     lineup: List<Pair<Position, Member>>,
-    nonSenbatsuTracks: List<NonSenbatsuTrackLineup> = emptyList(),
+    nonSenbatsuTracks: List<Pair<TrackNumber, List<Pair<Position, Member>>>> = emptyList(),
 ): Result<Single, ReleaseSingleError> {
-    val nonSenbatsuLineups = nonSenbatsuTracks.flatMap { it.lineup }
+    val nonSenbatsuLineups = nonSenbatsuTracks.flatMap { (_, lineup) -> lineup }
     val members = (lineup + nonSenbatsuLineups).map { (_, member) -> member }
     val notActive = members.filter { it.membership != Membership.Active }.map { it.id }.toSet()
     val notInGroup = members.filter { it.groupId != group.id }.map { it.id }.toSet()
@@ -81,34 +81,23 @@ fun releaseSingle(
 /**
  * 非選抜曲群の編成を構築する。各曲の [Formation.create] を順に適用し、最初の違反で打ち切る。
  *
- * @param inputs 非選抜曲の編成入力の並び
+ * @param inputs 非選抜曲の編成入力の並び（トラック番号 to 立ち位置つきメンバーの並び）
  * @return 構築済みの [NonSenbatsuTrack] の並び、または不変条件違反を wrap した [ReleaseSingleError]
  */
 private fun buildNonSenbatsuTracks(
-    inputs: List<NonSenbatsuTrackLineup>
+    inputs: List<Pair<TrackNumber, List<Pair<Position, Member>>>>
 ): Result<List<NonSenbatsuTrack>, ReleaseSingleError> {
     val initial: Result<List<NonSenbatsuTrack>, ReleaseSingleError> = Ok(emptyList())
-    return inputs.fold(initial) { acc, input ->
+    return inputs.fold(initial) { acc, (trackNumber, lineup) ->
         acc.andThen { built ->
             Formation.create(
-                    input.lineup.map { (position, member) -> FormationSlot(position, member.id) }
+                    lineup.map { (position, member) -> FormationSlot(position, member.id) }
                 )
-                .mapError { ReleaseSingleError.InvalidNonSenbatsuTrack(input.trackNumber, it) }
-                .map { formation -> built + NonSenbatsuTrack(input.trackNumber, formation) }
+                .mapError { ReleaseSingleError.InvalidNonSenbatsuTrack(trackNumber, it) }
+                .map { formation -> built + NonSenbatsuTrack(trackNumber, formation) }
         }
     }
 }
-
-/**
- * 非選抜曲 1 曲の編成入力＝どのトラックを（[trackNumber]）どの立ち位置つきメンバーで歌うか（[lineup]）。
- *
- * @property trackNumber 非選抜曲のトラック番号
- * @property lineup 非選抜曲の編成（立ち位置 × メンバーの並び）
- */
-data class NonSenbatsuTrackLineup(
-    val trackNumber: TrackNumber,
-    val lineup: List<Pair<Position, Member>>,
-)
 
 /**
  * シングル発売（選抜編成）の前提条件違反。

@@ -104,7 +104,7 @@ class ReleaseSingleTest {
     fun `非選抜曲に他グループ在籍のメンバーが混じると MembersNotInGroup を返す`() {
         val foreign = activeMember(otherGroup, "森田")
         val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
-        val under = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to foreign))
+        val under = underTrack1 to listOf(Position.Center to foreign)
 
         val error =
             releaseSingle(
@@ -165,7 +165,7 @@ class ReleaseSingleTest {
         val other = activeMember(group, "白石")
         val underCenter = activeMember(group, "秋元")
         val lineup = listOf(Position.Center to center, spot(row = 1, numberInRow = 1) to other)
-        val under = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to underCenter))
+        val under = underTrack1 to listOf(Position.Center to underCenter)
 
         val single =
             releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
@@ -183,8 +183,8 @@ class ReleaseSingleTest {
         val under1Center = activeMember(group, "秋元")
         val under2Center = activeMember(group, "高山")
         val lineup = listOf(Position.Center to center)
-        val under1 = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to under1Center))
-        val under2 = NonSenbatsuTrackLineup(underTrack2, listOf(Position.Center to under2Center))
+        val under1 = underTrack1 to listOf(Position.Center to under1Center)
+        val under2 = underTrack2 to listOf(Position.Center to under2Center)
 
         val single =
             releaseSingle(
@@ -205,8 +205,8 @@ class ReleaseSingleTest {
         val center = activeMember(group, "齋藤")
         val sharedUnder = activeMember(group, "秋元")
         val lineup = listOf(Position.Center to center)
-        val under1 = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to sharedUnder))
-        val under2 = NonSenbatsuTrackLineup(underTrack2, listOf(Position.Center to sharedUnder))
+        val under1 = underTrack1 to listOf(Position.Center to sharedUnder)
+        val under2 = underTrack2 to listOf(Position.Center to sharedUnder)
 
         val single =
             releaseSingle(
@@ -240,7 +240,7 @@ class ReleaseSingleTest {
                 Position.Center to both,
                 spot(row = 1, numberInRow = 1) to activeMember(group, "白石"),
             )
-        val under = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to both))
+        val under = underTrack1 to listOf(Position.Center to both)
 
         val error =
             releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
@@ -253,7 +253,7 @@ class ReleaseSingleTest {
     fun `非選抜曲に卒業済みメンバーが混じると MembersNotActive を返す`() {
         val graduated = graduatedMember(group, "西野")
         val lineup = listOf(Position.Center to activeMember(group))
-        val under = NonSenbatsuTrackLineup(underTrack1, listOf(Position.Center to graduated))
+        val under = underTrack1 to listOf(Position.Center to graduated)
 
         val error =
             releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
@@ -266,10 +266,7 @@ class ReleaseSingleTest {
     fun `非選抜曲のセンター不在は InvalidNonSenbatsuTrack に包んで返す`() {
         val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
         val under =
-            NonSenbatsuTrackLineup(
-                underTrack1,
-                listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石")),
-            )
+            underTrack1 to listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石"))
 
         val error =
             releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
@@ -287,11 +284,7 @@ class ReleaseSingleTest {
     @Test
     fun `非選抜曲が見出しトラックと同じだと InvalidTrackComposition に包んで返す`() {
         val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
-        val under =
-            NonSenbatsuTrackLineup(
-                headlineTrackNumber,
-                listOf(Position.Center to activeMember(group, "白石")),
-            )
+        val under = headlineTrackNumber to listOf(Position.Center to activeMember(group, "白石"))
 
         val error =
             releaseSingle(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
