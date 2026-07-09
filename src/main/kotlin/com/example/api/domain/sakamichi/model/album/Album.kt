@@ -2,6 +2,7 @@ package com.example.api.domain.sakamichi.model.album
 
 import com.example.api.domain.sakamichi.model.group.GroupId
 import com.example.api.domain.sakamichi.model.release.Formation
+import com.example.api.domain.sakamichi.model.release.NonSenbatsuTrack
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
 import com.example.api.domain.sakamichi.model.release.TrackNumber
 import com.example.api.domain.sakamichi.model.release.TrackTitle
@@ -27,6 +28,15 @@ import org.jmolecules.ddd.annotation.ValueObject
 sealed interface AlbumError {
     /** 見出しトラック（リード曲）がトラックリストに存在しない。 */
     data object HeadlineTrackNotInTracklist : AlbumError
+
+    /** 非選抜曲のトラックがトラックリストに存在しない。 */
+    data class NonSenbatsuTrackNotInTracklist(val trackNumbers: Set<TrackNumber>) : AlbumError
+
+    /** 非選抜曲のトラックが見出しトラックと一致している（非選抜曲はリード曲ではない）。 */
+    data class NonSenbatsuTrackIsHeadline(val trackNumbers: Set<TrackNumber>) : AlbumError
+
+    /** 同一トラックが非選抜曲として重複指定されている。 */
+    data class DuplicateNonSenbatsuTrack(val trackNumbers: Set<TrackNumber>) : AlbumError
 }
 
 /**
@@ -45,6 +55,7 @@ sealed interface AlbumError {
  * @property tracklist 全収録曲（通し番号 1..n）
  * @property headlineTrackNumber 見出し曲（リード曲）のトラック番号
  * @property senbatsu 選抜（リード曲を歌う編成）
+ * @property nonSenbatsuTracks 非選抜曲の編成の並び（アンダー等）。無い場合は空リスト（全員選抜）
  */
 @AggregateRoot
 class Album
@@ -55,6 +66,7 @@ private constructor(
     val tracklist: Tracklist,
     val headlineTrackNumber: TrackNumber,
     val senbatsu: Formation,
+    val nonSenbatsuTracks: List<NonSenbatsuTrack>,
 ) : Entity<AlbumId>() {
     /** 見出し曲（リード曲）の曲名。トラックリストから [headlineTrackNumber] で引く。 */
     val headlineTitle: TrackTitle
@@ -64,14 +76,17 @@ private constructor(
         /**
          * アルバムを生成する。
          *
-         * 集約不変条件「見出しトラックがトラックリストに存在する」を検証する（ADR-0014）。選抜対象メンバーの 在籍検証はドメインサービス（releaseAlbum）が担う。
+         * 集約不変条件「見出しトラックがトラックリストに存在する」「非選抜曲のトラックがトラックリストに存在する」
+         * 「非選抜曲のトラックが見出しトラックと重複しない」「非選抜曲のトラックが重複しない」を検証する（複数の 検証済み VO 間の関係で、どの VO
+         * 単体でも守れないため集約ファクトリが所有する。ADR-0014）。 選抜対象メンバーの在籍検証はドメインサービス（releaseAlbum）が担う。
          *
          * @param groupId 発表元グループのID
          * @param number 作品番号（n 枚目）
          * @param tracklist 全収録曲
          * @param headlineTrackNumber 見出し曲のトラック番号
          * @param senbatsu 選抜
-         * @return 生成した [Album]、または見出し不在を表す [AlbumError]
+         * @param nonSenbatsuTracks 非選抜曲の編成の並び（アンダー等）。全員選抜の場合は指定しない（空リスト）
+         * @return 生成した [Album]、またはトラック整合違反を表す [AlbumError]
          */
         fun create(
             groupId: GroupId,
@@ -79,21 +94,32 @@ private constructor(
             tracklist: Tracklist,
             headlineTrackNumber: TrackNumber,
             senbatsu: Formation,
+            nonSenbatsuTracks: List<NonSenbatsuTrack> = emptyList(),
         ): Result<Album, AlbumError> {
-            val headlineExists = tracklist.tracks.any { it.number == headlineTrackNumber }
-            return if (!headlineExists) {
-                Err(AlbumError.HeadlineTrackNotInTracklist)
-            } else {
-                Ok(
-                    Album(
-                        id = AlbumId(generateId()),
-                        groupId = groupId,
-                        number = number,
-                        tracklist = tracklist,
-                        headlineTrackNumber = headlineTrackNumber,
-                        senbatsu = senbatsu,
+            val trackNumbers = tracklist.tracks.map { it.number }.toSet()
+            val nonSenbatsuNumbers = nonSenbatsuTracks.map { it.trackNumber }
+            val notInTracklist = nonSenbatsuNumbers.filterNot { it in trackNumbers }.toSet()
+            val headlineDuplicated = nonSenbatsuNumbers.filter { it == headlineTrackNumber }.toSet()
+            val duplicated = nonSenbatsuNumbers.groupBy { it }.filterValues { it.size > 1 }.keys
+            return when {
+                headlineTrackNumber !in trackNumbers -> Err(AlbumError.HeadlineTrackNotInTracklist)
+                notInTracklist.isNotEmpty() ->
+                    Err(AlbumError.NonSenbatsuTrackNotInTracklist(notInTracklist))
+                headlineDuplicated.isNotEmpty() ->
+                    Err(AlbumError.NonSenbatsuTrackIsHeadline(headlineDuplicated))
+                duplicated.isNotEmpty() -> Err(AlbumError.DuplicateNonSenbatsuTrack(duplicated))
+                else ->
+                    Ok(
+                        Album(
+                            id = AlbumId(generateId()),
+                            groupId = groupId,
+                            number = number,
+                            tracklist = tracklist,
+                            headlineTrackNumber = headlineTrackNumber,
+                            senbatsu = senbatsu,
+                            nonSenbatsuTracks = nonSenbatsuTracks,
+                        )
                     )
-                )
             }
         }
     }

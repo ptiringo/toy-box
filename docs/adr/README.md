@@ -67,6 +67,7 @@
 | [0055](0055-patch-coverage-diff-cover-gate.md) | 差分カバレッジ（patch coverage）を diff-cover で 90% ハードゲートする | Accepted |
 | [0056](0056-drop-karate-native-resttestclient-e2e.md) | E2E から Karate を撤退し RestTestClient で書き直す | Accepted |
 | [0057](0057-gradle-build-health-tooling-not-adopted.md) | Gradle build 健全性チェックの常設ツールは現時点で採用しない | Accepted |
-| [0058](0058-non-senbatsu-formation-role.md) | 非選抜（アンダー）を作品単位の Formation ロールとしてモデル化する | Accepted |
+| [0058](0058-non-senbatsu-formation-role.md) | 非選抜（アンダー）を作品単位の Formation ロールとしてモデル化する | Superseded by [0061](0061-sakamichi-non-senbatsu-tracks.md) |
 | [0059](0059-sakamichi-tracklist-and-headline-track.md) | 収録曲をトラックリストで持ち見出し曲をトラックの一種として表現する | Accepted |
 | [0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) | setup-gradle は既定の enhanced キャッシュプロバイダを使う（configuration cache の CI 持ち越しは断念） | Accepted |
+| [0061](0061-sakamichi-non-senbatsu-tracks.md) | 非選抜曲をトラック × 編成の 0..\* コレクションとしてモデル化する | Accepted |
