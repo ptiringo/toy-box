@@ -43,7 +43,7 @@ JVM 内スレッド並列（JUnit 5 `junit.jupiter.execution.parallel`、単一�
 
 CI（`api-tests.yml`）は `gradle/actions/setup-gradle`（`cache-provider: basic`）が Gradle User Home（ローカル build cache の `~/.gradle/caches/build-cache-1` を含む）を runner 間で持ち越すため、`org.gradle.caching=true` の有効化だけで build cache が CI でも効く。ワークフロー自体の変更は根拠コメントの追記に留める。
 
-> **注記（2026-07-09）**: この `cache-provider: basic` に関する記述は [ADR-0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) で置き換えられた。basic は configuration cache を保存しないため、CI で CC の効果が得られていなかった。本 ADR のその他の決定（CC / build cache / jvmargs / parallel の採否）は有効。
+> **注記（2026-07-09）**: この `cache-provider: basic` に関する記述は [ADR-0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) で置き換えられた（既定の enhanced を使う）。あわせて、**configuration cache は CI では効かない**ことが実測で判明している（`setup-gradle` は CC をキャッシュせず、持ち越しには Develocity が要る）。CC の恩恵はローカルに限られる。本 ADR のその他の決定（build cache / jvmargs / parallel の採否）は有効。
 
 ## Consequences（結果・影響）
 
