@@ -71,3 +71,4 @@
 | [0059](0059-sakamichi-tracklist-and-headline-track.md) | 収録曲をトラックリストで持ち見出し曲をトラックの一種として表現する | Accepted |
 | [0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) | setup-gradle は既定の enhanced キャッシュプロバイダを使い configuration cache を CI で持ち越す | Accepted |
 | [0061](0061-sakamichi-non-senbatsu-tracks.md) | 非選抜曲をトラック × 編成の 0..\* コレクションとしてモデル化する | Accepted |
+| [0062](0062-authn-via-identity-platform-authz-in-app.md) | 認証は GCP Identity Platform に委譲し、認可の権限は自前 DB に持つ | Accepted |
