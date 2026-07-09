@@ -128,8 +128,21 @@ pre-push:
 commit-msg:
   commands:
     # コミットメッセージのフォーマットチェック（オプション）
+    #
+    # マージ進行中（MERGE_HEAD が存在する）なら検査せず通す（#506）。`git merge` が生成する
+    # 既定のメッセージ（`Merge branch 'origin/main' ...` / `Merge pull request #NNN ...`）は
+    # Conventional Commits 形式ではないため、main 取り込みのたびに弾かれ `--no-verify` での
+    # 回避（gitleaks 等の他フックまで一緒にスキップする）を誘発していた。
+    # 個々のコミット履歴を main に残す merge commit 方針（CLAUDE.md）と整合させ、マージ
+    # コミットだけを緩める。メッセージ本文ではなく MERGE_HEAD の有無で判定するので、
+    # `Merge ` で始まる通常のコミットは従来どおり CC 形式を強制される。
+    # `--git-path` を使うのは、リンクされた作業ツリー（git worktree）でも MERGE_HEAD の
+    # 実パスを正しく解決するため。
     commitizen-check:
       run: |
+        if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+          exit 0
+        fi
         if ! echo "$(head -n1 {1})" | grep -E "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,50}" > /dev/null; then
           echo "コミットメッセージは conventional commit 形式で記述してください"
           echo "例: feat: 新機能を追加"

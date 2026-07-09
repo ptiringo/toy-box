@@ -197,7 +197,7 @@ Git フックは **Lefthook** で管理（`lefthook.yml`）。セットアップ
 
 - **pre-commit**（並列）: gitleaks、EditorConfig チェック、ktfmt チェック、detekt、actionlint、zizmor、Terraform fmt / validate、sqlfluff / squawk による SQL チェック、ShellCheck によるシェルスクリプトチェック
 - **pre-push**: 全テスト
-- **commit-msg**: Conventional Commits 形式チェック
+- **commit-msg**: Conventional Commits 形式チェック（マージ進行中は検査せず通すため、main 取り込みマージに `--no-verify` は不要）
 
 ```bash
 lefthook run pre-commit                                # フック全体を手動実行

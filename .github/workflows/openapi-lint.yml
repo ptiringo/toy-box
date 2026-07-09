@@ -56,14 +56,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
-          cache-provider: basic
+          # configuration-cache を runner 間で持ち越す（詳細は api-tests.yml のコメント参照）。
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          cache-cleanup: on-success
 
       - name: Install mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         env:
-          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
-          # インストール対象から外す（除外理由は mise.ci.toml を参照）。
+          # http backend ツール（kotlin-lsp/tfctl）を config から外す（mise.ci.toml。#510）。
           MISE_ENV: ci
+        with:
+          # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
+          # 必要なのは vacuum のみ（JDK は setup-java が供給）。
+          install_args: "vacuum"
 
       - name: Verify vacuum
         run: vacuum version

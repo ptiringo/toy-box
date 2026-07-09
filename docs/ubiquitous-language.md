@@ -140,7 +140,7 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 | 収録曲一覧（`Tracklist`） | 作品の全収録曲を通し番号で保持する VO | 不変条件: 空でない・番号が 1..n の連番・重複なし。曲名の重複は許容（別バージョン等の余地）。順序はトラック番号で定まる |
 | アルバム（`Album`） | グループが発表する作品。全収録曲（`Tracklist`）と見出し曲（リード曲）・選抜・非選抜曲（`NonSenbatsuTrack`）0..\* を内包する集約ルート | 見出し曲は `headlineTrackNumber` で指す。発表元グループは `GroupId` の ID 参照。シングルとは独立採番 |
 | 選抜（`Formation` の `senbatsu` ロール） | シングル表題曲/アルバムリード曲を歌う編成 | シングル・アルバム共通の作品編成語彙（`domain.sakamichi.model.release`）。**作品単位の一時的編成**（グループ・メンバーの恒久属性にしない）。不変条件: メンバー重複なし・`Center` 以外の立ち位置の定員 1 人・センター 1〜2 人（W センター許容） |
-| 非選抜曲（`NonSenbatsuTrack`） | 作品内のトラック（`trackNumber`）× 編成（`formation`）の 1 曲（アンダー曲等）。`Single` / `Album` が 0..\* で内包（0 件＝全員選抜） | グループ別の呼称（乃木坂=アンダー / 櫻坂=BACKS / 日向坂=ひなた坂46）は `Group.nonSenbatsuAppellation`（`非選抜活動体の呼称`）としてモデル化済み（#582）。曲ごとに独自のセンター（アンダーセンター等）を持つ。トラックリスト内・見出し曲以外・重複なしは集約ファクトリ（`Single.create` / `Album.create`）が検証。排他（選抜と同一メンバー不可・非選抜曲同士の重複は許容）は `releaseSingle` / `releaseAlbum` が検証（ADR-0060） |
+| 非選抜曲（`NonSenbatsuTrack`） | 作品内のトラック（`trackNumber`）× 編成（`formation`）の 1 曲（アンダー曲等）。`Single` / `Album` が 0..\* で内包（0 件＝全員選抜） | グループ別の呼称（乃木坂=アンダー / 櫻坂=BACKS / 日向坂=ひなた坂46）は `Group.nonSenbatsuAppellation`（`非選抜活動体の呼称`）としてモデル化済み（#582）。曲ごとに独自のセンター（アンダーセンター等）を持つ。トラックリスト内・見出し曲以外・重複なしは集約ファクトリ（`Single.create` / `Album.create`）が検証。排他（選抜と同一メンバー不可・非選抜曲同士の重複は許容）は `releaseSingle` / `releaseAlbum` が検証（ADR-0061） |
 | 非選抜活動体の呼称（`Group.nonSenbatsuAppellation`） | グループ別の非選抜編成の呼び名（乃木坂46=アンダー／櫻坂46=BACKS／日向坂46=ひなた坂46） | `Group` の**任意属性**（`domain.sakamichi.model.group`）。呼称を持たないグループ/時期は null。**時間軸を持たない**（いつから適用かは作品側の関心・#583）。作品・編成・ライブとの結び付けは持たない。典拠は `.claude/skills/sakamichi-sources`（参照日 2026-07-08） |
 | 立ち位置（`Position`） | フォーメーション上の位置。センター（`Center`）とそれ以外（`Spot`＝列 × 列内番号）の相互排他 | 作品ごとに変わる（シングル表題曲・アルバムリード曲共通）。1 列目が最前列。センターは 1〜2 人（W センター）・`Center` 以外は定員 1 人。センターと `Spot` の空間的重なりは未検証（探索段階の割り切り） |
 | 編成の枠（`FormationSlot`） | 立ち位置 × メンバーの割り当て 1 件 | メンバーは `MemberId` の ID 参照。選抜・非選抜共通、シングル/アルバム共通で使う値オブジェクト |
@@ -149,10 +149,10 @@ JRA 管掌の騎手・競走を扱う。騎手免許は競馬法で JRA が管�
 
 | 用語（関数） | 和名 | 定義 |
 | --- | --- | --- |
-| releaseSingle | シングルを発売する | 検証済みの `tracklist`（`Tracklist`）と見出し曲の `headlineTrackNumber` を受け取り、選抜を編成してシングルを成立させる入口。非選抜曲の編成入力（`nonSenbatsuTracks`＝トラック番号 to 立ち位置つきメンバーの並びの列）を任意で受け取り、選抜との排他（非選抜曲同士の重複は許容）・全編成の在籍を検証する。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Single.create` へ橋渡しする（studbook の `registerFoal` 型）。トラック整合（トラックリスト内・見出し曲以外・重複なし）の検証自体は `Single.create` に委譲する（ADR-0060）。 |
-| releaseAlbum | アルバムを発売する | 検証済みの `tracklist`（`Tracklist`）と見出し曲の `headlineTrackNumber` を受け取り、選抜（リード曲フォーメーション）を編成してアルバムを成立させる入口。非選抜曲の編成入力を任意で受け取り、選抜との排他・全編成の在籍を検証する（`releaseSingle` と対称）。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Album.create` へ橋渡しする。トラック整合の検証自体は `Album.create` に委譲する（ADR-0060）。 |
+| releaseSingle | シングルを発売する | 検証済みの `tracklist`（`Tracklist`）と見出し曲の `headlineTrackNumber` を受け取り、選抜を編成してシングルを成立させる入口。非選抜曲の編成入力（`nonSenbatsuTracks`＝トラック番号 to 立ち位置つきメンバーの並びの列）を任意で受け取り、選抜との排他（非選抜曲同士の重複は許容）・全編成の在籍を検証する。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Single.create` へ橋渡しする（studbook の `registerFoal` 型）。トラック整合（トラックリスト内・見出し曲以外・重複なし）の検証自体は `Single.create` に委譲する（ADR-0061）。 |
+| releaseAlbum | アルバムを発売する | 検証済みの `tracklist`（`Tracklist`）と見出し曲の `headlineTrackNumber` を受け取り、選抜（リード曲フォーメーション）を編成してアルバムを成立させる入口。非選抜曲の編成入力を任意で受け取り、選抜との排他・全編成の在籍を検証する（`releaseSingle` と対称）。集約をまたぐ前提条件「選抜対象メンバーが当該グループに在籍中（`Active`・所属一致）であること」を検証してから `Formation.create` → `Album.create` へ橋渡しする。トラック整合の検証自体は `Album.create` に委譲する（ADR-0061）。 |
 
-**禁止語・注意**: 「選抜」をグループやメンバーの恒久属性として扱わない（作品単位（シングル/アルバム共通）の一時的編成。⇔ 非選抜（アンダー）＝トラック × 編成の非選抜曲（`NonSenbatsuTrack`）0..\* としてモデル化済み（#556 / #583・ADR-0060）。呼称は `Group.nonSenbatsuAppellation` としてモデル化済み（#582））。
+**禁止語・注意**: 「選抜」をグループやメンバーの恒久属性として扱わない（作品単位（シングル/アルバム共通）の一時的編成。⇔ 非選抜（アンダー）＝トラック × 編成の非選抜曲（`NonSenbatsuTrack`）0..\* としてモデル化済み（#556 / #583・ADR-0061）。呼称は `Group.nonSenbatsuAppellation` としてモデル化済み（#582））。
 「選抜対象メンバーが当該グループに在籍中であること」の検証は集約またぎのため `Formation` では守らない（`releaseSingle` / `releaseAlbum` が封じ込める）。
 「桜坂46」は誤記（正しくは旧字の「櫻坂46」）。
 
