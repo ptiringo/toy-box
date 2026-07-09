@@ -157,7 +157,7 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 - **単一の sealed 型・nullable 埋め込み VO はフラット化**する。sealed は判別子列 `<名詞>_type`（値は enum 名の文字列）＋各バリアント固有列、共在 VO は構成列をまとめて「全 NULL／全 NOT NULL」で在不在を表す。
 - **相互排他・共在の不変条件は CHECK 制約で必須強制**する（多層防御。マッパーが整合行を書いても DB 単独で破れないように）。命名は `chk_<table>_<rule>`。
 - **子テーブル化は多重度（コレクション `List`）かイベント性（[ADR-0041](../../docs/adr/0041-immutable-data-model-as-modeling-discipline.md) の INSERT-only イベント）のときだけ**。リソースの現在状態は親行へフラット化して UPDATE、イベントは INSERT-only 子テーブル。
-- マッピング SQL は H2(PostgreSQL 互換モード) と PostgreSQL 双方で適用可能な構文に保つ。
+- マッピング SQL は PostgreSQL 専用構文でよい（H2 は #451 で全面脱却済み。ADR-0062）。
 
 ### 機械強制しない規約（レビューで担保）
 

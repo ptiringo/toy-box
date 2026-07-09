@@ -40,22 +40,25 @@ class JdbcBreedingResultSummaryQueriesContractTest(
 
     private val stallion = generateId()
     private val otherStallion = generateId()
-    private lateinit var registrationId: UUID
 
     @BeforeEach
     fun cleanUp() {
         deleteAllStudbookTables(jdbcClient)
         seeder.seedHorseRow(id = stallion, sex = "MALE")
         seeder.seedHorseRow(id = otherStallion, sex = "MALE")
-        registrationId = seeder.seedRegistrationRow()
     }
 
-    /** 種付あり行を作る。outcomeType=null は未報告。LIVE_FOAL のみ分娩日を持つ。 */
+    /**
+     * 種付あり行を作る。outcomeType=null は未報告。LIVE_FOAL のみ分娩日を持つ。
+     *
+     * 繁殖登録は行ごとに新しく seed する（`breeding_result` は「繁殖登録×繁殖年で一度」の UNIQUE 制約を持つため。集計上も 1 行 = 1 頭の繁殖牝馬）。
+     */
     private fun covered(
         stallionId: UUID,
         year: Int,
         outcomeType: String?,
         foalingDate: LocalDate? = null,
+        registrationId: UUID = seeder.seedRegistrationRow(),
     ) =
         BreedingResultRow(
             id = generateId(),
@@ -70,7 +73,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
         )
 
     /** 種付せず行（covering 列は全 null、outcomeType は NOT_COVERED 固定）。 */
-    private fun notCovered(year: Int) =
+    private fun notCovered(year: Int, registrationId: UUID = seeder.seedRegistrationRow()) =
         BreedingResultRow(
             id = generateId(),
             breedingRegistrationId = registrationId,

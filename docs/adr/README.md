@@ -71,3 +71,4 @@
 | [0059](0059-sakamichi-tracklist-and-headline-track.md) | 収録曲をトラックリストで持ち見出し曲をトラックの一種として表現する | Accepted |
 | [0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) | setup-gradle は既定の enhanced キャッシュプロバイダを使う（configuration cache の CI 持ち越しは断念） | Accepted |
 | [0061](0061-sakamichi-non-senbatsu-tracks.md) | 非選抜曲をトラック × 編成の 0..\* コレクションとしてモデル化する | Accepted |
+| [0062](0062-unique-backstop-plain-add-constraint.md) | 既存テーブルへの UNIQUE backstop は素の ADD CONSTRAINT で行う | Accepted |

@@ -45,6 +45,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 8. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
  * 9. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 10. 並行削除された集約への save が UpdateConflict を返すこと
+ * 11. 馬名の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -216,6 +217,16 @@ class JdbcBloodHorseRepositoryContractTest(
         repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ"
 
         assert(!repository.existsByName(HorseName.create("トウカイテイオー").unwrap()))
+    }
+
+    @Test
+    fun `同一馬名の二重insertはUNIQUE制約で拒否される`() {
+        // ドメインサービス nameHorse の existsByName 検証をすり抜ける
+        // read-then-insert 並行競合（#532）の backstop。
+        repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ" で命名済み
+        val duplicate = namedDomesticFoal() // 別個体・同じ馬名
+
+        assertThrows<DataIntegrityViolationException> { repository.save(duplicate) }
     }
 
     @Test

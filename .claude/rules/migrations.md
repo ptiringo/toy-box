@@ -24,6 +24,33 @@ Flyway は各マイグレーションを 1 トランザクションで適用す�
   V6/V8/V9 内の「書き込みを止めない」コメントは同一トランザクション内では事実誤認（ADR-0052）。
 - 新規テーブルの `CREATE TABLE` インライン CHECK はこの規約の対象外。
 
+## 既存テーブルへの UNIQUE 追加（ADR-0062）
+
+既存テーブルへ UNIQUE backstop を張るときは、素の `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` を使う
+（索引構築のあいだ ACCESS EXCLUSIVE を取るが、現行のデータ量では一瞬）。`CREATE INDEX CONCURRENTLY` は
+非トランザクション実行となり、失敗時に INVALID index を残して起動時 migrate を詰まらせるため採らない。
+
+- **`NOT VALID` は使えない**。PostgreSQL は CHECK と FOREIGN KEY にしか許さないため、ADR-0052 の
+  VALIDATE 分離規約はこのケースの対象外。
+- squawk の `disallowed-unique-constraint` / `constraint-missing-not-valid` は、**警告が紐づく
+  `ADD CONSTRAINT` 行の直前**に抑止コメントを置いて黙らせる。ルールは**カンマ区切り・空白なし**で並べる。
+
+  ```sql
+  ALTER TABLE studbook.blood_horse
+  -- squawk-ignore disallowed-unique-constraint,constraint-missing-not-valid
+  ADD CONSTRAINT uq_blood_horse_name UNIQUE (name);
+  ```
+
+  `ALTER TABLE` 行の上に置いても効かない。空白区切り・コロン付き（`-- squawk-ignore: a, b`）も効かない。
+- **`-- squawk-ignore-file` は使わない**（そのファイルの全ルールを無効化し、将来の警告まで見えなくする）。
+- nullable 列は素の `UNIQUE (col)` でよい（PostgreSQL は NULL 同士を衝突とみなさない）。partial index は不要。
+- 命名は `uq_<table>_<columns>`。
+
+## DDL は PostgreSQL 専用構文でよい
+
+H2 は #451 で全面脱却済み。ローカル・CI・テスト・本番のすべてが PostgreSQL であり、DDL を H2 互換に
+保つ必要はない（`SET LOCAL` / `ALTER TABLE ... SET SCHEMA` 等を自由に使ってよい）。
+
 ## timeout は各ファイルに書く
 
 squawk（`require-timeout-settings`）に従い、既存テーブルを変更するマイグレーションの冒頭で

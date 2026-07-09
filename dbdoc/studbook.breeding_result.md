@@ -31,6 +31,7 @@
 | fk_breeding_result_breeding_registration | FOREIGN KEY | FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id) |
 | fk_breeding_result_covering_stallion | FOREIGN KEY | FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id) |
 | breeding_result_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| uq_breeding_result_registration_year | UNIQUE | UNIQUE (breeding_registration_id, breeding_year) |
 
 ## Indexes
 
@@ -39,6 +40,7 @@
 | breeding_result_pkey | CREATE UNIQUE INDEX breeding_result_pkey ON studbook.breeding_result USING btree (id) |
 | ix_breeding_result_registration_year | CREATE INDEX ix_breeding_result_registration_year ON studbook.breeding_result USING btree (breeding_registration_id, breeding_year) |
 | ix_breeding_result_covering_stallion_id | CREATE INDEX ix_breeding_result_covering_stallion_id ON studbook.breeding_result USING btree (covering_stallion_id) |
+| uq_breeding_result_registration_year | CREATE UNIQUE INDEX uq_breeding_result_registration_year ON studbook.breeding_result USING btree (breeding_registration_id, breeding_year) |
 
 ## Relations
 
