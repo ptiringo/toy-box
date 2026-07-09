@@ -26,11 +26,15 @@ class ReleaseAlbumTest {
     private val tracklist =
         Tracklist.create(
                 listOf(
-                    Track(TrackNumber.create(1).unwrap(), TrackTitle.create("Time flies").unwrap())
+                    Track(TrackNumber.create(1).unwrap(), TrackTitle.create("Time flies").unwrap()),
+                    Track(TrackNumber.create(2).unwrap(), TrackTitle.create("僕は僕を好きになる").unwrap()),
+                    Track(TrackNumber.create(3).unwrap(), TrackTitle.create("Sing Out!").unwrap()),
                 )
             )
             .unwrap()
     private val headlineTrackNumber = TrackNumber.create(1).unwrap()
+    private val underTrack1 = TrackNumber.create(2).unwrap()
+    private val underTrack2 = TrackNumber.create(3).unwrap()
 
     private fun activeMember(group: Group, familyName: String = "齋藤"): Member =
         Member.create(
@@ -119,15 +123,163 @@ class ReleaseAlbumTest {
     }
 
     @Test
-    fun `見出しがトラックリストに無いと InvalidHeadlineTrack に包んで返す`() {
+    fun `見出しがトラックリストに無いと InvalidTrackComposition に包んで返す`() {
         val lineup = listOf(Position.Center to activeMember(group))
 
         val error =
-            releaseAlbum(group, number, tracklist, TrackNumber.create(2).unwrap(), lineup)
+            releaseAlbum(group, number, tracklist, TrackNumber.create(9).unwrap(), lineup)
                 .getError()
 
         assert(
-            error == ReleaseAlbumError.InvalidHeadlineTrack(AlbumError.HeadlineTrackNotInTracklist)
+            error ==
+                ReleaseAlbumError.InvalidTrackComposition(AlbumError.HeadlineTrackNotInTracklist)
+        )
+    }
+
+    @Test
+    fun `非選抜曲を伴うアルバムが成立する`() {
+        val center = activeMember(group, "齋藤")
+        val underCenter = activeMember(group, "秋元")
+        val lineup = listOf(Position.Center to center)
+        val under = underTrack1 to listOf(Position.Center to underCenter)
+
+        val album =
+            releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
+                .unwrap()
+
+        assert(album.nonSenbatsuTracks.size == 1)
+        assert(album.nonSenbatsuTracks.single().trackNumber == underTrack1)
+        assert(album.nonSenbatsuTracks.single().formation.centers == setOf(underCenter.id))
+    }
+
+    @Test
+    fun `同一メンバーが選抜と非選抜曲の両方にいると MembersInBothFormations を返す`() {
+        val both = activeMember(group, "齋藤")
+        val lineup =
+            listOf(
+                Position.Center to both,
+                spot(row = 1, numberInRow = 1) to activeMember(group, "白石"),
+            )
+        val under = underTrack1 to listOf(Position.Center to both)
+
+        val error =
+            releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
+                .getError()
+
+        assert(error == ReleaseAlbumError.MembersInBothFormations(setOf(both.id)))
+    }
+
+    @Test
+    fun `非選抜曲のセンター不在は InvalidNonSenbatsuTrack に包んで返す`() {
+        val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
+        val under =
+            underTrack1 to listOf(spot(row = 1, numberInRow = 1) to activeMember(group, "白石"))
+
+        val error =
+            releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
+                .getError()
+
+        assert(
+            error ==
+                ReleaseAlbumError.InvalidNonSenbatsuTrack(underTrack1, FormationError.CenterMissing)
+        )
+    }
+
+    @Test
+    fun `非選抜曲を2曲伴うアルバムが成立する`() {
+        val center = activeMember(group, "齋藤")
+        val under1Center = activeMember(group, "秋元")
+        val under2Center = activeMember(group, "高山")
+        val lineup = listOf(Position.Center to center)
+        val under1 = underTrack1 to listOf(Position.Center to under1Center)
+        val under2 = underTrack2 to listOf(Position.Center to under2Center)
+
+        val album =
+            releaseAlbum(
+                    group,
+                    number,
+                    tracklist,
+                    headlineTrackNumber,
+                    lineup,
+                    listOf(under1, under2),
+                )
+                .unwrap()
+
+        assert(album.nonSenbatsuTracks.map { it.trackNumber } == listOf(underTrack1, underTrack2))
+    }
+
+    @Test
+    fun `非選抜曲同士は同一メンバーの重複を許容する`() {
+        val center = activeMember(group, "齋藤")
+        val sharedUnder = activeMember(group, "秋元")
+        val lineup = listOf(Position.Center to center)
+        val under1 = underTrack1 to listOf(Position.Center to sharedUnder)
+        val under2 = underTrack2 to listOf(Position.Center to sharedUnder)
+
+        val album =
+            releaseAlbum(
+                    group,
+                    number,
+                    tracklist,
+                    headlineTrackNumber,
+                    lineup,
+                    listOf(under1, under2),
+                )
+                .unwrap()
+
+        assert(album.nonSenbatsuTracks.size == 2)
+        assert(album.nonSenbatsuTracks.all { it.formation.centers == setOf(sharedUnder.id) })
+    }
+
+    @Test
+    fun `非選抜曲を渡さなければ nonSenbatsuTracks は空になる`() {
+        val lineup = listOf(Position.Center to activeMember(group))
+
+        val album = releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup).unwrap()
+
+        assert(album.nonSenbatsuTracks.isEmpty())
+    }
+
+    @Test
+    fun `非選抜曲に卒業済みメンバーが混じると MembersNotActive を返す`() {
+        val graduated = graduatedMember(group, "西野")
+        val lineup = listOf(Position.Center to activeMember(group))
+        val under = underTrack1 to listOf(Position.Center to graduated)
+
+        val error =
+            releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
+                .getError()
+
+        assert(error == ReleaseAlbumError.MembersNotActive(setOf(graduated.id)))
+    }
+
+    @Test
+    fun `非選抜曲に他グループ在籍のメンバーが混じると MembersNotInGroup を返す`() {
+        val foreign = activeMember(otherGroup, "森田")
+        val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
+        val under = underTrack1 to listOf(Position.Center to foreign)
+
+        val error =
+            releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
+                .getError()
+
+        assert(error == ReleaseAlbumError.MembersNotInGroup(setOf(foreign.id)))
+    }
+
+    @Test
+    fun `非選抜曲が見出しトラックと同じだと InvalidTrackComposition に包んで返す`() {
+        val lineup = listOf(Position.Center to activeMember(group, "齋藤"))
+        val under = headlineTrackNumber to listOf(Position.Center to activeMember(group, "白石"))
+
+        val error =
+            releaseAlbum(group, number, tracklist, headlineTrackNumber, lineup, listOf(under))
+                .getError()
+
+        assert(
+            error ==
+                ReleaseAlbumError.InvalidTrackComposition(
+                    AlbumError.NonSenbatsuTrackIsHeadline(setOf(headlineTrackNumber))
+                )
         )
     }
 }
