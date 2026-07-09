@@ -36,11 +36,6 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-        with:
-          cache-provider: basic
-          # configuration-cache を runner 間で持ち越す（詳細は api-tests.yml のコメント参照）。
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-          cache-cleanup: on-success
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
@@ -50,8 +45,13 @@ jobs:
       # CodeQL は解析用に production コードがコンパイルできれば十分。
       # assemble は check 配下（test / ktfmt / detekt / koverVerify）を一切呼ばないため、
       # 検証タスクの個別除外が不要で、check に検証が増えてもメンテ不要。
+      #
+      # --no-build-cache は必須。CodeQL の extractor は Kotlin/Java コンパイラの実行をトレースして
+      # ソースを取り込むため、compileKotlin が build cache から FROM-CACHE で復元されると
+      # 「CodeQL could not process any code written in Java/Kotlin」で失敗する（ADR-0060）。
+      # 依存キャッシュは setup-gradle 側で効かせたままにし、このビルドの build cache だけを切る。
       - name: Build with Gradle
-        run: ./gradlew assemble --stacktrace
+        run: ./gradlew assemble --no-build-cache --stacktrace
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3

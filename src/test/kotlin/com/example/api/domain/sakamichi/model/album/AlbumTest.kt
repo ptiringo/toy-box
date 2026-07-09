@@ -4,6 +4,7 @@ import com.example.api.domain.sakamichi.model.group.GroupId
 import com.example.api.domain.sakamichi.model.member.MemberId
 import com.example.api.domain.sakamichi.model.release.Formation
 import com.example.api.domain.sakamichi.model.release.FormationSlot
+import com.example.api.domain.sakamichi.model.release.NonSenbatsuTrack
 import com.example.api.domain.sakamichi.model.release.Position
 import com.example.api.domain.sakamichi.model.release.ReleaseNumber
 import com.example.api.domain.sakamichi.model.release.Track
@@ -40,6 +41,13 @@ class AlbumTest {
 
     private fun headline(n: Int): TrackNumber =
         TrackNumber.create(n).getOrThrow { AssertionError("fixture headline should be valid") }
+
+    private fun nonSenbatsuTrack(n: Int): NonSenbatsuTrack =
+        NonSenbatsuTrack(
+            TrackNumber.create(n).getOrThrow { AssertionError("n") },
+            Formation.create(listOf(FormationSlot(Position.Center, MemberId(UUID.randomUUID()))))
+                .getOrThrow { AssertionError("f") },
+        )
 
     @Test
     fun `create は渡した値をそのまま保持する`() {
@@ -107,5 +115,137 @@ class AlbumTest {
             Album.create(groupId, releaseNumber(2), tracklist(), headline(1), senbatsu())
                 .getOrThrow { AssertionError("valid") }
         assert(a.id != b.id)
+    }
+
+    @Test
+    fun `非選抜曲を指定しなければ空リストになる`() {
+        val album =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist(),
+                    headline(2),
+                    senbatsu(),
+                )
+                .getOrThrow { AssertionError("valid") }
+
+        assert(album.nonSenbatsuTracks.isEmpty())
+    }
+
+    @Test
+    fun `非選抜曲を指定するとそれを保持する`() {
+        val track = nonSenbatsuTrack(1)
+
+        val album =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist(),
+                    headline(2),
+                    senbatsu(),
+                    nonSenbatsuTracks = listOf(track),
+                )
+                .getOrThrow { AssertionError("valid") }
+
+        assert(album.nonSenbatsuTracks == listOf(track))
+    }
+
+    @Test
+    fun `非選抜曲を2曲指定できる（両A面相当）`() {
+        val tracklist =
+            Tracklist.create(
+                    listOf(
+                        Track(
+                            TrackNumber.create(1).getOrThrow { AssertionError("n") },
+                            TrackTitle.create("Time flies").getOrThrow { AssertionError("t") },
+                        ),
+                        Track(
+                            TrackNumber.create(2).getOrThrow { AssertionError("n") },
+                            TrackTitle.create("僕は僕を好きになる").getOrThrow { AssertionError("t") },
+                        ),
+                        Track(
+                            TrackNumber.create(3).getOrThrow { AssertionError("n") },
+                            TrackTitle.create("なんとなく、目が合う").getOrThrow { AssertionError("t") },
+                        ),
+                    )
+                )
+                .getOrThrow { AssertionError("fixture tracklist should be valid") }
+        val tracks = listOf(nonSenbatsuTrack(2), nonSenbatsuTrack(3))
+
+        val album =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist,
+                    headline(1),
+                    senbatsu(),
+                    nonSenbatsuTracks = tracks,
+                )
+                .getOrThrow { AssertionError("valid") }
+
+        assert(album.nonSenbatsuTracks.map { it.trackNumber } == tracks.map { it.trackNumber })
+    }
+
+    @Test
+    fun `非選抜曲が見出しトラックと同じだと NonSenbatsuTrackIsHeadline を返す`() {
+        val error =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist(),
+                    headline(2),
+                    senbatsu(),
+                    nonSenbatsuTracks = listOf(nonSenbatsuTrack(2)),
+                )
+                .getError()
+
+        assert(
+            error ==
+                AlbumError.NonSenbatsuTrackIsHeadline(
+                    setOf(TrackNumber.create(2).getOrThrow { AssertionError("n") })
+                )
+        )
+    }
+
+    @Test
+    fun `非選抜曲がトラックリストに無いと NonSenbatsuTrackNotInTracklist を返す`() {
+        val error =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist(),
+                    headline(2),
+                    senbatsu(),
+                    nonSenbatsuTracks = listOf(nonSenbatsuTrack(9)),
+                )
+                .getError()
+
+        assert(
+            error ==
+                AlbumError.NonSenbatsuTrackNotInTracklist(
+                    setOf(TrackNumber.create(9).getOrThrow { AssertionError("n") })
+                )
+        )
+    }
+
+    @Test
+    fun `同一トラックを非選抜曲として重複指定すると DuplicateNonSenbatsuTrack を返す`() {
+        val error =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist(),
+                    headline(2),
+                    senbatsu(),
+                    nonSenbatsuTracks = listOf(nonSenbatsuTrack(1), nonSenbatsuTrack(1)),
+                )
+                .getError()
+
+        assert(
+            error ==
+                AlbumError.DuplicateNonSenbatsuTrack(
+                    setOf(TrackNumber.create(1).getOrThrow { AssertionError("n") })
+                )
+        )
     }
 }

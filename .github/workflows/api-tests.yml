@@ -31,21 +31,16 @@ jobs:
           distribution: "temurin"
 
       - name: Set up Gradle
-        # cache-provider: basic は Gradle User Home（依存・wrapper・ローカル build cache の
-        # ~/.gradle/caches/build-cache-1 を含む）を actions/cache で runner 間に持ち越す。
+        # cache-provider は既定（enhanced）。Gradle User Home（依存の modules-2、スクリプトコンパイル結果の
+        # kotlin-dsl、ローカル build cache の build-cache-1 等）を runner 間に持ち越す。
         # gradle.properties の org.gradle.caching=true と組み合わせ、PR では読み取り・main では
         # 書き込み（setup-gradle 既定）で compile/test 出力を再利用する（#349）。
+        # basic は restore key を使わずキー完全一致時は保存をスキップするため採用しない（ADR-0060）。
+        # configuration cache（org.gradle.configuration-cache=true）は runner 間で持ち越せない。
+        # setup-gradle の project-state キャッシュは Develocity 資格情報を要する beta 機能のため
+        # cache-encryption-key だけでは有効にならない（ADR-0060 で実測・不採用）。
+        # cache-cleanup は既定が on-success なので明示しない。
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-        with:
-          cache-provider: basic
-          # configuration-cache データ（gradle.properties の org.gradle.configuration-cache=true の成果）も
-          # runner 間で持ち越す。CC は秘密を含みうるため setup-gradle は encryption-key 指定時のみ
-          # 暗号化して保存・復元する（未指定だとエフェメラル CI で設定フェーズのスキップが効かない）。
-          # 全ジョブで同一キーを使う必要があるため repo secret GRADLE_ENCRYPTION_KEY を出所にする。
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-          # 保存前に Gradle User Home の未使用ファイルを剪定してキャッシュエントリを軽量化する
-          # （main での保存時のみ作用。10GB のキャッシュ枠の消費と復元時間を抑える）。
-          cache-cleanup: on-success
 
       - name: Install mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
