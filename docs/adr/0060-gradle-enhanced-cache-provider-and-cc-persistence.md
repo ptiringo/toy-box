@@ -47,6 +47,7 @@ CI の `gradle/actions/setup-gradle` には `cache-provider: basic` が指定さ
 - CI の Gradle User Home キャッシュが毎回更新・復元されるようになる。実測（`api-tests.yml`、main）で `modules-2`（依存）・`build-cache-1`・`kotlin-dsl`（ビルドスクリプトのコンパイル結果）・`transforms` などがすべてキャッシュヒットした。basic 時代の「キー完全一致で保存スキップ」という停滞は解消した。
   - 参考値: basic の main 実行 195s に対し、enhanced の warm 実行は 136s。ただし後者は同一 SHA の再実行で build cache が全ヒットする条件のため、厳密な等価比較ではない（方向性の証拠として扱う）。
 - **CC は CI では効かない**。`org.gradle.configuration-cache=true` の恩恵はローカル（デーモン常駐）に限られる。設定フェーズの時間は CI では毎回発生する。ADR-0015 が想定していた「CI でも CC が効く」は成り立たない。
+- **build cache が実際に効くようになった副作用として、CodeQL が壊れた**。CodeQL の extractor は Kotlin/Java コンパイラの実行をトレースしてソースを取り込むため、`compileKotlin` が `FROM-CACHE` で復元されると `CodeQL could not process any code written in Java/Kotlin` で失敗する。basic 時代はキャッシュが更新されず実コンパイルが走っていたため顕在化しなかった。対策として `codeql.yml` のビルドは `./gradlew assemble --no-build-cache` とし、依存キャッシュは維持したままこのビルドの build cache だけを切る。
 - **proprietary な gradle-actions-caching に依存する**。public リポジトリでは無料だが、private 化する場合は Free Preview の条件を確認する必要がある。ライセンス純度（MIT）を優先するなら basic へ戻す判断もありうるが、その場合はキャッシュ更新の停滞を受け入れることになる。
 - 将来 Develocity を導入する場合は、`develocity-access-key` / `develocity-server-url` と `cache-encryption-key` を揃えれば project-state キャッシュ（build-logic ＋ CC）が有効化しうる。beta 機能である点に注意。
 - ADR-0015 の「CI は `cache-provider: basic` が Gradle User Home を持ち越す」という記述は本 ADR で置き換わる（ADR-0015 の他の決定は有効）。
