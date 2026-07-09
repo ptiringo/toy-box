@@ -1,6 +1,6 @@
 # 0058. 非選抜（アンダー）を作品単位の Formation ロールとしてモデル化する
 
-- Status: Accepted
+- Status: Superseded by [ADR-0060](0060-sakamichi-non-senbatsu-tracks.md)
 - Date: 2026-07-08
 - Deciders: Matsui
 
