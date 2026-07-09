@@ -69,3 +69,4 @@
 | [0057](0057-gradle-build-health-tooling-not-adopted.md) | Gradle build 健全性チェックの常設ツールは現時点で採用しない | Accepted |
 | [0058](0058-non-senbatsu-formation-role.md) | 非選抜（アンダー）を作品単位の Formation ロールとしてモデル化する | Accepted |
 | [0059](0059-sakamichi-tracklist-and-headline-track.md) | 収録曲をトラックリストで持ち見出し曲をトラックの一種として表現する | Accepted |
+| [0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) | setup-gradle は既定の enhanced キャッシュプロバイダを使い configuration cache を CI で持ち越す | Accepted |
