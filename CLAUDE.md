@@ -66,7 +66,7 @@ mise exec -- shellcheck .claude/hooks/*.sh .claude/hooks/lib/*.sh .devcontainer/
 
 ktfmt はフォーマッタ、detekt は静的解析ツール。detekt 設定は `config/detekt/detekt.yml`（`buildUponDefaultConfig = true` でデフォルトに上書き、雛形再生成は `./gradlew detektGenerateConfig`）、レポートは `build/reports/detekt/`。プロジェクト固有のカスタムルール（例: ドメイン / アプリケーション層で `throw` しない）は `:detekt-rules` モジュールで定義し `detektPlugins` で組み込む（詳細は `.claude/rules/architecture.md`）。detekt はソースコードの静的解析を担い、依存の更新追従は Dependabot が担う。ビルド構成の健全性（未使用依存の棚卸し等）を機械強制する常設ツール（nebula.lint / dependency-analysis 等）は現時点では不採用（実機評価の結果、Kotlin DSL 非対応や Spring Boot での偽陽性で費用対効果が合わず。[ADR-0057](docs/adr/0057-gradle-build-health-tooling-not-adopted.md)）。
 
-設定ファイル（TOML/JSON/YAML）の整形は dprint が担う（`json`/`toml`/`pretty_yaml` プラグイン、コメント保持、Node 非依存）。採否は [ADR-0058](docs/adr/0058-dprint-config-file-formatting.md)。
+設定ファイル（TOML/JSON/YAML）の整形は dprint が担う（`json`/`toml`/`pretty_yaml` プラグイン、コメント保持、Node 非依存）。採否は [ADR-0063](docs/adr/0063-dprint-config-file-formatting.md)。
 
 ### 単一テストの実行
 

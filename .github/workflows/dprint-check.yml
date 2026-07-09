@@ -1,7 +1,7 @@
 # dprint による設定ファイル（TOML/JSON/YAML）整形チェックワークフロー
 #
 # 目的: 設定ファイルの変更時に dprint check を実行し、ローカルの pre-commit と同じ
-# 整形ゲートを CI でも担保する（ADR-0058 / #328）。
+# 整形ゲートを CI でも担保する（ADR-0063 / #328）。
 
 name: dprint Check
 

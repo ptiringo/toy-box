@@ -1,4 +1,4 @@
-# 0058. 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする
+# 0063. 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする
 
 - Status: Accepted
 - Date: 2026-07-08
