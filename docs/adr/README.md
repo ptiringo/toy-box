@@ -72,3 +72,4 @@
 | [0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) | setup-gradle は既定の enhanced キャッシュプロバイダを使う（configuration cache の CI 持ち越しは断念） | Accepted |
 | [0061](0061-sakamichi-non-senbatsu-tracks.md) | 非選抜曲をトラック × 編成の 0..\* コレクションとしてモデル化する | Accepted |
 | [0062](0062-unique-backstop-plain-add-constraint.md) | 既存テーブルへの UNIQUE backstop は素の ADD CONSTRAINT で行う | Accepted |
+| [0063](0063-dprint-config-file-formatting.md) | 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする | Accepted |
