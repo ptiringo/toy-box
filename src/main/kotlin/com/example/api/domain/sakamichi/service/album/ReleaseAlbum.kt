@@ -21,6 +21,9 @@ import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
 
+/** 編成 1 つ分の入力＝立ち位置つきメンバーの並び（選抜・非選抜曲共通）。 */
+private typealias Lineup = List<Pair<Position, Member>>
+
 /**
  * アルバムを発売し、選抜（リード曲フォーメーション）を編成する（[Album] を成立させる入口）。
  *
@@ -41,8 +44,8 @@ fun releaseAlbum(
     number: ReleaseNumber,
     tracklist: Tracklist,
     headlineTrackNumber: TrackNumber,
-    lineup: List<Pair<Position, Member>>,
-    nonSenbatsuTracks: List<Pair<TrackNumber, List<Pair<Position, Member>>>> = emptyList(),
+    lineup: Lineup,
+    nonSenbatsuTracks: List<Pair<TrackNumber, Lineup>> = emptyList(),
 ): Result<Album, ReleaseAlbumError> {
     val nonSenbatsuLineups = nonSenbatsuTracks.flatMap { (_, lineup) -> lineup }
     val members = (lineup + nonSenbatsuLineups).map { (_, member) -> member }
@@ -83,7 +86,7 @@ fun releaseAlbum(
  * @return 構築済みの [NonSenbatsuTrack] の並び、または不変条件違反を wrap した [ReleaseAlbumError]
  */
 private fun buildNonSenbatsuTracks(
-    inputs: List<Pair<TrackNumber, List<Pair<Position, Member>>>>
+    inputs: List<Pair<TrackNumber, Lineup>>
 ): Result<List<NonSenbatsuTrack>, ReleaseAlbumError> {
     val initial: Result<List<NonSenbatsuTrack>, ReleaseAlbumError> = Ok(emptyList())
     return inputs.fold(initial) { acc, (trackNumber, lineup) ->

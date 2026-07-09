@@ -151,6 +151,42 @@ class AlbumTest {
     }
 
     @Test
+    fun `非選抜曲を2曲指定できる（両A面相当）`() {
+        val tracklist =
+            Tracklist.create(
+                    listOf(
+                        Track(
+                            TrackNumber.create(1).getOrThrow { AssertionError("n") },
+                            TrackTitle.create("Time flies").getOrThrow { AssertionError("t") },
+                        ),
+                        Track(
+                            TrackNumber.create(2).getOrThrow { AssertionError("n") },
+                            TrackTitle.create("僕は僕を好きになる").getOrThrow { AssertionError("t") },
+                        ),
+                        Track(
+                            TrackNumber.create(3).getOrThrow { AssertionError("n") },
+                            TrackTitle.create("なんとなく、目が合う").getOrThrow { AssertionError("t") },
+                        ),
+                    )
+                )
+                .getOrThrow { AssertionError("fixture tracklist should be valid") }
+        val tracks = listOf(nonSenbatsuTrack(2), nonSenbatsuTrack(3))
+
+        val album =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist,
+                    headline(1),
+                    senbatsu(),
+                    nonSenbatsuTracks = tracks,
+                )
+                .getOrThrow { AssertionError("valid") }
+
+        assert(album.nonSenbatsuTracks.map { it.trackNumber } == tracks.map { it.trackNumber })
+    }
+
+    @Test
     fun `非選抜曲が見出しトラックと同じだと NonSenbatsuTrackIsHeadline を返す`() {
         val error =
             Album.create(
