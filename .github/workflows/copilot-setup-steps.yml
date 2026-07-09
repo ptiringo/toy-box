@@ -38,6 +38,6 @@ jobs:
           distribution: "temurin"
 
       # cache-provider は既定（enhanced）。ここはエージェント環境のキャッシュ warm が役目なので
-      # 書き込みを止めず、CC 用の cache-encryption-key も渡さない（Copilot 環境での secret 可用性に依存しないため）。
+      # 書き込みを止めない（ADR-0060）。
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
