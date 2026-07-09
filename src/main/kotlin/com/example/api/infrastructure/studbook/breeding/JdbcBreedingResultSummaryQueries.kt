@@ -21,8 +21,8 @@ import org.springframework.stereotype.Repository
  * - 受胎数 = 報告済みかつ `NOT_CONCEIVED` でない件数（流産・死産・生後直死は受胎に含む）
  * - 生産数 = `LIVE_FOAL` のみ（生後直死は「産駒がない母」に分類され生産に含めない）
  *
- * 受胎率・生産率は SQL で割らず [BreedingResultSummaryView.of] が件数から算出する（H2/PostgreSQL の 浮動小数・丸めの差を避ける）。 `GROUP
- * BY` 後の行は種付雌馬数が常に 1 以上のため 0 除算は起きない。 `COUNT(*) FILTER (WHERE ...)` は PostgreSQL / H2 双方が対応する。
+ * 受胎率・生産率は SQL で割らず [BreedingResultSummaryView.of] が件数から算出する（DB の除算・丸めに依存させず、BigDecimal の HALF_UP
+ * で決定的に丸めるため）。 `GROUP BY` 後の行は種付雌馬数が常に 1 以上のため 0 除算は起きない。
  */
 @Repository
 class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
