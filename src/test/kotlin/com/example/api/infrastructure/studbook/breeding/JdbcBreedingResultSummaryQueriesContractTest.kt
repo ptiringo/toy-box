@@ -51,7 +51,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     /**
      * 種付あり行を作る。outcomeType=null は未報告。LIVE_FOAL のみ分娩日を持つ。
      *
-     * 繁殖登録は行ごとに新しく seed する（`breeding_result` は「繁殖登録×繁殖年で一度」の UNIQUE 制約を 持つため。集計上も 1 行 = 1 頭の繁殖牝馬）。
+     * 繁殖登録は行ごとに新しく seed する（`breeding_result` は「繁殖登録×繁殖年で一度」の UNIQUE 制約を持つため。集計上も 1 行 = 1 頭の繁殖牝馬）。
      */
     private fun covered(
         stallionId: UUID,

@@ -5,12 +5,12 @@
 --
 -- ロック: 既存テーブルへの UNIQUE 追加は索引構築のあいだ ACCESS EXCLUSIVE を取り、読み書きを止める。
 -- 「書き込みを止めない」ものではない（ADR-0052 が V6/V8/V9 のコメントを事実誤認と断じた点）。現行の
--- データ量では一瞬で終わるため受け入れる。テーブルが育ったら CONCURRENTLY へ移す（ADR-0060）。
+-- データ量では一瞬で終わるため受け入れる。テーブルが育ったら CONCURRENTLY へ移す（ADR-0062）。
 --
 -- PostgreSQL は NOT VALID を CHECK と FOREIGN KEY にしか許さず UNIQUE には使えないため、ADR-0052 の
 -- 「VALIDATE を別マイグレーションへ分離する」規約は本ファイルの対象外。squawk の
 -- constraint-missing-not-valid / disallowed-unique-constraint はこの文脈では従えない助言なので、
--- 当該文に限って抑止する（-- squawk-ignore-file でファイル全体を黙らせない。ADR-0060）。
+-- 当該文に限って抑止する（-- squawk-ignore-file でファイル全体を黙らせない。ADR-0062）。
 --
 -- blood_horse.name は未命名の馬で NULL になるが、PostgreSQL は UNIQUE 制約で NULL 同士を衝突とみなさ
 -- ないため素の UNIQUE (name) で足りる（partial index は不要）。
