@@ -37,8 +37,8 @@ private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
  * [BloodHorseSpringDataRepository] へ委譲する。value class ID・各種 VO（生成口が `create`＝`Result` のもの）・enum・
  * sealed な出自 [Origin] の判別子フラット化も本マッパーが担う（永続化モデルを分離した帰結。ADR-0027）。
  *
- * 永続化実装は JDBC 一本に統一し、起動 datasource を H2(dev / Cloud Run) ↔ PostgreSQL(本番) で差し替える方針のため、 InMemory
- * 実装・プロファイル切替は持たない（ADR-0030）。デフォルト（H2・PostgreSQL 互換）でも本クラスが配線される。
+ * 永続化実装は JDBC 一本に統一し、datasource は実行環境が外部供給する（本番 = Prisma Postgres の env 注入、ローカル = docker-compose の
+ * PostgreSQL。H2 全面脱却・#451）ため、InMemory 実装・プロファイル切替は持たない（ADR-0030）。
  */
 @Repository
 class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository) :
