@@ -33,6 +33,7 @@
 | fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (dam_id) REFERENCES studbook.blood_horse(id) |
 | fk_blood_horse_sire | FOREIGN KEY | FOREIGN KEY (sire_id) REFERENCES studbook.blood_horse(id) |
 | fk_blood_horse_inspection | FOREIGN KEY | FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id) |
+| uq_blood_horse_name | UNIQUE | UNIQUE (name) |
 
 ## Indexes
 
@@ -42,6 +43,7 @@
 | ix_blood_horse_inspection_id | CREATE INDEX ix_blood_horse_inspection_id ON studbook.blood_horse USING btree (inspection_id) |
 | ix_blood_horse_sire_id | CREATE INDEX ix_blood_horse_sire_id ON studbook.blood_horse USING btree (sire_id) |
 | ix_blood_horse_dam_id | CREATE INDEX ix_blood_horse_dam_id ON studbook.blood_horse USING btree (dam_id) |
+| uq_blood_horse_name | CREATE UNIQUE INDEX uq_blood_horse_name ON studbook.blood_horse USING btree (name) |
 
 ## Relations
 

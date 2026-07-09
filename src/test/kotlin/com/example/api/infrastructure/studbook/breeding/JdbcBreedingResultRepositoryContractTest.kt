@@ -46,6 +46,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 9. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
  * 10. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 11. 並行削除された集約への save が UpdateConflict を返すこと
+ * 12. 「繁殖登録×繁殖年」の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -220,6 +221,17 @@ class JdbcBreedingResultRepositoryContractTest(
         val orphan = uncoveredRow().copy(breedingRegistrationId = generateId())
 
         assertThrows<DataIntegrityViolationException> { rows.save(orphan) }
+    }
+
+    @Test
+    fun `同一繁殖登録×同一繁殖年の二重insertはUNIQUE制約で拒否される`() {
+        // ドメインサービス recordCovering / recordUncovered の一意性検証をすり抜ける
+        // read-then-insert 並行競合（#532）の backstop。
+        val registrationId = seeder.seedRegistrationRow()
+        rows.save(uncoveredRow().copy(breedingRegistrationId = registrationId))
+        val duplicate = uncoveredRow().copy(breedingRegistrationId = registrationId)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(duplicate) }
     }
 
     @Test
