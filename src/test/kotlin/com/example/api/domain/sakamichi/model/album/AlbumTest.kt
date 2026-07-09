@@ -191,4 +191,25 @@ class AlbumTest {
                 )
         )
     }
+
+    @Test
+    fun `同一トラックを非選抜曲として重複指定すると DuplicateNonSenbatsuTrack を返す`() {
+        val error =
+            Album.create(
+                    GroupId(UUID.randomUUID()),
+                    releaseNumber(1),
+                    tracklist(),
+                    headline(2),
+                    senbatsu(),
+                    nonSenbatsuTracks = listOf(nonSenbatsuTrack(1), nonSenbatsuTrack(1)),
+                )
+                .getError()
+
+        assert(
+            error ==
+                AlbumError.DuplicateNonSenbatsuTrack(
+                    setOf(TrackNumber.create(1).getOrThrow { AssertionError("n") })
+                )
+        )
+    }
 }
