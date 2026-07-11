@@ -13,6 +13,7 @@ import com.github.michaelbull.result.Err
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.Test
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -28,6 +29,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
  * 業務ルール違反ではない例外（リクエストボディ不正・想定外例外）が RFC 9457 形式で返ることを、 [JockeyController] を踏み台にして確認する。
  */
 @WebMvcTest(JockeyController::class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {

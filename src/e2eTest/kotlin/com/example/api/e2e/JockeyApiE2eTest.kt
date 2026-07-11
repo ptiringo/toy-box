@@ -1,10 +1,14 @@
 package com.example.api.e2e
 
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.TestJwt
+import com.example.api.support.TestJwtDecoderConfiguration
 import com.jayway.jsonpath.JsonPath
 import org.junit.jupiter.api.Test
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
@@ -17,10 +21,14 @@ import org.springframework.test.web.servlet.client.RestTestClient
  * [PostgresContainerSupport] 経由で実配線したまま、[RestTestClient] で HTTP 越しに叩く。 controller → application →
  * infrastructure → 実 DB の結線を本物で検証する。
  *
+ * `/api` 配下は認証必須（ADR-0064）なので、各リクエストに Bearer トークンを載せる。`JwtDecoder` は [TestJwtDecoderConfiguration]
+ * の HS256 実装に差し替え、実 JWKS を引かずに認証フィルタを本物のまま通す。
+ *
  * Karate（`.feature` ＋ Runner）から素の Spring ネイティブ（RestTestClient）へ載せ替えた（ADR-0056）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
+@Import(TestJwtDecoderConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JockeyApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
 
@@ -30,6 +38,7 @@ class JockeyApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSu
         restTestClient
             .get()
             .uri("/api/jockeys/{id}", missingId)
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()
             .isNotFound
@@ -55,6 +64,7 @@ class JockeyApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSu
             restTestClient
                 .post()
                 .uri("/api/jockeys")
+                .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(mapOf("first_name" to "Yutaka", "last_name" to "Take"))
                 .exchange()
@@ -75,6 +85,7 @@ class JockeyApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSu
         restTestClient
             .get()
             .uri("/api/jockeys/{id}", jockeyId)
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()
             .isOk

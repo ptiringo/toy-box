@@ -33,6 +33,18 @@ spring:
     problemdetails:
       # Spring MVC 標準例外（リクエストボディ不正・媒体型不一致等）を RFC 9457 形式に変換する
       enabled: true
+  # OAuth2 リソースサーバとしての ID トークン（JWT）検証（ADR-0064）。認証は GCP Identity Platform に委譲する。
+  # issuer は OIDC discovery（.well-known/openid-configuration）を公開しているため、issuer-uri 1 本で JWKS まで
+  # 解決できる（jwk-set-uri の明示は不要）。audiences と併せて指定すると issuer 検証・audience 検証が自動で入る。
+  # GCP_PROJECT_ID は秘密ではないため Secret Manager ではなく素の環境変数で供給する（本番は deploy.yml が注入）。
+  # 既定値は意図的に実在しないプロジェクト ID にしてある。注入を忘れた環境では issuer が一致せず全トークンが
+  # 401 になる（fail closed）。テストは HS256 の JwtDecoder Bean を定義して差し替えるため、この値を引かない。
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://securetoken.google.com/${GCP_PROJECT_ID:gcp-project-id-not-injected}
+          audiences: ${GCP_PROJECT_ID:gcp-project-id-not-injected}
 
 springdoc:
   show-actuator: true
