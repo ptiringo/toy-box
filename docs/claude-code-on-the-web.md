@@ -30,7 +30,7 @@ bash scripts/web-setup.sh
 
 ### 2. Custom 許可ドメイン
 
-クラウド環境のデフォルト Trusted には Maven Central・`plugins.gradle.org`・`services.gradle.org`・`spring.io`・`repo.spring.io`・`kotlinlang.org`・Docker Hub（`registry-1.docker.io` / `auth.docker.io` / `production.cloudflare.docker.com`）が含まれる。したがって Gradle 依存解決と Testcontainers の image pull は追加設定なしで通る見込み。
+クラウド環境のデフォルト Trusted には Maven Central・`plugins.gradle.org`・`services.gradle.org`・`spring.io`・`repo.spring.io`・`kotlinlang.org`・Docker Hub（`registry-1.docker.io` / `auth.docker.io` / `production.cloudfront.docker.com`）が含まれる。したがって Gradle 依存解決と Testcontainers の image pull は追加設定なしで通る見込み。
 
 デフォルト Trusted に**無く、Custom に足す必要がある**のは mise 本体・ツール取得系:
 
