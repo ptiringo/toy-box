@@ -48,39 +48,68 @@ mise install java
 # クラウドの egress は TLS 傍受プロキシ（自前 CA で再署名する MITM）経由。curl / apt は
 # システム CA ストア（プロキシ CA 込み）で通るが、mise 導入の Temurin は独自 cacerts を使うため、
 # 素のままだと Gradle の HTTPS ダウンロード（services.gradle.org 等）が
-# 「PKIX path building failed」で落ちる。システム CA バンドルを JDK cacerts に取り込んで
-# プロキシ CA を JVM に信頼させる。バンドルは複数証明書の連結で keytool は先頭 1 件しか
-# 読まないため、分割して個別に import する。
-# ガード: システム CA バンドルは Debian/Ubuntu（＝クラウド VM）のパス。macOS 等では存在せずスキップ。
-sys_ca_bundle=/etc/ssl/certs/ca-certificates.crt
-# JAVA_HOME は mise が設定した値を内側の bash で展開させる（外側で展開させない）。
-# shellcheck disable=SC2016
-java_home_dir="$(mise exec java -- bash -lc 'printf %s "${JAVA_HOME}"')"
-if [ -n "${java_home_dir}" ] && [ -f "${sys_ca_bundle}" ] && [ -f "${java_home_dir}/lib/security/cacerts" ]; then
-  echo "importing system CA bundle into JDK cacerts (trust the egress proxy CA) ..."
-  ca_tmp="$(mktemp -d)"
-  # BEGIN CERTIFICATE ごとに 1 ファイルへ分割する（先頭のコメント行は n=0 で捨てる）。
-  awk -v d="${ca_tmp}" '
-    /-----BEGIN CERTIFICATE-----/ { n++ }
-    n > 0 { print > sprintf("%s/ca-%03d.pem", d, n) }
-  ' "${sys_ca_bundle}"
-  for cert in "${ca_tmp}"/ca-*.pem; do
-    [ -s "${cert}" ] || continue
-    # 既存 alias（再実行時）や取り込めない行は無視する。
-    "${java_home_dir}/bin/keytool" -importcert -noprompt -trustcacerts \
-      -alias "syscacert-$(basename "${cert}" .pem)" -file "${cert}" \
-      -keystore "${java_home_dir}/lib/security/cacerts" -storepass changeit \
-      >/dev/null 2>&1 || true
+# 「PKIX path building failed」で落ちる。プロキシ CA を JDK cacerts に取り込んで JVM に信頼させる。
+# プロキシ CA の所在は公式未文書化のため、候補（env var が指す CA ファイル群 + システムバンドル）を
+# 広めに集めて取り込む。バンドルは複数証明書の連結で keytool は先頭 1 件しか読まないため分割する。
+# JAVA_HOME はインストールパス直取り（mise where）で得る。ガードにより CA が無い環境ではスキップする。
+java_home_dir="$(mise where java 2>/dev/null || true)"
+cacerts="${java_home_dir}/lib/security/cacerts"
+echo "diag: java_home_dir=${java_home_dir:-empty}"
+echo "diag: cacerts=$( [ -f "${cacerts}" ] && echo present || echo missing )"
+echo "diag: NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-unset}"
+echo "diag: SSL_CERT_FILE=${SSL_CERT_FILE:-unset}"
+echo "diag: CURL_CA_BUNDLE=${CURL_CA_BUNDLE:-unset}"
+echo "diag: REQUESTS_CA_BUNDLE=${REQUESTS_CA_BUNDLE:-unset}"
+
+# 取り込み候補 CA ファイル（存在するものだけ）。
+ca_sources=""
+for f in "${NODE_EXTRA_CA_CERTS:-}" "${SSL_CERT_FILE:-}" "${CURL_CA_BUNDLE:-}" \
+         "${REQUESTS_CA_BUNDLE:-}" /etc/ssl/certs/ca-certificates.crt; do
+  [ -n "${f}" ] && [ -f "${f}" ] && ca_sources="${ca_sources} ${f}"
+done
+echo "diag: ca_sources=${ca_sources:-none}"
+
+if [ -n "${java_home_dir}" ] && [ -f "${cacerts}" ] && [ -n "${ca_sources}" ]; then
+  imported=0
+  for src in ${ca_sources}; do
+    ca_tmp="$(mktemp -d)"
+    # BEGIN CERTIFICATE ごとに 1 ファイルへ分割する（先頭のコメント行は n=0 で捨てる）。
+    awk -v d="${ca_tmp}" '
+      /-----BEGIN CERTIFICATE-----/ { n++ }
+      n > 0 { print > sprintf("%s/ca-%03d.pem", d, n) }
+    ' "${src}"
+    src_alias="$(printf %s "${src}" | tr '/.' '__')"
+    for cert in "${ca_tmp}"/ca-*.pem; do
+      [ -s "${cert}" ] || continue
+      # 既存 alias（再実行時）や取り込めない行は無視する。成功したものだけ数える。
+      if "${java_home_dir}/bin/keytool" -importcert -noprompt -trustcacerts \
+          -alias "proxyca-${src_alias}-$(basename "${cert}" .pem)" -file "${cert}" \
+          -keystore "${cacerts}" -storepass changeit >/dev/null 2>&1; then
+        imported=$((imported + 1))
+      fi
+    done
+    rm -rf "${ca_tmp}"
   done
-  rm -rf "${ca_tmp}"
+  echo "diag: newly imported ${imported} cert(s) into JDK cacerts"
 fi
 
-# 検証: JDK 25 が解決でき、Gradle が toolchain を満たせること。
+# プロキシが提示する証明書チェーンの発行者を診断（非致命）。
+if command -v openssl >/dev/null 2>&1; then
+  echo "diag: openssl probe services.gradle.org:443 (issuer/subject) ..."
+  printf '' | openssl s_client -connect services.gradle.org:443 \
+      -servername services.gradle.org 2>/dev/null \
+    | grep -E '^(depth|verify|subject|issuer|s:|i:)' | head -n 20 || true
+fi
+
+# 検証: JDK 25 が解決でき、Gradle が toolchain を満たせること（**非致命**）。
+# 検証で落ちてもセッション自体は立ち上げたいので警告に留め、末尾に要約を出す。
 # `mise exec` は**必ず java にスコープする**（`mise exec java -- ...`）。ツール未指定の
 # `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の
 # kotlin-lsp（JetBrains ホストは Custom 未許可）や GitHub API レート制限で落ちる。
-echo "verifying toolchain ..."
-mise exec java -- java -version
-mise exec java -- ./gradlew --version
-
-echo "web-setup done. Run './gradlew check' to validate the session."
+echo "verifying toolchain (non-fatal) ..."
+mise exec java -- java -version || echo "WARN: 'java -version' failed"
+if mise exec java -- ./gradlew --version; then
+  echo "web-setup: OK — JDK 25 + Gradle が解決できました。'./gradlew check' で検証してください。"
+else
+  echo "WARN: 'gradlew --version' が失敗しました（TLS/プロキシ CA の可能性）。上の diag: 行を確認してください。セッションは起動します。"
+fi
