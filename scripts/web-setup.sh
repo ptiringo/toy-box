@@ -46,8 +46,11 @@ echo "installing JDK 25 via mise (java only) ..."
 mise install java
 
 # 検証: JDK 25 が解決でき、Gradle が toolchain を満たせること。
+# `mise exec` は**必ず java にスコープする**（`mise exec java -- ...`）。ツール未指定の
+# `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の
+# kotlin-lsp（JetBrains ホストは Custom 未許可）や GitHub API レート制限で落ちる。
 echo "verifying toolchain ..."
-mise exec -- java -version
-mise exec -- ./gradlew --version
+mise exec java -- java -version
+mise exec java -- ./gradlew --version
 
 echo "web-setup done. Run './gradlew check' to validate the session."
