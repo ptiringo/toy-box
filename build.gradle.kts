@@ -151,7 +151,10 @@ kover {
         copyVariant("mature", "jvm")
         // E2E（Karate）は check/pre-push に載せない設計のため、Kover 計測からも外す。
         // これにより koverGenerateArtifactJvm が e2eTest に依存せず、check から e2eTest が除外される。
-        instrumentation { disabledForTestTasks.add("e2eTest") }
+        instrumentation {
+            disabledForTestTasks.add("e2eTest")
+            disabledForTestTasks.add("replay")
+        }
     }
 
     reports {
@@ -206,6 +209,8 @@ kover {
                         // dbdoc ソースセットの tbls ドキュメント生成ロジックを除外。
                         // アプリケーションロジックではなくツール基盤コードのため。
                         "com.example.api.dbdoc",
+                        // replay ソースセット（帰納的検証ハーネス）を除外。アプリロジックではなく検証基盤。
+                        "com.example.api.replay",
                     )
                 }
             }
@@ -266,6 +271,30 @@ tasks.register<Test>("e2eTest") {
     group = "verification"
     testClassesDirs = sourceSets["e2eTest"].output.classesDirs
     classpath = sourceSets["e2eTest"].runtimeClasspath
+    shouldRunAfter(tasks.named("test"))
+}
+
+// --- 繁殖サイクル replay ハーネス（帰納的検証・ゲート外） ---
+// 専用ソースセットに隔離する。ArchUnit は src/test のみ走査、Kover は test タスク紐付けのため、
+// replay は規約検査・カバレッジゲートのいずれの対象にもならない（探索的な replay がゲートを揺らさない）。
+// PostgresContainerSupport（src/test）を再利用するため test の出力もクラスパスへ載せる。
+sourceSets {
+    create("replay") {
+        compileClasspath += sourceSets["main"].output + sourceSets["test"].output
+        runtimeClasspath += sourceSets["main"].output + sourceSets["test"].output
+    }
+}
+
+configurations["replayImplementation"].extendsFrom(configurations["testImplementation"])
+
+configurations["replayRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
+
+// オンデマンド実行専用。check / pre-push には載せない（ゲート外）。
+tasks.register<Test>("replay") {
+    description = "実在馬フィクスチャを繁殖ワークフローへ流し込み突合レポートを生成する（ゲート外・オンデマンド）"
+    group = "verification"
+    testClassesDirs = sourceSets["replay"].output.classesDirs
+    classpath = sourceSets["replay"].runtimeClasspath
     shouldRunAfter(tasks.named("test"))
 }
 
