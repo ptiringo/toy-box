@@ -39,4 +39,15 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
             Path.of("build", "reports", "replay", "reconciliation.md"),
         )
     }
+
+    @Test
+    fun `不受胎は産駒登録を経ずに繁殖成績報告まで到達する`() {
+        val outcome = engine.run(FixtureLoader.load("02-not-conceived.json"))
+        // 出生報告までは成功し、産駒登録・馬名登録は実行されない（foal=null のため）。
+        assert(outcome.steps.any { it.step == ReplayStep.REPORT_FOALING && it.ok })
+        assert(outcome.steps.none { it.step == ReplayStep.REGISTER_FOAL })
+        assert(outcome.steps.none { it.step == ReplayStep.NAME_FOAL })
+        assert(outcome.steps.any { it.step == ReplayStep.SUBMIT_BREEDING_REPORT && it.ok })
+        assert(outcome.stoppedAt == null)
+    }
 }
