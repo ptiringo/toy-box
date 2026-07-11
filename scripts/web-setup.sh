@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Claude Code on the web のクラウドセッション用セットアップ。
 #
-# クラウド環境 UI の「セットアップスクリプト」欄から `bash scripts/web-setup.sh` として呼ぶ本体。
-# クラウド VM は素の JDK 21 だが本リポジトリの Gradle toolchain は 25 を要求するため、
-# mise で Temurin 25 を供給してギャップを埋める。PATH 注入は既存の
+# クラウド環境 UI の「セットアップスクリプト」欄から呼ぶ本体。呼び出し方は
+# docs/claude-code-on-the-web.md 参照（クローン位置は setup 実行時の CWD からは不定なので
+# 絶対パスで呼ぶ）。クラウド VM は素の JDK 21 だが本リポジトリの Gradle toolchain は 25 を
+# 要求するため、mise で Temurin 25 を供給してギャップを埋める。PATH 注入は既存の
 # .claude/hooks/session-start-mise.sh（SessionStart フック）が毎セッション担うので、
 # ここでは「mise 導入 → mise install java → mise activate 仕込み」までを一度だけ行う。
 #
@@ -13,6 +14,12 @@
 #
 # 冪等: 再実行しても mise 再導入や .bashrc への重複追記は行わない。
 set -euo pipefail
+
+# 呼び出し時の CWD に依存せずリポジトリルートで動くよう、スクリプト自身の位置から移動する。
+# Claude Code on the web の setup スクリプトは CWD がリポジトリルートである保証がなく（公式未記載）、
+# repo 相対パスで呼ぶと 127（No such file or directory）になる。後続の `mise trust` /
+# `mise install`（mise.toml を読む）はリポジトリルートで実行する必要がある。
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # mise 本体が無ければ導入し、このスクリプト内でも使えるよう PATH に載せる。
 if ! command -v mise >/dev/null 2>&1; then
