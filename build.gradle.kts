@@ -29,6 +29,10 @@ dependencies {
     // トランスポートで配線する。@McpTool 注釈付き Bean を annotation scanner が自動登録する。採否は ADR-0035。
     implementation(libs.spring.ai.starter.mcp.server.webmvc)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // 認証は GCP Identity Platform に委譲し、本 API は OAuth2 リソースサーバとして ID トークン（JWT）を
+    // 検証するだけとする（ADR-0064）。issuer-uri から OIDC discovery で JWKS まで解決するため、
+    // JwtDecoder は自前で組まない。ロール・権限は JWT の claim に載せず自前 DB を出所とする。
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     // 永続化アクセス（Spring Data JDBC + Flyway）。集約 write は Spring Data JDBC（集約 = 永続化境界）。
     // 本番ランタイムの datasource は Prisma Postgres（実 PostgreSQL v17）へ配線する（#451 / ADR-0044）。
     // ローカル/CI/smoke/テストは全て PostgreSQL（組み込み H2 は cutover で全面脱却済み）。永続化の契約
@@ -59,6 +63,11 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
+    // @WebMvcTest スライスに SecurityAutoConfiguration（＝HttpSecurity の供給元）を登録する。Boot 4 では
+    // spring-boot-security-oauth2-resource-server が自分の autoconfig だけをスライスへ持ち込むため、
+    // これが無いと OAuth2ResourceServerWebSecurityAutoConfiguration が HttpSecurity を解決できず
+    // 全 slice のコンテキストが起動しない。spring-security-test（MockMvc の認証ヘルパ）も推移で入る。
+    testImplementation("org.springframework.boot:spring-boot-security-test")
     testImplementation(libs.mockk)
     testImplementation(libs.springmockk)
     testImplementation(libs.archunit.junit5)

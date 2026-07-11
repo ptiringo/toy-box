@@ -27,6 +27,7 @@ import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -38,6 +39,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 import tools.jackson.databind.json.JsonMapper
 
 @WebMvcTest(BloodHorseController::class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper) {

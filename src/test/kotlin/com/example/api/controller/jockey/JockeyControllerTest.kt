@@ -19,6 +19,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -29,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.assertj.MockMvcTester
 
 @WebMvcTest(JockeyController::class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JockeyControllerTest(val mockMvc: MockMvc) {

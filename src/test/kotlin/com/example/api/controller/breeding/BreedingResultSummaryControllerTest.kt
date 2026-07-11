@@ -7,6 +7,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.util.UUID
 import org.junit.jupiter.api.Test
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.TestConstructor
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.assertj.MockMvcTester
 
 @WebMvcTest(BreedingResultSummaryController::class)
+@AutoConfigureMockMvc(addFilters = false)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var findBreedingResultSummary: FindBreedingResultSummaryUseCase

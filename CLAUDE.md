@@ -226,6 +226,15 @@ LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"   # 特定コマン
 
 ヘルスチェックは `/actuator/health` で公開（公開設定は `application.yml`、詳細表示は認可時のみ、動作確認は `HealthEndpointTest.kt`）。アプリ起動後に `curl http://localhost:8080/actuator/health` で `{"status":"UP"}` が返る。公開しているのはヘルスエンドポイントのみで、`info` / `metrics` 等は非公開。
 
+## 認証（OAuth2 リソースサーバ）
+
+認証は GCP Identity Platform に委譲し、この API は **OAuth2 リソースサーバとして ID トークン（JWT）を検証するだけ**とする（資格情報を保持しない）。設定は `SecurityConfig`（**`controller` パッケージ**に置く。RFC 9457 の `problem()` ビルダが adapter リングにあり、内側から参照するとオニオン規約に反するため）と `application.yml` の `spring.security.oauth2.resourceserver.jwt.issuer-uri` / `.audiences`。issuer が OIDC discovery を公開しているため `JwtDecoder` は自前で書かない。決定経緯は [ADR-0064](docs/adr/0064-authn-via-identity-platform-authz-in-app.md)。
+
+- **`permitAll` は運用・CI が壊れるエンドポイントに限る**: `/actuator/health`（Cloud Run のヘルスチェック）、`/v3/api-docs` 配下と Swagger UI（`generateOpenApiDocs` が forked bootRun 経由で取得するため、認証を掛けると OpenAPI lint のゲートが壊れる）、MCP エンドポイント（クライアントがトークンを持てない）。それ以外は `authenticated`。
+- **認可（何をしてよいか）はフィルタ層で判断しない**。ロール・権限の出所は自前 DB で、認可は application 層が担う。
+- **`@WebMvcTest` の slice は `@AutoConfigureMockMvc(addFilters = false)` で認証フィルタを無効化する**（slice は HTTP 契約の検証に集中させる）。認証そのものは `SecurityConfigTest` と E2E が担保し、テストは実 JWKS を引かず HS256 の `JwtDecoder` Bean（`support/TestJwtSupport.kt`）へ差し替える。
+- 本番（Cloud Run）は `GCP_PROJECT_ID` を環境変数で受け取る（`deploy.yml`）。注入されないと issuer が既定値に落ち全トークンが 401 になる。
+
 ## Google Cloud 操作のガードレール
 
 Claude Code から GCP を触るときは、変更・削除・課金を伴う操作を deny（CI/HCP 専用）/ ask（確認強制）で抑え、ローカルは最小権限 viewer SA の impersonation で読み取りに限定する。語彙・手順は `.claude/rules/gcp-guardrails.md`、決定経緯は [ADR-0036](docs/adr/0036-gcp-operation-guardrails.md) を参照。

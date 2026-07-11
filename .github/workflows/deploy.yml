@@ -74,6 +74,12 @@ jobs:
       # secrets_update_strategy=overwrite: 本ワークフローをサービスの secret 配線の唯一の出所とし、
       # ここに列挙しない secret 配線はデプロイ時に取り除く（宣言的・削除追従）。
       #
+      # env_vars: GCP_PROJECT_ID は OAuth2 リソースサーバの issuer / audience を組み立てるために要る
+      # （ADR-0064）。プロジェクト ID は秘密ではないが、値はコードに直書きせず production 環境の
+      # リポジトリ変数（vars.GCP_PROJECT_ID）から供給する（IMAGE / WIF_PROJECT_NUMBER と同じ流儀）。
+      # 注入されないと application.yml の既定値（実在しないプロジェクト ID）に落ち、全トークンが 401 になる。
+      # env_vars_update_strategy も secrets と同じく overwrite で、本ワークフローを唯一の出所とする。
+      #
       # --execution-environment=gen2: 実行環境を第2世代（フル Linux 互換）に明示固定する。
       # 未指定（Cloud Run の自動選択）だと gen1（gVisor）が選ばれることがあり、外部 DB
       # （Prisma Postgres）への接続時に JVM の DNS 解決が UnknownHostException で失敗した
@@ -90,4 +96,7 @@ jobs:
             SPRING_DATASOURCE_USERNAME=spring-datasource-username:latest
             SPRING_DATASOURCE_PASSWORD=spring-datasource-password:latest
           secrets_update_strategy: overwrite
+          env_vars: |-
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+          env_vars_update_strategy: overwrite
           flags: "--service-account=api-runner@ptiringo-toy-box.iam.gserviceaccount.com --no-allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 --cpu-boost --min-instances=0 --max-instances=3 --execution-environment=gen2"
