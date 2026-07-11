@@ -26,7 +26,7 @@ UI の「セットアップスクリプト」欄に次を貼る（本体はリ�
 bash "$(find / -type f -name web-setup.sh -path '*/scripts/web-setup.sh' 2>/dev/null | head -n1)"
 ```
 
-`scripts/web-setup.sh` は mise を導入し、`mise install java`（JDK 25 のみ）を実行して toolchain を検証する。全ツールは入れない（`./gradlew check` に不要なため）。
+`scripts/web-setup.sh` は mise を導入し、`mise install java`（JDK 25 のみ）を実行して toolchain を検証する。全ツールは入れない（`./gradlew check` に不要なため）。検証の `mise exec` は **java にスコープする**（`mise exec java -- ...`）。ツール未指定の `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の kotlin-lsp（JetBrains ホストは Custom 未許可）や GitHub API のレート制限（未認証 60/h）で落ちるため（実測）。
 
 > **なぜ `bash scripts/web-setup.sh` ではなく `find` で絶対パス解決するか**: セットアップスクリプトの実行時 CWD は公式ドキュメントに記載がなく、リポジトリルートである保証がない。repo 相対パスで呼ぶと `exit 127: No such file or directory` になる（実測）。リポジトリのクローン自体は setup 実行時点で存在する（"Cloud sessions start from a fresh clone ... Everything committed is available"）が、クローン先パスも未文書化のため、コミット済みヘルパーを `find` で引いて絶対パスで実行する。ヘルパー側は自分の位置からリポジトリルートへ `cd` するので、以降の `mise trust` / `mise install`（`mise.toml` を読む）は正しく走る。
 
@@ -36,14 +36,18 @@ bash "$(find / -type f -name web-setup.sh -path '*/scripts/web-setup.sh' 2>/dev/
 
 クラウド環境のデフォルト Trusted には Maven Central・`plugins.gradle.org`・`services.gradle.org`・`spring.io`・`repo.spring.io`・`kotlinlang.org`・Docker Hub（`registry-1.docker.io` / `auth.docker.io` / `production.cloudfront.docker.com`）が含まれる。したがって Gradle 依存解決と Testcontainers の image pull は追加設定なしで通る見込み。
 
-デフォルト Trusted に**無く、Custom に足す必要がある**のは mise 本体・ツール取得系:
+デフォルト Trusted に**無く、Custom に足す必要がある**のは mise 本体・ツール取得系（実クラウドで確認済み）:
 
-- `mise.jdx.dev`
-- `mise-versions.jdx.dev`
+- `mise.run` … mise インストールスクリプトの配信元（`curl https://mise.run | sh`）
+- `mise.jdx.dev` … mise バイナリの取得先（GitHub が使えない場合のフォールバック）
+- `mise-versions.jdx.dev` … `mise install` のバージョン解決
+- `mise-java.jdx.dev` … `mise install java` が JVM メタデータ（tar の所在）を引く先
 
-加えて mise の java（Temurin）取得先が Trusted に無ければ足す（実セッションで確認。候補は Adoptium API / GitHub Releases 系）。
+GitHub（`github.com` / `objects.githubusercontent.com`）は default Trusted なので追加不要（mise バイナリ・チェックサム・JDK tar 実体はそこから来る）。`api.adoptium.net` は不要だった（mise は `mise-java.jdx.dev` 経由で解決する）。
 
-> Custom ドメインの**出所は [`.devcontainer/allowed-domains.txt`](../.devcontainer/allowed-domains.txt)**（コミット共有の許可リスト）。web の Custom 欄はデフォルト Trusted との**差分だけ**を足す。値をこのドキュメントに転記して二重管理しない。過不足は下記「検証」で確定する。
+> これらは `.devcontainer/allowed-domains.txt` には**無い web 固有の要求**である。devcontainer は mise を feature で導入するため `mise.run`／`mise-java.jdx.dev` を使わないが、web は素の VM に `curl mise.run` でブートストラップするため追加で要る。Docker Hub 等の重複する既定 Trusted 分は上記のとおり `.devcontainer/allowed-domains.txt` を出所として二重管理しない。`./gradlew check` を実際に緑にする過程で更に不足ホストが出たら追記する。
+
+> **クローン先**: 実測でリポジトリは `/home/user/toy-box` に置かれた（`mise trusted /home/user/toy-box`）。ただしこのパスは公式未文書化なので UI では `find` による絶対パス解決（上記「1. セットアップスクリプト」）に依存する。
 
 ### 3. 環境変数
 
