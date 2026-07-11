@@ -45,6 +45,36 @@ mise trust
 echo "installing JDK 25 via mise (java only) ..."
 mise install java
 
+# クラウドの egress は TLS 傍受プロキシ（自前 CA で再署名する MITM）経由。curl / apt は
+# システム CA ストア（プロキシ CA 込み）で通るが、mise 導入の Temurin は独自 cacerts を使うため、
+# 素のままだと Gradle の HTTPS ダウンロード（services.gradle.org 等）が
+# 「PKIX path building failed」で落ちる。システム CA バンドルを JDK cacerts に取り込んで
+# プロキシ CA を JVM に信頼させる。バンドルは複数証明書の連結で keytool は先頭 1 件しか
+# 読まないため、分割して個別に import する。
+# ガード: システム CA バンドルは Debian/Ubuntu（＝クラウド VM）のパス。macOS 等では存在せずスキップ。
+sys_ca_bundle=/etc/ssl/certs/ca-certificates.crt
+# JAVA_HOME は mise が設定した値を内側の bash で展開させる（外側で展開させない）。
+# shellcheck disable=SC2016
+java_home_dir="$(mise exec java -- bash -lc 'printf %s "${JAVA_HOME}"')"
+if [ -n "${java_home_dir}" ] && [ -f "${sys_ca_bundle}" ] && [ -f "${java_home_dir}/lib/security/cacerts" ]; then
+  echo "importing system CA bundle into JDK cacerts (trust the egress proxy CA) ..."
+  ca_tmp="$(mktemp -d)"
+  # BEGIN CERTIFICATE ごとに 1 ファイルへ分割する（先頭のコメント行は n=0 で捨てる）。
+  awk -v d="${ca_tmp}" '
+    /-----BEGIN CERTIFICATE-----/ { n++ }
+    n > 0 { print > sprintf("%s/ca-%03d.pem", d, n) }
+  ' "${sys_ca_bundle}"
+  for cert in "${ca_tmp}"/ca-*.pem; do
+    [ -s "${cert}" ] || continue
+    # 既存 alias（再実行時）や取り込めない行は無視する。
+    "${java_home_dir}/bin/keytool" -importcert -noprompt -trustcacerts \
+      -alias "syscacert-$(basename "${cert}" .pem)" -file "${cert}" \
+      -keystore "${java_home_dir}/lib/security/cacerts" -storepass changeit \
+      >/dev/null 2>&1 || true
+  done
+  rm -rf "${ca_tmp}"
+fi
+
 # 検証: JDK 25 が解決でき、Gradle が toolchain を満たせること。
 # `mise exec` は**必ず java にスコープする**（`mise exec java -- ...`）。ツール未指定の
 # `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の

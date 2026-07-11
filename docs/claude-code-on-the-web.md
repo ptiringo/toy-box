@@ -28,6 +28,8 @@ bash "$(find / -type f -name web-setup.sh -path '*/scripts/web-setup.sh' 2>/dev/
 
 `scripts/web-setup.sh` は mise を導入し、`mise install java`（JDK 25 のみ）を実行して toolchain を検証する。全ツールは入れない（`./gradlew check` に不要なため）。検証の `mise exec` は **java にスコープする**（`mise exec java -- ...`）。ツール未指定の `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の kotlin-lsp（JetBrains ホストは Custom 未許可）や GitHub API のレート制限（未認証 60/h）で落ちるため（実測）。
 
+> **TLS 傍受プロキシの CA を JDK に信頼させる（重要）**: クラウドの egress は TLS を終端・再署名する [HTTP/HTTPS セキュリティプロキシ](https://code.claude.com/docs/en/claude-code-on-the-web#security-proxy)（MITM）経由。`curl` / `apt` はシステム CA ストア（プロキシ CA 込み）で通るが、mise 導入の Temurin は**独自 cacerts** を使うため、素のままだと Gradle の HTTPS ダウンロード（`services.gradle.org` 等）が `javax.net.ssl.SSLHandshakeException: PKIX path building failed` で落ちる（実測）。`scripts/web-setup.sh` はシステム CA バンドル（`/etc/ssl/certs/ca-certificates.crt`）を JDK の `cacerts` に取り込んでこれを解消する（バンドルは複数証明書の連結で `keytool` は先頭 1 件しか読まないため分割して個別 import）。プロキシ CA のパスや JVM 向けの信頼手順は公式未文書化のため、システムバンドル全体を取り込む方式にしている。
+
 > **なぜ `bash scripts/web-setup.sh` ではなく `find` で絶対パス解決するか**: セットアップスクリプトの実行時 CWD は公式ドキュメントに記載がなく、リポジトリルートである保証がない。repo 相対パスで呼ぶと `exit 127: No such file or directory` になる（実測）。リポジトリのクローン自体は setup 実行時点で存在する（"Cloud sessions start from a fresh clone ... Everything committed is available"）が、クローン先パスも未文書化のため、コミット済みヘルパーを `find` で引いて絶対パスで実行する。ヘルパー側は自分の位置からリポジトリルートへ `cd` するので、以降の `mise trust` / `mise install`（`mise.toml` を読む）は正しく走る。
 
 > **なぜ SessionStart フックでなく setup スクリプトか**: 公式は「ランタイム/CLI の導入は setup スクリプト、両環境で要るプロジェクト設定は SessionStart フック」を推奨している。mise + JDK の導入は前者にあたる。加えて SessionStart フックに寄せると、初回セッションで mise 未導入のまま既存の `session-start-mise.sh`（`mise hook-env`）が空振りし PATH が注入されない順序問題が起きる。setup スクリプトは Claude Code 起動前に完走するのでこれを避けられる。
