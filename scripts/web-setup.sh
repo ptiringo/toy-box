@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # Claude Code on the web のクラウドセッション用セットアップ。
 #
-# クラウド環境 UI の「セットアップスクリプト」欄から呼ぶ本体。呼び出し方は
-# docs/claude-code-on-the-web.md 参照（クローン位置は setup 実行時の CWD からは不定なので
-# 絶対パスで呼ぶ）。クラウド VM は素の JDK 21 だが本リポジトリの Gradle toolchain は 25 を
-# 要求するため、mise で Temurin 25 を供給してギャップを埋める。PATH 注入は既存の
-# .claude/hooks/session-start-mise.sh（SessionStart フック）が毎セッション担うので、
-# ここでは「mise 導入 → mise install java → mise activate 仕込み」までを一度だけ行う。
+# クラウド環境 UI の「セットアップスクリプト」欄から呼ぶ本体。呼び出し方・UI 側に必要な設定
+# （Custom 許可ドメイン・環境変数）は docs/claude-code-on-the-web.md 参照。クラウド VM は素の
+# JDK 21 だが本リポジトリの Gradle toolchain は 25 を要求するため、mise で Temurin 25 を供給する。
+# PATH 注入は既存の .claude/hooks/session-start-mise.sh（SessionStart フック）が毎セッション担うので、
+# ここでは「mise 導入 → mise install java → mise activate 仕込み → プロキシ CA の信頼」を一度だけ行う。
 #
 # スコープは `./gradlew check` を緑にすることに限定し、`mise install`（全ツール）ではなく
 # `mise install java`（JDK 25 のみ）だけを入れる。kotlin-lsp（JetBrains ホスト・スコープ外）や
@@ -20,6 +19,20 @@ set -euo pipefail
 # repo 相対パスで呼ぶと 127（No such file or directory）になる。後続の `mise trust` /
 # `mise install`（mise.toml を読む）はリポジトリルートで実行する必要がある。
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# UTF-8 ロケールを使う。クラウド VM の既定ロケールは POSIX(C) で、JVM の sun.jnu.encoding
+# （ファイル名エンコーディング）が非 UTF-8 になる。すると日本語のテストメソッド名から生成される
+# .class のパスを書き出せず、Kotlin コンパイラが InvalidPathException で内部エラーになる。
+# sun.jnu.encoding は OS ロケール由来で -D 指定が効かないことがあるため、ロケール自体を UTF-8 にする。
+# ここでの export は本スクリプト内の JVM 実行にのみ効く。セッション側にも効かせるには
+# クラウド環境 UI の環境変数に LANG / LC_ALL を設定すること（docs/claude-code-on-the-web.md 参照）。
+for locale_candidate in C.utf8 C.UTF-8; do
+  if locale -a 2>/dev/null | grep -qixF "${locale_candidate}"; then
+    export LANG="${locale_candidate}"
+    export LC_ALL="${locale_candidate}"
+    break
+  fi
+done
 
 # mise 本体が無ければ導入し、このスクリプト内でも使えるよう PATH に載せる。
 if ! command -v mise >/dev/null 2>&1; then
@@ -45,43 +58,39 @@ mise trust
 echo "installing JDK 25 via mise (java only) ..."
 mise install java
 
-# クラウドの egress は TLS 傍受プロキシ（自前 CA で再署名する MITM）経由。curl / apt は
-# システム CA ストア（プロキシ CA 込み）で通るが、mise 導入の Temurin は独自 cacerts を使うため、
-# 素のままだと Gradle の HTTPS ダウンロード（services.gradle.org 等）が
+# クラウドの egress は TLS を再署名する傍受プロキシ（issuer: Anthropic Egress Gateway CA）経由。
+# セッションには CA 入り truststore が JAVA_TOOL_OPTIONS で渡るが、**この setup スクリプトの実行
+# コンテキストには渡らない**ため、素のままだと Gradle の HTTPS ダウンロード（services.gradle.org）が
 # 「PKIX path building failed」で落ちる。プロキシ CA を JDK cacerts に取り込んで JVM に信頼させる。
-# プロキシ CA の所在は公式未文書化のため、候補（env var が指す CA ファイル群 + システムバンドル）を
-# 広めに集めて取り込む。バンドルは複数証明書の連結で keytool は先頭 1 件しか読まないため分割する。
-# JAVA_HOME はインストールパス直取り（mise where）で得る。ガードにより CA が無い環境ではスキップする。
+# CA の実体は環境変数（NODE_EXTRA_CA_CERTS 等）が指すバンドル。所在は公式未文書化のため候補を広く見る。
+# バンドルは複数証明書の連結で keytool は先頭 1 件しか読まないため、分割して個別に import する。
 java_home_dir="$(mise where java 2>/dev/null || true)"
 cacerts="${java_home_dir}/lib/security/cacerts"
-echo "diag: java_home_dir=${java_home_dir:-empty}"
-echo "diag: cacerts=$( [ -f "${cacerts}" ] && echo present || echo missing )"
-echo "diag: NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-unset}"
-echo "diag: SSL_CERT_FILE=${SSL_CERT_FILE:-unset}"
-echo "diag: CURL_CA_BUNDLE=${CURL_CA_BUNDLE:-unset}"
-echo "diag: REQUESTS_CA_BUNDLE=${REQUESTS_CA_BUNDLE:-unset}"
 
-# 取り込み候補 CA ファイル（存在するものだけ）。
 ca_sources=""
-for f in "${NODE_EXTRA_CA_CERTS:-}" "${SSL_CERT_FILE:-}" "${CURL_CA_BUNDLE:-}" \
-         "${REQUESTS_CA_BUNDLE:-}" /etc/ssl/certs/ca-certificates.crt; do
-  [ -n "${f}" ] && [ -f "${f}" ] && ca_sources="${ca_sources} ${f}"
+for ca_file in "${NODE_EXTRA_CA_CERTS:-}" "${SSL_CERT_FILE:-}" "${CURL_CA_BUNDLE:-}" \
+               "${REQUESTS_CA_BUNDLE:-}" /etc/ssl/certs/ca-certificates.crt; do
+  { [ -n "${ca_file}" ] && [ -f "${ca_file}" ]; } || continue
+  # 同じバンドルを複数の環境変数が指すので重複を除く。
+  case " ${ca_sources} " in
+    *" ${ca_file} "*) continue ;;
+  esac
+  ca_sources="${ca_sources} ${ca_file}"
 done
-echo "diag: ca_sources=${ca_sources:-none}"
 
 if [ -n "${java_home_dir}" ] && [ -f "${cacerts}" ] && [ -n "${ca_sources}" ]; then
   imported=0
-  for src in ${ca_sources}; do
+  for ca_src in ${ca_sources}; do
     ca_tmp="$(mktemp -d)"
     # BEGIN CERTIFICATE ごとに 1 ファイルへ分割する（先頭のコメント行は n=0 で捨てる）。
     awk -v d="${ca_tmp}" '
       /-----BEGIN CERTIFICATE-----/ { n++ }
       n > 0 { print > sprintf("%s/ca-%03d.pem", d, n) }
-    ' "${src}"
-    src_alias="$(printf %s "${src}" | tr '/.' '__')"
+    ' "${ca_src}"
+    src_alias="$(printf %s "${ca_src}" | tr '/.' '__')"
     for cert in "${ca_tmp}"/ca-*.pem; do
       [ -s "${cert}" ] || continue
-      # 既存 alias（再実行時）や取り込めない行は無視する。成功したものだけ数える。
+      # 既に取り込み済み（再実行時）や証明書でない断片は無視する。成功したものだけ数える。
       if "${java_home_dir}/bin/keytool" -importcert -noprompt -trustcacerts \
           -alias "proxyca-${src_alias}-$(basename "${cert}" .pem)" -file "${cert}" \
           -keystore "${cacerts}" -storepass changeit >/dev/null 2>&1; then
@@ -90,26 +99,15 @@ if [ -n "${java_home_dir}" ] && [ -f "${cacerts}" ] && [ -n "${ca_sources}" ]; t
     done
     rm -rf "${ca_tmp}"
   done
-  echo "diag: newly imported ${imported} cert(s) into JDK cacerts"
+  echo "imported ${imported} CA cert(s) into JDK cacerts (trust the egress proxy CA)"
 fi
 
-# プロキシが提示する証明書チェーンの発行者を診断（非致命）。
-if command -v openssl >/dev/null 2>&1; then
-  echo "diag: openssl probe services.gradle.org:443 (issuer/subject) ..."
-  printf '' | openssl s_client -connect services.gradle.org:443 \
-      -servername services.gradle.org 2>/dev/null \
-    | grep -E '^(depth|verify|subject|issuer|s:|i:)' | head -n 20 || true
-fi
-
-# 検証: JDK 25 が解決でき、Gradle が toolchain を満たせること（**非致命**）。
-# 検証で落ちてもセッション自体は立ち上げたいので警告に留め、末尾に要約を出す。
+# 検証: JDK 25 が解決でき、Gradle が toolchain を満たせること。
 # `mise exec` は**必ず java にスコープする**（`mise exec java -- ...`）。ツール未指定の
 # `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の
 # kotlin-lsp（JetBrains ホストは Custom 未許可）や GitHub API レート制限で落ちる。
-echo "verifying toolchain (non-fatal) ..."
-mise exec java -- java -version || echo "WARN: 'java -version' failed"
-if mise exec java -- ./gradlew --version; then
-  echo "web-setup: OK — JDK 25 + Gradle が解決できました。'./gradlew check' で検証してください。"
-else
-  echo "WARN: 'gradlew --version' が失敗しました（TLS/プロキシ CA の可能性）。上の diag: 行を確認してください。セッションは起動します。"
-fi
+echo "verifying toolchain ..."
+mise exec java -- java -version
+mise exec java -- ./gradlew --version
+
+echo "web-setup done. Run './gradlew check' to validate the session."
