@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.replay.fixture.FixtureSources
 import com.example.api.replay.fixture.FoalingFixture
 import com.example.api.replay.fixture.HorseFacts
 import com.example.api.replay.fixture.HorseSynthesized
@@ -37,6 +38,15 @@ fun FoalingFixture.toOutcome(): FoalingOutcome =
         "NotCovered" -> FoalingOutcome.NotCovered
         else -> error("未知の分娩区分名: $outcome")
     }
+
+/** フィクスチャの出典をラベル付きの一覧に写す（レポートに全件出し、典拠を辿れるようにする）。 */
+fun FixtureSources.toSourceRefs(): List<SourceRef> =
+    listOfNotNull(
+        SourceRef("繁殖牝馬", broodmare),
+        SourceRef("繁殖成績", breedingRecord),
+        SourceRef("種牡馬", stallion),
+        foal?.let { SourceRef("産駒", it) },
+    )
 
 /** 種付証明フィクスチャを [StudCertificateInput] に写す。 */
 fun StudCertificateFixture.toInput(): StudCertificateInput =

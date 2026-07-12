@@ -12,6 +12,9 @@ object ReconciliationReport {
      */
     private val RECORD_GRANULARITY_NOTES =
         listOf(
+            "**「一周完了」はモデルが事実に耐えたことを意味しない。**" +
+                "非公開項目を合成で埋め、内国産馬を輸入馬として登録して通しているため、" +
+                "綻びは停止ではなく各節の「合成した項目」に現れる。停止 0 件は「弾かれなかった」以上のことを言わない。",
             "JBIS-Search は不受胎・流産・死産を区別せず、すべて『産駒なし』に丸める（公式 FAQ に明記）。" +
                 "したがって LiveFoal 以外の FoalingOutcome の区分は、事実ではなくフィクスチャ側の合成の判断である。",
             "JBIS-Search の繁殖成績の年軸は産駒の生年であり、種付年ではない。" + "各フィクスチャの種付年は生年から 1 を引いて求めた近似値である。",
@@ -28,6 +31,10 @@ object ReconciliationReport {
         sb.appendLine("- 一周完了: ${outcomes.size - stopped.size} 頭")
         sb.appendLine("- 停止（モデルが弾いた）: ${stopped.size} 頭")
         sb.appendLine()
+        sb.appendLine(
+            "> 「一周完了」はモデルが事実に耐えたことを意味しない。合成した値で埋めて通しているため、" + "綻びは停止ではなく各節の「合成した項目」に現れる。次節を必ず読むこと。"
+        )
+        sb.appendLine()
         sb.appendLine("## 公開記録の粒度について")
         sb.appendLine()
         for (note in RECORD_GRANULARITY_NOTES) {
@@ -37,7 +44,10 @@ object ReconciliationReport {
         for (o in outcomes) {
             sb.appendLine("## ${o.fixtureName}")
             sb.appendLine()
-            sb.appendLine("- 出典: ${o.sourceUrl}")
+            sb.appendLine("- 出典:")
+            for (s in o.sources) {
+                sb.appendLine("    - ${s.label}: ${s.url}")
+            }
             if (o.stoppedAt == null) {
                 sb.appendLine("- 結果: ✅ 一周完了")
             } else {

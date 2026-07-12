@@ -67,7 +67,7 @@ class ReplayEngine(
         fun stop(at: ReplayStep) =
             HorseReplayOutcome(
                 fixture.name,
-                fixture.sources.breedingRecord,
+                fixture.sources.toSourceRefs(),
                 synth.notes,
                 steps.toList(),
                 at,
@@ -226,7 +226,7 @@ class ReplayEngine(
 
         return HorseReplayOutcome(
             fixture.name,
-            fixture.sources.breedingRecord,
+            fixture.sources.toSourceRefs(),
             synth.notes,
             steps.toList(),
             null,

@@ -14,8 +14,10 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 /**
  * 実在馬の公開記録を繁殖ワークフローへ一周流し、停止点＝モデルの綻びを突合レポートに書き出す。
  *
- * **停止はテストの失敗ではなく「発見」**なので assert しない。唯一の例外が `01-imported-normal` で、 両親とも輸入馬＝事実どおりの seed
- * 経路で入れられるため、一周完了を回帰アンカーとして固定する。
+ * **停止はテストの失敗ではなく「発見」**なので、停止そのものは assert しない （全フィクスチャを流す最後のテストがその契約を体現する）。例外は 2 つ。
+ *
+ * `01-imported-normal` は両親とも輸入馬＝事実どおりの seed 経路で入れられるため、一周完了を回帰アンカーとして固定する。
+ * 分岐（馬名登録の有無・産駒登録の有無）を検証するテストは、「◯◯の段階が無いこと」が手前の停止でも 成立してしまう空振りを避けるため、判断地点への到達だけを前提条件として明示する。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -39,6 +41,12 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
     fun `未命名の産駒では馬名登録の段階を実行しない`() {
         val outcome = engine.run(FixtureLoader.load("05-unnamed-foal.json"))
 
+        // 「NAME_FOAL が無いこと」だけを見ると、その手前で停止した場合にも通ってしまう（空振り）。
+        // 分岐（馬名の有無）を判断する地点＝産駒血統登録まで到達していることを前提条件として明示する。
+        assert(outcome.steps.any { it.step == ReplayStep.REGISTER_FOAL && it.ok }) {
+            "馬名登録の分岐地点（REGISTER_FOAL）に到達していない: " +
+                "stoppedAt=${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
+        }
         assert(outcome.steps.none { it.step == ReplayStep.NAME_FOAL })
     }
 
@@ -46,6 +54,11 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
     fun `産駒なしの年は産駒登録を経ずに繁殖成績報告まで到達する`() {
         val outcome = engine.run(FixtureLoader.load("02-domestic-barren.json"))
 
+        // 同上。産駒登録が「無いこと」は、繁殖成績報告まで到達して初めて「スキップされた」と言える。
+        assert(outcome.steps.any { it.step == ReplayStep.SUBMIT_BREEDING_REPORT && it.ok }) {
+            "繁殖成績報告まで到達していない: " +
+                "stoppedAt=${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
+        }
         assert(outcome.steps.none { it.step == ReplayStep.REGISTER_FOAL })
         assert(outcome.steps.none { it.step == ReplayStep.NAME_FOAL })
     }
