@@ -1,8 +1,14 @@
 package com.example.api.replay
 
 import com.example.api.application.studbook.breeding.StudCertificateInput
+import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.replay.fixture.FoalingFixture
+import com.example.api.replay.fixture.HorseFacts
+import com.example.api.replay.fixture.HorseSynthesized
 import com.example.api.replay.fixture.StudCertificateFixture
 import java.time.Clock
 import java.time.Instant
@@ -39,6 +45,24 @@ fun StudCertificateFixture.toInput(): StudCertificateInput =
         validRegions = validRegions,
         validPeriodStart = LocalDate.parse(validPeriodStart),
         validPeriodEnd = LocalDate.parse(validPeriodEnd),
+    )
+
+/**
+ * 公開事実（[facts]）と合成値（[synth]）を合成して輸入馬登録の入力を作る。
+ *
+ * 内国産馬でも seed 経路が RegisterImportedHorse しかないため、出生国は facts になければ合成値を使う。
+ */
+fun importedCommand(facts: HorseFacts, synth: HorseSynthesized): RegisterImportedHorseCommand =
+    RegisterImportedHorseCommand(
+        sex = Sex.valueOf(facts.sex),
+        coatColor = CoatColor.valueOf(facts.coatColor),
+        breedType = BreedType.valueOf(facts.breedType),
+        dateOfBirth = LocalDate.parse(facts.dateOfBirth),
+        breeder = facts.breeder,
+        microchipNumber = synth.microchipNumber,
+        originCountry = facts.originCountry ?: synth.originCountry,
+        landingDate = LocalDate.parse(synth.landingDate),
+        registrationNumber = synth.pedigreeRegistrationNumber,
     )
 
 /** 暦日を Asia/Tokyo の正午の [Instant] に写す（提出日時の Command.issuedAt 用。締切 VO は Asia/Tokyo で暦日へ戻す）。 */

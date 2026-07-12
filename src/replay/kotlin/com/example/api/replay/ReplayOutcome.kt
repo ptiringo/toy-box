@@ -17,10 +17,16 @@ enum class ReplayStep {
 /** 1 段階の実行結果。ok=false のとき detail に弾いた 〜Error の文字列表現を入れる。 */
 data class StepResult(val step: ReplayStep, val ok: Boolean, val detail: String)
 
-/** 1 頭 × 1 シーズンの replay 観測結果。 [stoppedAt] が非 null なら、その段階でモデルが実在馬を弾いた（= 突合レポートの発見）。 */
+/**
+ * 1 頭 × 1 シーズンの replay 観測結果。
+ *
+ * [stoppedAt] が非 null なら、その段階でモデルが実在馬を弾いた（＝突合レポートの発見）。 [synthesizedNotes]
+ * は、公開記録に無いため合成した値とその理由。停止が無くても「事実に耐えた」とは 言えない（合成で埋めて通しているため）ので、レポートに必ず出す。
+ */
 data class HorseReplayOutcome(
     val fixtureName: String,
     val sourceUrl: String,
+    val synthesizedNotes: List<String>,
     val steps: List<StepResult>,
     val stoppedAt: ReplayStep?,
     val stopReason: String?,

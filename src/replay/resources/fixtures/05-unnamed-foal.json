@@ -1,0 +1,77 @@
+{
+  "name": "サバンナズチョイス 2020年シーズン（2021年 未命名の産駒）",
+  "sources": {
+    "broodmare": "https://www.jbis.or.jp/horse/0001113658/",
+    "breedingRecord": "https://www.jbis.or.jp/horse/0001113658/broodmare/info/",
+    "stallion": "https://www.jbis.or.jp/horse/0001151936/",
+    "foal": "https://www.jbis.or.jp/horse/0001340950/"
+  },
+  "facts": {
+    "coveringYear": 2020,
+    "stallion": {
+      "sex": "MALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "2012-03-22",
+      "breeder": "ノーザンファーム"
+    },
+    "broodmare": {
+      "sex": "FEMALE",
+      "coatColor": "DARK_BAY",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "2007-09-10",
+      "breeder": "Arrowfield Group Pty Ltd, Jungle Pocket Pty Ltd",
+      "originCountry": "オーストラリア"
+    },
+    "foaling": { "outcome": "LiveFoal", "foalingDate": "2021-01-23" },
+    "foal": {
+      "sex": "MALE",
+      "coatColor": "DARK_BAY",
+      "breedType": "THOROUGHBRED",
+      "breeder": "ノーザンファーム"
+    }
+  },
+  "synthesized": {
+    "notes": [
+      "産駒（https://www.jbis.or.jp/horse/0001340950/ ）は血統登録のみで馬名が付いていない（JBIS 上も未命名表示）。よって馬名登録の段階は実行しない。",
+      "種牡馬ドゥラメンテは内国産（安平産）だが、seed 経路が RegisterImportedHorse しかないため輸入馬として登録している（出生国・輸入年月日は架空）。",
+      "繁殖牝馬は南半球（豪州）生まれで 9 月生。北半球の繁殖シーズン前提と噛み合うかの観察も兼ねる。",
+      "種付年は産駒生年 2021 から 1 を引いて 2020 とした。",
+      "マイクロチップ番号・登録番号・DNA 型・種付日・証明書・提出日は JBIS 非公開のため合成。"
+    ],
+    "stallion": {
+      "microchipNumber": "900000000050001",
+      "originCountry": "日本",
+      "landingDate": "2012-03-22",
+      "pedigreeRegistrationNumber": "JBIS-0001151936",
+      "breedingRegistrationNumber": "BR-0001151936"
+    },
+    "broodmare": {
+      "microchipNumber": "900000000050002",
+      "originCountry": "オーストラリア",
+      "landingDate": "2012-08-01",
+      "pedigreeRegistrationNumber": "JBIS-0001113658",
+      "breedingRegistrationNumber": "BR-0001113658"
+    },
+    "covering": {
+      "coveringDate": "2020-03-05",
+      "coveringPlace": "北海道",
+      "certificateNumber": "CVR-2020-0005",
+      "studCertificate": {
+        "number": "SC-2020-0005",
+        "validRegions": ["北海道"],
+        "validPeriodStart": "2020-02-01",
+        "validPeriodEnd": "2020-07-31"
+      }
+    },
+    "submissions": {
+      "coveringReportSubmittedOn": "2020-09-25",
+      "breedingReportSubmittedOn": "2021-05-20"
+    },
+    "foal": {
+      "microchipNumber": "900000000050003",
+      "dnaParentage": "CONSISTENT",
+      "pedigreeRegistrationNumber": "JBIS-0001340950"
+    }
+  }
+}
