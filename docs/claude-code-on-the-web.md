@@ -74,12 +74,22 @@ LC_ALL=C.utf8
 - **セッション**には CA 入り truststore が `JAVA_TOOL_OPTIONS`（`-Djavax.net.ssl.trustStore=…/java-truststore.p12` + プロキシ設定）で渡るため、JVM は素で TLS を通せる。CA バンドルの実体は `NODE_EXTRA_CA_CERTS` / `SSL_CERT_FILE` / `CURL_CA_BUNDLE` / `REQUESTS_CA_BUNDLE` が指すファイル。
 - **setup スクリプトの実行コンテキストには `JAVA_TOOL_OPTIONS` が渡らない**。そのため mise 導入直後の Temurin は独自 cacerts のままで、Gradle の HTTPS ダウンロードが `PKIX path building failed` で落ちる。`scripts/web-setup.sh` はプロキシ CA を JDK の cacerts に取り込んでこれを解消する。
 
-## 検証（初回セッションで実施）
+## Docker デーモンは自動起動しない
 
-1. セッション開始後、`./gradlew check` が緑になること。
-   - PATH は既存の `.claude/hooks/session-start-mise.sh`（SessionStart フック）が `mise hook-env` で注入するので、`mise exec --` プレフィックス無しで `./gradlew` が動く。
-2. Testcontainers Postgres（`postgres:17-alpine` + Ryuk）が起動し JDBC 契約テストが通ること（上記 Docker Hub CDN の許可が要る）。
-3. ドメイン不足で pull / 依存解決が落ちたら、落ちたホストを Custom 許可ドメインに足して再実行し、上表を実測値に更新する。
+クラウド VM は Docker / docker compose を同梱するが、**デーモンが自動起動しない**。`/var/run/docker.sock` が無いため Testcontainers が `Could not find a valid Docker environment` で落ち、Postgres 契約テストと `@SpringBootTest` 系が全滅する（実測）。
+
+これは**毎セッション**必要なので、環境キャッシュがあるとスキップされる setup スクリプトではなく **SessionStart フック** `.claude/hooks/session-start-docker.sh` が `dockerd` を起動する。`CLAUDE_CODE_REMOTE` でクラウドセッション限定にガードしており、ローカル（macOS 等）では何もしない。
+
+手動で起こす場合は `sudo dockerd &` を `./gradlew check` の前に実行する。
+
+## 検証結果（2026-07-12 実クラウドで確認済み）
+
+本ドキュメントの設定で **`./gradlew check` が BUILD SUCCESSFUL**（ktfmt / detekt / Kover ゲート・Testcontainers Postgres 契約テストを含む全チェック通過）。
+
+- PATH は既存の `.claude/hooks/session-start-mise.sh`（SessionStart フック）が `mise hook-env` で注入するので、`mise exec --` プレフィックス無しで `./gradlew` が動く。
+- 追加のホストが 403 で落ちた場合は、そのホストを Custom 許可ドメインに足して再実行し、上記の表を実測値に更新すること。
+
+> **既知のノイズ**: クラウドでビルドすると mise が `mise.lock` に musl プラットフォーム項目などを自動追記することがある。環境固有の付随的な差分なのでコミットしない。
 
 ## スコープ外（別 Issue で扱う）
 
