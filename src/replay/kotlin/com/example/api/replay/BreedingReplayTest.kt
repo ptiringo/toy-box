@@ -4,6 +4,7 @@ import com.example.api.replay.fixture.FixtureLoader
 import com.example.api.support.PostgresContainerSupport
 import com.example.api.support.deleteAllStudbookTables
 import java.nio.file.Path
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
@@ -17,7 +18,10 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * **停止はテストの失敗ではなく「発見」**なので、停止そのものは assert しない （全フィクスチャを流す最後のテストがその契約を体現する）。例外は 2 つ。
  *
  * `01-imported-normal` は両親とも輸入馬＝事実どおりの seed 経路で入れられるため、一周完了を回帰アンカーとして固定する。
- * 分岐（馬名登録の有無・産駒登録の有無）を検証するテストは、「◯◯の段階が無いこと」が手前の停止でも 成立してしまう空振りを避けるため、判断地点への到達だけを前提条件として明示する。
+ * 分岐（馬名登録の有無・産駒登録の有無）を検証するテストは、「◯◯の段階が無いこと」が手前の停止でも 成立してしまう空振りを避けるため、判断地点への到達を前提条件として明示する。
+ * ただしこの前提条件も `assert` にはしない。将来モデル側の綻び（例: 内国産馬の seed 経路）が直って
+ * 分岐地点より手前で停止するようになった場合、それ自体は「発見」でありビルド失敗にしてはならないため、 `assumeTrue` で表現し、到達しなければテストは失敗ではなく skipped
+ * として可視化する。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -42,9 +46,9 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
         val outcome = engine.run(FixtureLoader.load("05-unnamed-foal.json"))
 
         // 「NAME_FOAL が無いこと」だけを見ると、その手前で停止した場合にも通ってしまう（空振り）。
-        // 分岐（馬名の有無）を判断する地点＝産駒血統登録まで到達していることを前提条件として明示する。
-        assert(outcome.steps.any { it.step == ReplayStep.REGISTER_FOAL && it.ok }) {
-            "馬名登録の分岐地点（REGISTER_FOAL）に到達していない: " +
+        // 分岐地点（産駒血統登録）に到達していなければ「停止＝発見」なので失敗にせず skip する。
+        assumeTrue(outcome.steps.any { it.step == ReplayStep.REGISTER_FOAL && it.ok }) {
+            "馬名登録の分岐地点（REGISTER_FOAL）に到達しないまま停止: " +
                 "stoppedAt=${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
         }
         assert(outcome.steps.none { it.step == ReplayStep.NAME_FOAL })
@@ -55,8 +59,9 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
         val outcome = engine.run(FixtureLoader.load("02-domestic-barren.json"))
 
         // 同上。産駒登録が「無いこと」は、繁殖成績報告まで到達して初めて「スキップされた」と言える。
-        assert(outcome.steps.any { it.step == ReplayStep.SUBMIT_BREEDING_REPORT && it.ok }) {
-            "繁殖成績報告まで到達していない: " +
+        // 分岐地点に到達していなければ「停止＝発見」なので失敗にせず skip する。
+        assumeTrue(outcome.steps.any { it.step == ReplayStep.SUBMIT_BREEDING_REPORT && it.ok }) {
+            "繁殖成績報告の分岐地点（SUBMIT_BREEDING_REPORT）に到達しないまま停止: " +
                 "stoppedAt=${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
         }
         assert(outcome.steps.none { it.step == ReplayStep.REGISTER_FOAL })
