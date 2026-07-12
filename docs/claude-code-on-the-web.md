@@ -6,7 +6,7 @@
 
 ## ゴール
 
-クラウドセッションで `./gradlew check`（ビルド + テスト + Testcontainers + カバレッジゲート）が緑になること。kotlin-lsp / gh + Projects 運用 / terraform MCP のフル同等化はスコープ外（本ドキュメント末尾「スコープ外」参照）。
+クラウドセッションで `./gradlew check`（ビルド + テスト + Testcontainers + カバレッジゲート）が緑になること。加えて kotlin-lsp（編集時診断・コードナビ）を **best-effort** で有効化する（#627。失敗しても check 緑には影響しない補助。手順は「kotlin-lsp の有効化」節）。gh + Projects 運用 / terraform MCP のフル同等化はスコープ外（本ドキュメント末尾「スコープ外」参照）。
 
 ## 前提（クラウド VM のプリインストール）
 
@@ -26,7 +26,7 @@ UI の「セットアップスクリプト」欄に次を貼る（本体はリ�
 bash "$(find / -type f -name web-setup.sh -path '*/scripts/web-setup.sh' 2>/dev/null | head -n1)"
 ```
 
-`scripts/web-setup.sh` は mise を導入し、`mise install java`（JDK 25 のみ）を実行して toolchain を検証する。全ツールは入れない（`./gradlew check` に不要なため）。検証の `mise exec` は **java にスコープする**（`mise exec java -- ...`）。ツール未指定の `mise exec -- ...` は mise.toml の全ツールを auto-install してしまい、スコープ外の kotlin-lsp（JetBrains ホストは Custom 未許可）や GitHub API のレート制限（未認証 60/h）で落ちるため（実測）。
+`scripts/web-setup.sh` は mise を導入し、`mise install java`（JDK 25 のみ）を実行して toolchain を検証する。全ツールは入れない（`./gradlew check` に不要なため）。検証の `mise exec` は **java にスコープする**（`mise exec java -- ...`）。ツール未指定の `mise exec -- ...` / `mise install`（無指定）は mise.toml の全ツールを auto-install してしまい、GitHub API のレート制限（未認証 60/h）等で落ちるため（実測）、ツールは常に**名指し**で入れる。検証の後に kotlin-lsp を `mise install http:kotlin-lsp` で **best-effort** 導入する（下記「kotlin-lsp の有効化」。失敗は握りつぶして続行し check 緑には影響させない）。
 
 > **TLS 傍受プロキシの CA を JDK に信頼させる（重要）**: クラウドの egress は TLS を終端・再署名する [HTTP/HTTPS セキュリティプロキシ](https://code.claude.com/docs/en/claude-code-on-the-web#security-proxy)（MITM）経由。`curl` / `apt` はシステム CA ストア（プロキシ CA 込み）で通るが、mise 導入の Temurin は**独自 cacerts** を使うため、素のままだと Gradle の HTTPS ダウンロード（`services.gradle.org` 等）が `javax.net.ssl.SSLHandshakeException: PKIX path building failed` で落ちる（実測）。`scripts/web-setup.sh` はシステム CA バンドル（`/etc/ssl/certs/ca-certificates.crt`）を JDK の `cacerts` に取り込んでこれを解消する（バンドルは複数証明書の連結で `keytool` は先頭 1 件しか読まないため分割して個別 import）。プロキシ CA のパスや JVM 向けの信頼手順は公式未文書化のため、システムバンドル全体を取り込む方式にしている。
 
@@ -45,6 +45,7 @@ Gradle 依存解決（Maven Central・`plugins.gradle.org`・`services.gradle.or
 | `mise-versions.jdx.dev` | `mise install` のバージョン解決 |
 | `mise-java.jdx.dev` | `mise install java` が JVM メタデータ（tar の所在）を引く先 |
 | `production.cloudfront.docker.com` | **Docker Hub の blob CDN**。Testcontainers のイメージ取得（`postgres:17-alpine` / Ryuk）に必須 |
+| `download-cdn.jetbrains.com` | **kotlin-lsp（JetBrains 公式 Language Server）の配信元**。`mise install http:kotlin-lsp` の取得先。無いと best-effort 導入が失敗し編集時診断が無効になる（`./gradlew check` には影響しない）。値の出所は `.devcontainer/allowed-domains.txt`（コミット共有） |
 
 - **Docker Hub はデフォルト Trusted ではない**（当初そう見込んでいたが実測で否定された）。レジストリ API（`registry-1.docker.io`）までは通るが、**blob 取得が CDN で 403 になり** Testcontainers が `ContainerFetchException` で落ちる。CDN ホストを Custom に足すこと（`registry-1.docker.io` / `auth.docker.io` も 403 が出るなら併せて足す）。
 - GitHub（`github.com` / `objects.githubusercontent.com`）は Trusted で追加不要（mise バイナリ・チェックサム・JDK tar 実体はそこから来る）。
@@ -91,8 +92,24 @@ LC_ALL=C.utf8
 
 > **既知のノイズ**: クラウドでビルドすると mise が `mise.lock` に musl プラットフォーム項目などを自動追記することがある。環境固有の付随的な差分なのでコミットしない。
 
+## kotlin-lsp の有効化（#627）
+
+> **クラウド未実測**: 以下の配線は入れたが、実クラウドセッションでの動作は未確認。実測して本節を確定すること。
+
+Claude Code の `kotlin-lsp@claude-plugins-official` プラグイン（`.claude/settings.json` の `enabledPlugins` で有効化済み・コミット共有）は、PATH 上の `kotlin-lsp --stdio` を起動して**編集時のリアルタイム診断・コードナビ**を提供する（採否・供給は [ADR-0046](adr/0046-adopt-kotlin-lsp-plugin.md)）。ゲート（detekt / ArchUnit / gradle check）を置き換えない補助操舵。
+
+- **導入**: `scripts/web-setup.sh` が toolchain 検証の後に `mise install http:kotlin-lsp` を **best-effort** で実行する（`http:` バックエンドで `download-cdn.jetbrains.com` から取得）。取得失敗しても setup は止めず、`./gradlew check` の緑には影響しない。
+- **要件（UI 側）**: 上記「2. Custom 許可ドメイン」の表に `download-cdn.jetbrains.com` を追加すること。無いと best-effort 導入が失敗し編集時診断が無効のままになる。
+- **PATH**: バイナリは既存の `session-start-mise.sh`（`mise hook-env`）が注入する PATH に載る想定。プラグインの取り込みは初回にユーザーの信頼承認を経る。
+
+### 実測で確定すべき点
+
+- `download-cdn.jetbrains.com` だけで足りるか（別ホストが 403 なら Custom に追記し表を更新）。
+- mise の `http:` バックエンドのダウンロードが TLS 傍受プロキシ越しに通るか（mise はシステム CA を使う想定だが未確認）。
+- **Linux x64 の kotlin-lsp が起動・動作するか**（[ADR-0046](adr/0046-adopt-kotlin-lsp-plugin.md) は Linux を未実機検証と明記。クラウド VM は Linux）。
+- ランチャ `kotlin-lsp.sh` がセッションの JDK 25（mise hook-env 注入 PATH）を使えるか。ランタイムはセッションの `JAVA_TOOL_OPTIONS`（プロキシ CA 入り truststore）が効く想定。
+
 ## スコープ外（別 Issue で扱う）
 
-- kotlin-lsp のクラウド有効化（JetBrains ホスト・編集時診断は補助操舵で check ゲートではない）。
-- gh + `GH_TOKEN` による Projects・PR マージ運用。
-- terraform MCP（`docker run`）のクラウド動作確認。
+- gh + `GH_TOKEN` による Projects・PR マージ運用（#628）。
+- terraform MCP（`docker run`）のクラウド動作確認（#629）。

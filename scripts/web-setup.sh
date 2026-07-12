@@ -7,9 +7,10 @@
 # PATH 注入は既存の .claude/hooks/session-start-mise.sh（SessionStart フック）が毎セッション担うので、
 # ここでは「mise 導入 → mise install java → mise activate 仕込み → プロキシ CA の信頼」を一度だけ行う。
 #
-# スコープは `./gradlew check` を緑にすることに限定し、`mise install`（全ツール）ではなく
-# `mise install java`（JDK 25 のみ）だけを入れる。kotlin-lsp（JetBrains ホスト・スコープ外）や
-# pipx 系ツールの取得失敗で全体を止めない・不要な Custom 許可ドメインを増やさないため。
+# check-緑のクリティカルパスは JDK 25 のみに絞る（`mise install`（全ツール）ではなく
+# `mise install java`）。pipx 系ツールの取得失敗で `./gradlew check` の土台を止めないため。
+# kotlin-lsp（JetBrains ホスト）はスクリプト末尾で **best-effort** に追加導入する（#627）——
+# 取得失敗しても setup を止めず、check 緑には影響させない。
 #
 # 冪等: 再実行しても mise 再導入や .bashrc への重複追記は行わない。
 set -euo pipefail
@@ -109,5 +110,25 @@ fi
 echo "verifying toolchain ..."
 mise exec java -- java -version
 mise exec java -- ./gradlew --version
+
+# kotlin-lsp（JetBrains 公式 Kotlin Language Server）を best-effort で導入する。Claude Code の
+# kotlin-lsp@claude-plugins-official プラグイン（.claude/settings.json で有効化済み）が PATH 上の
+# `kotlin-lsp --stdio` を起動し、編集時診断・コードナビを提供する。採否は ADR-0046、クラウド有効化は #627。
+#
+# **check-緑のクリティカルパス（上の verify まで）が済んだ後に置き、失敗しても setup を止めない**。
+# JetBrains ホスト（download-cdn.jetbrains.com）取得失敗や実験版の不調で `./gradlew check` の土台を
+# 巻き込まないため（LSP はゲートではない補助操舵）。UI の Custom 許可ドメインに
+# download-cdn.jetbrains.com が要る（docs/claude-code-on-the-web.md 参照）。
+#
+# **java とスコープを混ぜず `http:kotlin-lsp` だけを名指しする**。ツール未指定の `mise install` は
+# mise.toml の全ツールを入れにいき GitHub API レート制限等で落ちる。`if` で包むのは非ゼロ終了を
+# else に流して `set -e` によるスクリプト終了を避けるため（best-effort）。
+echo "installing kotlin-lsp via mise (best-effort; JetBrains host) ..."
+if mise install http:kotlin-lsp; then
+  echo "kotlin-lsp installed. クラウドで Kotlin LSP プラグインが有効になる。"
+else
+  echo "warn: kotlin-lsp の導入に失敗（download-cdn.jetbrains.com 未許可 or 取得失敗の可能性）。" >&2
+  echo "warn: 編集時診断は無効のまま続行する（./gradlew check には影響しない）。" >&2
+fi
 
 echo "web-setup done. Run './gradlew check' to validate the session."
