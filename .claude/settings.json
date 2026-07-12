@@ -52,6 +52,12 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start-mise.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start-docker.sh",
+            "timeout": 40,
+            "statusMessage": "Docker デーモン起動確認中..."
           }
         ]
       }
