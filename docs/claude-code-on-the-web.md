@@ -36,33 +36,50 @@ bash "$(find / -type f -name web-setup.sh -path '*/scripts/web-setup.sh' 2>/dev/
 
 ### 2. Custom 許可ドメイン
 
-クラウド環境のデフォルト Trusted には Maven Central・`plugins.gradle.org`・`services.gradle.org`・`spring.io`・`repo.spring.io`・`kotlinlang.org`・Docker Hub（`registry-1.docker.io` / `auth.docker.io` / `production.cloudfront.docker.com`）が含まれる。したがって Gradle 依存解決と Testcontainers の image pull は追加設定なしで通る見込み。
+Gradle 依存解決（Maven Central・`plugins.gradle.org`・`services.gradle.org`・`spring.io`・`kotlinlang.org` 等）はデフォルト Trusted で通る。**Custom に足す必要があるもの**（すべて実クラウドで確認済み）:
 
-デフォルト Trusted に**無く、Custom に足す必要がある**のは mise 本体・ツール取得系（実クラウドで確認済み）:
+| ドメイン | 用途 |
+|---------|------|
+| `mise.run` | mise インストールスクリプトの配信元（`curl https://mise.run \| sh`） |
+| `mise.jdx.dev` | mise バイナリの取得先（GitHub が使えない場合のフォールバック） |
+| `mise-versions.jdx.dev` | `mise install` のバージョン解決 |
+| `mise-java.jdx.dev` | `mise install java` が JVM メタデータ（tar の所在）を引く先 |
+| `production.cloudfront.docker.com` | **Docker Hub の blob CDN**。Testcontainers のイメージ取得（`postgres:17-alpine` / Ryuk）に必須 |
 
-- `mise.run` … mise インストールスクリプトの配信元（`curl https://mise.run | sh`）
-- `mise.jdx.dev` … mise バイナリの取得先（GitHub が使えない場合のフォールバック）
-- `mise-versions.jdx.dev` … `mise install` のバージョン解決
-- `mise-java.jdx.dev` … `mise install java` が JVM メタデータ（tar の所在）を引く先
+- **Docker Hub はデフォルト Trusted ではない**（当初そう見込んでいたが実測で否定された）。レジストリ API（`registry-1.docker.io`）までは通るが、**blob 取得が CDN で 403 になり** Testcontainers が `ContainerFetchException` で落ちる。CDN ホストを Custom に足すこと（`registry-1.docker.io` / `auth.docker.io` も 403 が出るなら併せて足す）。
+- GitHub（`github.com` / `objects.githubusercontent.com`）は Trusted で追加不要（mise バイナリ・チェックサム・JDK tar 実体はそこから来る）。
+- `api.adoptium.net` は**不要**（mise は `mise-java.jdx.dev` 経由で解決する）。
 
-GitHub（`github.com` / `objects.githubusercontent.com`）は default Trusted なので追加不要（mise バイナリ・チェックサム・JDK tar 実体はそこから来る）。`api.adoptium.net` は不要だった（mise は `mise-java.jdx.dev` 経由で解決する）。
+> これらは `.devcontainer/allowed-domains.txt` には**無い web 固有の要求**を含む。devcontainer は mise を feature で導入するため `mise.run` / `mise-java.jdx.dev` を使わないが、web は素の VM に `curl mise.run` でブートストラップするため追加で要る。
 
-> これらは `.devcontainer/allowed-domains.txt` には**無い web 固有の要求**である。devcontainer は mise を feature で導入するため `mise.run`／`mise-java.jdx.dev` を使わないが、web は素の VM に `curl mise.run` でブートストラップするため追加で要る。Docker Hub 等の重複する既定 Trusted 分は上記のとおり `.devcontainer/allowed-domains.txt` を出所として二重管理しない。`./gradlew check` を実際に緑にする過程で更に不足ホストが出たら追記する。
-
-> **クローン先**: 実測でリポジトリは `/home/user/toy-box` に置かれた（`mise trusted /home/user/toy-box`）。ただしこのパスは公式未文書化なので UI では `find` による絶対パス解決（上記「1. セットアップスクリプト」）に依存する。
+> **クローン先**: 実測でリポジトリは `/home/user/toy-box` に置かれた。ただしこのパスは公式未文書化なので UI では `find` による絶対パス解決（上記「1. セットアップスクリプト」）に依存する。
 
 ### 3. 環境変数
 
-現状、`./gradlew check` に必要な環境変数は無い。将来 GH_TOKEN 等が要るようになったらここに追記する。
+**UTF-8 ロケールを必ず設定する**（`./gradlew check` に必須）:
+
+```
+LANG=C.utf8
+LC_ALL=C.utf8
+```
+
+クラウド VM の既定ロケールは `POSIX`(C) で、JVM の `sun.jnu.encoding`（ファイル名エンコーディング）が非 UTF-8 になる。本リポジトリは**テストメソッド名を日本語で書く**規約のため、そこから生成される `.class` のパスを書き出せず、Kotlin コンパイラが `InvalidPathException: Malformed input or input contains unmappable characters` を伴う内部エラーで落ちる（実測。`:compileTestKotlin` が失敗）。`sun.jnu.encoding` は OS ロケール由来で `-D` 指定が効かないことがあるため、**ロケール自体を UTF-8 にする**のが確実。
+
+`scripts/web-setup.sh` も自身の JVM 実行のために UTF-8 ロケールを export するが、**セッション側に効かせるにはこの UI 環境変数の設定が要る**。
+
+## TLS 傍受プロキシと JVM（実測メモ）
+
+クラウドの egress は TLS を再署名する[セキュリティプロキシ](https://code.claude.com/docs/en/claude-code-on-the-web#security-proxy)経由で、証明書の発行者は `O = Anthropic, CN = Egress Gateway SDS Issuing CA (production)`。
+
+- **セッション**には CA 入り truststore が `JAVA_TOOL_OPTIONS`（`-Djavax.net.ssl.trustStore=…/java-truststore.p12` + プロキシ設定）で渡るため、JVM は素で TLS を通せる。CA バンドルの実体は `NODE_EXTRA_CA_CERTS` / `SSL_CERT_FILE` / `CURL_CA_BUNDLE` / `REQUESTS_CA_BUNDLE` が指すファイル。
+- **setup スクリプトの実行コンテキストには `JAVA_TOOL_OPTIONS` が渡らない**。そのため mise 導入直後の Temurin は独自 cacerts のままで、Gradle の HTTPS ダウンロードが `PKIX path building failed` で落ちる。`scripts/web-setup.sh` はプロキシ CA を JDK の cacerts に取り込んでこれを解消する。
 
 ## 検証（初回セッションで実施）
 
-初回のクラウドセッションで次を確認し、結果を本ドキュメントに反映する:
-
 1. セッション開始後、`./gradlew check` が緑になること。
    - PATH は既存の `.claude/hooks/session-start-mise.sh`（SessionStart フック）が `mise hook-env` で注入するので、`mise exec --` プレフィックス無しで `./gradlew` が動く。
-2. 16 GB RAM で Testcontainers Postgres（`postgres:17-alpine` + Ryuk）が起動し JDBC 契約テストが通ること。
-3. ドメイン不足で pull / 依存解決が落ちたら、落ちたホストを Custom 許可ドメインに足して再実行する。確定したら上記「2. Custom 許可ドメイン」を実測値に更新する。
+2. Testcontainers Postgres（`postgres:17-alpine` + Ryuk）が起動し JDBC 契約テストが通ること（上記 Docker Hub CDN の許可が要る）。
+3. ドメイン不足で pull / 依存解決が落ちたら、落ちたホストを Custom 許可ドメインに足して再実行し、上表を実測値に更新する。
 
 ## スコープ外（別 Issue で扱う）
 
