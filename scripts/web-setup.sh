@@ -125,7 +125,23 @@ mise exec java -- ./gradlew --version
 # else に流して `set -e` によるスクリプト終了を避けるため（best-effort）。
 echo "installing kotlin-lsp via mise (best-effort; JetBrains host) ..."
 if mise install http:kotlin-lsp; then
-  echo "kotlin-lsp installed. クラウドで Kotlin LSP プラグインが有効になる。"
+  # 導入しただけでは LSP は起動しない。Claude Code の LSP プラグインのランタイム（Node）は
+  # **mise 非活性の base PATH** で `kotlin-lsp --stdio` を spawn するが、mise の shims も installs
+  # の bin も base PATH には無いため、素のままだと ENOENT で LSP が立たず編集時診断が出ない。
+  # SessionStart の mise hook（session-start-mise.sh）は $CLAUDE_ENV_FILE 経由で **Bash ツールの
+  # シェル**にしか PATH を通さず、LSP の spawn 環境には効かない（PATH 供給の非対称）。
+  # そこで base PATH 上の ${HOME}/.local/bin（mise 本体もここ）へバイナリ実体を symlink して
+  # ランタイムから解決可能にする。実体は bundled JBR 同梱の self-contained ランチャで、Linux では
+  # /proc/self/exe で自分の install ディレクトリを解決するため直リンクで動く（mise 実行時解決に依存
+  # しない）。`ln -sfn` は冪等で、再実行のたび現行 `mise where` に貼り直すのでバージョン更新にも追随する。
+  kotlin_lsp_bin="$(mise where http:kotlin-lsp 2>/dev/null)/bin/kotlin-lsp"
+  if [ -x "${kotlin_lsp_bin}" ]; then
+    mkdir -p "${HOME}/.local/bin"
+    ln -sfn "${kotlin_lsp_bin}" "${HOME}/.local/bin/kotlin-lsp"
+    echo "kotlin-lsp installed & linked into ~/.local/bin. クラウドで Kotlin LSP プラグインが有効になる。"
+  else
+    echo "warn: kotlin-lsp のバイナリ実体が見つからず PATH リンクを張れなかった（LSP は無効のまま）。" >&2
+  fi
 else
   echo "warn: kotlin-lsp の導入に失敗（download-cdn.jetbrains.com 未許可 or 取得失敗の可能性）。" >&2
   echo "warn: 編集時診断は無効のまま続行する（./gradlew check には影響しない）。" >&2
