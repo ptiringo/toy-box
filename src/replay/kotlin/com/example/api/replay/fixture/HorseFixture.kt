@@ -101,15 +101,18 @@ data class CoveredSynthesized(
 )
 
 /**
- * 基礎馬の合成値。[originCountry] / [landingDate] は内国産馬を輸入馬経路で seed するための埋め合わせでもある （現在 seed 経路は
- * RegisterImportedHorse しかない）。
+ * 基礎馬の合成値。
+ *
+ * [originCountry] は**内国産馬のときだけ**書く。現在 seed 経路は RegisterImportedHorse しかないため、内国産馬も
+ * 輸入馬として登録せざるをえず、輸入年月日（[landingDate]）とあわせて埋め合わせが要る（#633）。輸入馬は事実
+ * （[HorseFacts.originCountry]）が出生国を持つので、ここに書くと読まれない死にデータになる。
  */
 data class HorseSynthesized(
     val microchipNumber: String,
-    val originCountry: String,
     val landingDate: String,
     val pedigreeRegistrationNumber: String,
     val breedingRegistrationNumber: String,
+    val originCountry: String? = null,
 )
 
 data class FoalSynthesized(

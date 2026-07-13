@@ -107,7 +107,7 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
         // 停止は「発見」なので失敗にしない。観測をレポートへ落とすことがこのテストの目的。
         val outcomes = FixtureLoader.loadAll().map(engine::run)
 
-        assert(outcomes.size == 6)
+        assert(outcomes.isNotEmpty())
         val report = ReconciliationReport.render(outcomes)
         assert(report.contains("# 繁殖 replay 突合レポート"))
         assert(report.contains("## 公開記録の粒度について"))

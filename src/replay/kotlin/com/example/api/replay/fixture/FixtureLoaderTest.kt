@@ -18,14 +18,28 @@ class FixtureLoaderTest {
 
     @Test
     fun `manifest に列挙した全フィクスチャを読み込める`() {
+        val declared = FixtureLoader.manifestNames()
         val fixtures = FixtureLoader.loadAll()
 
-        assert(fixtures.size == 6)
+        // 件数はここに書かない（manifest が唯一の出所。フィクスチャを足しても 2 箇所直さずに済む）。
+        assert(declared.isNotEmpty())
+        assert(fixtures.size == declared.size)
         val covered = fixtures.filterIsInstance<CoveredSeasonFixture>()
         // 内国産の基礎馬は facts に originCountry を持たない（合成側で輸入馬扱いにする）。
         assert(covered.any { it.facts.broodmare.originCountry == null })
         // 未命名の産駒がある（血統登録のみで馬名登録が未了）。
         assert(covered.any { it.facts.foal != null && it.facts.foal.name == null })
+        // 種付なしの年がある。
+        assert(fixtures.any { it is UncoveredSeasonFixture })
+    }
+
+    @Test
+    fun `輸入馬は事実の出生国を使うので合成側の出生国を持たない`() {
+        val fixture = FixtureLoader.load("01-imported-normal.json") as CoveredSeasonFixture
+
+        // facts に出生国がある馬で synthesized 側にも書けると、食い違っても誰も気づかない死にデータになる。
+        assert(fixture.facts.broodmare.originCountry == "アイルランド")
+        assert(fixture.synthesized.broodmare.originCountry == null)
     }
 
     @Test

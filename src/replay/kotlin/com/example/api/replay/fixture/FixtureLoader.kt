@@ -17,13 +17,16 @@ object FixtureLoader {
         return stream.use { mapper.readValue(it) }
     }
 
-    /** fixtures/manifest.txt に列挙された全フィクスチャを読み込む。 */
-    fun loadAll(): List<HorseFixture> {
+    /** fixtures/manifest.txt に列挙されたフィクスチャ名（`#` 始まりのコメントと空行は除く）。件数の唯一の出所。 */
+    fun manifestNames(): List<String> {
         val manifest =
             requireNotNull(javaClass.classLoader.getResourceAsStream("fixtures/manifest.txt")) {
                 "fixtures/manifest.txt が見つからない"
             }
         val names = manifest.use { it.bufferedReader().readLines() }
-        return names.map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }.map(::load)
+        return names.map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
     }
+
+    /** fixtures/manifest.txt に列挙された全フィクスチャを読み込む。 */
+    fun loadAll(): List<HorseFixture> = manifestNames().map(::load)
 }
