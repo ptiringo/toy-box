@@ -8,7 +8,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 object FixtureLoader {
     private val mapper = JsonMapper.builder().build().registerKotlinModule()
 
-    /** 単一フィクスチャを名前で読み込む（例: "01-imported-normal.json"）。 */
+    /** 単一フィクスチャを名前で読み込む（例: "01-imported-normal.json"）。JSON の "kind" で covered / uncovered を判別する。 */
     fun load(resourceName: String): HorseFixture {
         val stream =
             requireNotNull(javaClass.classLoader.getResourceAsStream("fixtures/$resourceName")) {

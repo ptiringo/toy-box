@@ -20,6 +20,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.replay.fixture.CoveredSeasonFixture
 import com.example.api.replay.fixture.HorseFixture
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.fold
@@ -42,7 +43,13 @@ class ReplayEngine(
     private val nameHorse: NameHorseUseCase,
     private val submitBreedingReport: SubmitBreedingReportUseCase,
 ) {
-    fun run(fixture: HorseFixture): HorseReplayOutcome {
+    fun run(fixture: HorseFixture): HorseReplayOutcome =
+        when (fixture) {
+            is CoveredSeasonFixture -> runCovered(fixture)
+        }
+
+    /** 種付を行った年の経路: seed ×2 → 繁殖登録 ×2 → 種付 → 種付成績報告 → 出生報告 → 産駒登録 → 馬名登録 → 繁殖成績報告。 */
+    private fun runCovered(fixture: CoveredSeasonFixture): HorseReplayOutcome {
         val session = ReplaySession(fixture)
         val facts = fixture.facts
         val synth = fixture.synthesized
@@ -240,7 +247,7 @@ private class ReplaySession(private val fixture: HorseFixture) {
         HorseReplayOutcome(
             fixture.name,
             fixture.sources.toSourceRefs(),
-            fixture.synthesized.notes,
+            fixture.notes,
             steps.toList(),
             stoppedAt,
             stopReason,

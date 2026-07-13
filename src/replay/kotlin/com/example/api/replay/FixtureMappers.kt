@@ -19,7 +19,15 @@ import java.time.ZoneOffset
 
 private val TOKYO: ZoneId = ZoneId.of("Asia/Tokyo")
 
-/** フィクスチャの分娩区分名を [FoalingOutcome] に写す。未知の区分名は前提エラーとして例外にする（フィクスチャの記述ミス）。 */
+/**
+ * フィクスチャの分娩区分名を [FoalingOutcome] に写す。未知の区分名は前提エラーとして例外にする（フィクスチャの記述ミス）。
+ *
+ * 種付せず（[FoalingOutcome.NotCovered]）はここに現れない。種付を行わなかった年は分娩結果の区分ではなく フィクスチャの
+ * kind（UncoveredSeasonFixture）で表し、
+ * [com.example.api.application.studbook.breeding.RecordUncoveredUseCase] が
+ * 起こす終端の繁殖成績として実体化する。分娩結果として NotCovered を渡すと BreedingResult.recordFoaling が require で弾く（Err
+ * ではなく例外）ため、写像の入口で塞ぐ。
+ */
 fun FoalingFixture.toOutcome(): FoalingOutcome =
     when (outcome) {
         "LiveFoal" ->
@@ -35,7 +43,6 @@ fun FoalingFixture.toOutcome(): FoalingOutcome =
         "TwinStillbirth" -> FoalingOutcome.TwinStillbirth
         "NeonatalDeath" -> FoalingOutcome.NeonatalDeath
         "TwinNeonatalDeath" -> FoalingOutcome.TwinNeonatalDeath
-        "NotCovered" -> FoalingOutcome.NotCovered
         else -> error("未知の分娩区分名: $outcome")
     }
 
@@ -44,7 +51,7 @@ fun FixtureSources.toSourceRefs(): List<SourceRef> =
     listOfNotNull(
         SourceRef("繁殖牝馬", broodmare),
         SourceRef("繁殖成績", breedingRecord),
-        SourceRef("種牡馬", stallion),
+        stallion?.let { SourceRef("種牡馬", it) },
         foal?.let { SourceRef("産駒", it) },
     )
 
