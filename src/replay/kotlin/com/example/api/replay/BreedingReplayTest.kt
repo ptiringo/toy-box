@@ -39,6 +39,11 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
         }
         assert(outcome.steps.all { it.ok })
         assert(outcome.steps.map { it.step }.contains(ReplayStep.SUBMIT_BREEDING_REPORT))
+        assert(
+            outcome.steps
+                .map { it.step }
+                .containsAll(listOf(ReplayStep.REGISTER_FOAL, ReplayStep.NAME_FOAL))
+        )
     }
 
     @Test

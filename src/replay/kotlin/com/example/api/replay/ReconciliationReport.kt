@@ -55,7 +55,7 @@ object ReconciliationReport {
                 sb.appendLine("- 弾いた不変条件/エラー: `${o.stopReason}`")
             }
             sb.appendLine()
-            sb.appendLine("### 合成した項目")
+            sb.appendLine("### 合成した項目・断り書き")
             sb.appendLine()
             for (note in o.synthesizedNotes) {
                 sb.appendLine("- $note")
