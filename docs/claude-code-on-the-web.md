@@ -6,7 +6,12 @@
 
 ## ゴール
 
-クラウドセッションで `./gradlew check`（ビルド + テスト + Testcontainers + カバレッジゲート）が緑になること。加えて kotlin-lsp（編集時診断・コードナビ）を **best-effort** で有効化する（#627。失敗しても check 緑には影響しない補助。手順は「kotlin-lsp の有効化」節）。gh + Projects 運用 / terraform MCP のフル同等化はスコープ外（本ドキュメント末尾「スコープ外」参照）。
+クラウドセッションで `./gradlew check`（ビルド + テスト + Testcontainers + カバレッジゲート）が緑になること。加えて次を **best-effort** で有効化する（いずれも失敗しても check 緑には影響しない補助）:
+
+- kotlin-lsp（編集時診断・コードナビ。#627。手順は「kotlin-lsp の有効化」節）。
+- `gh` CLI（Issue/PR・Projects #4・PR マージ。#628。手順は「gh CLI（GitHub 操作）」節）。
+
+terraform MCP（`docker run`）のフル同等化はスコープ外（本ドキュメント末尾「スコープ外」参照）。
 
 ## 前提（クラウド VM のプリインストール）
 
@@ -68,6 +73,18 @@ LC_ALL=C.utf8
 
 `scripts/web-setup.sh` も自身の JVM 実行のために UTF-8 ロケールを export するが、**セッション側に効かせるにはこの UI 環境変数の設定が要る**。
 
+#### GitHub 操作用（`gh` CLI）
+
+クラウド／モバイルから `gh` で Issue/PR・Projects #4（Priority）・PR マージを回すために、**自前 PAT を `GH_TOKEN` として UI の Secrets に登録する**（設計・認証運用は [ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)、#628）。
+
+```
+GH_TOKEN=<自前 PAT>
+```
+
+- **PAT の発行**: GitHub の Fine-grained（対象リポジトリに Contents / Issues / Pull requests、Organization/User の Projects を Read and write）または Classic（`repo` + `project` スコープ）で発行する。Projects #4 の操作に **`project` スコープが必須**（`gh auth refresh -s project` 相当）。
+- **`gh auth login` は不要**。gh は env の `GH_TOKEN`（無ければ `GITHUB_TOKEN`）を自動採用する。この env は**非対話シェルにも渡る**ことを実測済み（後述「gh CLI（GitHub 操作）」の検証表）。`.env` は使わない（クラウドセッションは毎回 fresh clone で揮発し、gitignore された `.env` は存在しないため。構造的に不採用）。
+- トークンが UI 側に保存され非ポータブルになる点は `LANG` 等の環境変数と同じトレードオフ（[ADR-0065](adr/0065-claude-code-on-the-web-support.md)）。ローカルは fnox + 1Password で解決済み（[secrets 規約](../.claude/rules/secrets.md)）なので UI 登録は web 環境限定。
+
 ## TLS 傍受プロキシと JVM（実測メモ）
 
 クラウドの egress は TLS を再署名する[セキュリティプロキシ](https://code.claude.com/docs/en/claude-code-on-the-web#security-proxy)経由で、証明書の発行者は `O = Anthropic, CN = Egress Gateway SDS Issuing CA (production)`。
@@ -109,7 +126,32 @@ Claude Code の `kotlin-lsp@claude-plugins-official` プラグイン（`.claude/
 - **Linux x64 の kotlin-lsp が起動・動作するか**（[ADR-0046](adr/0046-adopt-kotlin-lsp-plugin.md) は Linux を未実機検証と明記。クラウド VM は Linux）。
 - ランチャ `kotlin-lsp.sh` がセッションの JDK 25（mise hook-env 注入 PATH）を使えるか。ランタイムはセッションの `JAVA_TOOL_OPTIONS`（プロキシ CA 入り truststore）が効く想定。
 
+## gh CLI（GitHub 操作）（#628）
+
+クラウド／モバイルから GitHub の Issue/PR・Projects #4（Priority 運用）・PR マージ（`--admin` マージ）を `gh` で回せるようにする。ローカルの GitHub 操作方針（MCP でなく `gh` CLI = [ADR-0001](adr/0001-drop-github-mcp-use-gh-cli.md)）とクラウドを揃える follow-up。設計・認証運用は [ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)。
+
+### 導入と認証
+
+- **導入**: `gh` は `mise.toml`（`aqua:cli/cli`）に一元管理する（features / apt は使わない = ツールバージョンの唯一の出所は `mise.toml`）。`scripts/web-setup.sh` が toolchain 検証の後に `mise install aqua:cli/cli` を **best-effort** で実行する（失敗しても setup は止めず check 緑に影響しない）。PATH は既存の `session-start-mise.sh`（`mise hook-env`）が注入するので `gh` を素で呼べる。
+- **認証**: UI の Secrets に登録した `GH_TOKEN`（自前 PAT）を gh が**自動採用**する。`gh auth login` はしない。PAT のスコープ・登録手順は「UI 側に設定する内容 → 3. 環境変数 → GitHub 操作用」を参照。
+- **許可ドメイン**: `gh`（api.github.com / github.com / objects.githubusercontent.com）は GitHub なので**デフォルト Trusted・Custom 追加不要**（`mise install aqua:cli/cli` の api 参照・バイナリ取得も同経路。GH_TOKEN があると未認証 60/h レート制限も避けられる）。
+
+### 検証結果（この follow-up セッションで実測）
+
+> **重要な前提**: この follow-up の実装セッションは自動起動の管理環境で、egress が**リポジトリスコープの egress プロキシ**越しだった。ユーザーが対話的に開く「Claude Code on the web」セッション（自前 PAT を Secrets に登録）とは egress ポリシーが異なる。両者の差を明示する。
+
+`echo ${GH_TOKEN:+set}` と `gh` の各操作を実機で叩いた結果:
+
+| 検証 | 結果 | 意味 |
+|------|------|------|
+| `echo ${GH_TOKEN:+set}` | **set**（`GITHUB_TOKEN` も） | **env は非対話シェルに届く**。setup フェーズ限定で消える #611 の落とし穴3（env が来ない）は**再発しない**。devcontainer 側の env 橋渡し（remoteEnv 等）は**不要**。 |
+| `gh api user -q .login` | **`ptiringo`** | user レベルの認証・API は通る。gh が `GH_TOKEN` を採用できている。 |
+| `gh api rate_limit -i`（`X-Oauth-Scopes`） | `repo, project, read:org, ...` | 背後トークンは **`repo` + `project` スコープを保持**。Projects 操作の前提は満たす。 |
+| `gh auth status` | 「token is invalid」と表示 | gh 独自の検証ヒューリスティックが表示するだけで、実 API 呼び出し（上記 `gh api user`）は通る。**表示に反して機能する**。 |
+| `gh issue list` / `gh pr list` / `gh project view 4` | このセッションでは **403**（GraphQL 未許可） | 上記プロキシが GraphQL/repo REST を Claude GitHub App 経由にゲートしていたため。**ユーザーの対話セッション（自前 PAT・GitHub Trusted）ではこの制限はなく、repo/org/Projects 操作が通る想定**。 |
+
+**結論**: `GH_TOKEN` を Secrets に登録すれば gh は非対話シェルで自動採用され、user レベル API は実機で通ることを確認した。トークンは `repo` + `project` スコープを持つ。repo/org/GraphQL 操作の実 403 は**実装セッション固有のプロキシ制限**で、ユーザーの対話セッション（GitHub が Trusted・自前 PAT）では発生しない見込み。**env 橋渡しのフォールバックは不要**（env が非対話シェルに届くことを実測で確認済み）。この差はユーザーの対話セッションで `gh issue list` 等を叩いて確定すること。
+
 ## スコープ外（別 Issue で扱う）
 
-- gh + `GH_TOKEN` による Projects・PR マージ運用（#628）。
 - terraform MCP（`docker run`）のクラウド動作確認（#629）。
