@@ -12,14 +12,23 @@ updates:
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
     groups:
-      # Kotlin プラグインは KGP 互換（Spring / detekt / ktfmt）で手作業が要りがちなので分離し、
-      # 一般グループ（gradle-minor-patch）を軽く緑に保つ。2 プラグインは常に同一版で足並みを揃える。
+      # Kotlin コンパイラ版と歩調を揃える必要がある依存を 1 グループに束ね、一般グループ
+      # （gradle-minor-patch）を軽く緑に保つ。以下は常に同一 PR で足並みを揃える:
+      # - kotlin.jvm / kotlin.plugin.spring / kotlin.plugin.power-assert:
+      #   3 プラグインは version catalog で version.ref = "kotlin" を共有し、同じ kotlin 行を書き換える。
+      #   別グループに散らすと同一 1 行を書く重複 PR が量産される（#242/#245/#575 の実績）。
+      # - detekt: detekt は Kotlin コンパイラを埋め込み、「compiled with Kotlin X / running with Y」の
+      #   実行時一致を要求する。Kotlin と別 PR にすると双方が単独では緑にならないデッドロックになる
+      #   （Kotlin 単独 → detekt 非互換で :detekt 失敗 / detekt 単独 → 同じく失敗）。
       kotlin:
         patterns:
           - "org.jetbrains.kotlin.jvm"
           - "org.jetbrains.kotlin.plugin.spring"
+          - "org.jetbrains.kotlin.plugin.power-assert"
+          - "dev.detekt"
       # 残りの minor / patch を集約。Spring Boot は Spring 管理 BOM を巻き込むため個別（除外）、
-      # Kotlin プラグインは上の専用グループへ回す（除外）。major も個別 PR に残る。
+      # Kotlin ロックステップ依存（kotlin プラグイン群 + detekt）は上の専用グループへ回す（除外）。
+      # major も個別 PR に残る。
       gradle-minor-patch:
         update-types:
           - "minor"
@@ -30,6 +39,8 @@ updates:
           - "org.springframework.boot"
           - "org.jetbrains.kotlin.jvm"
           - "org.jetbrains.kotlin.plugin.spring"
+          - "org.jetbrains.kotlin.plugin.power-assert"
+          - "dev.detekt"
 
   # Enable updates for GitHub Actions
   - package-ecosystem: "github-actions"
