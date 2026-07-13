@@ -103,9 +103,13 @@ data class CoveredSynthesized(
 /**
  * 基礎馬の合成値。
  *
- * [originCountry] は**内国産馬のときだけ**書く。現在 seed 経路は RegisterImportedHorse しかないため、内国産馬も
- * 輸入馬として登録せざるをえず、輸入年月日（[landingDate]）とあわせて埋め合わせが要る（#633）。輸入馬は事実
+ * [originCountry] は**内国産馬のときだけ**書く。値そのもの（「日本」）は事実であり合成ではない （内国産馬の [HorseFacts]
+ * には出生国の欄が無いため、事実を書ける場所がここしか残っていない）。 現在 seed 経路は RegisterImportedHorse しかないため、内国産馬も輸入馬として登録せざるをえず、
+ * ほんとうに合成しているのは輸入年月日（[landingDate]、架空の値）のほうである（#633）。輸入馬は事実
  * （[HorseFacts.originCountry]）が出生国を持つので、ここに書くと読まれない死にデータになる。
+ *
+ * 注記: 事実である出生国をこの synthesized 層に置くこと自体が facts/synthesized の境界を歪めている （本来は facts
+ * 側に置くべき）。この配置の是正はフォローアップで扱う。
  */
 data class HorseSynthesized(
     val microchipNumber: String,

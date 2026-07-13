@@ -1,5 +1,7 @@
 package com.example.api.replay.fixture
 
+import java.nio.file.Path
+import kotlin.io.path.listDirectoryEntries
 import org.junit.jupiter.api.Test
 
 class FixtureLoaderTest {
@@ -23,7 +25,16 @@ class FixtureLoaderTest {
 
         // 件数はここに書かない（manifest が唯一の出所。フィクスチャを足しても 2 箇所直さずに済む）。
         assert(declared.isNotEmpty())
-        assert(fixtures.size == declared.size)
+        // fixtures/loadAll は manifestNames().map(::load) なので size 比較はトートロジーで空振りする。
+        // 検出したいのは「JSON を置いたのに manifest に書き忘れた（＝永久に replay されない死にデータ）」なので、
+        // クラスパス上の fixtures/*.json の集合と manifest の集合そのものを突合する。
+        val files =
+            Path.of(requireNotNull(javaClass.classLoader.getResource("fixtures")).toURI())
+                .listDirectoryEntries("*.json")
+                .map { it.fileName.toString() }
+        assert(files.toSet() == declared.toSet()) {
+            "manifest と fixtures/*.json が不一致: $files vs $declared"
+        }
         val covered = fixtures.filterIsInstance<CoveredSeasonFixture>()
         // 内国産の基礎馬は facts に originCountry を持たない（合成側で輸入馬扱いにする）。
         assert(covered.any { it.facts.broodmare.originCountry == null })

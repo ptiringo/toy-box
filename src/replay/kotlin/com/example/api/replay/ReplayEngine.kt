@@ -73,7 +73,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.REGISTER_STALLION)
+            ) ?: return session.stop()
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
@@ -83,7 +83,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE)
+            ) ?: return session.stop()
 
         // 1. 繁殖登録（雄・雌）。
         val stallionBreeding =
@@ -98,7 +98,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.REGISTER_STALLION_BREEDING)
+            ) ?: return session.stop()
         val broodmareBreeding =
             session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
@@ -111,7 +111,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE_BREEDING)
+            ) ?: return session.stop()
 
         // 2. 種付記録。
         val breedingResult =
@@ -130,7 +130,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.RECORD_COVERING)
+            ) ?: return session.stop()
 
         // 3. 種付成績報告（雄側・当年 9/30 期限）。提出日を Command.issuedAt に反映。
         session.step(
@@ -145,7 +145,7 @@ class ReplayEngine(
                     ),
                 )
             ),
-        ) ?: return session.stop(ReplayStep.SUBMIT_COVERING_REPORT)
+        ) ?: return session.stop()
 
         // 4. 出生報告。
         session.step(
@@ -156,7 +156,7 @@ class ReplayEngine(
                     seasonClock(neutralInstant),
                 )
             ),
-        ) ?: return session.stop(ReplayStep.REPORT_FOALING)
+        ) ?: return session.stop()
 
         // 5. 産駒血統登録 → 6. 馬名登録（LiveFoal かつ産駒情報があるときのみ）。
         //    未命名の産駒（JBIS 上も馬名が付いていない）は馬名登録を行わない。
@@ -181,7 +181,7 @@ class ReplayEngine(
                             seasonClock(neutralInstant),
                         )
                     ),
-                ) ?: return session.stop(ReplayStep.REGISTER_FOAL)
+                ) ?: return session.stop()
 
             val foalName = foalFacts.name
             if (foalName != null) {
@@ -193,7 +193,7 @@ class ReplayEngine(
                             seasonClock(neutralInstant),
                         )
                     ),
-                ) ?: return session.stop(ReplayStep.NAME_FOAL)
+                ) ?: return session.stop()
             }
         }
 
@@ -210,7 +210,7 @@ class ReplayEngine(
                     ),
                 )
             ),
-        ) ?: return session.stop(ReplayStep.SUBMIT_BREEDING_REPORT)
+        ) ?: return session.stop()
 
         return session.complete()
     }
@@ -238,7 +238,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE)
+            ) ?: return session.stop()
 
         // 1. 繁殖登録（雌のみ）。
         val broodmareBreeding =
@@ -253,7 +253,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE_BREEDING)
+            ) ?: return session.stop()
 
         // 2. 種付せず記録（この時点で outcome = NotCovered が確定した終端の繁殖成績が起きる）。
         val breedingResult =
@@ -268,7 +268,7 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return session.stop(ReplayStep.RECORD_UNCOVERED)
+            ) ?: return session.stop()
 
         // 3. 繁殖成績報告（雌側・翌年 5/31 期限）。
         session.step(
@@ -283,7 +283,7 @@ class ReplayEngine(
                     ),
                 )
             ),
-        ) ?: return session.stop(ReplayStep.SUBMIT_BREEDING_REPORT)
+        ) ?: return session.stop()
 
         return session.complete()
     }
@@ -316,8 +316,8 @@ private class ReplaySession(private val fixture: HorseFixture) {
             },
         )
 
-    /** [at] の段階で停止した観測を返す（＝モデルが実在馬を弾いた＝発見）。 */
-    fun stop(at: ReplayStep): HorseReplayOutcome = outcome(at, steps.last().detail)
+    /** 直前に記録した段階で停止した観測を返す（＝モデルが実在馬を弾いた＝発見）。 */
+    fun stop(): HorseReplayOutcome = outcome(steps.last().step, steps.last().detail)
 
     /** 最後まで一周した観測を返す。 */
     fun complete(): HorseReplayOutcome = outcome(null, null)
