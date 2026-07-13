@@ -7,9 +7,13 @@
 #
 # http backend で供給する kotlin-lsp / tfctl は、mise が per-platform の SHA を mise.lock に
 # 永続化しない（`mise lock` が書かない）ため `mise install --locked`（Linux CI）を満たせず、
-# mise-action を使う CI ジョブを落とす（#510 回帰）。どちらも CI では不要なので除外する:
+# mise-action を使う CI ジョブを落とす（#510 回帰）。gh（aqua backend）は lock 可能だが CI では
+# 一切使わない（GitHub 操作は Actions の GITHUB_TOKEN / MCP が担い、gh CLI は人間のクラウド操作用。
+# ADR-0066）。`--locked` は install_args のツールだけでなく config 上の全ツールを lock に照合するため、
+# CI で使わない・または lock を満たせないツールはここで除外する（install_args とは役割が別）:
 #   - http:kotlin-lsp … 編集時診断・コードナビ用の LSP（ADR-0046）。CI に用途なし。
 #   - http:tfctl      … HCP Terraform の対話操作 CLI（ADR-0034）。CI に用途なし。
+#   - aqua:cli/cli    … GitHub CLI（ADR-0066 / #628）。クラウドセッションの人間操作用で CI に用途なし。
 # ローカル開発では base の mise.toml 定義がそのまま有効なので影響しない。
 [settings]
-disable_tools = ["http:kotlin-lsp", "http:tfctl"]
+disable_tools = ["http:kotlin-lsp", "http:tfctl", "aqua:cli/cli"]
