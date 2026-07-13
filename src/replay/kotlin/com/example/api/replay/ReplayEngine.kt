@@ -43,41 +43,16 @@ class ReplayEngine(
     private val submitBreedingReport: SubmitBreedingReportUseCase,
 ) {
     fun run(fixture: HorseFixture): HorseReplayOutcome {
-        val steps = mutableListOf<StepResult>()
+        val session = ReplaySession(fixture)
         val facts = fixture.facts
         val synth = fixture.synthesized
         // 提出以外のドメイン日付は論理に効かないので、シーズン中の固定 Instant を使う。
         val neutralInstant: Instant = submissionInstant(LocalDate.of(facts.coveringYear, 4, 1))
 
-        // 各段階を実行するローカルヘルパ。Err なら steps に記録し stop 用の理由文字列を返す。
-        // kotlin-result 2.x の Result は inline value class（Ok/Err は判別できるサブクラスではなく生成関数）なので、
-        // is 分岐ではなく fold で分解する。
-        fun <V, E> step(name: ReplayStep, result: Result<V, E>): V? =
-            result.fold(
-                success = { value ->
-                    steps.add(StepResult(name, true, "ok"))
-                    value
-                },
-                failure = { error ->
-                    steps.add(StepResult(name, false, error.toString()))
-                    null
-                },
-            )
-
-        fun stop(at: ReplayStep) =
-            HorseReplayOutcome(
-                fixture.name,
-                fixture.sources.toSourceRefs(),
-                synth.notes,
-                steps.toList(),
-                at,
-                steps.last().detail,
-            )
-
         // 0. 基礎馬（種牡馬・繁殖牝馬）を輸入馬経路で seed（親不在で登録可）。
         //    内国産馬も現状これしか経路がないため、合成した出生国・輸入年月日で通す。
         val stallion =
-            step(
+            session.step(
                 ReplayStep.REGISTER_STALLION,
                 registerImportedHorse(
                     Command.now(
@@ -85,9 +60,9 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return stop(ReplayStep.REGISTER_STALLION)
+            ) ?: return session.stop(ReplayStep.REGISTER_STALLION)
         val broodmare =
-            step(
+            session.step(
                 ReplayStep.REGISTER_BROODMARE,
                 registerImportedHorse(
                     Command.now(
@@ -95,11 +70,11 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return stop(ReplayStep.REGISTER_BROODMARE)
+            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE)
 
         // 1. 繁殖登録（雄・雌）。
         val stallionBreeding =
-            step(
+            session.step(
                 ReplayStep.REGISTER_STALLION_BREEDING,
                 registerBreedingRegistration(
                     Command.now(
@@ -110,9 +85,9 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return stop(ReplayStep.REGISTER_STALLION_BREEDING)
+            ) ?: return session.stop(ReplayStep.REGISTER_STALLION_BREEDING)
         val broodmareBreeding =
-            step(
+            session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
                 registerBreedingRegistration(
                     Command.now(
@@ -123,11 +98,11 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return stop(ReplayStep.REGISTER_BROODMARE_BREEDING)
+            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE_BREEDING)
 
         // 2. 種付記録。
         val breedingResult =
-            step(
+            session.step(
                 ReplayStep.RECORD_COVERING,
                 recordCovering(
                     Command.now(
@@ -142,10 +117,10 @@ class ReplayEngine(
                         seasonClock(neutralInstant),
                     )
                 ),
-            ) ?: return stop(ReplayStep.RECORD_COVERING)
+            ) ?: return session.stop(ReplayStep.RECORD_COVERING)
 
         // 3. 種付成績報告（雄側・当年 9/30 期限）。提出日を Command.issuedAt に反映。
-        step(
+        session.step(
             ReplayStep.SUBMIT_COVERING_REPORT,
             submitCoveringReport(
                 Command.now(
@@ -157,10 +132,10 @@ class ReplayEngine(
                     ),
                 )
             ),
-        ) ?: return stop(ReplayStep.SUBMIT_COVERING_REPORT)
+        ) ?: return session.stop(ReplayStep.SUBMIT_COVERING_REPORT)
 
         // 4. 出生報告。
-        step(
+        session.step(
             ReplayStep.REPORT_FOALING,
             reportFoaling(
                 Command.now(
@@ -168,7 +143,7 @@ class ReplayEngine(
                     seasonClock(neutralInstant),
                 )
             ),
-        ) ?: return stop(ReplayStep.REPORT_FOALING)
+        ) ?: return session.stop(ReplayStep.REPORT_FOALING)
 
         // 5. 産駒血統登録 → 6. 馬名登録（LiveFoal かつ産駒情報があるときのみ）。
         //    未命名の産駒（JBIS 上も馬名が付いていない）は馬名登録を行わない。
@@ -176,7 +151,7 @@ class ReplayEngine(
         val foalSynth = synth.foal
         if (foalFacts != null && foalSynth != null) {
             val registeredFoal =
-                step(
+                session.step(
                     ReplayStep.REGISTER_FOAL,
                     registerFoal(
                         Command.now(
@@ -193,11 +168,11 @@ class ReplayEngine(
                             seasonClock(neutralInstant),
                         )
                     ),
-                ) ?: return stop(ReplayStep.REGISTER_FOAL)
+                ) ?: return session.stop(ReplayStep.REGISTER_FOAL)
 
             val foalName = foalFacts.name
             if (foalName != null) {
-                step(
+                session.step(
                     ReplayStep.NAME_FOAL,
                     nameHorse(
                         Command.now(
@@ -205,12 +180,12 @@ class ReplayEngine(
                             seasonClock(neutralInstant),
                         )
                     ),
-                ) ?: return stop(ReplayStep.NAME_FOAL)
+                ) ?: return session.stop(ReplayStep.NAME_FOAL)
             }
         }
 
         // 7. 繁殖成績報告（雌側・翌年 5/31 期限）。
-        step(
+        session.step(
             ReplayStep.SUBMIT_BREEDING_REPORT,
             submitBreedingReport(
                 Command.now(
@@ -222,15 +197,52 @@ class ReplayEngine(
                     ),
                 )
             ),
-        ) ?: return stop(ReplayStep.SUBMIT_BREEDING_REPORT)
+        ) ?: return session.stop(ReplayStep.SUBMIT_BREEDING_REPORT)
 
-        return HorseReplayOutcome(
+        return session.complete()
+    }
+}
+
+/**
+ * 1 頭ぶんの replay 実行状態。段階の記録と、停止・完了の観測の組み立てを引き受ける。
+ *
+ * 種付ありの年（[com.example.api.replay.fixture.CoveredSeasonFixture]）と種付なしの年で経路が分かれるため、 経路をまたいで共有する。Err
+ * はハーネスの失敗ではなく「発見」なので、例外にせず [StepResult] に記録する。
+ */
+private class ReplaySession(private val fixture: HorseFixture) {
+    private val steps = mutableListOf<StepResult>()
+
+    /**
+     * 1 段階を実行結果から記録する。
+     *
+     * kotlin-result 2.x の Result は inline value class（Ok/Err は判別できるサブクラスではなく生成関数）なので、 is 分岐ではなく
+     * fold で分解する。Err なら null を返し、呼び出し側は [stop] で打ち切る。
+     */
+    fun <V, E> step(name: ReplayStep, result: Result<V, E>): V? =
+        result.fold(
+            success = { value ->
+                steps.add(StepResult(name, true, "ok"))
+                value
+            },
+            failure = { error ->
+                steps.add(StepResult(name, false, error.toString()))
+                null
+            },
+        )
+
+    /** [at] の段階で停止した観測を返す（＝モデルが実在馬を弾いた＝発見）。 */
+    fun stop(at: ReplayStep): HorseReplayOutcome = outcome(at, steps.last().detail)
+
+    /** 最後まで一周した観測を返す。 */
+    fun complete(): HorseReplayOutcome = outcome(null, null)
+
+    private fun outcome(stoppedAt: ReplayStep?, stopReason: String?): HorseReplayOutcome =
+        HorseReplayOutcome(
             fixture.name,
             fixture.sources.toSourceRefs(),
-            synth.notes,
+            fixture.synthesized.notes,
             steps.toList(),
-            null,
-            null,
+            stoppedAt,
+            stopReason,
         )
-    }
 }
