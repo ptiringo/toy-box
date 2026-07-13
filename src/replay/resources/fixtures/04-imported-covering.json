@@ -1,0 +1,78 @@
+{
+  "name": "ウインドインハーヘア 1999年シーズン（海外種付 → 2000年 ライクザウインド・持込馬）",
+  "sources": {
+    "broodmare": "https://www.jbis.or.jp/horse/0000430846/",
+    "breedingRecord": "https://www.jbis.or.jp/horse/0000430846/broodmare/info/",
+    "stallion": "https://www.jbis.or.jp/horse/0000337424/",
+    "foal": "https://www.jbis.or.jp/horse/0000701686/"
+  },
+  "facts": {
+    "coveringYear": 1999,
+    "stallion": {
+      "sex": "MALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1986-03-26",
+      "breeder": "Juddmonte Farms",
+      "originCountry": "アメリカ"
+    },
+    "broodmare": {
+      "sex": "FEMALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1991-02-20",
+      "breeder": "Swettenham Stud and Barronstown Stud",
+      "originCountry": "アイルランド"
+    },
+    "foaling": { "outcome": "LiveFoal", "foalingDate": "2000-03-21" },
+    "foal": {
+      "sex": "FEMALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "breeder": "ノーザンファーム",
+      "name": "ライクザウインド"
+    }
+  },
+  "synthesized": {
+    "notes": [
+      "種付はアイルランドで行われ、分娩は日本（早来）＝持込馬の経路。デインヒル(USA) は日本で繁殖登録されておらず、日本へ輸入もされていない。しかし seed 経路（RegisterImportedHorse しかない）と繁殖登録の都合上、架空の輸入年月日・繁殖登録番号を与えて日本の繁殖登録に載せている（＝非公開項目の合成ではなく、事実の歪曲。モデルがこれを弾かないこと自体が観測対象。#624）。種付証明の有効地域も日本ではない。",
+      "種付年は産駒生年 2000 から 1 を引いて 1999 とした。",
+      "種付日・種付場所・証明書は JBIS 非公開のため合成（種付場所は事実に合わせてアイルランドとした）。",
+      "マイクロチップ番号・登録番号・DNA 型・提出日は JBIS 非公開のため合成（輸入年月日は非公開なのではなく、上記のとおり存在しない事実を架空で与えている）。"
+    ],
+    "stallion": {
+      "microchipNumber": "900000000040001",
+      "originCountry": "アメリカ",
+      "landingDate": "1999-01-01",
+      "pedigreeRegistrationNumber": "JBIS-0000337424",
+      "breedingRegistrationNumber": "BR-0000337424"
+    },
+    "broodmare": {
+      "microchipNumber": "900000000040002",
+      "originCountry": "アイルランド",
+      "landingDate": "1995-11-01",
+      "pedigreeRegistrationNumber": "JBIS-0000430846",
+      "breedingRegistrationNumber": "BR-0000430846"
+    },
+    "covering": {
+      "coveringDate": "1999-04-10",
+      "coveringPlace": "アイルランド",
+      "certificateNumber": "CVR-1999-0004",
+      "studCertificate": {
+        "number": "SC-1999-0004",
+        "validRegions": ["アイルランド"],
+        "validPeriodStart": "1999-02-01",
+        "validPeriodEnd": "1999-07-31"
+      }
+    },
+    "submissions": {
+      "coveringReportSubmittedOn": "1999-09-30",
+      "breedingReportSubmittedOn": "2000-05-30"
+    },
+    "foal": {
+      "microchipNumber": "900000000040003",
+      "dnaParentage": "CONSISTENT",
+      "pedigreeRegistrationNumber": "JBIS-0000701686"
+    }
+  }
+}

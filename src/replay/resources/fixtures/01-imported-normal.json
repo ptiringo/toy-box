@@ -1,0 +1,78 @@
+{
+  "name": "ウインドインハーヘア 2001年シーズン（→ ディープインパクト）",
+  "sources": {
+    "broodmare": "https://www.jbis.or.jp/horse/0000430846/",
+    "breedingRecord": "https://www.jbis.or.jp/horse/0000430846/broodmare/info/",
+    "stallion": "https://www.jbis.or.jp/horse/0000333862/",
+    "foal": "https://www.jbis.or.jp/horse/0000742976/"
+  },
+  "facts": {
+    "coveringYear": 2001,
+    "stallion": {
+      "sex": "MALE",
+      "coatColor": "BROWN",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1986-03-25",
+      "breeder": "Oak Cliff Thoroughbreds, Ltd.",
+      "originCountry": "アメリカ"
+    },
+    "broodmare": {
+      "sex": "FEMALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1991-02-20",
+      "breeder": "Swettenham Stud and Barronstown Stud",
+      "originCountry": "アイルランド"
+    },
+    "foaling": { "outcome": "LiveFoal", "foalingDate": "2002-03-25" },
+    "foal": {
+      "sex": "MALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "breeder": "ノーザンファーム",
+      "name": "ディープインパクト"
+    }
+  },
+  "synthesized": {
+    "notes": [
+      "種付年は産駒生年 2002 から 1 を引いて 2001 とした（JBIS の年軸は産駒の生年）。",
+      "マイクロチップ番号・血統登録番号・繁殖登録番号・DNA 型判定は JBIS 非公開のため合成。",
+      "種付日・種付場所・種付証明書・輸入年月日は JBIS 非公開のため合成。",
+      "種付成績報告・繁殖成績報告の提出日は JBIS 非公開のため、締切内の日付を合成。"
+    ],
+    "stallion": {
+      "microchipNumber": "900000000010001",
+      "originCountry": "アメリカ",
+      "landingDate": "1990-09-01",
+      "pedigreeRegistrationNumber": "JBIS-0000333862",
+      "breedingRegistrationNumber": "BR-0000333862"
+    },
+    "broodmare": {
+      "microchipNumber": "900000000010002",
+      "originCountry": "アイルランド",
+      "landingDate": "1995-11-01",
+      "pedigreeRegistrationNumber": "JBIS-0000430846",
+      "breedingRegistrationNumber": "BR-0000430846"
+    },
+    "covering": {
+      "coveringDate": "2001-04-15",
+      "coveringPlace": "北海道",
+      "certificateNumber": "CVR-2001-0001",
+      "studCertificate": {
+        "number": "SC-2001-0001",
+        "validRegions": ["北海道"],
+        "validPeriodStart": "2001-02-01",
+        "validPeriodEnd": "2001-07-31"
+      }
+    },
+    "submissions": {
+      "coveringReportSubmittedOn": "2001-09-20",
+      "breedingReportSubmittedOn": "2002-05-20"
+    },
+    "foal": {
+      "microchipNumber": "900000000010003",
+      "dnaParentage": "CONSISTENT",
+      "pedigreeRegistrationNumber": "JBIS-0000742976"
+    }
+  }
+}

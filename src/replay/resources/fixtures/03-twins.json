@@ -1,0 +1,77 @@
+{
+  "name": "テスコパール 1990年シーズン（1991年 双子 リアルポルクス／リアルカストール）",
+  "sources": {
+    "broodmare": "https://www.jbis.or.jp/horse/0000086000/",
+    "breedingRecord": "https://www.jbis.or.jp/horse/0000086000/broodmare/info/",
+    "stallion": "https://www.jbis.or.jp/horse/0000333762/",
+    "foal": "https://www.jbis.or.jp/horse/0000242011/"
+  },
+  "facts": {
+    "coveringYear": 1990,
+    "stallion": {
+      "sex": "MALE",
+      "coatColor": "DARK_BAY",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1975-05-16",
+      "breeder": "Mrs. George F. Getty II Enterprises",
+      "originCountry": "アメリカ"
+    },
+    "broodmare": {
+      "sex": "FEMALE",
+      "coatColor": "CHESTNUT",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1976-04-22",
+      "breeder": "中村 吉兵衛"
+    },
+    "foaling": { "outcome": "LiveFoal", "foalingDate": "1991-03-20" },
+    "foal": {
+      "sex": "MALE",
+      "coatColor": "BAY",
+      "breedType": "THOROUGHBRED",
+      "breeder": "中村 幸蔵",
+      "name": "リアルポルクス"
+    }
+  },
+  "synthesized": {
+    "notes": [
+      "実際は双子（リアルポルクス / リアルカストール、ともに 1991-03-20 生・牡・鹿毛・父ゲイメセン）が両頭生存しているが、モデルは 1 分娩 = 1 産駒しか表せないため、代表 1 頭（リアルポルクス）だけを登録している。もう 1 頭（https://www.jbis.or.jp/horse/0000242012/ ）は replay で表現できない（#625）。",
+      "繁殖牝馬テスコパールは内国産（荻伏産）だが、seed 経路が RegisterImportedHorse しかないため輸入馬として登録している。出生国は日本（事実どおり）だが、輸入馬経路に載せるため輸入年月日は架空で与えている（#633）。",
+      "種付年は産駒生年 1991 から 1 を引いて 1990 とした。",
+      "マイクロチップ番号・登録番号・DNA 型・種付日・証明書・提出日は JBIS 非公開のため合成。"
+    ],
+    "stallion": {
+      "microchipNumber": "900000000030001",
+      "originCountry": "アメリカ",
+      "landingDate": "1980-10-01",
+      "pedigreeRegistrationNumber": "JBIS-0000333762",
+      "breedingRegistrationNumber": "BR-0000333762"
+    },
+    "broodmare": {
+      "microchipNumber": "900000000030002",
+      "originCountry": "日本",
+      "landingDate": "1976-04-22",
+      "pedigreeRegistrationNumber": "JBIS-0000086000",
+      "breedingRegistrationNumber": "BR-0000086000"
+    },
+    "covering": {
+      "coveringDate": "1990-04-25",
+      "coveringPlace": "北海道",
+      "certificateNumber": "CVR-1990-0003",
+      "studCertificate": {
+        "number": "SC-1990-0003",
+        "validRegions": ["北海道"],
+        "validPeriodStart": "1990-02-01",
+        "validPeriodEnd": "1990-07-31"
+      }
+    },
+    "submissions": {
+      "coveringReportSubmittedOn": "1990-09-28",
+      "breedingReportSubmittedOn": "1991-05-25"
+    },
+    "foal": {
+      "microchipNumber": "900000000030003",
+      "dnaParentage": "CONSISTENT",
+      "pedigreeRegistrationNumber": "JBIS-0000242011"
+    }
+  }
+}

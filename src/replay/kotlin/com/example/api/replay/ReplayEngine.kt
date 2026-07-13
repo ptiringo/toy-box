@@ -14,14 +14,12 @@ import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.RegisterFoalCommand
 import com.example.api.application.studbook.horse.RegisterFoalUseCase
-import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
-import com.example.api.replay.fixture.FoundationHorse
 import com.example.api.replay.fixture.HorseFixture
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.fold
@@ -46,8 +44,10 @@ class ReplayEngine(
 ) {
     fun run(fixture: HorseFixture): HorseReplayOutcome {
         val steps = mutableListOf<StepResult>()
+        val facts = fixture.facts
+        val synth = fixture.synthesized
         // 提出以外のドメイン日付は論理に効かないので、シーズン中の固定 Instant を使う。
-        val neutralInstant: Instant = submissionInstant(LocalDate.of(fixture.coveringYear, 4, 1))
+        val neutralInstant: Instant = submissionInstant(LocalDate.of(facts.coveringYear, 4, 1))
 
         // 各段階を実行するローカルヘルパ。Err なら steps に記録し stop 用の理由文字列を返す。
         // kotlin-result 2.x の Result は inline value class（Ok/Err は判別できるサブクラスではなく生成関数）なので、
@@ -67,25 +67,33 @@ class ReplayEngine(
         fun stop(at: ReplayStep) =
             HorseReplayOutcome(
                 fixture.name,
-                fixture.sourceUrl,
+                fixture.sources.toSourceRefs(),
+                synth.notes,
                 steps.toList(),
                 at,
                 steps.last().detail,
             )
 
         // 0. 基礎馬（種牡馬・繁殖牝馬）を輸入馬経路で seed（親不在で登録可）。
+        //    内国産馬も現状これしか経路がないため、合成した出生国・輸入年月日で通す。
         val stallion =
             step(
                 ReplayStep.REGISTER_STALLION,
                 registerImportedHorse(
-                    Command.now(importedCommand(fixture.stallion), seasonClock(neutralInstant))
+                    Command.now(
+                        importedCommand(facts.stallion, synth.stallion),
+                        seasonClock(neutralInstant),
+                    )
                 ),
             ) ?: return stop(ReplayStep.REGISTER_STALLION)
         val broodmare =
             step(
                 ReplayStep.REGISTER_BROODMARE,
                 registerImportedHorse(
-                    Command.now(importedCommand(fixture.broodmare), seasonClock(neutralInstant))
+                    Command.now(
+                        importedCommand(facts.broodmare, synth.broodmare),
+                        seasonClock(neutralInstant),
+                    )
                 ),
             ) ?: return stop(ReplayStep.REGISTER_BROODMARE)
 
@@ -97,7 +105,7 @@ class ReplayEngine(
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             stallion.bloodHorse.id.value,
-                            fixture.stallion.breedingRegistrationNumber,
+                            synth.stallion.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
                     )
@@ -110,7 +118,7 @@ class ReplayEngine(
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             broodmare.bloodHorse.id.value,
-                            fixture.broodmare.breedingRegistrationNumber,
+                            synth.broodmare.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
                     )
@@ -126,10 +134,10 @@ class ReplayEngine(
                         RecordCoveringCommand(
                             breedingRegistrationId = broodmareBreeding.id.value,
                             stallionRegistrationId = stallionBreeding.id.value,
-                            coveringDate = LocalDate.parse(fixture.covering.coveringDate),
-                            coveringPlace = fixture.covering.coveringPlace,
-                            certificateNumber = fixture.covering.certificateNumber,
-                            studCertificate = fixture.covering.studCertificate.toInput(),
+                            coveringDate = LocalDate.parse(synth.covering.coveringDate),
+                            coveringPlace = synth.covering.coveringPlace,
+                            certificateNumber = synth.covering.certificateNumber,
+                            studCertificate = synth.covering.studCertificate.toInput(),
                         ),
                         seasonClock(neutralInstant),
                     )
@@ -141,9 +149,11 @@ class ReplayEngine(
             ReplayStep.SUBMIT_COVERING_REPORT,
             submitCoveringReport(
                 Command.now(
-                    SubmitCoveringReportCommand(stallionBreeding.id.value, fixture.coveringYear),
+                    SubmitCoveringReportCommand(stallionBreeding.id.value, facts.coveringYear),
                     seasonClock(
-                        submissionInstant(LocalDate.parse(fixture.covering.reportSubmittedOn))
+                        submissionInstant(
+                            LocalDate.parse(synth.submissions.coveringReportSubmittedOn)
+                        )
                     ),
                 )
             ),
@@ -154,15 +164,17 @@ class ReplayEngine(
             ReplayStep.REPORT_FOALING,
             reportFoaling(
                 Command.now(
-                    ReportFoalingCommand(breedingResult.id.value, fixture.foaling.toOutcome()),
+                    ReportFoalingCommand(breedingResult.id.value, facts.foaling.toOutcome()),
                     seasonClock(neutralInstant),
                 )
             ),
         ) ?: return stop(ReplayStep.REPORT_FOALING)
 
-        // 5. 産駒血統登録 → 6. 馬名登録（LiveFoal かつ foal 情報があるときのみ）。
-        val foal = fixture.foal
-        if (foal != null) {
+        // 5. 産駒血統登録 → 6. 馬名登録（LiveFoal かつ産駒情報があるときのみ）。
+        //    未命名の産駒（JBIS 上も馬名が付いていない）は馬名登録を行わない。
+        val foalFacts = facts.foal
+        val foalSynth = synth.foal
+        if (foalFacts != null && foalSynth != null) {
             val registeredFoal =
                 step(
                     ReplayStep.REGISTER_FOAL,
@@ -170,28 +182,31 @@ class ReplayEngine(
                         Command.now(
                             RegisterFoalCommand(
                                 breedingResultId = breedingResult.id.value,
-                                sex = Sex.valueOf(foal.sex),
-                                coatColor = CoatColor.valueOf(foal.coatColor),
-                                breedType = BreedType.valueOf(foal.breedType),
-                                breeder = foal.breeder,
-                                microchipNumber = foal.microchipNumber,
-                                dnaParentage = DnaParentageResult.valueOf(foal.dnaParentage),
-                                registrationNumber = foal.pedigreeRegistrationNumber,
+                                sex = Sex.valueOf(foalFacts.sex),
+                                coatColor = CoatColor.valueOf(foalFacts.coatColor),
+                                breedType = BreedType.valueOf(foalFacts.breedType),
+                                breeder = foalFacts.breeder,
+                                microchipNumber = foalSynth.microchipNumber,
+                                dnaParentage = DnaParentageResult.valueOf(foalSynth.dnaParentage),
+                                registrationNumber = foalSynth.pedigreeRegistrationNumber,
                             ),
                             seasonClock(neutralInstant),
                         )
                     ),
                 ) ?: return stop(ReplayStep.REGISTER_FOAL)
 
-            step(
-                ReplayStep.NAME_FOAL,
-                nameHorse(
-                    Command.now(
-                        NameHorseCommand(registeredFoal.bloodHorse.id.value, foal.name),
-                        seasonClock(neutralInstant),
-                    )
-                ),
-            ) ?: return stop(ReplayStep.NAME_FOAL)
+            val foalName = foalFacts.name
+            if (foalName != null) {
+                step(
+                    ReplayStep.NAME_FOAL,
+                    nameHorse(
+                        Command.now(
+                            NameHorseCommand(registeredFoal.bloodHorse.id.value, foalName),
+                            seasonClock(neutralInstant),
+                        )
+                    ),
+                ) ?: return stop(ReplayStep.NAME_FOAL)
+            }
         }
 
         // 7. 繁殖成績報告（雌側・翌年 5/31 期限）。
@@ -201,25 +216,21 @@ class ReplayEngine(
                 Command.now(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
-                        submissionInstant(LocalDate.parse(fixture.breedingReportSubmittedOn))
+                        submissionInstant(
+                            LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
+                        )
                     ),
                 )
             ),
         ) ?: return stop(ReplayStep.SUBMIT_BREEDING_REPORT)
 
-        return HorseReplayOutcome(fixture.name, fixture.sourceUrl, steps.toList(), null, null)
-    }
-
-    private fun importedCommand(h: FoundationHorse): RegisterImportedHorseCommand =
-        RegisterImportedHorseCommand(
-            sex = Sex.valueOf(h.sex),
-            coatColor = CoatColor.valueOf(h.coatColor),
-            breedType = BreedType.valueOf(h.breedType),
-            dateOfBirth = LocalDate.parse(h.dateOfBirth),
-            breeder = h.breeder,
-            microchipNumber = h.microchipNumber,
-            originCountry = h.originCountry,
-            landingDate = LocalDate.parse(h.landingDate),
-            registrationNumber = h.pedigreeRegistrationNumber,
+        return HorseReplayOutcome(
+            fixture.name,
+            fixture.sources.toSourceRefs(),
+            synth.notes,
+            steps.toList(),
+            null,
+            null,
         )
+    }
 }

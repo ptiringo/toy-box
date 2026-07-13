@@ -1,2 +1,5 @@
-01-normal.json
-02-not-conceived.json
+01-imported-normal.json
+02-domestic-barren.json
+03-twins.json
+04-imported-covering.json
+05-unnamed-foal.json

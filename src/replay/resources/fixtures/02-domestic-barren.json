@@ -1,0 +1,64 @@
+{
+  "name": "シーザリオ 2008年シーズン（2009年 産駒なし）",
+  "sources": {
+    "broodmare": "https://www.jbis.or.jp/horse/0000743110/",
+    "breedingRecord": "https://www.jbis.or.jp/horse/0000743110/broodmare/info/",
+    "stallion": "https://www.jbis.or.jp/horse/0000731452/"
+  },
+  "facts": {
+    "coveringYear": 2008,
+    "stallion": {
+      "sex": "MALE",
+      "coatColor": "BROWN",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "1999-02-20",
+      "breeder": "Charles Nuckols Jr. & Sons",
+      "originCountry": "アメリカ"
+    },
+    "broodmare": {
+      "sex": "FEMALE",
+      "coatColor": "BLACK",
+      "breedType": "THOROUGHBRED",
+      "dateOfBirth": "2002-03-31",
+      "breeder": "ノーザンファーム"
+    },
+    "foaling": { "outcome": "NotConceived" }
+  },
+  "synthesized": {
+    "notes": [
+      "繁殖牝馬シーザリオは内国産（早来産）だが、seed 経路が RegisterImportedHorse しかないため輸入馬として登録している。出生国は日本（事実どおり）だが、輸入馬経路に載せるため輸入年月日は架空で与えている（#633）。",
+      "JBIS の表示は『産駒なし 2009年｜ウォーエンブレム(USA)』のみで、不受胎・流産・死産を区別しない。NotConceived の選択は事実ではなく合成の判断（#634）。",
+      "種付年は産駒生年 2009 から 1 を引いて 2008 とした。",
+      "マイクロチップ番号・登録番号・種付日・証明書・提出日は JBIS 非公開のため合成。"
+    ],
+    "stallion": {
+      "microchipNumber": "900000000020001",
+      "originCountry": "アメリカ",
+      "landingDate": "2003-10-01",
+      "pedigreeRegistrationNumber": "JBIS-0000731452",
+      "breedingRegistrationNumber": "BR-0000731452"
+    },
+    "broodmare": {
+      "microchipNumber": "900000000020002",
+      "originCountry": "日本",
+      "landingDate": "2002-03-31",
+      "pedigreeRegistrationNumber": "JBIS-0000743110",
+      "breedingRegistrationNumber": "BR-0000743110"
+    },
+    "covering": {
+      "coveringDate": "2008-04-20",
+      "coveringPlace": "北海道",
+      "certificateNumber": "CVR-2008-0002",
+      "studCertificate": {
+        "number": "SC-2008-0002",
+        "validRegions": ["北海道"],
+        "validPeriodStart": "2008-02-01",
+        "validPeriodEnd": "2008-07-31"
+      }
+    },
+    "submissions": {
+      "coveringReportSubmittedOn": "2008-09-25",
+      "breedingReportSubmittedOn": "2009-05-15"
+    }
+  }
+}
