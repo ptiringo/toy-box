@@ -14,7 +14,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
  * とし、JSON は "kind" で読み分ける。
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "kind")
-@JsonSubTypes(JsonSubTypes.Type(value = CoveredSeasonFixture::class, name = "covered"))
+@JsonSubTypes(
+    JsonSubTypes.Type(value = CoveredSeasonFixture::class, name = "covered"),
+    JsonSubTypes.Type(value = UncoveredSeasonFixture::class, name = "uncovered"),
+)
 sealed interface HorseFixture {
     /** 突合レポートの節見出しになる名前（馬名 + シーズン）。 */
     val name: String
@@ -134,3 +137,37 @@ data class CoveredSubmissions(
     val coveringReportSubmittedOn: String,
     val breedingReportSubmittedOn: String,
 )
+
+/**
+ * 種付を行わなかった年のフィクスチャ（JSON: "kind": "uncovered"）。
+ *
+ * 繁殖成績報告書 様式第14号「子馬のない母の繁殖成績」の 8 区分目（種付せず）にあたる年。種牡馬・種付証明書・ 種付成績報告・産駒がそもそも存在しないため、それらの欄を持たない。
+ */
+data class UncoveredSeasonFixture(
+    override val name: String,
+    override val sources: FixtureSources,
+    val facts: UncoveredFacts,
+    val synthesized: UncoveredSynthesized,
+) : HorseFixture {
+    override val notes: List<String>
+        get() = synthesized.notes
+}
+
+/**
+ * 種付を行わなかった年の公開事実。
+ *
+ * [breedingYear] は繁殖年。種付が無いので種付日から導出できず、明示的に持つ（RecordUncoveredCommand も同様）。 JBIS
+ * の繁殖成績の年軸は産駒の生年なので、種付ありの年と同じ換算（表示年 − 1）で求めている。産駒も種付も
+ * 存在しない行にこの換算を当てること自体が合成の判断であり、[UncoveredSynthesized.notes] に記す。
+ */
+data class UncoveredFacts(val breedingYear: Int, val broodmare: HorseFacts)
+
+/** 種付を行わなかった年の合成値。種付が無いので種付証明書も種付成績報告も持たない。 */
+data class UncoveredSynthesized(
+    val notes: List<String>,
+    val broodmare: HorseSynthesized,
+    val submissions: UncoveredSubmissions,
+)
+
+/** 種付を行わなかった年の提出日。雌側の繁殖成績報告（翌年 5/31 期限）のみ。 */
+data class UncoveredSubmissions(val breedingReportSubmittedOn: String)

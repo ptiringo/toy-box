@@ -2,6 +2,8 @@ package com.example.api.replay
 
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
+import com.example.api.application.studbook.breeding.RecordUncoveredCommand
+import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationCommand
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
@@ -22,10 +24,12 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.replay.fixture.CoveredSeasonFixture
 import com.example.api.replay.fixture.HorseFixture
+import com.example.api.replay.fixture.UncoveredSeasonFixture
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.fold
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Year
 import org.springframework.stereotype.Component
 
 /**
@@ -37,6 +41,7 @@ class ReplayEngine(
     private val registerImportedHorse: RegisterImportedHorseUseCase,
     private val registerBreedingRegistration: RegisterBreedingRegistrationUseCase,
     private val recordCovering: RecordCoveringUseCase,
+    private val recordUncovered: RecordUncoveredUseCase,
     private val submitCoveringReport: SubmitCoveringReportUseCase,
     private val reportFoaling: ReportFoalingUseCase,
     private val registerFoal: RegisterFoalUseCase,
@@ -46,6 +51,7 @@ class ReplayEngine(
     fun run(fixture: HorseFixture): HorseReplayOutcome =
         when (fixture) {
             is CoveredSeasonFixture -> runCovered(fixture)
+            is UncoveredSeasonFixture -> runUncovered(fixture)
         }
 
     /** 種付を行った年の経路: seed ×2 → 繁殖登録 ×2 → 種付 → 種付成績報告 → 出生報告 → 産駒登録 → 馬名登録 → 繁殖成績報告。 */
@@ -192,6 +198,79 @@ class ReplayEngine(
         }
 
         // 7. 繁殖成績報告（雌側・翌年 5/31 期限）。
+        session.step(
+            ReplayStep.SUBMIT_BREEDING_REPORT,
+            submitBreedingReport(
+                Command.now(
+                    SubmitBreedingReportCommand(breedingResult.id.value),
+                    seasonClock(
+                        submissionInstant(
+                            LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
+                        )
+                    ),
+                )
+            ),
+        ) ?: return session.stop(ReplayStep.SUBMIT_BREEDING_REPORT)
+
+        return session.complete()
+    }
+
+    /**
+     * 種付を行わなかった年の経路: 牝馬 seed → 繁殖登録 → 種付せず記録 → 繁殖成績報告。
+     *
+     * RecordUncovered が起こす繁殖成績は生成時点で outcome = NotCovered が確定した終端レコードなので、
+     * 出生報告（ReportFoaling）は通さない。種牡馬・種付証明書・種付成績報告・産駒はそもそも存在しない。
+     */
+    private fun runUncovered(fixture: UncoveredSeasonFixture): HorseReplayOutcome {
+        val session = ReplaySession(fixture)
+        val facts = fixture.facts
+        val synth = fixture.synthesized
+        // 提出以外のドメイン日付は論理に効かないので、シーズン中の固定 Instant を使う。
+        val neutralInstant: Instant = submissionInstant(LocalDate.of(facts.breedingYear, 4, 1))
+
+        // 0. 繁殖牝馬を輸入馬経路で seed（内国産だが現状これしか経路がない。#633）。
+        val broodmare =
+            session.step(
+                ReplayStep.REGISTER_BROODMARE,
+                registerImportedHorse(
+                    Command.now(
+                        importedCommand(facts.broodmare, synth.broodmare),
+                        seasonClock(neutralInstant),
+                    )
+                ),
+            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE)
+
+        // 1. 繁殖登録（雌のみ）。
+        val broodmareBreeding =
+            session.step(
+                ReplayStep.REGISTER_BROODMARE_BREEDING,
+                registerBreedingRegistration(
+                    Command.now(
+                        RegisterBreedingRegistrationCommand(
+                            broodmare.bloodHorse.id.value,
+                            synth.broodmare.breedingRegistrationNumber,
+                        ),
+                        seasonClock(neutralInstant),
+                    )
+                ),
+            ) ?: return session.stop(ReplayStep.REGISTER_BROODMARE_BREEDING)
+
+        // 2. 種付せず記録（この時点で outcome = NotCovered が確定した終端の繁殖成績が起きる）。
+        val breedingResult =
+            session.step(
+                ReplayStep.RECORD_UNCOVERED,
+                recordUncovered(
+                    Command.now(
+                        RecordUncoveredCommand(
+                            breedingRegistrationId = broodmareBreeding.id.value,
+                            breedingYear = Year.of(facts.breedingYear),
+                        ),
+                        seasonClock(neutralInstant),
+                    )
+                ),
+            ) ?: return session.stop(ReplayStep.RECORD_UNCOVERED)
+
+        // 3. 繁殖成績報告（雌側・翌年 5/31 期限）。
         session.step(
             ReplayStep.SUBMIT_BREEDING_REPORT,
             submitBreedingReport(
