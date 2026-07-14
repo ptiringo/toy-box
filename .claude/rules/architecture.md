@@ -102,14 +102,20 @@ domain/
 
 ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`org.jmolecules.ddd.annotation.*` / `org.jmolecules.event.annotation.*`）で役割を表明する。アノテーションはメタデータのみでランタイム挙動を持たないため domain 層に置いてよい。
 
-| 対象 | アノテーション | 例 |
-|------|--------------|-----|
-| 集約ルート | `@AggregateRoot` | `Jockey`, `Race` |
-| 集約内エンティティ | `@Entity` | （現状なし） |
-| 値オブジェクト（ID 値クラス含む） | `@ValueObject` | `JockeyId` |
-| 識別子プロパティ | `@field:Identity` | `Jockey.id` |
-| Repository ポート（interface） | `@Repository`（jMolecules 版） | `JockeyRepository` |
-| ドメインイベント | `@DomainEvent`（jMolecules events 版） | `HorseNamed` |
+| 対象 | アノテーション | 置き場所 | 例 |
+|------|--------------|---------|-----|
+| 集約ルート | `@AggregateRoot` | `domain.*.model` | `Jockey`, `Race` |
+| 集約内エンティティ | `@Entity` | `domain.*.model` | （現状なし） |
+| 値オブジェクト（ID 値クラス含む） | `@ValueObject` | `domain.*.model`、または共有カーネル `domain.shared` | `JockeyId`（model）/ `Actor`（shared） |
+| 識別子プロパティ | `@field:Identity` | `domain.*.model` | `Jockey.id` |
+| Repository ポート（interface） | `@Repository`（jMolecules 版） | `domain.*.model` | `JockeyRepository` |
+| ドメインイベント | `@DomainEvent`（jMolecules events 版） | `domain.*.model` | `HorseNamed` |
+
+`@ValueObject` だけ共有カーネルへの配置を許すのは、コンテキストをまたいで読まれる横断的な値（`Actor` /
+`AccountId` / `Permission` 等）を置く先が、コンテキスト間依存の全面禁止の下では共有カーネルにしかないため
+（ArchUnit `DomainModelingRulesTest.valueObjectsResideInDomainModelOrSharedKernel`）。他のビルディングブロック
+（`@AggregateRoot` / `@Entity` / `@Repository` / `@DomainEvent`）は従来どおり `domain.*.model` のみ
+（`dddBuildingBlocksResideInDomainModel`）。
 
 ドメインサービス（`service/` のトップレベル関数）には jMolecules アノテーションを付けない。`@Service`（jMolecules）は型向けでトップレベル関数に付けられず、ドメインサービスであることは `service/` パッケージへの配置で表現する。
 
@@ -124,7 +130,7 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 注意点:
 
 - `@Identity` は FIELD / METHOD ターゲットのため、Kotlin プロパティには **`@field:Identity`** と use-site target を明示する
-- jMolecules アノテーション付きクラス（`@DomainEvent` を含む）はドメインモデルリング（`domain.*.model`）にのみ置ける（ArchUnit `dddBuildingBlocksResideInDomainModel` で強制）。`StateTransition` 等の汎用キャリアはアノテーションを持たないため `domain.shared` に置いてよい
+- jMolecules アノテーション付きクラスのうち `@AggregateRoot` / `@Entity` / `@Repository` / `@DomainEvent` はドメインモデルリング（`domain.*.model`）にのみ置ける（ArchUnit `dddBuildingBlocksResideInDomainModel` で強制）。`@ValueObject` だけは例外で、`domain.*.model` に加えて共有カーネル `domain.shared` にも置ける（ArchUnit `valueObjectsResideInDomainModelOrSharedKernel`）。コンテキスト間依存が全面禁止の下では、コンテキストをまたいで読まれる値（`Actor` / `AccountId` / `Permission`）は共有カーネルにしか置けないため。`StateTransition` 等の jMolecules アノテーションを持たない汎用キャリアも `domain.shared` に置いてよい
 - `JMoleculesDddRules.all()` により以下が強制される:
   - `@Entity` / `@AggregateRoot` は `@Identity` 付き識別子を持つ
   - **他の集約への参照は ID 値クラス（または `Association`）経由のみ**。集約オブジェクトを直接フィールドに持ってはならない（例: `Stallion` は `BloodHorse` ではなく `BloodHorseId` を持つ）

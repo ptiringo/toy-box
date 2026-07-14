@@ -71,6 +71,11 @@ class DomainModelingRulesTest {
             .areAnnotatedWith(ValueObject::class.java)
             .should()
             .resideInAnyPackage(DOMAIN_MODEL, DOMAIN_SHARED)
+            .because(
+                "値オブジェクトはコンテキストをまたいで読まれる横断的な値（Actor / AccountId / Permission 等）を" +
+                    "共有カーネル（domain.shared）に置く余地がある。コンテキスト間依存が全面禁止の下では、" +
+                    "コンテキストをまたぐ値オブジェクトは共有カーネルにしか置けない"
+            )
 
     /**
      * 読み取りモデル（`@QueryModel`）は application 層に置くこと。

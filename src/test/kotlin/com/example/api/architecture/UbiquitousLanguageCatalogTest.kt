@@ -125,11 +125,14 @@ class UbiquitousLanguageCatalogTest {
 
     private fun relativePackage(packageName: String): String = packageName.removePrefix("$BASE.")
 
-    /** ドメイン層のパッケージ名から境界づけられたコンテキスト名を取り出す。`shared` は共有カーネルなので対象外。 */
-    private fun contextOf(packageName: String): String? {
-        val context = DOMAIN_CONTEXT.matchEntire(packageName)?.groupValues?.get(1)
-        return context?.takeUnless { it == "shared" }
-    }
+    /**
+     * ドメイン層のパッケージ名から境界づけられたコンテキスト名を取り出す。
+     *
+     * `shared`（共有カーネル）も他のコンテキストと並ぶ 1 セクションとして生成対象に含める。除外すると `domain.shared` に置いた
+     * `@ValueObject`（`Actor` / `AccountId` / `Permission` 等）がカタログから 漏れ、テストが緑のまま気づけない盲点になる。
+     */
+    private fun contextOf(packageName: String): String? =
+        DOMAIN_CONTEXT.matchEntire(packageName)?.groupValues?.get(1)
 
     private data class Term(val context: String, val kind: Kind, val name: String, val pkg: String)
 

@@ -229,6 +229,14 @@ graph LR
 | releaseAlbum | ドメインサービス | domain.sakamichi.service.album |
 | releaseSingle | ドメインサービス | domain.sakamichi.service.single |
 
+### shared
+
+| 用語 | 種別 | パッケージ |
+| --- | --- | --- |
+| AccountId | 値オブジェクト | domain.shared |
+| Actor | 値オブジェクト | domain.shared |
+| Permission | 値オブジェクト | domain.shared |
+
 ### studbook
 
 | 用語 | 種別 | パッケージ |
