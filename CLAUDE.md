@@ -210,7 +210,7 @@ LEFTHOOK_EXCLUDE=ktfmt-check git commit -m "メッセージ"   # 特定コマン
 
 同じ「リポジトリ管理で宣言・共有」の方針で、**Claude Code の LSP プラグインは `.claude/settings.json` の `enabledPlugins` に宣言**する（現状 `kotlin-lsp@claude-plugins-official`＝Kotlin の編集時診断・コードナビ）。要求バイナリ `kotlin-lsp`（JetBrains 公式）は mise 管理で供給する（`mise install`）。LSP はゲート（detekt / ArchUnit / gradle check）を置き換えない補助で、採否と供給方法は [ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)。
 
-**GitHub 操作は MCP ではなく `gh` CLI で行う**（[ADR-0001](docs/adr/0001-drop-github-mcp-use-gh-cli.md)）。サンドボックス下の TLS 問題（`OSStatus -26276`）は、`gh` を `.claude/settings.local.json` の `sandbox.excludedCommands` に `"gh"` と `"gh *"` の両方で登録して sandbox 外で実行し回避する。複合コマンド（`A && gh ...`）はマッチしないので `gh` は単体コマンドで実行する。Claude Code on the web のクラウドセッションでは `gh auth login` の代わりに UI の Secrets に登録した自前 PAT（`GH_TOKEN`・`repo` + `project` スコープ）を gh が自動採用する（導入は `mise.toml` の `aqua:cli/cli`。認証運用は [ADR-0066](docs/adr/0066-gh-cli-via-gh-token-on-web.md)、手順は [docs/claude-code-on-the-web.md](docs/claude-code-on-the-web.md)）。
+**GitHub 操作は MCP ではなく `gh` CLI で行う**（[ADR-0001](docs/adr/0001-drop-github-mcp-use-gh-cli.md)）。サンドボックス下の TLS 問題（`OSStatus -26276`）は、`gh` を `.claude/settings.local.json` の `sandbox.excludedCommands` に `"gh"` と `"gh *"` の両方で登録して sandbox 外で実行し回避する。複合コマンド（`A && gh ...`）はマッチしないので `gh` は単体コマンドで実行する。Claude Code on the web のクラウドセッションでは、認証は `/web-setup`（ローカルの gh トークンを Claude アカウントにマネージド同期）を第一候補とし、届かないスコープに限り fine-grained・短命 PAT を環境変数 `GH_TOKEN` に置く（環境変数は平文・編集者可視で秘密ストアではないため長命 PAT は常設しない。導入は `mise.toml` の `aqua:cli/cli`。認証運用は [ADR-0066](docs/adr/0066-gh-cli-via-gh-token-on-web.md)、手順は [docs/claude-code-on-the-web.md](docs/claude-code-on-the-web.md)）。
 
 ## シークレット管理（fnox + 1Password）
 

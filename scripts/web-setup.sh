@@ -149,20 +149,21 @@ fi
 
 # gh CLI（GitHub の Issue/PR/Projects 操作）を best-effort で導入する。ローカルの GitHub 操作方針
 # （MCP でなく gh CLI）と揃え、クラウド／モバイルからも gh で回せるようにする。採否・認証運用は
-# ADR-0066、UI 側の PAT 登録手順は docs/claude-code-on-the-web.md を参照。#628。
+# ADR-0066、認証の設定手順は docs/claude-code-on-the-web.md を参照。#628。
 #
 # **check-緑のクリティカルパスではない**ため verify の後に置き、失敗しても setup を止めない。
-# 認証は `gh auth login` を使わず、UI の Secrets に登録した GH_TOKEN（自前 PAT・repo + project
-# スコープ）を gh が自動採用する（env が非対話シェルに来ることは実測済み。ADR-0066）。ここでは
-# 導入のみで、トークン検証はセッション側（GH_TOKEN あり）に委ねる。
+# ここでは gh バイナリの導入のみを担い、認証は本スクリプトの外で決める（ADR-0066）:
+#   第一候補は `/web-setup`（ローカルの gh トークンを Claude アカウントにマネージド同期）。
+#   足りなければ fine-grained・短命 PAT を環境変数 GH_TOKEN に置く（gh が自動採用。gh auth login 不要）。
+# 平文の環境変数に長命 PAT を置かない方針のため、本スクリプトはトークンを扱わない。
 #
 # **`aqua:cli/cli` だけを名指しする**（java / http:kotlin-lsp と混ぜない）。ツール未指定の
 # `mise install` は mise.toml の全ツールを入れにいき GitHub API レート制限等で落ちる。aqua backend の
-# api.github.com 参照とバイナリ取得は GitHub（Trusted）越しで、GH_TOKEN があると未認証 60/h の
-# レート制限も避けられる。`if` で包むのは best-effort（非ゼロ終了で set -e に巻き込まれないため）。
+# api.github.com 参照とバイナリ取得は GitHub（Trusted）越し。`if` で包むのは best-effort
+# （非ゼロ終了で set -e に巻き込まれないため）。
 echo "installing gh (GitHub CLI) via mise (best-effort) ..."
 if mise install "aqua:cli/cli"; then
-  echo "gh installed. UI の Secrets に GH_TOKEN（PAT）があれば 'gh api user' 等がそのまま通る。"
+  echo "gh installed. 認証は /web-setup（推奨）か環境変数 GH_TOKEN で（docs/claude-code-on-the-web.md）。"
 else
   echo "warn: gh の導入に失敗（GitHub 取得の一時失敗 or レート制限の可能性）。" >&2
   echo "warn: gh 無しで続行する（./gradlew check には影響しない）。" >&2
