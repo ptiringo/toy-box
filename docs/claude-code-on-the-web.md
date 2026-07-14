@@ -73,17 +73,7 @@ LC_ALL=C.utf8
 
 `scripts/web-setup.sh` も自身の JVM 実行のために UTF-8 ロケールを export するが、**セッション側に効かせるにはこの UI 環境変数の設定が要る**。
 
-#### GitHub 操作用（`gh` CLI）
-
-クラウド／モバイルから `gh` で Issue/PR・Projects #4（Priority）・PR マージを回すために、**自前 PAT を `GH_TOKEN` として UI の Secrets に登録する**（設計・認証運用は [ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)、#628）。
-
-```
-GH_TOKEN=<自前 PAT>
-```
-
-- **PAT の発行**: GitHub の Fine-grained（対象リポジトリに Contents / Issues / Pull requests、Organization/User の Projects を Read and write）または Classic（`repo` + `project` スコープ）で発行する。Projects #4 の操作に **`project` スコープが必須**（`gh auth refresh -s project` 相当）。
-- **`gh auth login` は不要**。gh は env の `GH_TOKEN`（無ければ `GITHUB_TOKEN`）を自動採用する。この env は**非対話シェルにも渡る**ことを実測済み（後述「gh CLI（GitHub 操作）」の検証表）。`.env` は使わない（クラウドセッションは毎回 fresh clone で揮発し、gitignore された `.env` は存在しないため。構造的に不採用）。
-- トークンが UI 側に保存され非ポータブルになる点は `LANG` 等の環境変数と同じトレードオフ（[ADR-0065](adr/0065-claude-code-on-the-web-support.md)）。ローカルは fnox + 1Password で解決済み（[secrets 規約](../.claude/rules/secrets.md)）なので UI 登録は web 環境限定。
+> **GitHub 認証（`gh`）はここ（環境変数）ではなく `/web-setup` を第一候補にする。** 詳細は本ドキュメント末尾の「gh CLI（GitHub 操作）」節を参照。環境変数への PAT 登録は `/web-setup` で足りない場合のフォールバックに限る（**環境変数は専用の秘密ストアではなく、環境を編集できる人に平文で見える**ため）。
 
 ## TLS 傍受プロキシと JVM（実測メモ）
 
@@ -130,27 +120,39 @@ Claude Code の `kotlin-lsp@claude-plugins-official` プラグイン（`.claude/
 
 クラウド／モバイルから GitHub の Issue/PR・Projects #4（Priority 運用）・PR マージ（`--admin` マージ）を `gh` で回せるようにする。ローカルの GitHub 操作方針（MCP でなく `gh` CLI = [ADR-0001](adr/0001-drop-github-mcp-use-gh-cli.md)）とクラウドを揃える follow-up。設計・認証運用は [ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)。
 
-### 導入と認証
+### 導入（`gh` バイナリ）
 
-- **導入**: `gh` は `mise.toml`（`aqua:cli/cli`）に一元管理する（features / apt は使わない = ツールバージョンの唯一の出所は `mise.toml`）。`scripts/web-setup.sh` が toolchain 検証の後に `mise install aqua:cli/cli` を **best-effort** で実行する（失敗しても setup は止めず check 緑に影響しない）。PATH は既存の `session-start-mise.sh`（`mise hook-env`）が注入するので `gh` を素で呼べる。
-- **認証**: UI の Secrets に登録した `GH_TOKEN`（自前 PAT）を gh が**自動採用**する。`gh auth login` はしない。PAT のスコープ・登録手順は「UI 側に設定する内容 → 3. 環境変数 → GitHub 操作用」を参照。
-- **許可ドメイン**: `gh`（api.github.com / github.com / objects.githubusercontent.com）は GitHub なので**デフォルト Trusted・Custom 追加不要**（`mise install aqua:cli/cli` の api 参照・バイナリ取得も同経路。GH_TOKEN があると未認証 60/h レート制限も避けられる）。
+- `gh` は `mise.toml`（`aqua:cli/cli`）に一元管理する（features / apt は使わない = ツールバージョンの唯一の出所は `mise.toml`）。`scripts/web-setup.sh` が toolchain 検証の後に `mise install aqua:cli/cli` を **best-effort** で実行する（失敗しても setup は止めず check 緑に影響しない）。PATH は既存の `session-start-mise.sh`（`mise hook-env`）が注入するので `gh` を素で呼べる。
+- **許可ドメイン**: `gh`（api.github.com / github.com / objects.githubusercontent.com）は GitHub なので**デフォルト Trusted・Custom 追加不要**（`mise install aqua:cli/cli` の api 参照・バイナリ取得も同経路）。
 
-### 検証結果（この follow-up セッションで実測）
+### 認証（`/web-setup` を第一候補にする）
 
-> **重要な前提**: この follow-up の実装セッションは自動起動の管理環境で、egress が**リポジトリスコープの egress プロキシ**越しだった。ユーザーが対話的に開く「Claude Code on the web」セッション（自前 PAT を Secrets に登録）とは egress ポリシーが異なる。両者の差を明示する。
+GitHub 認証の資格情報を**平文の環境変数に長命 PAT で置かない**方針を採る（[ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)）。環境変数は公式明記のとおり**専用の秘密ストアではなく、環境を編集できる人に平文で見える**（"A dedicated secrets store is not yet available. ... visible to anyone who can edit this environment."）。優先順位は次のとおり:
 
-`echo ${GH_TOKEN:+set}` と `gh` の各操作を実機で叩いた結果:
+1. **第一候補: `/web-setup`（マネージド）** — ローカルの Claude Code CLI で `/web-setup` を実行し、ローカルの `gh` トークンを**Claude アカウントに紐付ける**（平文 env config には入らない）。Projects #4 操作には `project` スコープが要るので、事前にローカルで `gh auth refresh -s project` してから `/web-setup` する。
+   - 手順: ローカルで `gh auth login`（未認証なら）→ `gh auth refresh -s project` → Claude Code CLI で `/login` → `/web-setup`。
+2. **フォールバック: fine-grained・短命 PAT を環境変数に**（`/web-setup` でスコープが届かない場合のみ）。**対象リポジトリ 1 つ・権限は Contents / Issues / Pull requests / Projects（Read and write）のみ・短い有効期限（例 30 日）**の fine-grained PAT を発行し、`GH_TOKEN=<PAT>`（`.env` 形式・引用符なし）を環境変数に置く。gh は env の `GH_TOKEN`（無ければ `GITHUB_TOKEN`）を自動採用する（`gh auth login` 不要）。**平文で保存され編集者に見える**点を許容したうえで、最小権限＋短命＋ローテーションで被害範囲を絞る。ローカルは fnox + 1Password で解決済み（[secrets 規約](../.claude/rules/secrets.md)）なので、この平文保存は web 環境限定の割り切り。
+3. **組み込み GitHub App のみ**では、git（clone/push）は資格情報プロキシが担うが、`gh` の repo/org/Projects（GraphQL）API までは届かない見込み（下表の実測）。基本的な git/PR 以上を回すには 1 か 2 が要る。
+
+### 実測メモ（この follow-up の実装セッション）
+
+> **重要な前提**: この実装セッションは**自動起動の管理環境**で、egress が**リポジトリスコープの egress プロキシ**越し・`GH_TOKEN` は**プロキシ注入の資格情報**（自前 PAT でも `/web-setup` トークンでもない）だった。ユーザーが対話的に開くセッションとは条件が異なるため、下表は「env と gh の素の挙動」の参考にとどめる。
 
 | 検証 | 結果 | 意味 |
 |------|------|------|
-| `echo ${GH_TOKEN:+set}` | **set**（`GITHUB_TOKEN` も） | **env は非対話シェルに届く**。setup フェーズ限定で消える #611 の落とし穴3（env が来ない）は**再発しない**。devcontainer 側の env 橋渡し（remoteEnv 等）は**不要**。 |
-| `gh api user -q .login` | **`ptiringo`** | user レベルの認証・API は通る。gh が `GH_TOKEN` を採用できている。 |
-| `gh api rate_limit -i`（`X-Oauth-Scopes`） | `repo, project, read:org, ...` | 背後トークンは **`repo` + `project` スコープを保持**。Projects 操作の前提は満たす。 |
-| `gh auth status` | 「token is invalid」と表示 | gh 独自の検証ヒューリスティックが表示するだけで、実 API 呼び出し（上記 `gh api user`）は通る。**表示に反して機能する**。 |
-| `gh issue list` / `gh pr list` / `gh project view 4` | このセッションでは **403**（GraphQL 未許可） | 上記プロキシが GraphQL/repo REST を Claude GitHub App 経由にゲートしていたため。**ユーザーの対話セッション（自前 PAT・GitHub Trusted）ではこの制限はなく、repo/org/Projects 操作が通る想定**。 |
+| `echo ${GH_TOKEN:+set}` | **set**（`GITHUB_TOKEN` も） | env は**非対話シェルに届く**。#611 の落とし穴3（env が setup 後に消える）は再発せず、env 橋渡し（remoteEnv 等）は不要。 |
+| `gh api user -q .login` | **`ptiringo`** | gh が env の `GH_TOKEN` を採用し user レベル API は通る。 |
+| `gh api rate_limit -i`（`X-Oauth-Scopes`） | `repo, project, read:org, ...` | 背後トークンは `repo` + `project` スコープを保持。 |
+| `gh auth status` | 「token is invalid」と表示 | gh 独自の検証ヒューリスティックの表示に過ぎず、実 API（上記）は通る。 |
+| `gh issue list` / `gh pr list` / `gh project view 4` | このセッションでは **403** | プロキシが GraphQL/repo REST を Claude GitHub App 経由にゲートしていたため（実装セッション固有）。 |
 
-**結論**: `GH_TOKEN` を Secrets に登録すれば gh は非対話シェルで自動採用され、user レベル API は実機で通ることを確認した。トークンは `repo` + `project` スコープを持つ。repo/org/GraphQL 操作の実 403 は**実装セッション固有のプロキシ制限**で、ユーザーの対話セッション（GitHub が Trusted・自前 PAT）では発生しない見込み。**env 橋渡しのフォールバックは不要**（env が非対話シェルに届くことを実測で確認済み）。この差はユーザーの対話セッションで `gh issue list` 等を叩いて確定すること。
+### ユーザーの対話セッションで確定すべき点（実測 TODO）
+
+自動セッションでは `/web-setup` を実行できず、Projects 操作の 403 も実装環境固有だった。**対話的な Web セッションで次を実測し、本節を確定すること**:
+
+- `/web-setup`（`project` スコープ付き）だけで `gh issue list` / `gh pr list` / `gh project view 4 --owner ptiringo` / PR マージが通るか。
+- 通れば **1（`/web-setup`）で完結**——環境変数への PAT 登録は不要。
+- Projects（GraphQL）等が届かない操作があれば、その操作に限って **2（fine-grained・短命 PAT）** で補い、本節に「どの操作が PAT を要したか」を記録する。
 
 ## スコープ外（別 Issue で扱う）
 
