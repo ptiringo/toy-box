@@ -38,8 +38,9 @@ class DomainModelingRulesTest {
     /**
      * DDD ビルディングブロック（jMolecules アノテーション付きクラス）はドメインモデルリングに置くこと。
      *
-     * 集約ルート / エンティティ / 値オブジェクト / リポジトリポートに加え、ドメインイベント（`@DomainEvent`）も
-     * 対象に含める。イベントもドメインモデルの一員であり、フレームワーク非依存の domain.*.model に置く（ADR-0029）。
+     * 集約ルート / エンティティ / リポジトリポートに加え、ドメインイベント（`@DomainEvent`）も 対象に含める。イベントもドメインモデルの一員であり、フレームワーク非依存の
+     * domain.*.model に置く（ADR-0029）。 `@ValueObject`
+     * はこのルールの対象外（[valueObjectsResideInDomainModelOrSharedKernel] 参照）。
      */
     @ArchTest
     val dddBuildingBlocksResideInDomainModel =
@@ -49,13 +50,27 @@ class DomainModelingRulesTest {
             .or()
             .areAnnotatedWith(DddEntity::class.java)
             .or()
-            .areAnnotatedWith(ValueObject::class.java)
-            .or()
             .areAnnotatedWith(DddRepository::class.java)
             .or()
             .areAnnotatedWith(DomainEvent::class.java)
             .should()
             .resideInAPackage(DOMAIN_MODEL)
+
+    /**
+     * `@ValueObject` は domain.*.model か、共有カーネル（domain.shared）に置くこと。
+     *
+     * 値オブジェクトは他の DDD ビルディングブロック（集約ルート・エンティティ・リポジトリポート・ドメインイベント）と異なり、 コンテキストをまたいで読まれる横断的な値（`Actor` /
+     * `AccountId` / `Permission`）を共有カーネルに置く余地がある。
+     * 共有カーネルは全コンテキストから参照できる唯一の場所であり、コンテキスト間依存の全面禁止（ArchUnit
+     * `BoundedContextRulesTest`）の下では、コンテキストをまたぐ値オブジェクトはここにしか置けない。
+     */
+    @ArchTest
+    val valueObjectsResideInDomainModelOrSharedKernel =
+        classes()
+            .that()
+            .areAnnotatedWith(ValueObject::class.java)
+            .should()
+            .resideInAnyPackage(DOMAIN_MODEL, DOMAIN_SHARED)
 
     /**
      * 読み取りモデル（`@QueryModel`）は application 層に置くこと。
