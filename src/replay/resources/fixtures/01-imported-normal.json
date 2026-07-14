@@ -8,7 +8,7 @@
     "foal": "https://www.jbis.or.jp/horse/0000742976/"
   },
   "facts": {
-    "coveringYear": 2001,
+    "displayedYear": 2002,
     "stallion": {
       "sex": "MALE",
       "coatColor": "BROWN",
@@ -36,11 +36,12 @@
   },
   "synthesized": {
     "notes": [
-      "種付年は産駒生年 2002 から 1 を引いて 2001 とした（JBIS の年軸は産駒の生年）。",
+      "種付年 2001 は JBIS の表示年 2002（＝産駒の生年）から 1 を引いた換算値であり、公開された事実ではない。",
       "マイクロチップ番号・血統登録番号・繁殖登録番号・DNA 型判定は JBIS 非公開のため合成。",
       "種付日・種付場所・種付証明書・輸入年月日は JBIS 非公開のため合成。",
       "種付成績報告・繁殖成績報告の提出日は JBIS 非公開のため、締切内の日付を合成。"
     ],
+    "coveringYear": 2001,
     "stallion": {
       "microchipNumber": "900000000010001",
       "landingDate": "1990-09-01",

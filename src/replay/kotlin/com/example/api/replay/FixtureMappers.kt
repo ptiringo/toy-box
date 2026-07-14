@@ -67,8 +67,8 @@ fun StudCertificateFixture.toInput(): StudCertificateInput =
 /**
  * 公開事実（[facts]）と合成値（[synth]）を合成して輸入馬登録の入力を作る。
  *
- * 出生国は事実が持つならそれを使う。内国産馬（事実の出生国が null）は seed 経路が RegisterImportedHorse しか
- * ないため合成値で埋める（#633）。どちらも無い＝フィクスチャの記述ミス。
+ * 出生国は内国産馬（「日本」）も含めて常に事実を使う。内国産馬も seed 経路が RegisterImportedHorse しかないため
+ * 輸入馬として登録せざるをえないが、そこで合成するのは架空の輸入年月日（[HorseSynthesized.landingDate]）だけで、 事実である出生国は歪めない（#633）。
  */
 fun importedCommand(facts: HorseFacts, synth: HorseSynthesized): RegisterImportedHorseCommand =
     RegisterImportedHorseCommand(
@@ -78,11 +78,7 @@ fun importedCommand(facts: HorseFacts, synth: HorseSynthesized): RegisterImporte
         dateOfBirth = LocalDate.parse(facts.dateOfBirth),
         breeder = facts.breeder,
         microchipNumber = synth.microchipNumber,
-        originCountry =
-            facts.originCountry
-                ?: requireNotNull(synth.originCountry) {
-                    "内国産馬（facts.originCountry が無い）は合成側の出生国が要る: $facts"
-                },
+        originCountry = facts.originCountry,
         landingDate = LocalDate.parse(synth.landingDate),
         registrationNumber = synth.pedigreeRegistrationNumber,
     )

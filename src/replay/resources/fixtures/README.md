@@ -8,8 +8,10 @@ studbook 繁殖 replay ハーネスの入力。1 ファイル = 実在馬 1 頭 
 があり、両者は別の経路である（種付なしの年には種牡馬・種付証明書・種付成績報告・産駒が存在せず、
 繁殖成績は生成時点で終端になる）。JSON の `kind` で読み分ける。
 
-- `"kind": "covered"` … 種付を行った年。`facts.coveringYear` / `stallion` / `foaling` を持つ。
-- `"kind": "uncovered"` … 種付を行わなかった年。`facts.breedingYear` と `broodmare` だけを持つ。
+- `"kind": "covered"` … 種付を行った年。`facts.displayedYear` / `stallion` / `foaling` を持ち、
+  種付年は `synthesized.coveringYear`（表示年 − 1 の換算値）で持つ。
+- `"kind": "uncovered"` … 種付を行わなかった年。`facts.displayedYear` と `broodmare` だけを持ち、
+  繁殖年は `synthesized.breedingYear`（同じ換算値）で持つ。
 
 JBIS の繁殖成績で「産駒なし」の行に**種牡馬名があれば種付はした年**（不受胎・流産・死産のいずれか）、
 **種牡馬名が無ければ種付しなかった年**と読む。この読みは公開記録に明示された区別ではなく、合成の判断
@@ -24,17 +26,18 @@ JBIS-Search の公開記録は、繁殖ワークフローが要求する項目�
 - `synthesized` … 手続き上必要だが非公開のため合成した値。合成の理由は `notes` に日本語で書き、
   そのまま突合レポートに出る。
 
-合成が必要なのは次の 5 種類。
+合成が必要なのは次の 6 種類。
 
 1. 識別子（マイクロチップ番号・血統登録番号・繁殖登録番号）
 2. DNA 型判定結果
 3. 種付の詳細（種付日・種付場所・種付証明書）
 4. 報告の提出日（種付成績報告・繁殖成績報告）
-5. 内国産馬を輸入馬経路で seed するための輸入年月日（架空の値）。あわせて
-   `synthesized.*.originCountry`（**内国産馬のときだけ**書く）を置いているが、値そのもの
-   （「日本」）は事実であり合成ではない（輸入馬は `facts` 側の出生国が使われるため、書いても
-   読まれない）。事実である出生国をこの synthesized 層に置くこと自体が facts/synthesized の
-   境界を歪めており、本来は facts 側に置くべき。この配置の是正はフォローアップで扱う。
+5. 内国産馬を輸入馬経路で seed するための輸入年月日（架空の値）。seed 経路が `RegisterImportedHorse`
+   しかない綻び（#633）はこの 1 点に局在する。出生国は内国産馬の「日本」も含めて**事実**なので
+   `facts.*.originCountry` に必ず書く（`synthesized` 側に出生国の欄は無い。置くと事実を歪める余地が残る）。
+6. 種付年・繁殖年（`synthesized.coveringYear` / `synthesized.breedingYear`）。JBIS が公開しているのは
+   表示年（`facts.displayedYear`、種付ありの行では産駒の生年）だけで、そこから 1 を引く換算は合成の判断。
+   とくに種付なしの年は産駒も種付も存在しないため、この換算の妥当性は公開記録からは判別できない。
 
 ## JBIS-Search の読み方
 
@@ -46,7 +49,8 @@ JBIS-Search の公開記録は、繁殖ワークフローが要求する項目�
 
 読み方の注意（いずれも実際に踏んだ）。
 
-- **年軸は産駒の生年で、種付年ではない**。`facts.coveringYear` は生年から 1 を引いて求めている。
+- **年軸は産駒の生年で、種付年ではない**。公開事実は表示年（`facts.displayedYear`）で、種付年
+  （`synthesized.coveringYear`）はそこから 1 を引いて求めた換算値。
 - **不受胎・流産・死産は区別されない**。すべて `産駒なし` に丸められる（公式 FAQ に明記）。
   よって `LiveFoal` 以外の `FoalingOutcome` の選択は合成の判断であり、事実ではない。
 - **双子に明示ラベルは無い**。同一年・同一父の行が 2 つ並ぶことで判る。

@@ -51,24 +51,30 @@ data class FixtureSources(
 /**
  * 種付を行った年の公開事実。
  *
- * [coveringYear] は種付年。JBIS の繁殖成績の年軸は「産駒の生年」なので、産駒生年から 1 を引いて求めている （この換算自体が不確実で、突合レポートの注記に出す）。
+ * [displayedYear] は JBIS の繁殖成績に表示されている年。年軸は「産駒の生年」であって種付年ではないため、 種付年そのものは公開されていない（表示年から 1 を引いて求めた
+ * [CoveredSynthesized.coveringYear] が合成値）。
  */
 data class CoveredFacts(
-    val coveringYear: Int,
+    val displayedYear: Int,
     val stallion: HorseFacts,
     val broodmare: HorseFacts,
     val foaling: FoalingFixture,
     val foal: FoalFacts? = null,
 )
 
-/** 基礎馬（種牡馬・繁殖牝馬）の公開事実。[originCountry] が null なら内国産（＝事実どおりの seed 経路がない）。 */
+/**
+ * 基礎馬（種牡馬・繁殖牝馬）の公開事実。
+ *
+ * [originCountry] は内国産馬なら「日本」。JBIS の産地から分かる事実なので、輸入馬・内国産馬のいずれでも必ず書く （書き忘れは読み込み時に落ちる）。内国産馬を輸入馬経路で
+ * seed せざるをえない綻び（#633）は [HorseSynthesized.landingDate]（架空の輸入年月日）に局在させる。
+ */
 data class HorseFacts(
     val sex: String,
     val coatColor: String,
     val breedType: String,
     val dateOfBirth: String,
     val breeder: String,
-    val originCountry: String? = null,
+    val originCountry: String,
 )
 
 /**
@@ -90,9 +96,15 @@ data class FoalFacts(
     val name: String? = null,
 )
 
-/** 種付を行った年の合成値。[notes] は合成の理由で、突合レポートにそのまま出る。 */
+/**
+ * 種付を行った年の合成値。[notes] は合成の理由で、突合レポートにそのまま出る。
+ *
+ * [coveringYear] は種付年。JBIS の年軸は産駒の生年なので、[CoveredFacts.displayedYear] から 1 を引いて求めた
+ * 換算値であり、公開された事実ではない。
+ */
 data class CoveredSynthesized(
     val notes: List<String>,
+    val coveringYear: Int,
     val stallion: HorseSynthesized,
     val broodmare: HorseSynthesized,
     val covering: CoveringFixture,
@@ -103,20 +115,14 @@ data class CoveredSynthesized(
 /**
  * 基礎馬の合成値。
  *
- * [originCountry] は**内国産馬のときだけ**書く。値そのもの（「日本」）は事実であり合成ではない （内国産馬の [HorseFacts]
- * には出生国の欄が無いため、事実を書ける場所がここしか残っていない）。 現在 seed 経路は RegisterImportedHorse しかないため、内国産馬も輸入馬として登録せざるをえず、
- * ほんとうに合成しているのは輸入年月日（[landingDate]、架空の値）のほうである（#633）。輸入馬は事実
- * （[HorseFacts.originCountry]）が出生国を持つので、ここに書くと読まれない死にデータになる。
- *
- * 注記: 事実である出生国をこの synthesized 層に置くこと自体が facts/synthesized の境界を歪めている （本来は facts
- * 側に置くべき）。この配置の是正はフォローアップで扱う。
+ * 出生国はここには無い（内国産馬の「日本」も含めて事実なので [HorseFacts.originCountry] が持つ）。 現在 seed 経路は RegisterImportedHorse
+ * しかないため内国産馬も輸入馬として登録せざるをえないが、そのために 合成しているのは架空の輸入年月日（[landingDate]）だけである（#633）。
  */
 data class HorseSynthesized(
     val microchipNumber: String,
     val landingDate: String,
     val pedigreeRegistrationNumber: String,
     val breedingRegistrationNumber: String,
-    val originCountry: String? = null,
 )
 
 data class FoalSynthesized(
@@ -163,15 +169,20 @@ data class UncoveredSeasonFixture(
 /**
  * 種付を行わなかった年の公開事実。
  *
- * [breedingYear] は繁殖年。種付が無いので種付日から導出できず、明示的に持つ（RecordUncoveredCommand も同様）。 JBIS
- * の繁殖成績の年軸は産駒の生年なので、種付ありの年と同じ換算（表示年 − 1）で求めている。産駒も種付も
- * 存在しない行にこの換算を当てること自体が合成の判断であり、[UncoveredSynthesized.notes] に記す。
+ * [displayedYear] は JBIS の繁殖成績に表示されている年（この行は産駒なし・種牡馬欄が空）。 産駒も種付も存在しないため、この年に対応する繁殖年は公開記録から導けない
+ * （[UncoveredSynthesized.breedingYear] が換算値）。
  */
-data class UncoveredFacts(val breedingYear: Int, val broodmare: HorseFacts)
+data class UncoveredFacts(val displayedYear: Int, val broodmare: HorseFacts)
 
-/** 種付を行わなかった年の合成値。種付が無いので種付証明書も種付成績報告も持たない。 */
+/**
+ * 種付を行わなかった年の合成値。種付が無いので種付証明書も種付成績報告も持たない。
+ *
+ * [breedingYear] は繁殖年。種付が無いので種付日から導出できず、明示的に持つ（RecordUncoveredCommand も同様）。 種付ありの年と同じ換算（表示年 −
+ * 1）で求めているが、産駒も種付も存在しない行にこの換算を当ててよいかは 公開記録から判別できない（＝合成の判断であり、[notes] に記す）。
+ */
 data class UncoveredSynthesized(
     val notes: List<String>,
+    val breedingYear: Int,
     val broodmare: HorseSynthesized,
     val submissions: UncoveredSubmissions,
 )
