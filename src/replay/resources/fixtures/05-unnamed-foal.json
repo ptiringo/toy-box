@@ -1,4 +1,5 @@
 {
+  "kind": "covered",
   "name": "サバンナズチョイス 2020年シーズン（2021年 未命名の産駒）",
   "sources": {
     "broodmare": "https://www.jbis.or.jp/horse/0001113658/",
@@ -48,7 +49,6 @@
     },
     "broodmare": {
       "microchipNumber": "900000000050002",
-      "originCountry": "オーストラリア",
       "landingDate": "2012-08-01",
       "pedigreeRegistrationNumber": "JBIS-0001113658",
       "breedingRegistrationNumber": "BR-0001113658"

@@ -1,12 +1,13 @@
 package com.example.api.replay
 
-/** replay の各段階。 */
+/** replay の各段階。種付を行った年と行わなかった年で通る段階が異なる。 */
 enum class ReplayStep {
     REGISTER_STALLION,
     REGISTER_BROODMARE,
     REGISTER_STALLION_BREEDING,
     REGISTER_BROODMARE_BREEDING,
     RECORD_COVERING,
+    RECORD_UNCOVERED,
     SUBMIT_COVERING_REPORT,
     REPORT_FOALING,
     REGISTER_FOAL,

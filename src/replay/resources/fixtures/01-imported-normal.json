@@ -1,4 +1,5 @@
 {
+  "kind": "covered",
   "name": "ウインドインハーヘア 2001年シーズン（→ ディープインパクト）",
   "sources": {
     "broodmare": "https://www.jbis.or.jp/horse/0000430846/",
@@ -42,14 +43,12 @@
     ],
     "stallion": {
       "microchipNumber": "900000000010001",
-      "originCountry": "アメリカ",
       "landingDate": "1990-09-01",
       "pedigreeRegistrationNumber": "JBIS-0000333862",
       "breedingRegistrationNumber": "BR-0000333862"
     },
     "broodmare": {
       "microchipNumber": "900000000010002",
-      "originCountry": "アイルランド",
       "landingDate": "1995-11-01",
       "pedigreeRegistrationNumber": "JBIS-0000430846",
       "breedingRegistrationNumber": "BR-0000430846"

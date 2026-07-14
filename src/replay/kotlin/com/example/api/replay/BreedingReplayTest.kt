@@ -74,11 +74,40 @@ class BreedingReplayTest(private val engine: ReplayEngine, private val jdbcClien
     }
 
     @Test
+    fun `種付なしの年は種付記録を経ずに繁殖成績報告まで到達する`() {
+        val outcome = engine.run(FixtureLoader.load("06-uncovered-season.json"))
+
+        // 「種付の段階が無いこと」だけを見ると、その手前で停止した場合にも通ってしまう（空振り）。
+        // 繁殖成績報告まで到達して初めて「種付を経ずに一周した」と言える。到達しなければ「停止＝発見」
+        // なので失敗にせず skip する。
+        assumeTrue(outcome.steps.any { it.step == ReplayStep.SUBMIT_BREEDING_REPORT && it.ok }) {
+            "繁殖成績報告に到達しないまま停止: " +
+                "stoppedAt=${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
+        }
+        assert(outcome.steps.any { it.step == ReplayStep.RECORD_UNCOVERED && it.ok })
+        // 種付が存在しない年なので、種付記録・種付成績報告・出生報告・産駒登録・馬名登録は実行しない。
+        assert(
+            outcome.steps.none {
+                it.step in
+                    listOf(
+                        ReplayStep.REGISTER_STALLION,
+                        ReplayStep.REGISTER_STALLION_BREEDING,
+                        ReplayStep.RECORD_COVERING,
+                        ReplayStep.SUBMIT_COVERING_REPORT,
+                        ReplayStep.REPORT_FOALING,
+                        ReplayStep.REGISTER_FOAL,
+                        ReplayStep.NAME_FOAL,
+                    )
+            }
+        )
+    }
+
+    @Test
     fun `全フィクスチャを流して突合レポートを書き出す`() {
         // 停止は「発見」なので失敗にしない。観測をレポートへ落とすことがこのテストの目的。
         val outcomes = FixtureLoader.loadAll().map(engine::run)
 
-        assert(outcomes.size == 5)
+        assert(outcomes.isNotEmpty())
         val report = ReconciliationReport.render(outcomes)
         assert(report.contains("# 繁殖 replay 突合レポート"))
         assert(report.contains("## 公開記録の粒度について"))

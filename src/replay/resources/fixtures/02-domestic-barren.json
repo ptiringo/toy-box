@@ -1,4 +1,5 @@
 {
+  "kind": "covered",
   "name": "シーザリオ 2008年シーズン（2009年 産駒なし）",
   "sources": {
     "broodmare": "https://www.jbis.or.jp/horse/0000743110/",
@@ -33,7 +34,6 @@
     ],
     "stallion": {
       "microchipNumber": "900000000020001",
-      "originCountry": "アメリカ",
       "landingDate": "2003-10-01",
       "pedigreeRegistrationNumber": "JBIS-0000731452",
       "breedingRegistrationNumber": "BR-0000731452"

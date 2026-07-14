@@ -41,4 +41,14 @@ class FixtureMappersTest {
 
         assert(instant == expected)
     }
+
+    @Test
+    fun `種付せずは分娩結果の区分ではないので写像の入口で弾かれる`() {
+        // 種付なしの年はフィクスチャの kind（uncovered）で表す。分娩結果として渡すと
+        // BreedingResult.recordFoaling が require で弾き、ハーネスが停止ではなく例外で落ちるため入口で塞ぐ。
+        val thrown = runCatching { FoalingFixture("NotCovered").toOutcome() }.exceptionOrNull()
+
+        assert(thrown is IllegalStateException)
+        assert(thrown?.message == "未知の分娩区分名: NotCovered")
+    }
 }

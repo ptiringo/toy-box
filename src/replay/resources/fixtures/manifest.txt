@@ -3,3 +3,4 @@
 03-twins.json
 04-imported-covering.json
 05-unnamed-foal.json
+06-uncovered-season.json

@@ -1,4 +1,5 @@
 {
+  "kind": "covered",
   "name": "テスコパール 1990年シーズン（1991年 双子 リアルポルクス／リアルカストール）",
   "sources": {
     "broodmare": "https://www.jbis.or.jp/horse/0000086000/",
@@ -41,7 +42,6 @@
     ],
     "stallion": {
       "microchipNumber": "900000000030001",
-      "originCountry": "アメリカ",
       "landingDate": "1980-10-01",
       "pedigreeRegistrationNumber": "JBIS-0000333762",
       "breedingRegistrationNumber": "BR-0000333762"
