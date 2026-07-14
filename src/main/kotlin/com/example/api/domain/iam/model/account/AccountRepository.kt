@@ -11,4 +11,7 @@ interface AccountRepository {
 
     /** 役割の集合に紐づく権限（マスタ定義）を展開する。 */
     fun findPermissionsOf(roles: Set<Role>): Set<Permission>
+
+    /** アカウントを保存する。役割の集合ごと入れ替える。 */
+    fun save(account: Account): Account
 }
