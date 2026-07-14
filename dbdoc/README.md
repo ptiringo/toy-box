@@ -10,6 +10,10 @@
 | [studbook.breeding_result](studbook.breeding_result.md) | 11 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.horse_inspection](studbook.horse_inspection.md) | 8 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.covering_report](studbook.covering_report.md) | 5 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
+| [iam.role](iam.role.md) | 1 | 役割のマスタ（制度上の立場に対応する） | BASE TABLE |
+| [iam.account](iam.account.md) | 3 | この API の利用者アカウント（IdP の subject に役割を結びつける） | BASE TABLE |
+| [iam.account_role](iam.account_role.md) | 2 | アカウントに与えた役割（多対多） | BASE TABLE |
+| [iam.role_permission](iam.role_permission.md) | 2 | 役割に紐づく権限（権限定義そのもの。アプリの Permission 定数と文字列で一致する契約） | BASE TABLE |
 
 ## Relations
 
@@ -23,6 +27,9 @@ erDiagram
 "studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
 "studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
 "studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
+"iam.account_role" }o--|| "iam.role" : "FOREIGN KEY (role_name) REFERENCES iam.role(name)"
+"iam.account_role" }o--|| "iam.account" : "FOREIGN KEY (account_id) REFERENCES iam.account(id) ON DELETE CASCADE"
+"iam.role_permission" }o--|| "iam.role" : "FOREIGN KEY (role_name) REFERENCES iam.role(name)"
 
 "racing.jockey" {
   uuid id
@@ -85,6 +92,22 @@ erDiagram
   integer covering_year
   date submitted_on
   bigint version
+}
+"iam.role" {
+  varchar_32_ name
+}
+"iam.account" {
+  uuid id
+  varchar_255_ subject_id
+  bigint version
+}
+"iam.account_role" {
+  uuid account_id FK
+  varchar_32_ role_name FK
+}
+"iam.role_permission" {
+  varchar_32_ role_name FK
+  varchar_128_ permission
 }
 ```
 
