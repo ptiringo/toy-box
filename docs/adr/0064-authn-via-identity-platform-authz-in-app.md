@@ -43,4 +43,4 @@
 - `@WebMvcTest` slice で認証フィルタを無効化するため、controller がユースケースに `Actor` を渡し忘れるバグは slice では検出できない。コンパイル時の必須引数と e2e が backstop になる。
 - MCP エンドポイントは `permitAll` のまま残る。MCP クライアントへの認証の載せ方（[ADR-0035](0035-mcp-interface-adapter.md) の adapter）は別途決める必要がある。
 - 本番（Cloud Run）は `GCP_PROJECT_ID` を環境変数で受け取る。プロジェクト ID は秘密ではないため Secret Manager には置かない。この値が注入されないと issuer が既定値に落ち、全トークンが 401 になる。
-- 結論（`permitAll` の範囲・slice テストの方針）は CLAUDE.md に置き、経緯は本 ADR に残す。
+- 結論は指示ファイル側に置き、経緯は本 ADR に残す（`permitAll` の範囲は CLAUDE.md「認証」、slice テストの方針は `.claude/rules/testing.md`）。

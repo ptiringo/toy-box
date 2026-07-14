@@ -23,7 +23,27 @@ paths:
 - **モックは applicationService の Repository ポート境界に限る**。ドメイン層は Fixture で実物を組み、モックしない（純粋関数なので隔離コスト不要）。**例外**: 集合制約（一意性等）の検証のためリポジトリポートを引数で取るドメインサービス（[ADR-0022](../../docs/adr/0022-domain-service-repository-for-set-invariants.md)。例: `recordCovering`）のテストでは、そのポートをモックしてよい。
 - テスト用 Object Mother（`〜Fixture`）は対象コンテキストの `model` パッケージ配下に **`src/test`** のテストコードとして置く（例: `BloodHorseFixture`）。`java-test-fixtures`（`src/testFixtures` ソースセット）は採らない（本体は単一モジュールで共有需要が無い。issue #326）。前提条件検証を経ずに任意の馬を用意したいときは、前提条件を持たない `public` ファクトリ（例: `BloodHorse.createImported`）で組み立てる（自己検証する `create` を避ける）。生成口は `public` 自己検証ファクトリに統一されており封じ込めは無い（[ADR-0014](../../docs/adr/0014-self-validating-factory-over-confinement.md)）。
 - 統合テスト（`@SpringBootTest`）は配線確認の最小限に留める。ロジックの網羅は内側のリングで済ませる（ピラミッドの底を厚く）。
-- テスト規約（JUnit 5 / Power Assert / `@WebMvcTest` / 日本語ケース名）の詳細は CLAUDE.md「テスト規約」を参照。
+
+## 記法
+
+- **JUnit 5（`org.junit.jupiter.api.Test`）を使う**。`kotlin.test.Test` は使わない（マルチプラットフォーム対応が不要なため）。
+- **アサーションは Kotlin の `assert` 関数**（Power Assert が式を分解して表示する）。
+- **テストケース名は日本語**でテストの意図を表す。
+- **コントローラーの slice テストは `@WebMvcTest` + `MockMvcTester`**（実例: `HelloControllerTest` / `BloodHorseControllerTest`）。認証フィルタは `@AutoConfigureMockMvc(addFilters = false)` で無効化する（slice は HTTP 契約の検証に集中させる。認証は `SecurityConfigTest` と E2E が担保）。
+- **アプリ全体の統合テストは `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@AutoConfigureRestTestClient` + `RestTestClient`**（Spring Framework 6.2 の `RestClient` ベース sync テストクライアント）。
+- **Controller に横断 Bean（例: `Clock`）を注入したら、その Controller を載せる _全_ slice テストに `@Import` を足す**。slice は web 層しかロードしないため、足し忘れると `NoSuchBeanDefinitionException` でコンテキスト生成が落ちる。落ちるのは対象 Controller のテストだけとは限らず、その Controller を踏み台にしている別テスト（`GlobalExceptionHandlerTest` 等）まで芋づるで落ちる。`grep -rn "WebMvcTest(" src/test` で載せている slice を全部洗い出すこと。Bean 定義は `ApiApplication` の `@Bean` ではなく専用 `@Configuration` に切り出すと `@Import` 単独で取り込める。
+
+## 実行
+
+```bash
+./gradlew test                        # 全テスト
+./gradlew :test --tests "JockeyTest"  # 単一クラス（先頭のコロンが必須）
+./gradlew check                       # ktfmt + detekt + test + koverVerifyMature を一括
+```
+
+- **`--tests` は `:test`（先頭コロン＝ root プロジェクトの test）に付ける**。`./gradlew test --tests …` はビルドに含まれる `:detekt-rules` の `test` にも同じフィルタが適用され、`No tests found for given includes` でビルドが失敗する。
+- **Kotlin の変更は `test` ではなく `check` で締める**。ArchUnit の規約テスト・detekt カスタムルール・`koverVerifyMature`（成熟ゲート）は focused な `--tests` 実行では走らないため、緑を見て完了と判断すると `check` で落ちる。
+- **CI でコンパイルだけしたいときは `assemble` を使う**（例: CodeQL のビルドステップ）。`build -x test` は `check` 配下の検証（ktfmt / detekt / `koverVerifyMature`）を巻き込み、コンパイルが目的のジョブでカバレッジゲートを誤発火させる。
 
 ## テスト実行性能（コンテキストキャッシュ優先・並列化しない）
 
@@ -37,6 +57,16 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 ## E2E（ブラックボックス API テスト・ゲート外）
 
 全層を実配線したまま HTTP 越しに叩く E2E は素の Spring ネイティブ（`RestTestClient`）で書く（`src/e2eTest`、決定は [ADR-0056](../../docs/adr/0056-drop-karate-native-resttestclient-e2e.md)。Karate は [ADR-0039](../../docs/adr/0039-e2e-api-tests-with-karate.md) で採用したが用途に対し過大なため撤退）。`@SpringBootTest(RANDOM_PORT)` + `@AutoConfigureRestTestClient` + Testcontainers PostgreSQL でアプリを起動し、`RestTestClient` でシナリオを流す（`HealthEndpointTest` と同型）。遅く探索的なため **ArchUnit / Kover / `check` / pre-push のいずれの対象にもしない**（独立ソースセット `e2eTest` + タスク `e2eTest`）。CI は独立ワークフロー `e2e-tests.yml` で回す。ローカルは必要時に `./gradlew e2eTest`。網羅はここで広げず内側リングで担保する（ピラミッドの底を厚く）。
+
+## replay（帰納的検証ハーネス・ゲート外）
+
+規程 PDF との照合＝演繹的検証を補うため、**実在馬の公開記録を繁殖ワークフローへ逆算入力して一周駆動し、不変条件で弾かれた実在インスタンスを収集する**帰納的検証を置く（studbook。専用ソースセット `src/replay`、`./gradlew replay` で `build/reports/replay/reconciliation.md` を生成）。探索的な駆動がゲートを揺らさないよう **`check` / Kover / ArchUnit のいずれの対象にもしない**。
+
+同型のハーネスを増やすときも次の契約を守る。
+
+- **停止は失敗にしない**。分岐地点への到達は `assumeTrue` で skip として可視化する（assert にすると将来ドメインを直した瞬間に赤くなる）。
+- **「停止ゼロ ＝ モデルが事実に耐えた」ではない**。綻びは停止ではなく**フィクスチャ側の合成（＝事実の捏造）に吸収されて静かに通る**ぶん、質が悪い。したがってフィクスチャは `facts`（公開事実・出典 URL つき）/ `synthesized`（合成値＋理由の `notes`）の **2 層**に構造分離し、レポート冒頭に「一周完了 ≠ 耐えた」の但し書きと、馬ごとの「合成した項目」を必ず出す。
+- **自己言及するアサートを書かない**。`assert(loadAll().size == manifestNames().size)` は `loadAll = manifestNames().map(::load)` なら構造上ぜったい落ちないトートロジー。「JSON を置いたが manifest に書き忘れた死にデータ」を検出したいなら、クラスパス上の `fixtures/*.json` の集合と manifest の集合を突合する。
 
 ## カバレッジハーネス（Kover）
 
@@ -58,7 +88,9 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 - **自動ラチェット機構は持たない**（YAGNI）。手動で引き上げる。
 
 探索除外パッケージ（`build.gradle.kts` の `variant("mature")` の `excludes` が唯一の出所。ここは要約）:
-`domain.racing.model.race` / `domain.racing.service` / `domain.tennis` / `e2e`（E2E テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）。
+`domain.racing.model.race` / `domain.racing.service` / `domain.tennis` / `e2e`（E2E テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）/ `replay`（帰納的検証ハーネス）。
+
+- **ゲート外のソースセットを新設したら、そのパッケージを `variant("mature")` の `excludes` に加える**。Kover は main 以外のソースセットも計測対象に取り込むため、加えないとテスト基盤・ツール基盤のコードが未カバレッジのままゲート母集団に乗り、成熟ゲートを割る（`e2e` / `dbdoc` / `replay` はいずれもこの理由で除外している）。
 
 集約ゲート（本見直し）は成熟領域全体の絶対水準を守り、patch coverage（[#437](https://github.com/ptiringo/toy-box/issues/437)）は新規・変更コードのカバレッジを別途課す補完関係にある。
 

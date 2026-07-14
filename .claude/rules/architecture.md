@@ -138,7 +138,8 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 - `UUID.randomUUID()` の直接呼び出し禁止。ID は `domain.shared.generateId()`（UUIDv7 相当のタイムベース生成）経由で生成する（永続化時のインデックス局所性のため。[ADR-0005](../../docs/adr/0005-time-based-uuid-generation.md)）。main コードのみ対象（テストの fixture は対象外）
 - **集約（`@AggregateRoot` / `@Entity`）はイミュータブル**（`val` のみ・`var` 禁止）。状態遷移は対象を書き換えず、同一性（ID）を引き継いだ新インスタンスを返すメソッドで表す（[ADR-0009](../../docs/adr/0009-immutable-aggregates.md)）。`val` は final フィールド・`var` は非 final フィールドへコンパイルされるため、集約クラスが直接宣言するフィールドが全て final であることを ArchUnit で検証して `var` を排除する
 - **集約（`@AggregateRoot` / `@Entity`）は `data class` を使わない**（[ADR-0009](../../docs/adr/0009-immutable-aggregates.md)）。`data class` は全プロパティから `equals` / `hashCode` を生成し、ID ベースの `final equals` / `hashCode` と衝突するため、`private constructor` ＋手書き `copy` で写像する。`data class` は各プロパティに `componentN()` を生成するため、集約クラスが `componentN()` を持たないことを ArchUnit で検証して `data class` を排除する（手書き `copy` は `componentN()` を生成しないため誤検出されない。ルールが実際に違反を検出することは `AggregateNotDataClassRuleTest` で別途担保）
-- **ドメインサービス（`domain.*.service`）はトップレベル関数で書く**（`object` / `class` でラップしない）。トップレベル関数はファイルごとのファサードクラス（`〜Kt`）へコンパイルされるため、service パッケージ内のクラスが `Kt` で終わることを ArchUnit で検証して `object` / `class` 宣言を排除する。ただしサービスの戻り値（`Result<_, 〜Error>`）の失敗側を表す失敗バリアント型（`〜Error`）はサービスと同居させてよく、対象から除外する
+- **ドメインサービス（`domain.*.service`）はトップレベル関数で書く**（`object` / `class` でラップしない）。トップレベル関数はファイルごとのファサードクラス（`〜Kt`）へコンパイルされるため、service パッケージ内のクラスが `Kt` で終わることを ArchUnit で検証して `object` / `class` 宣言を排除する。ただしサービスの戻り値（`Result<_, 〜Error>`）の失敗側を表す失敗バリアント型（`〜Error`）はサービスと同居させてよく、対象から除外する。
+  - 結果として **サービスの入力用に `data class` を置くこともできない**（`domainServicesAreTopLevelFunctions` 違反）。集約を参照する入力は `@ValueObject` の集約非参照ルールに抵触して `model` へも逃がせないため、複数値の入力は名前付き型を作らず既存の `List<Pair<Position, Member>>` 慣習に倣ってインライン化する。ネストが読みにくければ `private typealias` で平坦化してよい（typealias はクラスを生成せず ArchUnit の `classes()` 検査に当たらない）
 - **`@RestController` のハンドラは成功レスポンスで `ResponseEntity` を返さない**。成功は `@ResponseStatus` ＋戻り値で resource を返す（[error-handling.md](error-handling.md) / [api-design.md](api-design.md)）。エラー描画 funnel の `GlobalExceptionHandler` は `@RestController` ではない（`ResponseEntityExceptionHandler` 継承）ため誤検出されない
 - **HTTP 契約（request / response DTO）はフィールド型にドメイン enum を持たない**。`controller` 層に契約専用の `〜Dto` enum を置き、`toDomain()` / `toApi()` でマッピングする（[api-design.md](api-design.md) / [ADR-0007](../../docs/adr/0007-wire-enum-dto-decoupling.md)）。`controller` 配下のフィールドがドメイン（`domain..`）の enum を raw type に持たないことを ArchUnit で検証する。マッパー関数はドメイン enum を引数・戻り値で扱うが、フィールド型のみを対象とするため誤検出されない（ルールが実際に違反を検出することは `DtoDomainEnumRuleTest` で別途担保）
 - **読み取りモデル（`@QueryModel`）は `application` 層に置く**。軽量 CQRS（L2）の読み取り側として、書き込み集約を経由しないフラットな Read Model を application に置く（[ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)）。`@QueryModel` 付きクラスが `application` 配下に居ることを ArchUnit `queryModelsResideInApplication` で検証する（DDD ビルディングブロックを `domain.*.model` に縛る `dddBuildingBlocksResideInDomainModel` と対称）。詳細は「読み取り経路（軽量 CQRS / L2）」
@@ -167,3 +168,12 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 
 - アーキテクチャ違反でテストが落ちた場合、**原則コードをアーキテクチャに合わせる**。ルール側を変えるのは設計判断の変更時のみ
 - 依存ライブラリ: `jmolecules-bom`（バージョン管理）+ `jmolecules-ddd`（main）、`archunit-junit5` + `jmolecules-archunit`（test）。いずれも version catalog（`gradle/libs.versions.toml`）で管理
+
+### ArchUnit で Kotlin の呼び出しを縛るときの空振り
+
+`noClasses().should().callMethodWhere(pred)` はマッチが 0 件なら違反 0 件＝パスする。したがって述語のバグは「規約を強制できているように見えて実は何もしていない」偽陰性を生む。Kotlin 固有の 2 つの事情が、まさにこの空振りを起こす。
+
+- **inline value class によるメソッド名マングリング**: `@JvmInline value class`（ID 値クラス等）を**引数に取るメソッドも、戻り値に持つメソッドも**、JVM 名がハッシュ付きにマングルされる（`of` → `of-Havw-KM`、`Result` を返す `invoke` → `invoke-Zyo9ksc`）。`haveName("invoke")` や `target.name == "of"` は完全一致せず空振りする。ベース名（`name.substringBefore('-')`）で突合するか `haveNameStartingWith` で前方一致させ、過剰マッチはパラメータ型条件との AND で絞る。
+- **companion object メソッドの owner**: `Foo.of(...)` の呼び出しターゲット owner は `Foo` ではなく `Foo$Companion`。`call.target.owner.enclosingClass.orElse(owner)` で囲みクラスを辿って突合する。
+
+**新しく書いた呼び出し制約ルールは、必ずミューテーションで非空振りを確認する**。許可パッケージ定数を一時的に bogus 値へ変えるか、規約を守っているコードのアノテーションを外し、テストが FAIL することを確かめてから戻す。パスしたまま BUILD SUCCESSFUL なら述語が空振りしている。恒久的には違反サンプル fixture ＋ `assertNotSatisfied` 系の回帰テストを別途置く（先例: `AggregateNotDataClassRuleTest` / `DtoDomainEnumRuleTest`）。

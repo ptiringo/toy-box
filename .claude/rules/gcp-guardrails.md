@@ -1,3 +1,9 @@
+---
+paths:
+  - "infra/**"
+  - ".claude/settings.json"
+---
+
 # GCP 操作のガードレール
 
 Claude Code から Google Cloud（project `ptiringo-toy-box`）を扱うときの安全な既定。auto mode（bypassPermissions / acceptEdits）でも副作用ある操作が無確認で走らないようにする。決定経緯は [ADR-0036](../../docs/adr/0036-gcp-operation-guardrails.md)。
@@ -6,11 +12,7 @@ Claude Code から Google Cloud（project `ptiringo-toy-box`）を扱うとき�
 
 役割は**非対称**: **permissions＝強制**（アイデンティティ非依存で無確認変更を止める）、**viewer SA＝安全な既定＋多層防御**（owner は IAM でハード強制できない）。
 
-1. **permissions（`.claude/settings.json`）**: `gcloud` / `terraform` / `tfctl` を動詞で層分けする。
-   - **deny（完全遮断・CI/HCP 専用）**: `gcloud * deploy`（run/app/functions 等）/ `gcloud * delete` / `gcloud projects delete` / `gcloud storage rm` / `terraform apply` / `terraform destroy`。
-   - **ask（auto mode でも確認強制）**: `gcloud create/update` / IAM 変更（set-iam-policy・add/remove-iam-policy-binding）/ `gcloud services enable/disable` / `terraform import`・`terraform state rm/mv`・`terraform taint`・`terraform force-unlock`（リモート state を変更しうる）/ `tfctl run start` / `tfctl variable import` / `tfctl create` / `tfctl api`。
-   - **allow（read-only）**: `gcloud describe/list/get-iam-policy` / `terraform plan/validate/show/state list/fmt` / `tfctl run status` / `tfctl get`。
-   - 優先順位は deny > ask > allow。`deny` は bypassPermissions でも必ずブロック、`ask` は auto mode でも必ずプロンプトを出す。
+1. **permissions（`.claude/settings.json`）**: `gcloud` / `terraform` / `tfctl` を動詞で 3 層に分ける。**変更・削除・課金を伴う動詞は deny（完全遮断・CI/HCP 専用）、状態を書き換えうる動詞は ask（auto mode でも確認強制）、read-only の動詞だけ allow**。優先順位は deny > ask > allow で、`deny` は bypassPermissions でも必ずブロックし、`ask` は auto mode でも必ずプロンプトを出す。**どのコマンドがどの層かの唯一の出所は `.claude/settings.json`**（ここには転記しない。列挙は必ず drift する）。
 2. **最小権限の資格情報（Terraform `infra/modules/local-readonly/`）**: 読み取り作業の安全な既定として `roles/viewer` のみの `local-readonly` SA を impersonation で使う（唯一の資格情報ではない）。変更はローカル identity を通さず CI/HCP か明示昇格で行う。owner はハード強制できない（強制は permissions が担う）。非 owner には tokenCreator のみ渡せば read-only を強制できる。
 
 ## 正規の変更ルート
