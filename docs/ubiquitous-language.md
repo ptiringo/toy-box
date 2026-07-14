@@ -185,6 +185,14 @@ graph LR
 
 <!-- BEGIN GENERATED:ubiquitous-language -->
 
+### iam
+
+| 用語 | 種別 | パッケージ |
+| --- | --- | --- |
+| Account | 集約ルート | domain.iam.model.account |
+| SubjectId | 値オブジェクト | domain.iam.model.account |
+| AccountRepository | リポジトリポート | domain.iam.model.account |
+
 ### racing
 
 | 用語 | 種別 | パッケージ |
