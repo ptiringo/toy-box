@@ -60,10 +60,11 @@ class ReplayEngine(
         val facts = fixture.facts
         val synth = fixture.synthesized
         // 提出以外のドメイン日付は論理に効かないので、シーズン中の固定 Instant を使う。
-        val neutralInstant: Instant = submissionInstant(LocalDate.of(facts.coveringYear, 4, 1))
+        // 種付年は公開事実ではなく表示年からの換算（合成値）なので synthesized 側から取る。
+        val neutralInstant: Instant = submissionInstant(LocalDate.of(synth.coveringYear, 4, 1))
 
         // 0. 基礎馬（種牡馬・繁殖牝馬）を輸入馬経路で seed（親不在で登録可）。
-        //    内国産馬も現状これしか経路がないため、合成した出生国・輸入年月日で通す。
+        //    内国産馬も現状これしか経路がないため、事実の出生国＋合成した輸入年月日で通す。
         val stallion =
             session.step(
                 ReplayStep.REGISTER_STALLION,
@@ -137,7 +138,7 @@ class ReplayEngine(
             ReplayStep.SUBMIT_COVERING_REPORT,
             submitCoveringReport(
                 Command.now(
-                    SubmitCoveringReportCommand(stallionBreeding.id.value, facts.coveringYear),
+                    SubmitCoveringReportCommand(stallionBreeding.id.value, synth.coveringYear),
                     seasonClock(
                         submissionInstant(
                             LocalDate.parse(synth.submissions.coveringReportSubmittedOn)
@@ -226,7 +227,8 @@ class ReplayEngine(
         val facts = fixture.facts
         val synth = fixture.synthesized
         // 提出以外のドメイン日付は論理に効かないので、シーズン中の固定 Instant を使う。
-        val neutralInstant: Instant = submissionInstant(LocalDate.of(facts.breedingYear, 4, 1))
+        // 繁殖年は公開事実ではなく表示年からの換算（合成値）なので synthesized 側から取る。
+        val neutralInstant: Instant = submissionInstant(LocalDate.of(synth.breedingYear, 4, 1))
 
         // 0. 繁殖牝馬を輸入馬経路で seed（内国産だが現状これしか経路がない。#633）。
         val broodmare =
@@ -263,7 +265,7 @@ class ReplayEngine(
                     Command.now(
                         RecordUncoveredCommand(
                             breedingRegistrationId = broodmareBreeding.id.value,
-                            breedingYear = Year.of(facts.breedingYear),
+                            breedingYear = Year.of(synth.breedingYear),
                         ),
                         seasonClock(neutralInstant),
                     )

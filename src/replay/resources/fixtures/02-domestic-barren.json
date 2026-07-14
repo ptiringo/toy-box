@@ -7,7 +7,7 @@
     "stallion": "https://www.jbis.or.jp/horse/0000731452/"
   },
   "facts": {
-    "coveringYear": 2008,
+    "displayedYear": 2009,
     "stallion": {
       "sex": "MALE",
       "coatColor": "BROWN",
@@ -21,17 +21,19 @@
       "coatColor": "BLACK",
       "breedType": "THOROUGHBRED",
       "dateOfBirth": "2002-03-31",
-      "breeder": "ノーザンファーム"
+      "breeder": "ノーザンファーム",
+      "originCountry": "日本"
     },
     "foaling": { "outcome": "NotConceived" }
   },
   "synthesized": {
     "notes": [
-      "繁殖牝馬シーザリオは内国産（早来産）だが、seed 経路が RegisterImportedHorse しかないため輸入馬として登録している。出生国は日本（事実どおり）だが、輸入馬経路に載せるため輸入年月日は架空で与えている（#633）。",
+      "繁殖牝馬シーザリオは内国産（早来産）だが、seed 経路が RegisterImportedHorse しかないため輸入馬として登録している。出生国『日本』は事実どおり facts に置き、合成しているのは輸入馬経路に載せるための架空の輸入年月日だけ（#633）。",
       "JBIS の表示は『産駒なし 2009年｜ウォーエンブレム(USA)』のみで、不受胎・流産・死産を区別しない。NotConceived の選択は事実ではなく合成の判断（#634）。",
-      "種付年は産駒生年 2009 から 1 を引いて 2008 とした。",
+      "種付年 2008 は JBIS の表示年 2009（＝産駒の生年）から 1 を引いた換算値であり、公開された事実ではない。",
       "マイクロチップ番号・登録番号・種付日・証明書・提出日は JBIS 非公開のため合成。"
     ],
+    "coveringYear": 2008,
     "stallion": {
       "microchipNumber": "900000000020001",
       "landingDate": "2003-10-01",
@@ -40,7 +42,6 @@
     },
     "broodmare": {
       "microchipNumber": "900000000020002",
-      "originCountry": "日本",
       "landingDate": "2002-03-31",
       "pedigreeRegistrationNumber": "JBIS-0000743110",
       "breedingRegistrationNumber": "BR-0000743110"
