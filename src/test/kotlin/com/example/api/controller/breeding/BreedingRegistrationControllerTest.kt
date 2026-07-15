@@ -5,11 +5,9 @@ import com.example.api.application.studbook.breeding.RegisterBreedingRegistratio
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
 import com.example.api.config.ClockConfiguration
-import com.example.api.domain.shared.AccountId
-import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
-import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
+import com.example.api.support.TestActors
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.ninjasquad.springmockk.MockkBean
@@ -42,13 +40,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
     @BeforeEach
     fun stubResolveActor() {
-        every { resolveActor(any()) } returns
-            Ok(
-                Actor(
-                    AccountId(UUID.randomUUID()),
-                    setOf(StudbookPermissions.BREEDING_REGISTRATION_REGISTER),
-                )
-            )
+        every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
     }
 
     private val uri = "/api/breedingRegistrations"

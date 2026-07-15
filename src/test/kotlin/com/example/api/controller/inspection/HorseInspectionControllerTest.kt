@@ -11,16 +11,14 @@ import com.example.api.application.studbook.inspection.RecordHorseInspectionUseC
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.DnaParentageResultDto
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
-import com.example.api.domain.shared.AccountId
-import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
-import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
+import com.example.api.support.TestActors
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -58,8 +56,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
     @BeforeEach
     fun stubResolveActor() {
-        every { resolveActor(any()) } returns
-            Ok(Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.INSPECTION_RECORD)))
+        every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
     }
 
     /** DNA 判定＋特徴記述子つきの審査集約を組む（レスポンス表現の検証用）。 */

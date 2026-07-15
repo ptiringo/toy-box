@@ -14,13 +14,11 @@ import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
-import com.example.api.domain.shared.AccountId
-import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
-import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
+import com.example.api.support.TestActors
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -59,17 +57,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
     @BeforeEach
     fun stubResolveActor() {
-        every { resolveActor(any()) } returns
-            Ok(
-                Actor(
-                    AccountId(UUID.randomUUID()),
-                    setOf(
-                        StudbookPermissions.HORSE_REGISTER,
-                        StudbookPermissions.HORSE_REGISTER_IMPORTED,
-                        StudbookPermissions.HORSE_NAME,
-                    ),
-                )
-            )
+        every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
     }
 
     /**
