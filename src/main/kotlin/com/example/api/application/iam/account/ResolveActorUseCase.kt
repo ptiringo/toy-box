@@ -3,15 +3,18 @@ package com.example.api.application.iam.account
 import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.shared.Actor
-import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.toResultOr
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
-/** 認証済みリクエストの subject（IdP の `sub`）から [Actor] を引き当てる入力。 */
-data class ResolveActorCommand(val subjectId: String)
+/**
+ * 認証済みリクエストの subject（IdP の `sub`）から [Actor] を引き当てるクエリの入力。
+ *
+ * 読み取り系の入力は素の DTO とし、書き込み系の [com.example.api.domain.shared.Command] 封筒
+ * （発生時刻メタデータ）は使わない。発生時刻は書き込みイベントの概念であり、読み取りには不要（ADR-0031）。
+ */
+data class ResolveActorQuery(val subjectId: String)
 
 /** [Actor] の引き当てに失敗する理由。 */
 sealed interface ResolveActorUseCaseError {
@@ -32,11 +35,8 @@ sealed interface ResolveActorUseCaseError {
 @Service
 class ResolveActorUseCase(private val accountRepository: AccountRepository) {
 
-    @Transactional(readOnly = true)
-    operator fun invoke(
-        command: Command<ResolveActorCommand>
-    ): Result<Actor, ResolveActorUseCaseError> {
-        val subjectId = command.payload.subjectId
+    operator fun invoke(query: ResolveActorQuery): Result<Actor, ResolveActorUseCaseError> {
+        val subjectId = query.subjectId
         return accountRepository
             .findBySubjectId(SubjectId(subjectId))
             .toResultOr { ResolveActorUseCaseError.AccountNotFound(subjectId) }
