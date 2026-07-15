@@ -1,6 +1,7 @@
 package com.example.api.architecture
 
 import com.example.api.ApiApplication
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
@@ -124,9 +125,10 @@ class OnionLayerRulesTest {
      * E>`（kotlin-result）が inline value class のため、Kotlin コンパイラがプラットフォーム宣言の衝突回避で メソッド名をマングルする（例:
      * `invoke-Zyo9ksc`）。完全一致では実バイトコード名と食い違い空振りする （ミューテーション検証で確認済み）。
      *
-     * 前方一致に加えて `haveRawParameterTypes(Command)` を AND 条件に置くことで、前方一致の広すぎる当たりを `Command`
-     * 封筒を受け取るメソッドだけに絞り安全にしている。裏返すと、`Command` 封筒を受けない書き込みメソッドや 多引数の `invoke` はこのガードの対象外（規約＝「書き込みは
-     * `Command` 単項 `invoke`」に依存する）。
+     * 前方一致に加えて `haveRawParameterTypes(Actor, Command)` を AND 条件に置くことで、前方一致の広すぎる当たりを 「認可の主体 `Actor`
+     * と `Command` 封筒を受け取る書き込み `invoke`」だけに絞り安全にしている。#606 以降、書き込み ユースケースは第 1 引数に認可の主体 `Actor`、第 2
+     * 引数に `Command` 封筒を取る（`invoke(actor, command)`）ため、 対象は `[Actor, Command]` の 2 引数 `invoke`
+     * に固定される。裏返すと、この形を採らない書き込みメソッドはこの ガードの対象外（規約＝「書き込みは `Actor` ＋ `Command` を取る `invoke`」に依存する）。
      */
     @ArchTest
     val commandHandlingInvokesAreTransactional =
@@ -137,7 +139,7 @@ class OnionLayerRulesTest {
             .and()
             .haveNameStartingWith("invoke")
             .and()
-            .haveRawParameterTypes(Command::class.java)
+            .haveRawParameterTypes(Actor::class.java, Command::class.java)
             .should()
             .beAnnotatedWith(Transactional::class.java)
 }

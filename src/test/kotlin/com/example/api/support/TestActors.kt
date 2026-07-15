@@ -1,5 +1,6 @@
 package com.example.api.support
 
+import com.example.api.domain.racing.model.RacingPermissions
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Actor
 import com.example.api.domain.studbook.model.StudbookPermissions
@@ -31,4 +32,8 @@ object TestActors {
                 StudbookPermissions.COVERING_REPORT_SUBMIT,
             ),
         )
+
+    /** ジョッキー登録権限を持つ Actor。racing/jockey の slice テストの happy-path 用。 */
+    fun jockeyRegisterActor(): Actor =
+        Actor(AccountId(UUID.randomUUID()), setOf(RacingPermissions.JOCKEY_REGISTER))
 }

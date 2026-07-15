@@ -1,10 +1,14 @@
 package com.example.api.application.racing.jockey
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.racing.model.RacingPermissions
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.racing.model.jockey.JockeyRepository
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -32,6 +36,10 @@ sealed interface JockeyRegistrationError {
 
     /** 同姓同名のジョッキーが既に登録済み。 */
     data class DuplicateJockey(val existingId: JockeyId) : JockeyRegistrationError
+
+    /** ジョッキー登録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        JockeyRegistrationError, AuthorizationError
 }
 
 /**
@@ -49,8 +57,13 @@ sealed interface JockeyRegistrationError {
 class JockeyRegistrationUseCase(private val jockeyRepository: JockeyRepository) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterJockeyCommand>
+        actor: Actor,
+        command: Command<RegisterJockeyCommand>,
     ): Result<Jockey, JockeyRegistrationError> {
+        val permission = RacingPermissions.JOCKEY_REGISTER
+        if (!actor.can(permission)) {
+            return Err(JockeyRegistrationError.Forbidden(permission))
+        }
         val input = command.payload
         return Jockey.create(input.firstName, input.lastName)
             .mapError { JockeyRegistrationError.InvalidJockey(it) }

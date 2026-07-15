@@ -3,6 +3,7 @@ package com.example.api.controller.jockey.problem
 import com.example.api.application.racing.jockey.JockeyNotFound
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.controller.problem
+import com.example.api.controller.problem.forbidden
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -27,6 +28,7 @@ fun JockeyRegistrationError.toProblemDetail(): ProblemDetail =
                     detail = "同姓同名のジョッキーが既に登録されています。",
                 )
                 .apply { setProperty("existing_id", existingId.value) }
+        is JockeyRegistrationError.Forbidden -> forbidden(permission)
     }
 
 /**

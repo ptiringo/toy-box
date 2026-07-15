@@ -9,15 +9,20 @@ import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.racing.model.RacingPermissions
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
+import com.example.api.support.TestActors
+import com.example.api.support.TestSecurityContext
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -44,12 +49,24 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
     private val tester = MockMvcTester.create(mockMvc)
 
+    @BeforeEach
+    fun stubResolveActor() {
+        TestSecurityContext.authenticate()
+        every { resolveActor(any()) } returns Ok(TestActors.jockeyRegisterActor())
+    }
+
+    @AfterEach
+    fun clearSecurityContext() {
+        TestSecurityContext.clear()
+    }
+
     @Nested
     inner class SuccessCase {
         @Test
         fun `正常な入力で 201 Created と登録結果が返ること`() {
             val savedJockey = Jockey.create("武", "豊").unwrap()
-            every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns Ok(savedJockey)
+            every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } returns
+                Ok(savedJockey)
 
             val response =
                 tester
@@ -72,7 +89,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
     inner class FailureCase {
         @Test
         fun `InvalidJockey(BlankFirstName) で 400 と problem+json が返ること`() {
-            every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns
+            every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } returns
                 Err(JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankFirstName))
 
             tester
@@ -90,7 +107,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `InvalidJockey(BlankLastName) で 400 と problem+json が返ること`() {
-            every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns
+            every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } returns
                 Err(JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankLastName))
 
             tester
@@ -109,7 +126,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `DuplicateJockey で 409 と existingId 付きの problem+json が返ること`() {
             val existing = Jockey.create("武", "豊").unwrap()
-            every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns
+            every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } returns
                 Err(JockeyRegistrationError.DuplicateJockey(existing.id))
 
             tester
@@ -123,6 +140,24 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.existing_id")
                 .isEqualTo(existing.id.value.toString())
+        }
+
+        @Test
+        fun `Forbidden で 403 と problem+json が返ること`() {
+            every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } returns
+                Err(JockeyRegistrationError.Forbidden(RacingPermissions.JOCKEY_REGISTER))
+
+            tester
+                .post()
+                .uri("/api/jockeys")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"first_name":"武","last_name":"豊"}""")
+                .assertThat()
+                .hasStatus(HttpStatus.FORBIDDEN)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("forbidden")
         }
     }
 

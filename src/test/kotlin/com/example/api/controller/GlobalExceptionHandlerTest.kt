@@ -10,9 +10,14 @@ import com.example.api.controller.jockey.JockeyController
 import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
+import com.example.api.support.TestActors
+import com.example.api.support.TestSecurityContext
 import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -43,6 +48,19 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
     private val tester = MockMvcTester.create(mockMvc)
 
+    @BeforeEach
+    fun stubResolveActor() {
+        // register ハンドラの Actor 引数（param 0）が先に解決されるため、認証と resolveActor を用意しておく。
+        // これが無いと Actor 解決が fail-loud で 500 になり、本来検証したい 400/500 の funnel 挙動に届かない。
+        TestSecurityContext.authenticate()
+        every { resolveActor(any()) } returns Ok(TestActors.jockeyRegisterActor())
+    }
+
+    @AfterEach
+    fun clearSecurityContext() {
+        TestSecurityContext.clear()
+    }
+
     @Test
     fun `必須フィールド欠落のリクエストボディで 400 と規約付与済みの problem+json が返ること`() {
         // last_name が欠落しており Jackson のデシリアライズに失敗する。
@@ -64,7 +82,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     fun `業務エラー由来の problem が funnel を通っても自前の errorCode を保持し status 由来コードで上書きされないこと`() {
         // DuplicateJockey は problem() ＝ ConventionalProblemDetail で errorCode=duplicate-jockey を持つ。
         // funnel は型で規約済みと判定して触らないため、status(409) 由来の "conflict" に上書きされない。
-        every { registerJockey(any<Command<RegisterJockeyCommand>>()) } returns
+        every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } returns
             Err(JockeyRegistrationError.DuplicateJockey(JockeyId(generateId())))
 
         tester
@@ -82,7 +100,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `想定外の例外発生時に 500 と problem+json が返ること`() {
-        every { registerJockey(any<Command<RegisterJockeyCommand>>()) } throws
+        every { registerJockey(any(), any<Command<RegisterJockeyCommand>>()) } throws
             RuntimeException("予期しない障害")
 
         tester
