@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.iam.account.ResolveActorUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
@@ -30,6 +31,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class CoveringReportControllerTest(val mockMvc: MockMvc) {
+    // WebMvcConfig 経由の ActorArgumentResolver が全 @WebMvcTest slice で自動検出されるための必須モック。
+    @MockkBean private lateinit var resolveActor: ResolveActorUseCase
+
     @MockkBean private lateinit var submitCoveringReport: SubmitCoveringReportUseCase
 
     private val tester = MockMvcTester.create(mockMvc)

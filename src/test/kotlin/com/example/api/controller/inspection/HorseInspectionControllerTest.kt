@@ -1,5 +1,6 @@
 package com.example.api.controller.inspection
 
+import com.example.api.application.iam.account.ResolveActorUseCase
 import com.example.api.application.studbook.inspection.FindHorseInspectionQuery
 import com.example.api.application.studbook.inspection.FindHorseInspectionUseCase
 import com.example.api.application.studbook.inspection.HorseInspectionNotFound
@@ -43,6 +44,9 @@ import tools.jackson.databind.json.JsonMapper
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper) {
+    // WebMvcConfig 経由の ActorArgumentResolver が全 @WebMvcTest slice で自動検出されるための必須モック。
+    @MockkBean private lateinit var resolveActor: ResolveActorUseCase
+
     @MockkBean private lateinit var recordHorseInspection: RecordHorseInspectionUseCase
     @MockkBean private lateinit var findHorseInspection: FindHorseInspectionUseCase
 

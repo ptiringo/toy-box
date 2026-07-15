@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.iam.account.ResolveActorUseCase
 import com.example.api.application.studbook.breeding.BreedingResultSummaryView
 import com.example.api.application.studbook.breeding.FindBreedingResultSummaryQuery
 import com.example.api.application.studbook.breeding.FindBreedingResultSummaryUseCase
@@ -19,6 +20,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @AutoConfigureMockMvc(addFilters = false)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
+    // WebMvcConfig 経由の ActorArgumentResolver が全 @WebMvcTest slice で自動検出されるための必須モック。
+    @MockkBean private lateinit var resolveActor: ResolveActorUseCase
+
     @MockkBean private lateinit var findBreedingResultSummary: FindBreedingResultSummaryUseCase
 
     private val tester = MockMvcTester.create(mockMvc)

@@ -1,5 +1,6 @@
 package com.example.api.controller
 
+import com.example.api.application.iam.account.ResolveActorUseCase
 import com.example.api.application.racing.jockey.FindJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
@@ -33,6 +34,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
+    // WebMvcConfig 経由の ActorArgumentResolver が全 @WebMvcTest slice で自動検出されるための必須モック。
+    @MockkBean private lateinit var resolveActor: ResolveActorUseCase
+
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
 
     @MockkBean private lateinit var findJockey: FindJockeyUseCase

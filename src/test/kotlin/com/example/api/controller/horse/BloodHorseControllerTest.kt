@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.iam.account.ResolveActorUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
@@ -43,6 +44,9 @@ import tools.jackson.databind.json.JsonMapper
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper) {
+    // WebMvcConfig 経由の ActorArgumentResolver が全 @WebMvcTest slice で自動検出されるための必須モック。
+    @MockkBean private lateinit var resolveActor: ResolveActorUseCase
+
     @MockkBean private lateinit var registerInStudBook: RegisterInStudBookUseCase
     @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase

@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.iam.account.ResolveActorUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationCommand
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
@@ -27,6 +28,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @Import(ClockConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
+    // WebMvcConfig 経由の ActorArgumentResolver が全 @WebMvcTest slice で自動検出されるための必須モック。
+    @MockkBean private lateinit var resolveActor: ResolveActorUseCase
+
     @MockkBean
     private lateinit var registerBreedingRegistration: RegisterBreedingRegistrationUseCase
 
