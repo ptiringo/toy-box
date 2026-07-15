@@ -106,5 +106,26 @@ class ActorArgumentResolverTest {
             assert((thrown as ErrorResponseException).statusCode.value() == 403)
             assert(thrown.body.properties?.get("error_code") == "account-not-provisioned")
         }
+
+        @Test
+        fun `認証情報が無いときは fail-loud で IllegalStateException を投げる`() {
+            // authenticate を呼ばない＝SecurityContext に認証が無い状態。authenticated なはずの
+            // エンドポイントに認証が無いのは設定漏れなので、空の subject で DB を引かず 500 に落とす。
+            val useCase = mockk<ResolveActorUseCase>()
+            val resolver = ActorArgumentResolver(useCase)
+
+            val thrown =
+                runCatching {
+                        resolver.resolveArgument(
+                            actorParameter(),
+                            null,
+                            mockk<NativeWebRequest>(),
+                            null,
+                        )
+                    }
+                    .exceptionOrNull()
+
+            assert(thrown is IllegalStateException)
+        }
     }
 }

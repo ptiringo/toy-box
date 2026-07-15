@@ -19,6 +19,7 @@ import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.support.TestActors
+import com.example.api.support.TestSecurityContext
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -27,6 +28,7 @@ import io.mockk.every
 import io.mockk.slot
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -56,7 +58,13 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
     @BeforeEach
     fun stubResolveActor() {
+        TestSecurityContext.authenticate()
         every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
+    }
+
+    @AfterEach
+    fun clearSecurityContext() {
+        TestSecurityContext.clear()
     }
 
     /** DNA 判定＋特徴記述子つきの審査集約を組む（レスポンス表現の検証用）。 */

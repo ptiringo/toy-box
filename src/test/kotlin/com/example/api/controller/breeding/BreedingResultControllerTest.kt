@@ -24,6 +24,7 @@ import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
 import com.example.api.domain.studbook.model.breeding.ValidityPeriod
 import com.example.api.support.TestActors
+import com.example.api.support.TestSecurityContext
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -32,6 +33,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -62,7 +64,13 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
     @BeforeEach
     fun stubResolveActor() {
+        TestSecurityContext.authenticate()
         every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
+    }
+
+    @AfterEach
+    fun clearSecurityContext() {
+        TestSecurityContext.clear()
     }
 
     @Nested

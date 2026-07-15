@@ -21,6 +21,10 @@ import org.springframework.web.method.support.ModelAndViewContainer
  *
  * 認可の判断そのものは application 層のユースケースが行う（ADR-0064）。ここは「誰が」を DB から 引き当てて渡すだけで、権限の検査はしない。`account`
  * が未登録なら、認証は通っていても何も許可されて いない利用者なので 403 を投げる。
+ *
+ * この resolver が動くのは `Actor` 引数を取る書き込みハンドラ＝`authenticated` なエンドポイントに限る。 したがって認証情報が無いままここに来るのは
+ * SecurityConfig の設定漏れ（本来 `permitAll` でないパスが 認証を通さず素通りした）を意味する。空の subject で DB を引くと
+ * `AccountNotFound`＝403 に化けて設定バグを 隠すため、認証情報が無い／subject が空のときは fail-loud で 500 にする。
  */
 @Component
 class ActorArgumentResolver(private val resolveActor: ResolveActorUseCase) :
@@ -35,7 +39,10 @@ class ActorArgumentResolver(private val resolveActor: ResolveActorUseCase) :
         webRequest: NativeWebRequest,
         binderFactory: WebDataBinderFactory?,
     ): Actor {
-        val subject = SecurityContextHolder.getContext().authentication?.name.orEmpty()
+        val subject = SecurityContextHolder.getContext().authentication?.name
+        check(!subject.isNullOrBlank()) {
+            "認証済みのはずのエンドポイントで Actor を解決しようとしたが認証情報が無い（SecurityConfig の設定漏れの疑い）"
+        }
         return resolveActor(ResolveActorQuery(subject)).getOrElse { error ->
             when (error) {
                 is ResolveActorUseCaseError.AccountNotFound -> {

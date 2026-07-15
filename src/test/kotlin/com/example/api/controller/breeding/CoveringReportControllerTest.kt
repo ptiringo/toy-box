@@ -9,6 +9,7 @@ import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
 import com.example.api.support.TestActors
+import com.example.api.support.TestSecurityContext
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.ninjasquad.springmockk.MockkBean
@@ -16,6 +17,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -42,7 +44,13 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     @BeforeEach
     fun stubResolveActor() {
+        TestSecurityContext.authenticate()
         every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
+    }
+
+    @AfterEach
+    fun clearSecurityContext() {
+        TestSecurityContext.clear()
     }
 
     private val uri = "/api/coveringReports"

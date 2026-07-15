@@ -19,6 +19,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.support.TestActors
+import com.example.api.support.TestSecurityContext
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -27,6 +28,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -57,7 +59,13 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
     @BeforeEach
     fun stubResolveActor() {
+        TestSecurityContext.authenticate()
         every { resolveActor(any()) } returns Ok(TestActors.studbookFullyPermitted())
+    }
+
+    @AfterEach
+    fun clearSecurityContext() {
+        TestSecurityContext.clear()
     }
 
     /**
