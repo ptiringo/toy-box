@@ -1,7 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
@@ -22,6 +25,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -54,6 +58,10 @@ class RegisterHorseTransactionRollbackTest(
 ) : PostgresContainerSupport() {
 
     private val seeder = StudbookSeeder(inspectionRows, bloodHorseRows, registrationRows)
+    private val registerImportedActor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.HORSE_REGISTER_IMPORTED))
+    private val registerActor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.HORSE_REGISTER))
 
     @TestConfiguration
     class FailingSaveConfiguration {
@@ -75,7 +83,7 @@ class RegisterHorseTransactionRollbackTest(
         failingRepository.failOnSave = true
 
         assertThrows<DataAccessResourceFailureException> {
-            registerImportedHorse(command(importedHorseCommand()))
+            registerImportedHorse(registerImportedActor, command(importedHorseCommand()))
         }
 
         assert(inspectionRows.count() == 0L) { "審査が孤児として残っている" }
@@ -93,7 +101,7 @@ class RegisterHorseTransactionRollbackTest(
         failingRepository.failOnSave = true
 
         assertThrows<DataAccessResourceFailureException> {
-            registerInStudBook(command(domesticCommand(sire, dam)))
+            registerInStudBook(registerActor, command(domesticCommand(sire, dam)))
         }
 
         // 父・母の審査（seed 分の 2 行）は残り、ロールバックされた仔馬の審査は残らない

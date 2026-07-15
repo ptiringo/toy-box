@@ -1,12 +1,17 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.service.breeding.recordUncovered
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -40,6 +45,10 @@ sealed interface RecordUncoveredUseCaseError {
      * 個別バリアント（登録ロールが繁殖牝馬でない・同一繁殖年の重複）は [RecordUncoveredError] を参照する。
      */
     data class PreconditionViolated(val cause: RecordUncoveredError) : RecordUncoveredUseCaseError
+
+    /** 種付せず記録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        RecordUncoveredUseCaseError, AuthorizationError
 }
 
 /**
@@ -59,27 +68,34 @@ class RecordUncoveredUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RecordUncoveredCommand>
-    ): Result<BreedingResult, RecordUncoveredUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<RecordUncoveredCommand>,
+    ): Result<BreedingResult, RecordUncoveredUseCaseError> {
+        val permission = StudbookPermissions.BREEDING_RESULT_RECORD_UNCOVERED
+        if (!actor.can(permission)) {
+            return Err(RecordUncoveredUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val broodmareRegistration =
-            breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.breedingRegistrationId))
-                .toResultOr {
-                    RecordUncoveredUseCaseError.BreedingRegistrationNotFound(
-                        input.breedingRegistrationId
-                    )
-                }
-                .bind()
+            val broodmareRegistration =
+                breedingRegistrationRepository
+                    .findById(BreedingRegistrationId(input.breedingRegistrationId))
+                    .toResultOr {
+                        RecordUncoveredUseCaseError.BreedingRegistrationNotFound(
+                            input.breedingRegistrationId
+                        )
+                    }
+                    .bind()
 
-        val breedingResult =
-            recordUncovered(broodmareRegistration, input.breedingYear, breedingResultRepository)
-                .mapError { RecordUncoveredUseCaseError.PreconditionViolated(it) }
-                .bind()
+            val breedingResult =
+                recordUncovered(broodmareRegistration, input.breedingYear, breedingResultRepository)
+                    .mapError { RecordUncoveredUseCaseError.PreconditionViolated(it) }
+                    .bind()
 
-        breedingResultRepository.save(breedingResult).getOrElse {
-            error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
+            breedingResultRepository.save(breedingResult).getOrElse {
+                error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingRole
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
@@ -19,6 +22,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class RegisterBreedingRegistrationUseCaseTest {
+
+    private val actor =
+        Actor(
+            AccountId(UUID.randomUUID()),
+            setOf(StudbookPermissions.BREEDING_REGISTRATION_REGISTER),
+        )
 
     private fun command(
         payload: RegisterBreedingRegistrationCommand
@@ -42,7 +51,10 @@ class RegisterBreedingRegistrationUseCaseTest {
                 )
 
             val result =
-                useCase(command(RegisterBreedingRegistrationCommand(mare.id.value, "B-2024-0001")))
+                useCase(
+                        actor,
+                        command(RegisterBreedingRegistrationCommand(mare.id.value, "B-2024-0001")),
+                    )
                     .unwrap()
 
             assert(result.registeredHorseId == mare.id)
@@ -69,9 +81,10 @@ class RegisterBreedingRegistrationUseCaseTest {
 
             val result =
                 useCase(
+                        actor,
                         command(
                             RegisterBreedingRegistrationCommand(stallion.id.value, "B-2024-0002")
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -92,7 +105,8 @@ class RegisterBreedingRegistrationUseCaseTest {
                     breedingRegistrationRepository,
                 )
 
-            val result = useCase(command(RegisterBreedingRegistrationCommand(mare.id.value, "   ")))
+            val result =
+                useCase(actor, command(RegisterBreedingRegistrationCommand(mare.id.value, "   ")))
 
             assert(
                 result.getError() ==
@@ -116,12 +130,42 @@ class RegisterBreedingRegistrationUseCaseTest {
                 )
 
             val result =
-                useCase(command(RegisterBreedingRegistrationCommand(bloodHorseId, "B-2024-0001")))
+                useCase(
+                    actor,
+                    command(RegisterBreedingRegistrationCommand(bloodHorseId, "B-2024-0001")),
+                )
 
             assert(
                 result.getError() ==
                     RegisterBreedingRegistrationUseCaseError.HorseNotFound(bloodHorseId)
             )
+            verify(exactly = 0) { breedingRegistrationRepository.save(any()) }
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val bloodHorseRepository = mockk<BloodHorseRepository>()
+            val breedingRegistrationRepository = mockk<BreedingRegistrationRepository>()
+            val useCase =
+                RegisterBreedingRegistrationUseCase(
+                    bloodHorseRepository,
+                    breedingRegistrationRepository,
+                )
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(RegisterBreedingRegistrationCommand(UUID.randomUUID(), "B-2024-0001")),
+                )
+
+            assert(
+                result.getError() ==
+                    RegisterBreedingRegistrationUseCaseError.Forbidden(
+                        StudbookPermissions.BREEDING_REGISTRATION_REGISTER
+                    )
+            )
+            verify(exactly = 0) { bloodHorseRepository.findById(any()) }
             verify(exactly = 0) { breedingRegistrationRepository.save(any()) }
         }
     }

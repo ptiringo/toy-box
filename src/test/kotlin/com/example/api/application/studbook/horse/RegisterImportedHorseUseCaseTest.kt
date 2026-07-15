@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
@@ -15,10 +18,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class RegisterImportedHorseUseCaseTest {
+
+    private val actor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.HORSE_REGISTER_IMPORTED))
 
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
     private fun validPayload() =
@@ -50,7 +57,7 @@ class RegisterImportedHorseUseCaseTest {
                 mockk<BloodHorseRepository> { every { save(any()) } answers { Ok(firstArg()) } }
             val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
-            val registered = useCase(command(validPayload())).unwrap()
+            val registered = useCase(actor, command(validPayload())).unwrap()
 
             val bloodHorse = registered.bloodHorse
             val origin = bloodHorse.origin
@@ -70,7 +77,7 @@ class RegisterImportedHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload().copy(registrationNumber = "")))
+            val result = useCase(actor, command(validPayload().copy(registrationNumber = "")))
 
             assert(result.getError() == RegisterImportedHorseUseCaseError.InvalidRegistrationNumber)
             verify(exactly = 0) { repository.save(any()) }
@@ -81,7 +88,7 @@ class RegisterImportedHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload().copy(microchipNumber = "123")))
+            val result = useCase(actor, command(validPayload().copy(microchipNumber = "123")))
 
             assert(result.getError() == RegisterImportedHorseUseCaseError.InvalidMicrochipNumber)
             verify(exactly = 0) { repository.save(any()) }
@@ -92,10 +99,29 @@ class RegisterImportedHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload().copy(originCountry = "")))
+            val result = useCase(actor, command(validPayload().copy(originCountry = "")))
 
             assert(result.getError() == RegisterImportedHorseUseCaseError.BlankOriginCountry)
             verify(exactly = 0) { repository.save(any()) }
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し永続化されない`() {
+            val repository = mockk<BloodHorseRepository>()
+            val inspectionRepository = mockk<HorseInspectionRepository>()
+            val useCase = RegisterImportedHorseUseCase(repository, inspectionRepository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result = useCase(noPermissionActor, command(validPayload()))
+
+            assert(
+                result.getError() ==
+                    RegisterImportedHorseUseCaseError.Forbidden(
+                        StudbookPermissions.HORSE_REGISTER_IMPORTED
+                    )
+            )
+            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { inspectionRepository.save(any()) }
         }
     }
 }

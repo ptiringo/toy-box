@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -20,6 +23,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class SubmitCoveringReportUseCaseTest {
+
+    private val actor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.COVERING_REPORT_SUBMIT))
 
     private fun command(
         stallionBreedingRegistrationId: UUID,
@@ -51,7 +57,8 @@ class SubmitCoveringReportUseCaseTest {
             // UTC 15:00 = JST 翌日 0:00 → 提出日は 10/1（期限 9/30 を超過）
             val issuedAt = Instant.parse("2024-09-30T15:00:00Z")
 
-            val result = useCase(command(stallionRegistration.id.value, 2024, issuedAt)).unwrap()
+            val result =
+                useCase(actor, command(stallionRegistration.id.value, 2024, issuedAt)).unwrap()
 
             assert(result.submittedOn == LocalDate.of(2024, 10, 1))
             assert(result.submittedLate)
@@ -75,11 +82,12 @@ class SubmitCoveringReportUseCaseTest {
 
             val result =
                 useCase(
+                        actor,
                         command(
                             stallionRegistration.id.value,
                             2024,
                             Instant.parse("2024-09-01T00:00:00Z"),
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -99,7 +107,8 @@ class SubmitCoveringReportUseCaseTest {
             val reportRepository = mockk<CoveringReportRepository>()
             val useCase = SubmitCoveringReportUseCase(registrationRepository, reportRepository)
 
-            val result = useCase(command(unknownId, 2024, Instant.parse("2024-09-01T00:00:00Z")))
+            val result =
+                useCase(actor, command(unknownId, 2024, Instant.parse("2024-09-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
@@ -123,11 +132,12 @@ class SubmitCoveringReportUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         broodmareRegistration.id.value,
                         2024,
                         Instant.parse("2024-09-01T00:00:00Z"),
-                    )
+                    ),
                 )
 
             assert(
@@ -161,11 +171,12 @@ class SubmitCoveringReportUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         stallionRegistration.id.value,
                         2024,
                         Instant.parse("2024-09-01T00:00:00Z"),
-                    )
+                    ),
                 )
 
             assert(
@@ -177,6 +188,29 @@ class SubmitCoveringReportUseCaseTest {
                         )
                     )
             )
+            verify(exactly = 0) { reportRepository.save(any()) }
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val registrationRepository = mockk<BreedingRegistrationRepository>()
+            val reportRepository = mockk<CoveringReportRepository>()
+            val useCase = SubmitCoveringReportUseCase(registrationRepository, reportRepository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(UUID.randomUUID(), 2024, Instant.parse("2024-09-01T00:00:00Z")),
+                )
+
+            assert(
+                result.getError() ==
+                    SubmitCoveringReportUseCaseError.Forbidden(
+                        StudbookPermissions.COVERING_REPORT_SUBMIT
+                    )
+            )
+            verify(exactly = 0) { registrationRepository.findById(any()) }
             verify(exactly = 0) { reportRepository.save(any()) }
         }
     }

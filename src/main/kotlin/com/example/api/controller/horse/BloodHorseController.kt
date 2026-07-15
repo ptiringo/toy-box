@@ -9,6 +9,7 @@ import com.example.api.controller.horse.request.RegisterHorseNameRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.controller.horse.request.toCommand
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -88,11 +89,12 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses")
     fun register(
+        actor: Actor,
         @OperationRequestBody(description = "血統登録する軽種馬の登録申請フォーム")
         @RequestBody
-        request: RegisterBloodHorseRequest
+        request: RegisterBloodHorseRequest,
     ): BloodHorseResponse =
-        registerInStudBook(Command.now(request.toCommand(), clock))
+        registerInStudBook(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
@@ -132,11 +134,12 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses:registerImported")
     fun registerImported(
+        actor: Actor,
         @OperationRequestBody(description = "血統登録する輸入馬・基礎輸入馬の登録申請フォーム")
         @RequestBody
-        request: RegisterImportedHorseRequest
+        request: RegisterImportedHorseRequest,
     ): BloodHorseResponse =
-        registerImportedHorse(Command.now(request.toCommand(), clock))
+        registerImportedHorse(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
@@ -196,10 +199,11 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/bloodHorses/{bloodHorseId}:registerName")
     fun registerName(
+        actor: Actor,
         @Parameter(description = "馬名を登録する軽種馬の生 UUID") @PathVariable bloodHorseId: UUID,
         @OperationRequestBody(description = "馬名") @RequestBody request: RegisterHorseNameRequest,
     ): BloodHorseResponse =
-        nameHorse(Command.now(request.toCommand(bloodHorseId), clock))
+        nameHorse(actor, Command.now(request.toCommand(bloodHorseId), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

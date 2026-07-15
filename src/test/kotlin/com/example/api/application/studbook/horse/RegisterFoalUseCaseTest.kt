@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -32,6 +35,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class RegisterFoalUseCaseTest {
+
+    private val actor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.HORSE_REGISTER_FOAL))
 
     private val foalingDate = LocalDate.of(2024, 3, 20)
 
@@ -103,7 +109,7 @@ class RegisterFoalUseCaseTest {
         fun `産駒が血統登録され父母が繁殖記録から解決され出生日が分娩日になる`() {
             val w = Wiring()
 
-            val registered = w.useCase()(command(w.breedingResult.id.value)).unwrap()
+            val registered = w.useCase()(actor, command(w.breedingResult.id.value)).unwrap()
 
             val bloodHorse = registered.bloodHorse
             assert(bloodHorse.origin == Origin.Domestic(sireId = w.sire.id, damId = w.dam.id))
@@ -119,7 +125,8 @@ class RegisterFoalUseCaseTest {
         fun `血統登録番号がブランクだと InvalidRegistrationNumber を返す`() {
             val w = Wiring()
 
-            val result = w.useCase()(command(w.breedingResult.id.value, registrationNumber = ""))
+            val result =
+                w.useCase()(actor, command(w.breedingResult.id.value, registrationNumber = ""))
 
             assert(result.getError() == RegisterFoalUseCaseError.InvalidRegistrationNumber)
             verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
@@ -129,7 +136,8 @@ class RegisterFoalUseCaseTest {
         fun `マイクロチップ番号が不正だと InvalidMicrochipNumber を返す`() {
             val w = Wiring()
 
-            val result = w.useCase()(command(w.breedingResult.id.value, microchipNumber = "123"))
+            val result =
+                w.useCase()(actor, command(w.breedingResult.id.value, microchipNumber = "123"))
 
             assert(result.getError() == RegisterFoalUseCaseError.InvalidMicrochipNumber)
             verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
@@ -139,7 +147,7 @@ class RegisterFoalUseCaseTest {
         fun `生産者名がブランクだと BlankBreeder を返す`() {
             val w = Wiring()
 
-            val result = w.useCase()(command(w.breedingResult.id.value, breeder = ""))
+            val result = w.useCase()(actor, command(w.breedingResult.id.value, breeder = ""))
 
             assert(result.getError() == RegisterFoalUseCaseError.BlankBreeder)
             verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
@@ -163,7 +171,7 @@ class RegisterFoalUseCaseTest {
                     mockk(relaxed = true),
                 )
 
-            val result = useCase(command(breedingResultId))
+            val result = useCase(actor, command(breedingResultId))
 
             assert(
                 result.getError() ==
@@ -177,7 +185,7 @@ class RegisterFoalUseCaseTest {
             every { w.breedingRegistrationRepository.findById(w.breedingRegistration.id) } returns
                 null
 
-            val result = w.useCase()(command(w.breedingResult.id.value))
+            val result = w.useCase()(actor, command(w.breedingResult.id.value))
 
             assert(
                 result.getError() ==
@@ -193,7 +201,7 @@ class RegisterFoalUseCaseTest {
             val w = Wiring()
             every { w.bloodHorseRepository.findById(w.sire.id) } returns null
 
-            val result = w.useCase()(command(w.breedingResult.id.value))
+            val result = w.useCase()(actor, command(w.breedingResult.id.value))
 
             assert(result.getError() == RegisterFoalUseCaseError.SireNotFound(w.sire.id.value))
             verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
@@ -204,7 +212,7 @@ class RegisterFoalUseCaseTest {
             val w = Wiring()
             every { w.bloodHorseRepository.findById(w.dam.id) } returns null
 
-            val result = w.useCase()(command(w.breedingResult.id.value))
+            val result = w.useCase()(actor, command(w.breedingResult.id.value))
 
             assert(result.getError() == RegisterFoalUseCaseError.DamNotFound(w.dam.id.value))
             verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
@@ -223,7 +231,7 @@ class RegisterFoalUseCaseTest {
                 )
             every { w.breedingResultRepository.findById(notReported.id) } returns notReported
 
-            val result = w.useCase()(command(notReported.id.value))
+            val result = w.useCase()(actor, command(notReported.id.value))
 
             assert(
                 result.getError() ==
@@ -243,7 +251,7 @@ class RegisterFoalUseCaseTest {
                 )
             every { w.breedingResultRepository.findById(uncovered.id) } returns uncovered
 
-            val result = w.useCase()(command(uncovered.id.value))
+            val result = w.useCase()(actor, command(uncovered.id.value))
 
             assert(
                 result.getError() ==
@@ -261,7 +269,7 @@ class RegisterFoalUseCaseTest {
             val female = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             every { w.bloodHorseRepository.findById(w.sire.id) } returns female
 
-            val result = w.useCase()(command(w.breedingResult.id.value))
+            val result = w.useCase()(actor, command(w.breedingResult.id.value))
 
             assert(
                 result.getError() ==
@@ -288,9 +296,27 @@ class RegisterFoalUseCaseTest {
                     strictInspectionRepository,
                 )
 
-            useCase(command(w.breedingResult.id.value))
+            useCase(actor, command(w.breedingResult.id.value))
 
             verify(exactly = 0) { strictInspectionRepository.save(any()) }
+        }
+    }
+
+    @Nested
+    inner class AuthorizationFailureCase {
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val w = Wiring()
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result = w.useCase()(noPermissionActor, command(w.breedingResult.id.value))
+
+            assert(
+                result.getError() ==
+                    RegisterFoalUseCaseError.Forbidden(StudbookPermissions.HORSE_REGISTER_FOAL)
+            )
+            verify(exactly = 0) { w.breedingResultRepository.findById(any()) }
+            verify(exactly = 0) { w.bloodHorseRepository.save(any()) }
         }
     }
 }

@@ -5,6 +5,7 @@ import com.example.api.controller.breeding.problem.toProblemDetail
 import com.example.api.controller.breeding.request.RegisterBreedingRegistrationRequest
 import com.example.api.controller.breeding.request.toCommand
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -81,11 +82,12 @@ class BreedingRegistrationController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/breedingRegistrations")
     fun register(
+        actor: Actor,
         @OperationRequestBody(description = "成立させる繁殖登録（対象個体・繁殖登録番号）")
         @RequestBody
-        request: RegisterBreedingRegistrationRequest
+        request: RegisterBreedingRegistrationRequest,
     ): BreedingRegistrationResponse =
-        registerBreedingRegistration(Command.now(request.toCommand(), clock))
+        registerBreedingRegistration(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

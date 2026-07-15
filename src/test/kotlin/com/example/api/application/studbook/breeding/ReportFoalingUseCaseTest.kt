@@ -1,7 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
@@ -21,6 +24,12 @@ import org.junit.jupiter.api.Test
 
 class ReportFoalingUseCaseTest {
 
+    private val actor =
+        Actor(
+            AccountId(UUID.randomUUID()),
+            setOf(StudbookPermissions.BREEDING_RESULT_REPORT_FOALING),
+        )
+
     private fun command(payload: ReportFoalingCommand): Command<ReportFoalingCommand> =
         Command(payload, Instant.now())
 
@@ -38,7 +47,8 @@ class ReportFoalingUseCaseTest {
             val useCase = ReportFoalingUseCase(repository)
 
             val result =
-                useCase(command(ReportFoalingCommand(breedingResult.id.value, outcome))).unwrap()
+                useCase(actor, command(ReportFoalingCommand(breedingResult.id.value, outcome)))
+                    .unwrap()
 
             assert(result.outcome == outcome)
             assert(result.id == breedingResult.id)
@@ -60,7 +70,8 @@ class ReportFoalingUseCaseTest {
 
             val result =
                 useCase(
-                    command(ReportFoalingCommand(breedingResultId, FoalingOutcome.NotConceived))
+                    actor,
+                    command(ReportFoalingCommand(breedingResultId, FoalingOutcome.NotConceived)),
                 )
 
             assert(
@@ -80,7 +91,8 @@ class ReportFoalingUseCaseTest {
 
             val result =
                 useCase(
-                    command(ReportFoalingCommand(reported.id.value, FoalingOutcome.NotConceived))
+                    actor,
+                    command(ReportFoalingCommand(reported.id.value, FoalingOutcome.NotConceived)),
                 )
 
             assert(result.getError() == ReportFoalingUseCaseError.AlreadyReported(first))
@@ -99,15 +111,38 @@ class ReportFoalingUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         ReportFoalingCommand(breedingResult.id.value, FoalingOutcome.NotConceived)
-                    )
+                    ),
                 )
 
             assert(
                 result.getError() ==
                     ReportFoalingUseCaseError.ConcurrentModification(breedingResult.id.value)
             )
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val repository = mockk<BreedingResultRepository>()
+            val useCase = ReportFoalingUseCase(repository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(ReportFoalingCommand(UUID.randomUUID(), FoalingOutcome.NotConceived)),
+                )
+
+            assert(
+                result.getError() ==
+                    ReportFoalingUseCaseError.Forbidden(
+                        StudbookPermissions.BREEDING_RESULT_REPORT_FOALING
+                    )
+            )
+            verify(exactly = 0) { repository.findById(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
     }
 }

@@ -2,6 +2,7 @@ package com.example.api.controller.breeding.problem
 
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
 import com.example.api.controller.problem
+import com.example.api.controller.problem.forbidden
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -26,6 +27,7 @@ fun SubmitCoveringReportUseCaseError.toProblemDetail(): ProblemDetail =
                     setProperty("stallion_breeding_registration_id", stallionBreedingRegistrationId)
                 }
         is SubmitCoveringReportUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+        is SubmitCoveringReportUseCaseError.Forbidden -> forbidden(permission)
     }
 
 private fun SubmitCoveringReportError.toProblemDetail(): ProblemDetail =

@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -20,6 +23,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class RecordUncoveredUseCaseTest {
+
+    private val actor =
+        Actor(
+            AccountId(UUID.randomUUID()),
+            setOf(StudbookPermissions.BREEDING_RESULT_RECORD_UNCOVERED),
+        )
 
     private fun command(payload: RecordUncoveredCommand): Command<RecordUncoveredCommand> =
         Command(payload, Instant.now())
@@ -42,9 +51,10 @@ class RecordUncoveredUseCaseTest {
 
             val result =
                 useCase(
+                        actor,
                         command(
                             RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024))
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -69,7 +79,10 @@ class RecordUncoveredUseCaseTest {
             val useCase = RecordUncoveredUseCase(registrationRepository, breedingResultRepository)
 
             val result =
-                useCase(command(RecordUncoveredCommand(breedingRegistrationId, Year.of(2024))))
+                useCase(
+                    actor,
+                    command(RecordUncoveredCommand(breedingRegistrationId, Year.of(2024))),
+                )
 
             assert(
                 result.getError() ==
@@ -93,7 +106,8 @@ class RecordUncoveredUseCaseTest {
 
             val result =
                 useCase(
-                    command(RecordUncoveredCommand(stallionRegistration.id.value, Year.of(2024)))
+                    actor,
+                    command(RecordUncoveredCommand(stallionRegistration.id.value, Year.of(2024))),
                 )
 
             assert(
@@ -130,7 +144,8 @@ class RecordUncoveredUseCaseTest {
 
             val result =
                 useCase(
-                    command(RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024)))
+                    actor,
+                    command(RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024))),
                 )
 
             assert(
@@ -139,6 +154,29 @@ class RecordUncoveredUseCaseTest {
                         RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id)
                     )
             )
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val registrationRepository = mockk<BreedingRegistrationRepository>()
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase = RecordUncoveredUseCase(registrationRepository, breedingResultRepository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(RecordUncoveredCommand(UUID.randomUUID(), Year.of(2024))),
+                )
+
+            assert(
+                result.getError() ==
+                    RecordUncoveredUseCaseError.Forbidden(
+                        StudbookPermissions.BREEDING_RESULT_RECORD_UNCOVERED
+                    )
+            )
+            verify(exactly = 0) { registrationRepository.findById(any()) }
             verify(exactly = 0) { breedingResultRepository.save(any()) }
         }
     }

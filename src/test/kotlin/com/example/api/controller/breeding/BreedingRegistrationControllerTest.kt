@@ -5,13 +5,17 @@ import com.example.api.application.studbook.breeding.RegisterBreedingRegistratio
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -36,6 +40,17 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
     private val tester = MockMvcTester.create(mockMvc)
 
+    @BeforeEach
+    fun stubResolveActor() {
+        every { resolveActor(any()) } returns
+            Ok(
+                Actor(
+                    AccountId(UUID.randomUUID()),
+                    setOf(StudbookPermissions.BREEDING_REGISTRATION_REGISTER),
+                )
+            )
+    }
+
     private val uri = "/api/breedingRegistrations"
 
     /** デシリアライズに通る正しい繁殖登録リクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
@@ -52,7 +67,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     fun `正常な入力で 201 Created と成立した繁殖登録が返ること`() {
         val saved = BreedingFixture.breedingRegistration()
         every {
-            registerBreedingRegistration(any<Command<RegisterBreedingRegistrationCommand>>())
+            registerBreedingRegistration(any(), any<Command<RegisterBreedingRegistrationCommand>>())
         } returns Ok(saved)
 
         tester
@@ -70,7 +85,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `InvalidRegistrationNumber で 400 と problem+json が返ること`() {
         every {
-            registerBreedingRegistration(any<Command<RegisterBreedingRegistrationCommand>>())
+            registerBreedingRegistration(any(), any<Command<RegisterBreedingRegistrationCommand>>())
         } returns Err(RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber)
 
         tester
@@ -90,7 +105,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     fun `HorseNotFound で 422 と bloodHorseId 付きの problem+json が返ること`() {
         val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
         every {
-            registerBreedingRegistration(any<Command<RegisterBreedingRegistrationCommand>>())
+            registerBreedingRegistration(any(), any<Command<RegisterBreedingRegistrationCommand>>())
         } returns Err(RegisterBreedingRegistrationUseCaseError.HorseNotFound(id))
 
         tester

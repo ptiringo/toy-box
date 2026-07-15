@@ -14,7 +14,10 @@ import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
@@ -26,6 +29,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -52,6 +56,21 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
+
+    @BeforeEach
+    fun stubResolveActor() {
+        every { resolveActor(any()) } returns
+            Ok(
+                Actor(
+                    AccountId(UUID.randomUUID()),
+                    setOf(
+                        StudbookPermissions.HORSE_REGISTER,
+                        StudbookPermissions.HORSE_REGISTER_IMPORTED,
+                        StudbookPermissions.HORSE_NAME,
+                    ),
+                )
+            )
+    }
 
     /**
      * デシリアライズに通る正しいリクエストボディ。ユースケースはモックのため中身の整合は問われない。
@@ -84,7 +103,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     BloodHorseFixture.domesticBloodHorse(),
                     BloodHorseFixture.inspection(),
                 )
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Ok(saved)
 
             tester
@@ -104,7 +123,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     inner class FailureCase {
         @Test
         fun `InvalidMicrochipNumber で 400 と problem+json が返ること`() {
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(RegisterInStudBookUseCaseError.InvalidMicrochipNumber)
 
             tester
@@ -123,7 +142,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `SireNotFound で 422 と sireId 付きの problem+json が返ること`() {
             val sireId = UUID.fromString("11111111-1111-1111-1111-111111111111")
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(RegisterInStudBookUseCaseError.SireNotFound(sireId))
 
             tester
@@ -141,7 +160,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `前提条件違反（SireNotMale）が 422 と problem+json に変換されること`() {
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
                         RegisterInStudBookError.SireNotMale
@@ -164,7 +183,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `DamNotFound で 422 と damId 付きの problem+json が返ること`() {
             val damId = UUID.fromString("22222222-2222-2222-2222-222222222222")
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(RegisterInStudBookUseCaseError.DamNotFound(damId))
 
             tester
@@ -182,7 +201,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `前提条件違反（DamNotFemale）が 422 と problem+json に変換されること`() {
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
                         RegisterInStudBookError.DamNotFemale
@@ -204,7 +223,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `前提条件違反（ParentageNotConfirmed）が 422 と problem+json に変換されること`() {
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
                         RegisterInStudBookError.ParentageNotConfirmed
@@ -226,7 +245,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `前提条件違反（BreedMismatch）が 422 と problem+json に変換されること`() {
-            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
                         RegisterInStudBookError.BreedMismatch
@@ -260,7 +279,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     .assignName(HorseName.create("オグリキャップ").unwrap())
                     .unwrap()
                     .aggregate
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Ok(RegisteredBloodHorse(named, BloodHorseFixture.inspection()))
 
             tester
@@ -277,7 +296,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `InvalidName で 400 と problem+json が返ること`() {
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.InvalidName)
 
             tester
@@ -296,7 +315,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `HorseNotFound で 404 と bloodHorseId 付きの problem+json が返ること`() {
             val id = UUID.fromString(bloodHorseId)
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.HorseNotFound(id))
 
             tester
@@ -314,7 +333,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `AlreadyNamed で 409 と problem+json が返ること`() {
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.AlreadyNamed("トウカイテイオー"))
 
             tester
@@ -332,7 +351,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `NameAlreadyTaken で 409 と problem+json が返ること`() {
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.NameAlreadyTaken("オグリキャップ"))
 
             tester
@@ -351,7 +370,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `ConcurrentModification で 409 と problem+json が返ること`() {
             val id = UUID.fromString(bloodHorseId)
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.ConcurrentModification(id))
 
             tester
@@ -370,7 +389,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `InspectionNotFound で 422 と inspection_id 付きの problem+json が返ること`() {
             val inspectionId = UUID.fromString("55555555-5555-5555-5555-555555555555")
-            every { nameHorse(any<Command<NameHorseCommand>>()) } returns
+            every { nameHorse(any(), any<Command<NameHorseCommand>>()) } returns
                 Err(NameHorseUseCaseError.InspectionNotFound(inspectionId))
 
             val result =
@@ -421,8 +440,9 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     BloodHorseFixture.importedBloodHorse(),
                     BloodHorseFixture.inspection(),
                 )
-            every { registerImportedHorse(any<Command<RegisterImportedHorseCommand>>()) } returns
-                Ok(saved)
+            every {
+                registerImportedHorse(any(), any<Command<RegisterImportedHorseCommand>>())
+            } returns Ok(saved)
 
             tester
                 .post()
@@ -438,8 +458,9 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `BlankOriginCountry で 400 と problem+json が返ること`() {
-            every { registerImportedHorse(any<Command<RegisterImportedHorseCommand>>()) } returns
-                Err(RegisterImportedHorseUseCaseError.BlankOriginCountry)
+            every {
+                registerImportedHorse(any(), any<Command<RegisterImportedHorseCommand>>())
+            } returns Err(RegisterImportedHorseUseCaseError.BlankOriginCountry)
 
             tester
                 .post()

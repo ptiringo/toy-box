@@ -13,6 +13,7 @@ import com.example.api.controller.breeding.request.toCoveringCommand
 import com.example.api.controller.breeding.request.toOutcome
 import com.example.api.controller.breeding.request.toUncoveredCommand
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -106,19 +107,20 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/breedingResults")
     fun record(
+        actor: Actor,
         @OperationRequestBody(description = "起票する繁殖成績の年次レコード（種付記録／種付せず）")
         @RequestBody
-        request: RecordBreedingResultRequest
+        request: RecordBreedingResultRequest,
     ): BreedingResultResponse {
         val covering = request.covering
         return if (covering != null) {
-            recordCovering(Command.now(request.toCoveringCommand(covering), clock))
+            recordCovering(actor, Command.now(request.toCoveringCommand(covering), clock))
                 .mapError { it.toProblemDetail() }
                 .orThrowProblem()
                 .toResponse()
         } else {
             val command = request.toUncoveredCommand().orThrowProblem()
-            recordUncovered(Command.now(command, clock))
+            recordUncovered(actor, Command.now(command, clock))
                 .mapError { it.toProblemDetail() }
                 .orThrowProblem()
                 .toResponse()
@@ -182,11 +184,15 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/breedingResults/{breedingResultId}:reportFoaling")
     fun reportFoaling(
+        actor: Actor,
         @Parameter(description = "分娩結果を報告する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
         @OperationRequestBody(description = "報告する分娩結果") @RequestBody request: ReportFoalingRequest,
     ): BreedingResultResponse {
         val outcome = request.toOutcome().orThrowProblem()
-        return reportFoaling(Command.now(ReportFoalingCommand(breedingResultId, outcome), clock))
+        return reportFoaling(
+                actor,
+                Command.now(ReportFoalingCommand(breedingResultId, outcome), clock),
+            )
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
@@ -251,9 +257,10 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/breedingResults/{breedingResultId}:submitReport")
     fun submitReport(
-        @Parameter(description = "繁殖成績報告を提出する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID
+        actor: Actor,
+        @Parameter(description = "繁殖成績報告を提出する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
     ): BreedingResultResponse =
-        submitReport(Command.now(SubmitBreedingReportCommand(breedingResultId), clock))
+        submitReport(actor, Command.now(SubmitBreedingReportCommand(breedingResultId), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

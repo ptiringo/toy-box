@@ -7,6 +7,7 @@ import com.example.api.controller.inspection.problem.toProblemDetail
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
 import com.example.api.controller.inspection.request.toCommand
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -74,11 +75,12 @@ class HorseInspectionController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/horseInspections")
     fun record(
+        actor: Actor,
         @OperationRequestBody(description = "記録する審査（個体識別・親子判定）")
         @RequestBody
-        request: RecordHorseInspectionRequest
+        request: RecordHorseInspectionRequest,
     ): HorseInspectionResponse =
-        recordHorseInspection(Command.now(request.toCommand(), clock))
+        recordHorseInspection(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

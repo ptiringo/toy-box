@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -20,6 +23,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class RecordCoveringUseCaseTest {
+
+    private val actor =
+        Actor(
+            AccountId(UUID.randomUUID()),
+            setOf(StudbookPermissions.BREEDING_RESULT_RECORD_COVERING),
+        )
 
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
     private fun validPayload(breedingRegistrationId: UUID, stallionRegistrationId: UUID) =
@@ -61,12 +70,13 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                        actor,
                         command(
                             validPayload(
                                 broodmareRegistration.id.value,
                                 stallionRegistration.id.value,
                             )
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -92,10 +102,11 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
                             .copy(certificateNumber = "")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidCertificateNumber)
@@ -113,9 +124,10 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID()).copy(coveringPlace = "")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidCoveringPlace)
@@ -134,9 +146,10 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(studCertificate = payload.studCertificate.copy(number = ""))
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidStudCertificateNumber)
@@ -155,12 +168,13 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(
                             studCertificate =
                                 payload.studCertificate.copy(validRegions = listOf("北海道", ""))
                         )
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidValidRegion)
@@ -179,12 +193,13 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(
                             studCertificate =
                                 payload.studCertificate.copy(validRegions = emptyList())
                         )
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.EmptyValidRegions)
@@ -203,6 +218,7 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(
                             studCertificate =
@@ -211,7 +227,7 @@ class RecordCoveringUseCaseTest {
                                     validPeriodEnd = LocalDate.of(2024, 1, 1),
                                 )
                         )
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidValidityPeriod)
@@ -228,7 +244,8 @@ class RecordCoveringUseCaseTest {
             val breedingResultRepository = mockk<BreedingResultRepository>()
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
-            val result = useCase(command(validPayload(breedingRegistrationId, UUID.randomUUID())))
+            val result =
+                useCase(actor, command(validPayload(breedingRegistrationId, UUID.randomUUID())))
 
             assert(
                 result.getError() ==
@@ -251,7 +268,8 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
-                    command(validPayload(broodmareRegistration.id.value, stallionRegistrationId))
+                    actor,
+                    command(validPayload(broodmareRegistration.id.value, stallionRegistrationId)),
                 )
 
             assert(
@@ -278,12 +296,13 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(
                             broodmareRegistration.id.value,
                             notStallionRegistration.id.value,
                         )
-                    )
+                    ),
                 )
 
             assert(
@@ -317,9 +336,10 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(broodmareRegistration.id.value, stallionRegistration.id.value)
-                    )
+                    ),
                 )
 
             assert(
@@ -328,6 +348,29 @@ class RecordCoveringUseCaseTest {
                         RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
                     )
             )
+            verify(exactly = 0) { breedingResultRepository.save(any()) }
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val registrationRepository = mockk<BreedingRegistrationRepository>()
+            val breedingResultRepository = mockk<BreedingResultRepository>()
+            val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(validPayload(UUID.randomUUID(), UUID.randomUUID())),
+                )
+
+            assert(
+                result.getError() ==
+                    RecordCoveringUseCaseError.Forbidden(
+                        StudbookPermissions.BREEDING_RESULT_RECORD_COVERING
+                    )
+            )
+            verify(exactly = 0) { registrationRepository.findById(any()) }
             verify(exactly = 0) { breedingResultRepository.save(any()) }
         }
     }

@@ -1,11 +1,16 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
@@ -47,6 +52,10 @@ sealed interface ReportFoalingUseCaseError {
      * @property breedingResultId 競合した繁殖成績ID
      */
     data class ConcurrentModification(val breedingResultId: UUID) : ReportFoalingUseCaseError
+
+    /** 分娩結果報告に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        ReportFoalingUseCaseError, AuthorizationError
 }
 
 /**
@@ -62,29 +71,36 @@ sealed interface ReportFoalingUseCaseError {
 class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultRepository) {
     @Transactional
     operator fun invoke(
-        command: Command<ReportFoalingCommand>
-    ): Result<BreedingResult, ReportFoalingUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<ReportFoalingCommand>,
+    ): Result<BreedingResult, ReportFoalingUseCaseError> {
+        val permission = StudbookPermissions.BREEDING_RESULT_REPORT_FOALING
+        if (!actor.can(permission)) {
+            return Err(ReportFoalingUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val breedingResult =
+            val breedingResult =
+                breedingResultRepository
+                    .findById(BreedingResultId(input.breedingResultId))
+                    .toResultOr {
+                        ReportFoalingUseCaseError.BreedingResultNotFound(input.breedingResultId)
+                    }
+                    .bind()
+
+            val reported =
+                breedingResult
+                    .recordFoaling(input.outcome)
+                    .mapError { ReportFoalingUseCaseError.AlreadyReported(it.current) }
+                    .bind()
+
             breedingResultRepository
-                .findById(BreedingResultId(input.breedingResultId))
-                .toResultOr {
-                    ReportFoalingUseCaseError.BreedingResultNotFound(input.breedingResultId)
+                .save(reported)
+                .mapError { _: UpdateConflict ->
+                    ReportFoalingUseCaseError.ConcurrentModification(input.breedingResultId)
                 }
                 .bind()
-
-        val reported =
-            breedingResult
-                .recordFoaling(input.outcome)
-                .mapError { ReportFoalingUseCaseError.AlreadyReported(it.current) }
-                .bind()
-
-        breedingResultRepository
-            .save(reported)
-            .mapError { _: UpdateConflict ->
-                ReportFoalingUseCaseError.ConcurrentModification(input.breedingResultId)
-            }
-            .bind()
+        }
     }
 }

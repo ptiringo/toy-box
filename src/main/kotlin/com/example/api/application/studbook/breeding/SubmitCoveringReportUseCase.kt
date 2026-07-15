@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.CoveringReport
@@ -8,6 +12,7 @@ import com.example.api.domain.studbook.model.breeding.CoveringReportDeadline
 import com.example.api.domain.studbook.model.breeding.CoveringReportRepository
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
 import com.example.api.domain.studbook.service.breeding.submitCoveringReport
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -45,6 +50,10 @@ sealed interface SubmitCoveringReportUseCaseError {
      */
     data class PreconditionViolated(val cause: SubmitCoveringReportError) :
         SubmitCoveringReportUseCaseError
+
+    /** 種付成績報告提出に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        SubmitCoveringReportUseCaseError, AuthorizationError
 }
 
 /**
@@ -68,32 +77,39 @@ class SubmitCoveringReportUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<SubmitCoveringReportCommand>
-    ): Result<CoveringReport, SubmitCoveringReportUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<SubmitCoveringReportCommand>,
+    ): Result<CoveringReport, SubmitCoveringReportUseCaseError> {
+        val permission = StudbookPermissions.COVERING_REPORT_SUBMIT
+        if (!actor.can(permission)) {
+            return Err(SubmitCoveringReportUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val stallionRegistration =
-            breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.stallionBreedingRegistrationId))
-                .toResultOr {
-                    SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(
-                        input.stallionBreedingRegistrationId
+            val stallionRegistration =
+                breedingRegistrationRepository
+                    .findById(BreedingRegistrationId(input.stallionBreedingRegistrationId))
+                    .toResultOr {
+                        SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(
+                            input.stallionBreedingRegistrationId
+                        )
+                    }
+                    .bind()
+
+            val coveringReport =
+                submitCoveringReport(
+                        stallionRegistration,
+                        Year.of(input.coveringYear),
+                        CoveringReportDeadline.submissionDateOf(command.issuedAt),
+                        coveringReportRepository,
                     )
-                }
-                .bind()
+                    .mapError { SubmitCoveringReportUseCaseError.PreconditionViolated(it) }
+                    .bind()
 
-        val coveringReport =
-            submitCoveringReport(
-                    stallionRegistration,
-                    Year.of(input.coveringYear),
-                    CoveringReportDeadline.submissionDateOf(command.issuedAt),
-                    coveringReportRepository,
-                )
-                .mapError { SubmitCoveringReportUseCaseError.PreconditionViolated(it) }
-                .bind()
-
-        coveringReportRepository.save(coveringReport).getOrElse {
-            error("新規の種付成績報告の保存で楽観ロック競合はありえない: id=${coveringReport.id.value}")
+            coveringReportRepository.save(coveringReport).getOrElse {
+                error("新規の種付成績報告の保存で楽観ロック競合はありえない: id=${coveringReport.id.value}")
+            }
         }
     }
 }

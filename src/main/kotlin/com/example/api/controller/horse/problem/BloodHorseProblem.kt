@@ -4,6 +4,7 @@ import com.example.api.application.studbook.horse.NameHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
+import com.example.api.controller.problem.forbidden
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -74,6 +75,7 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "対象の軽種馬が他の更新と競合しました。最新の状態を取得してやり直してください。",
                 )
                 .apply { setProperty("blood_horse_id", bloodHorseId) }
+        is NameHorseUseCaseError.Forbidden -> forbidden(permission)
     }
 
 /**
@@ -123,6 +125,7 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                 )
                 .apply { setProperty("dam_id", damId) }
         is RegisterInStudBookUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+        is RegisterInStudBookUseCaseError.Forbidden -> forbidden(permission)
     }
 
 private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
@@ -193,4 +196,5 @@ fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Origin country is blank",
                 detail = "origin_country は空であってはいけません。",
             )
+        is RegisterImportedHorseUseCaseError.Forbidden -> forbidden(permission)
     }

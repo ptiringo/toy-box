@@ -1,7 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
@@ -22,6 +25,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class SubmitBreedingReportUseCaseTest {
+
+    private val actor =
+        Actor(
+            AccountId(UUID.randomUUID()),
+            setOf(StudbookPermissions.BREEDING_RESULT_SUBMIT_REPORT),
+        )
 
     /** 分娩結果確定済み（提出可能）な繁殖成績。繁殖年 2024 → 提出期限は 2025-05-31。 */
     private fun reportedResult(): BreedingResult =
@@ -49,7 +58,7 @@ class SubmitBreedingReportUseCaseTest {
             // UTC 15:00 = JST 翌日 0:00 → 提出日は 6/1（期限 5/31 を超過）
             val issuedAt = Instant.parse("2025-05-31T15:00:00Z")
 
-            val result = useCase(command(reported.id.value, issuedAt)).unwrap()
+            val result = useCase(actor, command(reported.id.value, issuedAt)).unwrap()
 
             assert(result.reportSubmittedOn == LocalDate.of(2025, 6, 1))
             assert(result.reportSubmittedLate == true)
@@ -69,7 +78,8 @@ class SubmitBreedingReportUseCaseTest {
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
-            val result = useCase(command(breedingResultId, Instant.parse("2025-05-01T00:00:00Z")))
+            val result =
+                useCase(actor, command(breedingResultId, Instant.parse("2025-05-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
@@ -88,7 +98,7 @@ class SubmitBreedingReportUseCaseTest {
             val useCase = SubmitBreedingReportUseCase(repository)
 
             val result =
-                useCase(command(unreported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
+                useCase(actor, command(unreported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
@@ -108,7 +118,8 @@ class SubmitBreedingReportUseCaseTest {
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
-            val result = useCase(command(submitted.id.value, Instant.parse("2025-05-02T00:00:00Z")))
+            val result =
+                useCase(actor, command(submitted.id.value, Instant.parse("2025-05-02T00:00:00Z")))
 
             assert(
                 result.getError() ==
@@ -129,12 +140,35 @@ class SubmitBreedingReportUseCaseTest {
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
-            val result = useCase(command(reported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
+            val result =
+                useCase(actor, command(reported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
                     SubmitBreedingReportUseCaseError.ConcurrentModification(reported.id.value)
             )
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val repository = mockk<BreedingResultRepository>()
+            val useCase = SubmitBreedingReportUseCase(repository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(UUID.randomUUID(), Instant.parse("2025-05-01T00:00:00Z")),
+                )
+
+            assert(
+                result.getError() ==
+                    SubmitBreedingReportUseCaseError.Forbidden(
+                        StudbookPermissions.BREEDING_RESULT_SUBMIT_REPORT
+                    )
+            )
+            verify(exactly = 0) { repository.findById(any()) }
+            verify(exactly = 0) { repository.save(any()) }
         }
     }
 }

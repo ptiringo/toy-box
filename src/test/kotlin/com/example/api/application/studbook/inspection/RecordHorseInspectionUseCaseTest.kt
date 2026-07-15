@@ -1,18 +1,23 @@
 package com.example.api.application.studbook.inspection
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
-import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import java.time.Instant
+import java.util.UUID
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
@@ -24,6 +29,8 @@ import org.junit.jupiter.api.Test
 class RecordHorseInspectionUseCaseTest {
     private val horseInspectionRepository = mockk<HorseInspectionRepository>()
     private val recordHorseInspection = RecordHorseInspectionUseCase(horseInspectionRepository)
+    private val actor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.INSPECTION_RECORD))
 
     private fun command(
         microchipNumber: String,
@@ -48,11 +55,12 @@ class RecordHorseInspectionUseCaseTest {
 
         val result =
             recordHorseInspection(
+                actor,
                 command(
                     microchipNumber = "392140000000001",
                     parentage = ParentageDetermination.ByBloodType,
                     features = features,
-                )
+                ),
             )
 
         val inspection = result.get()
@@ -64,10 +72,32 @@ class RecordHorseInspectionUseCaseTest {
     }
 
     @Test
-    fun `マイクロチップ番号が15桁数字でなければInvalidMicrochipNumberを返し保存しない`() {
-        val result = recordHorseInspection(command(microchipNumber = "123"))
+    fun `マイクロチップ番号が15桁数字でなければInvalidMicrochipを返し保存しない`() {
+        val result = recordHorseInspection(actor, command(microchipNumber = "123"))
 
         // save をスタブしていない strict mockk のため、save に到達すればここより前に失敗する
-        assert(result.getError() == InvalidMicrochipNumber)
+        assert(result.getError() == RecordHorseInspectionUseCaseError.InvalidMicrochip)
+    }
+
+    @Nested
+    inner class AuthorizationFailureCase {
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し保存しない`() {
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                recordHorseInspection(
+                    noPermissionActor,
+                    command(microchipNumber = "392140000000001"),
+                )
+
+            assert(
+                result.getError() ==
+                    RecordHorseInspectionUseCaseError.Forbidden(
+                        StudbookPermissions.INSPECTION_RECORD
+                    )
+            )
+            verify(exactly = 0) { horseInspectionRepository.save(any()) }
+        }
     }
 }

@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankOriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
@@ -20,6 +24,7 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionRepositor
 import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -70,6 +75,10 @@ sealed interface RegisterImportedHorseUseCaseError {
 
     /** 原産国名がブランク。 */
     data object BlankOriginCountry : RegisterImportedHorseUseCaseError
+
+    /** 輸入馬血統登録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        RegisterImportedHorseUseCaseError, AuthorizationError
 }
 
 /**
@@ -88,60 +97,67 @@ class RegisterImportedHorseUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterImportedHorseCommand>
-    ): Result<RegisteredBloodHorse, RegisterImportedHorseUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<RegisterImportedHorseCommand>,
+    ): Result<RegisteredBloodHorse, RegisterImportedHorseUseCaseError> {
+        val permission = StudbookPermissions.HORSE_REGISTER_IMPORTED
+        if (!actor.can(permission)) {
+            return Err(RegisterImportedHorseUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val registrationNumber =
-            PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { _: BlankPedigreeRegistrationNumber ->
-                    RegisterImportedHorseUseCaseError.InvalidRegistrationNumber
+            val registrationNumber =
+                PedigreeRegistrationNumber.create(input.registrationNumber)
+                    .mapError { _: BlankPedigreeRegistrationNumber ->
+                        RegisterImportedHorseUseCaseError.InvalidRegistrationNumber
+                    }
+                    .bind()
+            val microchipNumber =
+                MicrochipNumber.create(input.microchipNumber)
+                    .mapError { _: InvalidMicrochipNumber ->
+                        RegisterImportedHorseUseCaseError.InvalidMicrochipNumber
+                    }
+                    .bind()
+            val breeder =
+                Breeder.create(input.breeder)
+                    .mapError { _: BlankBreeder -> RegisterImportedHorseUseCaseError.BlankBreeder }
+                    .bind()
+            val originCountry =
+                OriginCountry.create(input.originCountry)
+                    .mapError { _: BlankOriginCountry ->
+                        RegisterImportedHorseUseCaseError.BlankOriginCountry
+                    }
+                    .bind()
+
+            val entry =
+                ImportedHorseEntry(
+                    sex = input.sex,
+                    coatColor = input.coatColor,
+                    breedType = input.breedType,
+                    dateOfBirth = DateOfBirth(input.dateOfBirth),
+                    breeder = breeder,
+                    originCountry = originCountry,
+                    landingDate = LandingDate(input.landingDate),
+                )
+
+            // 審査をメモリ内で組み立て、createImported 後に永続化する（登録系ユースケースで一貫した順序）。
+            // createImported は失敗しないが、内国産馬登録との一貫性のため「組み立て → create → save」の順に揃える。
+            val inspection =
+                HorseInspection.create(
+                    microchipNumber = microchipNumber,
+                    parentage = ParentageDetermination.NotApplicable,
+                )
+
+            val bloodHorse = BloodHorse.createImported(entry, inspection, registrationNumber)
+
+            // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
+            horseInspectionRepository.save(inspection)
+            val saved =
+                bloodHorseRepository.save(bloodHorse).getOrElse {
+                    error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
                 }
-                .bind()
-        val microchipNumber =
-            MicrochipNumber.create(input.microchipNumber)
-                .mapError { _: InvalidMicrochipNumber ->
-                    RegisterImportedHorseUseCaseError.InvalidMicrochipNumber
-                }
-                .bind()
-        val breeder =
-            Breeder.create(input.breeder)
-                .mapError { _: BlankBreeder -> RegisterImportedHorseUseCaseError.BlankBreeder }
-                .bind()
-        val originCountry =
-            OriginCountry.create(input.originCountry)
-                .mapError { _: BlankOriginCountry ->
-                    RegisterImportedHorseUseCaseError.BlankOriginCountry
-                }
-                .bind()
-
-        val entry =
-            ImportedHorseEntry(
-                sex = input.sex,
-                coatColor = input.coatColor,
-                breedType = input.breedType,
-                dateOfBirth = DateOfBirth(input.dateOfBirth),
-                breeder = breeder,
-                originCountry = originCountry,
-                landingDate = LandingDate(input.landingDate),
-            )
-
-        // 審査をメモリ内で組み立て、createImported 後に永続化する（登録系ユースケースで一貫した順序）。
-        // createImported は失敗しないが、内国産馬登録との一貫性のため「組み立て → create → save」の順に揃える。
-        val inspection =
-            HorseInspection.create(
-                microchipNumber = microchipNumber,
-                parentage = ParentageDetermination.NotApplicable,
-            )
-
-        val bloodHorse = BloodHorse.createImported(entry, inspection, registrationNumber)
-
-        // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
-        horseInspectionRepository.save(inspection)
-        val saved =
-            bloodHorseRepository.save(bloodHorse).getOrElse {
-                error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
-            }
-        RegisteredBloodHorse(saved, inspection)
+            RegisteredBloodHorse(saved, inspection)
+        }
     }
 }

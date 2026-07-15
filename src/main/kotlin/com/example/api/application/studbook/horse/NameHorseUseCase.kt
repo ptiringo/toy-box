@@ -1,7 +1,11 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
@@ -9,6 +13,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.InvalidHorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.NameHorseError
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
 import com.example.api.domain.studbook.service.horse.nameHorse
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.mapError
@@ -64,6 +69,10 @@ sealed interface NameHorseUseCaseError {
      * @property bloodHorseId 競合した軽種馬ID
      */
     data class ConcurrentModification(val bloodHorseId: UUID) : NameHorseUseCaseError
+
+    /** 馬名登録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        NameHorseUseCaseError, AuthorizationError
 }
 
 /**
@@ -87,57 +96,64 @@ class NameHorseUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<NameHorseCommand>
-    ): Result<RegisteredBloodHorse, NameHorseUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<NameHorseCommand>,
+    ): Result<RegisteredBloodHorse, NameHorseUseCaseError> {
+        val permission = StudbookPermissions.HORSE_NAME
+        if (!actor.can(permission)) {
+            return Err(NameHorseUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val horseName =
-            HorseName.create(input.name)
-                .mapError { _: InvalidHorseName -> NameHorseUseCaseError.InvalidName }
-                .bind()
+            val horseName =
+                HorseName.create(input.name)
+                    .mapError { _: InvalidHorseName -> NameHorseUseCaseError.InvalidName }
+                    .bind()
 
-        val horse =
-            bloodHorseRepository
-                .findById(BloodHorseId(input.bloodHorseId))
-                .toResultOr { NameHorseUseCaseError.HorseNotFound(input.bloodHorseId) }
-                .bind()
+            val horse =
+                bloodHorseRepository
+                    .findById(BloodHorseId(input.bloodHorseId))
+                    .toResultOr { NameHorseUseCaseError.HorseNotFound(input.bloodHorseId) }
+                    .bind()
 
-        val transition =
-            nameHorse(horse, horseName, bloodHorseRepository)
-                .mapError { error ->
-                    when (error) {
-                        is NameHorseError.NameAlreadyTaken ->
-                            NameHorseUseCaseError.NameAlreadyTaken(error.name.value)
-                        is NameHorseError.AlreadyNamed ->
-                            NameHorseUseCaseError.AlreadyNamed(error.currentName.value)
+            val transition =
+                nameHorse(horse, horseName, bloodHorseRepository)
+                    .mapError { error ->
+                        when (error) {
+                            is NameHorseError.NameAlreadyTaken ->
+                                NameHorseUseCaseError.NameAlreadyTaken(error.name.value)
+                            is NameHorseError.AlreadyNamed ->
+                                NameHorseUseCaseError.AlreadyNamed(error.currentName.value)
+                        }
                     }
-                }
-                .bind()
+                    .bind()
 
-        // response（マイクロチップを露出）の組み立てに審査が要るため、改名の保存前に引き当てる。
-        // inspectionId は命名遷移で変わらないため save 前に引き当てて問題ない。
-        // 審査が欠落（InspectionNotFound）なら改名を save せず返す（エラーなのに改名済みになるのを避ける）。
-        // 血統登録時に審査を必ず生成・保存しているため、欠落は通常ありえない内部不整合相当。
-        val inspection =
-            horseInspectionRepository
-                .findById(transition.aggregate.inspectionId)
-                .toResultOr {
-                    NameHorseUseCaseError.InspectionNotFound(
-                        transition.aggregate.inspectionId.value
-                    )
-                }
-                .bind()
+            // response（マイクロチップを露出）の組み立てに審査が要るため、改名の保存前に引き当てる。
+            // inspectionId は命名遷移で変わらないため save 前に引き当てて問題ない。
+            // 審査が欠落（InspectionNotFound）なら改名を save せず返す（エラーなのに改名済みになるのを避ける）。
+            // 血統登録時に審査を必ず生成・保存しているため、欠落は通常ありえない内部不整合相当。
+            val inspection =
+                horseInspectionRepository
+                    .findById(transition.aggregate.inspectionId)
+                    .toResultOr {
+                        NameHorseUseCaseError.InspectionNotFound(
+                            transition.aggregate.inspectionId.value
+                        )
+                    }
+                    .bind()
 
-        val named =
-            bloodHorseRepository
-                .save(transition.aggregate)
-                .mapError { _: UpdateConflict ->
-                    NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId)
-                }
-                .bind()
-        // 発行はトランザクション内で行うが、AFTER_COMMIT 購読者への配送はコミット確定後（ADR-0050）。
-        eventPublisher.publishEvent(transition.event)
+            val named =
+                bloodHorseRepository
+                    .save(transition.aggregate)
+                    .mapError { _: UpdateConflict ->
+                        NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId)
+                    }
+                    .bind()
+            // 発行はトランザクション内で行うが、AFTER_COMMIT 購読者への配送はコミット確定後（ADR-0050）。
+            eventPublisher.publishEvent(transition.event)
 
-        RegisteredBloodHorse(named, inspection)
+            RegisteredBloodHorse(named, inspection)
+        }
     }
 }

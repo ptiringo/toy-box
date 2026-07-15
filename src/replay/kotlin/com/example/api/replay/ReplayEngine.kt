@@ -17,7 +17,11 @@ import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.RegisterFoalCommand
 import com.example.api.application.studbook.horse.RegisterFoalUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -48,6 +52,26 @@ class ReplayEngine(
     private val nameHorse: NameHorseUseCase,
     private val submitBreedingReport: SubmitBreedingReportUseCase,
 ) {
+    /**
+     * replay ハーネス専用の全権 Actor。実運用の認可判断（#606）は Controller 経由の Actor 解決で行うため、
+     * ここでは繁殖ワークフロー全段を駆動できるよう必要な権限をすべて持たせる。
+     */
+    private val replayActor =
+        Actor(
+            AccountId(generateId()),
+            setOf(
+                StudbookPermissions.HORSE_REGISTER_IMPORTED,
+                StudbookPermissions.HORSE_REGISTER_FOAL,
+                StudbookPermissions.HORSE_NAME,
+                StudbookPermissions.BREEDING_REGISTRATION_REGISTER,
+                StudbookPermissions.BREEDING_RESULT_RECORD_COVERING,
+                StudbookPermissions.BREEDING_RESULT_RECORD_UNCOVERED,
+                StudbookPermissions.BREEDING_RESULT_REPORT_FOALING,
+                StudbookPermissions.BREEDING_RESULT_SUBMIT_REPORT,
+                StudbookPermissions.COVERING_REPORT_SUBMIT,
+            ),
+        )
+
     fun run(fixture: HorseFixture): HorseReplayOutcome =
         when (fixture) {
             is CoveredSeasonFixture -> runCovered(fixture)
@@ -69,20 +93,22 @@ class ReplayEngine(
             session.step(
                 ReplayStep.REGISTER_STALLION,
                 registerImportedHorse(
+                    replayActor,
                     Command.now(
                         importedCommand(facts.stallion, synth.stallion),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
                 registerImportedHorse(
+                    replayActor,
                     Command.now(
                         importedCommand(facts.broodmare, synth.broodmare),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -91,26 +117,28 @@ class ReplayEngine(
             session.step(
                 ReplayStep.REGISTER_STALLION_BREEDING,
                 registerBreedingRegistration(
+                    replayActor,
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             stallion.bloodHorse.id.value,
                             synth.stallion.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
         val broodmareBreeding =
             session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
                 registerBreedingRegistration(
+                    replayActor,
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             broodmare.bloodHorse.id.value,
                             synth.broodmare.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -119,6 +147,7 @@ class ReplayEngine(
             session.step(
                 ReplayStep.RECORD_COVERING,
                 recordCovering(
+                    replayActor,
                     Command.now(
                         RecordCoveringCommand(
                             breedingRegistrationId = broodmareBreeding.id.value,
@@ -129,7 +158,7 @@ class ReplayEngine(
                             studCertificate = synth.covering.studCertificate.toInput(),
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -137,6 +166,7 @@ class ReplayEngine(
         session.step(
             ReplayStep.SUBMIT_COVERING_REPORT,
             submitCoveringReport(
+                replayActor,
                 Command.now(
                     SubmitCoveringReportCommand(stallionBreeding.id.value, synth.coveringYear),
                     seasonClock(
@@ -144,7 +174,7 @@ class ReplayEngine(
                             LocalDate.parse(synth.submissions.coveringReportSubmittedOn)
                         )
                     ),
-                )
+                ),
             ),
         ) ?: return session.stop()
 
@@ -152,10 +182,11 @@ class ReplayEngine(
         session.step(
             ReplayStep.REPORT_FOALING,
             reportFoaling(
+                replayActor,
                 Command.now(
                     ReportFoalingCommand(breedingResult.id.value, facts.foaling.toOutcome()),
                     seasonClock(neutralInstant),
-                )
+                ),
             ),
         ) ?: return session.stop()
 
@@ -168,6 +199,7 @@ class ReplayEngine(
                 session.step(
                     ReplayStep.REGISTER_FOAL,
                     registerFoal(
+                        replayActor,
                         Command.now(
                             RegisterFoalCommand(
                                 breedingResultId = breedingResult.id.value,
@@ -180,7 +212,7 @@ class ReplayEngine(
                                 registrationNumber = foalSynth.pedigreeRegistrationNumber,
                             ),
                             seasonClock(neutralInstant),
-                        )
+                        ),
                     ),
                 ) ?: return session.stop()
 
@@ -189,10 +221,11 @@ class ReplayEngine(
                 session.step(
                     ReplayStep.NAME_FOAL,
                     nameHorse(
+                        replayActor,
                         Command.now(
                             NameHorseCommand(registeredFoal.bloodHorse.id.value, foalName),
                             seasonClock(neutralInstant),
-                        )
+                        ),
                     ),
                 ) ?: return session.stop()
             }
@@ -202,6 +235,7 @@ class ReplayEngine(
         session.step(
             ReplayStep.SUBMIT_BREEDING_REPORT,
             submitBreedingReport(
+                replayActor,
                 Command.now(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
@@ -209,7 +243,7 @@ class ReplayEngine(
                             LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
                         )
                     ),
-                )
+                ),
             ),
         ) ?: return session.stop()
 
@@ -235,10 +269,11 @@ class ReplayEngine(
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
                 registerImportedHorse(
+                    replayActor,
                     Command.now(
                         importedCommand(facts.broodmare, synth.broodmare),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -247,13 +282,14 @@ class ReplayEngine(
             session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
                 registerBreedingRegistration(
+                    replayActor,
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             broodmare.bloodHorse.id.value,
                             synth.broodmare.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -262,13 +298,14 @@ class ReplayEngine(
             session.step(
                 ReplayStep.RECORD_UNCOVERED,
                 recordUncovered(
+                    replayActor,
                     Command.now(
                         RecordUncoveredCommand(
                             breedingRegistrationId = broodmareBreeding.id.value,
                             breedingYear = Year.of(synth.breedingYear),
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -276,6 +313,7 @@ class ReplayEngine(
         session.step(
             ReplayStep.SUBMIT_BREEDING_REPORT,
             submitBreedingReport(
+                replayActor,
                 Command.now(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
@@ -283,7 +321,7 @@ class ReplayEngine(
                             LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
                         )
                     ),
-                )
+                ),
             ),
         ) ?: return session.stop()
 

@@ -1,8 +1,9 @@
 package com.example.api.controller.inspection.problem
 
 import com.example.api.application.studbook.inspection.HorseInspectionNotFound
+import com.example.api.application.studbook.inspection.RecordHorseInspectionUseCaseError
 import com.example.api.controller.problem
-import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
+import com.example.api.controller.problem.forbidden
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
@@ -13,18 +14,22 @@ import org.springframework.http.ProblemDetail
  */
 
 /**
- * [InvalidMicrochipNumber]（マイクロチップ形式不正）を 400 Bad Request の [ProblemDetail] に変換する。
+ * [RecordHorseInspectionUseCaseError] を各バリアントに応じた [ProblemDetail] に変換する。
  *
- * VO 検証エラー（形式不正）は入力不正として 400 とする（api-design.md）。`errorCode` は血統登録の同種エラー
- * （`BloodHorseProblem`）と同一文言を踏襲する。
+ * マイクロチップ形式不正は VO 検証エラー（入力不正）として 400 とする（api-design.md）。`errorCode` は血統登録の
+ * 同種エラー（`BloodHorseProblem`）と同一文言を踏襲する。権限不足は共通描画 [forbidden] に委譲する。
  */
-fun InvalidMicrochipNumber.toProblemDetail(): ProblemDetail =
-    problem(
-        status = HttpStatus.BAD_REQUEST,
-        code = "invalid-microchip-number",
-        title = "Invalid microchip number",
-        detail = "microchip_number は 15 桁の数字でなければなりません。",
-    )
+fun RecordHorseInspectionUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        is RecordHorseInspectionUseCaseError.InvalidMicrochip ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-microchip-number",
+                title = "Invalid microchip number",
+                detail = "microchip_number は 15 桁の数字でなければなりません。",
+            )
+        is RecordHorseInspectionUseCaseError.Forbidden -> forbidden(permission)
+    }
 
 /**
  * [HorseInspectionNotFound]（照会対象の審査不在）を 404 Not Found の [ProblemDetail] に変換する。

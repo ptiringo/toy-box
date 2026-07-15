@@ -2,6 +2,7 @@ package com.example.api.controller.breeding.problem
 
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
 import com.example.api.controller.problem
+import com.example.api.controller.problem.forbidden
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
@@ -35,4 +36,5 @@ fun RegisterBreedingRegistrationUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "繁殖登録の対象として指定された軽種馬が存在しません。",
                 )
                 .apply { setProperty("blood_horse_id", bloodHorseId) }
+        is RegisterBreedingRegistrationUseCaseError.Forbidden -> forbidden(permission)
     }

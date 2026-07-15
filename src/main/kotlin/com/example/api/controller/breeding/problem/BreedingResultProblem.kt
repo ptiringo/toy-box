@@ -5,6 +5,7 @@ import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCaseError
 import com.example.api.controller.problem
+import com.example.api.controller.problem.forbidden
 import com.example.api.domain.studbook.model.breeding.CoveringValidityError
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
@@ -84,6 +85,7 @@ fun RecordCoveringUseCaseError.toProblemDetail(): ProblemDetail =
                 )
                 .apply { setProperty("stallion_registration_id", stallionRegistrationId) }
         is RecordCoveringUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+        is RecordCoveringUseCaseError.Forbidden -> forbidden(permission)
     }
 
 private fun RecordCoveringError.toProblemDetail(): ProblemDetail =
@@ -167,6 +169,7 @@ fun RecordUncoveredUseCaseError.toProblemDetail(): ProblemDetail =
                 )
                 .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
         is RecordUncoveredUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+        is RecordUncoveredUseCaseError.Forbidden -> forbidden(permission)
     }
 
 private fun RecordUncoveredError.toProblemDetail(): ProblemDetail =
@@ -223,6 +226,7 @@ fun ReportFoalingUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "対象の繁殖成績が他の更新と競合しました。最新の状態を取得してやり直してください。",
                 )
                 .apply { setProperty("breeding_result_id", breedingResultId) }
+        is ReportFoalingUseCaseError.Forbidden -> forbidden(permission)
     }
 
 /**
@@ -252,6 +256,7 @@ fun SubmitBreedingReportUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "対象の繁殖成績が他の更新と競合しました。最新の状態を取得してやり直してください。",
                 )
                 .apply { setProperty("breeding_result_id", breedingResultId) }
+        is SubmitBreedingReportUseCaseError.Forbidden -> forbidden(permission)
     }
 
 private fun SubmitBreedingReportError.toProblemDetail(): ProblemDetail =

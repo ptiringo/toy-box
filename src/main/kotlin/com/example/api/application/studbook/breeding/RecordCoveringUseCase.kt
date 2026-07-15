@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BlankBreedingRegion
 import com.example.api.domain.studbook.model.breeding.BlankCoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.BlankStudCertificateNumber
@@ -17,6 +21,7 @@ import com.example.api.domain.studbook.model.breeding.StudCertificate
 import com.example.api.domain.studbook.model.breeding.StudCertificateNumber
 import com.example.api.domain.studbook.model.breeding.ValidityPeriod
 import com.example.api.domain.studbook.service.breeding.recordCovering
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -98,6 +103,10 @@ sealed interface RecordCoveringUseCaseError {
      * 個別バリアント（登録ロールが繁殖牝馬／種牡馬でない・同一繁殖年の重複など）は [RecordCoveringError] を参照する。
      */
     data class PreconditionViolated(val cause: RecordCoveringError) : RecordCoveringUseCaseError
+
+    /** 種付記録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        RecordCoveringUseCaseError, AuthorizationError
 }
 
 /**
@@ -117,61 +126,68 @@ class RecordCoveringUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RecordCoveringCommand>
-    ): Result<BreedingResult, RecordCoveringUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<RecordCoveringCommand>,
+    ): Result<BreedingResult, RecordCoveringUseCaseError> {
+        val permission = StudbookPermissions.BREEDING_RESULT_RECORD_COVERING
+        if (!actor.can(permission)) {
+            return Err(RecordCoveringUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val certificateNumber =
-            CoveringCertificateNumber.create(input.certificateNumber)
-                .mapError { _: BlankCoveringCertificateNumber ->
-                    RecordCoveringUseCaseError.InvalidCertificateNumber
-                }
-                .bind()
+            val certificateNumber =
+                CoveringCertificateNumber.create(input.certificateNumber)
+                    .mapError { _: BlankCoveringCertificateNumber ->
+                        RecordCoveringUseCaseError.InvalidCertificateNumber
+                    }
+                    .bind()
 
-        val coveringPlace =
-            BreedingRegion.create(input.coveringPlace)
-                .mapError { _: BlankBreedingRegion ->
-                    RecordCoveringUseCaseError.InvalidCoveringPlace
-                }
-                .bind()
+            val coveringPlace =
+                BreedingRegion.create(input.coveringPlace)
+                    .mapError { _: BlankBreedingRegion ->
+                        RecordCoveringUseCaseError.InvalidCoveringPlace
+                    }
+                    .bind()
 
-        val studCertificate = buildStudCertificate(input.studCertificate).bind()
+            val studCertificate = buildStudCertificate(input.studCertificate).bind()
 
-        val broodmareRegistration =
-            breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.breedingRegistrationId))
-                .toResultOr {
-                    RecordCoveringUseCaseError.BreedingRegistrationNotFound(
-                        input.breedingRegistrationId
+            val broodmareRegistration =
+                breedingRegistrationRepository
+                    .findById(BreedingRegistrationId(input.breedingRegistrationId))
+                    .toResultOr {
+                        RecordCoveringUseCaseError.BreedingRegistrationNotFound(
+                            input.breedingRegistrationId
+                        )
+                    }
+                    .bind()
+
+            val stallionRegistration =
+                breedingRegistrationRepository
+                    .findById(BreedingRegistrationId(input.stallionRegistrationId))
+                    .toResultOr {
+                        RecordCoveringUseCaseError.StallionRegistrationNotFound(
+                            input.stallionRegistrationId
+                        )
+                    }
+                    .bind()
+
+            val breedingResult =
+                recordCovering(
+                        broodmareRegistration,
+                        stallionRegistration,
+                        input.coveringDate,
+                        certificateNumber,
+                        breedingResultRepository,
+                        studCertificate,
+                        coveringPlace,
                     )
-                }
-                .bind()
+                    .mapError { RecordCoveringUseCaseError.PreconditionViolated(it) }
+                    .bind()
 
-        val stallionRegistration =
-            breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.stallionRegistrationId))
-                .toResultOr {
-                    RecordCoveringUseCaseError.StallionRegistrationNotFound(
-                        input.stallionRegistrationId
-                    )
-                }
-                .bind()
-
-        val breedingResult =
-            recordCovering(
-                    broodmareRegistration,
-                    stallionRegistration,
-                    input.coveringDate,
-                    certificateNumber,
-                    breedingResultRepository,
-                    studCertificate,
-                    coveringPlace,
-                )
-                .mapError { RecordCoveringUseCaseError.PreconditionViolated(it) }
-                .bind()
-
-        breedingResultRepository.save(breedingResult).getOrElse {
-            error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
+            breedingResultRepository.save(breedingResult).getOrElse {
+                error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
+            }
         }
     }
 

@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
@@ -23,6 +27,7 @@ import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
 import com.example.api.domain.studbook.service.horse.registerFoal
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -93,6 +98,10 @@ sealed interface RegisterFoalUseCaseError {
      * 個別バリアント（分娩結果が生産でない・父が雄でない・品種不整合など）は [RegisterFoalError] を参照する。
      */
     data class PreconditionViolated(val cause: RegisterFoalError) : RegisterFoalUseCaseError
+
+    /** 生産産駒登録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        RegisterFoalUseCaseError, AuthorizationError
 }
 
 /**
@@ -113,60 +122,74 @@ class RegisterFoalUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterFoalCommand>
-    ): Result<RegisteredBloodHorse, RegisterFoalUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<RegisterFoalCommand>,
+    ): Result<RegisteredBloodHorse, RegisterFoalUseCaseError> {
+        val permission = StudbookPermissions.HORSE_REGISTER_FOAL
+        if (!actor.can(permission)) {
+            return Err(RegisterFoalUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val registrationNumber =
-            PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { _: BlankPedigreeRegistrationNumber ->
-                    RegisterFoalUseCaseError.InvalidRegistrationNumber
-                }
-                .bind()
-        // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
-        // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
-        val inspection = buildInspection(input).bind()
-        val foalIdentity = buildFoalIdentity(input).bind()
+            val registrationNumber =
+                PedigreeRegistrationNumber.create(input.registrationNumber)
+                    .mapError { _: BlankPedigreeRegistrationNumber ->
+                        RegisterFoalUseCaseError.InvalidRegistrationNumber
+                    }
+                    .bind()
+            // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
+            // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
+            val inspection = buildInspection(input).bind()
+            val foalIdentity = buildFoalIdentity(input).bind()
 
-        val breedingResult =
-            breedingResultRepository
-                .findById(BreedingResultId(input.breedingResultId))
-                .toResultOr {
-                    RegisterFoalUseCaseError.BreedingResultNotFound(input.breedingResultId)
-                }
-                .bind()
+            val breedingResult =
+                breedingResultRepository
+                    .findById(BreedingResultId(input.breedingResultId))
+                    .toResultOr {
+                        RegisterFoalUseCaseError.BreedingResultNotFound(input.breedingResultId)
+                    }
+                    .bind()
 
-        val breedingRegistration =
-            breedingRegistrationRepository
-                .findById(breedingResult.breedingRegistrationId)
-                .toResultOr {
-                    RegisterFoalUseCaseError.BreedingRegistrationNotFound(
-                        breedingResult.breedingRegistrationId.value
+            val breedingRegistration =
+                breedingRegistrationRepository
+                    .findById(breedingResult.breedingRegistrationId)
+                    .toResultOr {
+                        RegisterFoalUseCaseError.BreedingRegistrationNotFound(
+                            breedingResult.breedingRegistrationId.value
+                        )
+                    }
+                    .bind()
+
+            val sire = resolveSire(breedingResult).bind()
+
+            val damId = breedingRegistration.registeredHorseId
+            val dam =
+                bloodHorseRepository
+                    .findById(damId)
+                    .toResultOr { RegisterFoalUseCaseError.DamNotFound(damId.value) }
+                    .bind()
+
+            val bloodHorse =
+                registerFoal(
+                        breedingResult,
+                        sire,
+                        dam,
+                        foalIdentity,
+                        inspection,
+                        registrationNumber,
                     )
+                    .mapError { RegisterFoalUseCaseError.PreconditionViolated(it) }
+                    .bind()
+
+            // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
+            horseInspectionRepository.save(inspection)
+            val saved =
+                bloodHorseRepository.save(bloodHorse).getOrElse {
+                    error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
                 }
-                .bind()
-
-        val sire = resolveSire(breedingResult).bind()
-
-        val damId = breedingRegistration.registeredHorseId
-        val dam =
-            bloodHorseRepository
-                .findById(damId)
-                .toResultOr { RegisterFoalUseCaseError.DamNotFound(damId.value) }
-                .bind()
-
-        val bloodHorse =
-            registerFoal(breedingResult, sire, dam, foalIdentity, inspection, registrationNumber)
-                .mapError { RegisterFoalUseCaseError.PreconditionViolated(it) }
-                .bind()
-
-        // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
-        horseInspectionRepository.save(inspection)
-        val saved =
-            bloodHorseRepository.save(bloodHorse).getOrElse {
-                error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
-            }
-        RegisteredBloodHorse(saved, inspection)
+            RegisteredBloodHorse(saved, inspection)
+        }
     }
 
     /** 仔馬の個体識別を組み立てる（生産者を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */

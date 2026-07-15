@@ -1,7 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
@@ -51,6 +54,7 @@ class NameHorseUseCasePublishAfterCommitTest(
 ) : PostgresContainerSupport() {
 
     private val transactionTemplate = TransactionTemplate(transactionManager)
+    private val actor = Actor(AccountId(generateId()), setOf(StudbookPermissions.HORSE_NAME))
 
     @BeforeEach
     fun resetRecordingListener() {
@@ -61,7 +65,8 @@ class NameHorseUseCasePublishAfterCommitTest(
     fun `馬名登録ユースケースが成功するとコミット後に HorseNamed が購読者へ届く`() {
         val horse = persistUnnamedHorse()
 
-        nameHorse(Command(NameHorseCommand(horse.id.value, "アフターコミット"), Instant.now())).unwrap()
+        nameHorse(actor, Command(NameHorseCommand(horse.id.value, "アフターコミット"), Instant.now()))
+            .unwrap()
 
         val event = recordingListener.received.single()
         assert(event.bloodHorseId == horse.id)

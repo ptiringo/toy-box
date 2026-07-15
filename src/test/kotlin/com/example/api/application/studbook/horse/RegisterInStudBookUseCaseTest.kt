@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -24,6 +27,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class RegisterInStudBookUseCaseTest {
+
+    private val actor =
+        Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.HORSE_REGISTER))
 
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
     private fun validPayload(sireId: UUID, damId: UUID) =
@@ -61,7 +67,8 @@ class RegisterInStudBookUseCaseTest {
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val registered = useCase(command(validPayload(sire.id.value, dam.id.value))).unwrap()
+            val registered =
+                useCase(actor, command(validPayload(sire.id.value, dam.id.value))).unwrap()
 
             val bloodHorse = registered.bloodHorse
             assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
@@ -84,10 +91,11 @@ class RegisterInStudBookUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
                             .copy(registrationNumber = "")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RegisterInStudBookUseCaseError.InvalidRegistrationNumber)
@@ -101,10 +109,11 @@ class RegisterInStudBookUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
                             .copy(microchipNumber = "123")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RegisterInStudBookUseCaseError.InvalidMicrochipNumber)
@@ -123,7 +132,7 @@ class RegisterInStudBookUseCaseTest {
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload(sireId, damId)))
+            val result = useCase(actor, command(validPayload(sireId, damId)))
 
             assert(result.getError() == RegisterInStudBookUseCaseError.SireNotFound(sireId))
             verify(exactly = 0) { repository.save(any()) }
@@ -141,7 +150,7 @@ class RegisterInStudBookUseCaseTest {
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload(sireId, damId)))
+            val result = useCase(actor, command(validPayload(sireId, damId)))
 
             assert(result.getError() == RegisterInStudBookUseCaseError.DamNotFound(damId))
             verify(exactly = 0) { repository.save(any()) }
@@ -158,7 +167,7 @@ class RegisterInStudBookUseCaseTest {
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload(sire.id.value, dam.id.value)))
+            val result = useCase(actor, command(validPayload(sire.id.value, dam.id.value)))
 
             assert(
                 result.getError() ==
@@ -182,8 +191,30 @@ class RegisterInStudBookUseCaseTest {
             val inspectionRepository = mockk<HorseInspectionRepository>()
             val useCase = RegisterInStudBookUseCase(bloodHorseRepository, inspectionRepository)
 
-            useCase(command(validPayload(sire.id.value, dam.id.value)))
+            useCase(actor, command(validPayload(sire.id.value, dam.id.value)))
 
+            verify(exactly = 0) { inspectionRepository.save(any()) }
+        }
+
+        @Test
+        fun `権限を持たない Actor で呼ぶと Forbidden を返し引き当ても永続化もしない`() {
+            val bloodHorseRepository = mockk<BloodHorseRepository>()
+            val inspectionRepository = mockk<HorseInspectionRepository>()
+            val useCase = RegisterInStudBookUseCase(bloodHorseRepository, inspectionRepository)
+            val noPermissionActor = Actor(AccountId(UUID.randomUUID()), emptySet())
+
+            val result =
+                useCase(
+                    noPermissionActor,
+                    command(validPayload(UUID.randomUUID(), UUID.randomUUID())),
+                )
+
+            assert(
+                result.getError() ==
+                    RegisterInStudBookUseCaseError.Forbidden(StudbookPermissions.HORSE_REGISTER)
+            )
+            verify(exactly = 0) { bloodHorseRepository.findAllById(any()) }
+            verify(exactly = 0) { bloodHorseRepository.save(any()) }
             verify(exactly = 0) { inspectionRepository.save(any()) }
         }
     }

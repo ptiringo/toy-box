@@ -7,15 +7,18 @@ import com.example.api.application.studbook.inspection.HorseInspectionNotFound
 import com.example.api.application.studbook.inspection.HorseInspectionView
 import com.example.api.application.studbook.inspection.RecordHorseInspectionCommand
 import com.example.api.application.studbook.inspection.RecordHorseInspectionUseCase
+import com.example.api.application.studbook.inspection.RecordHorseInspectionUseCaseError
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.DnaParentageResultDto
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
-import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.github.michaelbull.result.Err
@@ -26,6 +29,7 @@ import io.mockk.every
 import io.mockk.slot
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -51,6 +55,12 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
     @MockkBean private lateinit var findHorseInspection: FindHorseInspectionUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
+
+    @BeforeEach
+    fun stubResolveActor() {
+        every { resolveActor(any()) } returns
+            Ok(Actor(AccountId(UUID.randomUUID()), setOf(StudbookPermissions.INSPECTION_RECORD)))
+    }
 
     /** DNA 判定＋特徴記述子つきの審査集約を組む（レスポンス表現の検証用）。 */
     private fun inspectionWithFeatures(): HorseInspection =
@@ -81,8 +91,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
         @Test
         fun `正常な入力で 201 Created と DNA 判定つきの審査リソースが返ること`() {
-            every { recordHorseInspection(any<Command<RecordHorseInspectionCommand>>()) } returns
-                Ok(inspectionWithFeatures())
+            every {
+                recordHorseInspection(any(), any<Command<RecordHorseInspectionCommand>>())
+            } returns Ok(inspectionWithFeatures())
 
             tester
                 .post()
@@ -103,8 +114,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                     microchipNumber = MicrochipNumber.create("392140000000002").unwrap(),
                     parentage = ParentageDetermination.NotApplicable,
                 )
-            every { recordHorseInspection(any<Command<RecordHorseInspectionCommand>>()) } returns
-                Ok(saved)
+            every {
+                recordHorseInspection(any(), any<Command<RecordHorseInspectionCommand>>())
+            } returns Ok(saved)
 
             tester
                 .post()
@@ -129,7 +141,8 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
         @Test
         fun `全フィールド null の features はコマンドで不在（null）へ正規化されること`() {
             val command = slot<Command<RecordHorseInspectionCommand>>()
-            every { recordHorseInspection(capture(command)) } returns Ok(inspectionWithFeatures())
+            every { recordHorseInspection(any(), capture(command)) } returns
+                Ok(inspectionWithFeatures())
 
             tester
                 .post()
@@ -157,8 +170,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
         @Test
         fun `InvalidMicrochipNumber で 400 と problem+json が返ること`() {
-            every { recordHorseInspection(any<Command<RecordHorseInspectionCommand>>()) } returns
-                Err(InvalidMicrochipNumber)
+            every {
+                recordHorseInspection(any(), any<Command<RecordHorseInspectionCommand>>())
+            } returns Err(RecordHorseInspectionUseCaseError.InvalidMicrochip)
 
             tester
                 .post()

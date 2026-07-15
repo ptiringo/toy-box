@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
@@ -20,6 +24,7 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionRepositor
 import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -85,6 +90,10 @@ sealed interface RegisterInStudBookUseCaseError {
      */
     data class PreconditionViolated(val cause: RegisterInStudBookError) :
         RegisterInStudBookUseCaseError
+
+    /** 血統登録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        RegisterInStudBookUseCaseError, AuthorizationError
 }
 
 /**
@@ -103,68 +112,75 @@ class RegisterInStudBookUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterInStudBookCommand>
-    ): Result<RegisteredBloodHorse, RegisterInStudBookUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<RegisterInStudBookCommand>,
+    ): Result<RegisteredBloodHorse, RegisterInStudBookUseCaseError> {
+        val permission = StudbookPermissions.HORSE_REGISTER
+        if (!actor.can(permission)) {
+            return Err(RegisterInStudBookUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val registrationNumber =
-            PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { _: BlankPedigreeRegistrationNumber ->
-                    RegisterInStudBookUseCaseError.InvalidRegistrationNumber
+            val registrationNumber =
+                PedigreeRegistrationNumber.create(input.registrationNumber)
+                    .mapError { _: BlankPedigreeRegistrationNumber ->
+                        RegisterInStudBookUseCaseError.InvalidRegistrationNumber
+                    }
+                    .bind()
+            val microchipNumber =
+                MicrochipNumber.create(input.microchipNumber)
+                    .mapError { _: InvalidMicrochipNumber ->
+                        RegisterInStudBookUseCaseError.InvalidMicrochipNumber
+                    }
+                    .bind()
+            val breeder =
+                Breeder.create(input.breeder)
+                    .mapError { _: BlankBreeder -> RegisterInStudBookUseCaseError.BlankBreeder }
+                    .bind()
+
+            // 父・母を 1 回の一括 lookup で引き当てる（逐次往復と sireId==damId の二重取得を避ける）。
+            val sireId = BloodHorseId(input.sireId)
+            val damId = BloodHorseId(input.damId)
+            val found = bloodHorseRepository.findAllById(setOf(sireId, damId))
+            val sire =
+                found[sireId]
+                    .toResultOr { RegisterInStudBookUseCaseError.SireNotFound(input.sireId) }
+                    .bind()
+            val dam =
+                found[damId]
+                    .toResultOr { RegisterInStudBookUseCaseError.DamNotFound(input.damId) }
+                    .bind()
+
+            val entry =
+                StudBookEntry(
+                    sex = input.sex,
+                    coatColor = input.coatColor,
+                    breedType = input.breedType,
+                    dateOfBirth = DateOfBirth(input.dateOfBirth),
+                    breeder = breeder,
+                )
+
+            // 審査をメモリ内で組み立てる。前提条件検証（BloodHorse.create）を通った後にのみ永続化し、
+            // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
+            val inspection =
+                HorseInspection.create(
+                    microchipNumber = microchipNumber,
+                    parentage = ParentageDetermination.ByDna(input.dnaParentage),
+                )
+
+            val bloodHorse =
+                BloodHorse.create(sire, dam, entry, inspection, registrationNumber)
+                    .mapError { RegisterInStudBookUseCaseError.PreconditionViolated(it) }
+                    .bind()
+
+            // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
+            horseInspectionRepository.save(inspection)
+            val saved =
+                bloodHorseRepository.save(bloodHorse).getOrElse {
+                    error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
                 }
-                .bind()
-        val microchipNumber =
-            MicrochipNumber.create(input.microchipNumber)
-                .mapError { _: InvalidMicrochipNumber ->
-                    RegisterInStudBookUseCaseError.InvalidMicrochipNumber
-                }
-                .bind()
-        val breeder =
-            Breeder.create(input.breeder)
-                .mapError { _: BlankBreeder -> RegisterInStudBookUseCaseError.BlankBreeder }
-                .bind()
-
-        // 父・母を 1 回の一括 lookup で引き当てる（逐次往復と sireId==damId の二重取得を避ける）。
-        val sireId = BloodHorseId(input.sireId)
-        val damId = BloodHorseId(input.damId)
-        val found = bloodHorseRepository.findAllById(setOf(sireId, damId))
-        val sire =
-            found[sireId]
-                .toResultOr { RegisterInStudBookUseCaseError.SireNotFound(input.sireId) }
-                .bind()
-        val dam =
-            found[damId]
-                .toResultOr { RegisterInStudBookUseCaseError.DamNotFound(input.damId) }
-                .bind()
-
-        val entry =
-            StudBookEntry(
-                sex = input.sex,
-                coatColor = input.coatColor,
-                breedType = input.breedType,
-                dateOfBirth = DateOfBirth(input.dateOfBirth),
-                breeder = breeder,
-            )
-
-        // 審査をメモリ内で組み立てる。前提条件検証（BloodHorse.create）を通った後にのみ永続化し、
-        // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
-        val inspection =
-            HorseInspection.create(
-                microchipNumber = microchipNumber,
-                parentage = ParentageDetermination.ByDna(input.dnaParentage),
-            )
-
-        val bloodHorse =
-            BloodHorse.create(sire, dam, entry, inspection, registrationNumber)
-                .mapError { RegisterInStudBookUseCaseError.PreconditionViolated(it) }
-                .bind()
-
-        // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
-        horseInspectionRepository.save(inspection)
-        val saved =
-            bloodHorseRepository.save(bloodHorse).getOrElse {
-                error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
-            }
-        RegisteredBloodHorse(saved, inspection)
+            RegisteredBloodHorse(saved, inspection)
+        }
     }
 }

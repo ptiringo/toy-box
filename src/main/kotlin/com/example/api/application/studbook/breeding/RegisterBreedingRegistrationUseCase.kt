@@ -1,12 +1,17 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.application.shared.AuthorizationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Permission
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BlankBreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -37,6 +42,10 @@ sealed interface RegisterBreedingRegistrationUseCaseError {
 
     /** 繁殖登録の対象として指定された軽種馬が存在しない。 */
     data class HorseNotFound(val bloodHorseId: UUID) : RegisterBreedingRegistrationUseCaseError
+
+    /** 繁殖登録に必要な権限を持たない。 */
+    data class Forbidden(override val permission: Permission) :
+        RegisterBreedingRegistrationUseCaseError, AuthorizationError
 }
 
 /**
@@ -58,28 +67,35 @@ class RegisterBreedingRegistrationUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterBreedingRegistrationCommand>
-    ): Result<BreedingRegistration, RegisterBreedingRegistrationUseCaseError> = binding {
-        val input = command.payload
+        actor: Actor,
+        command: Command<RegisterBreedingRegistrationCommand>,
+    ): Result<BreedingRegistration, RegisterBreedingRegistrationUseCaseError> {
+        val permission = StudbookPermissions.BREEDING_REGISTRATION_REGISTER
+        if (!actor.can(permission)) {
+            return Err(RegisterBreedingRegistrationUseCaseError.Forbidden(permission))
+        }
+        return binding {
+            val input = command.payload
 
-        val registrationNumber =
-            BreedingRegistrationNumber.create(input.registrationNumber)
-                .mapError { _: BlankBreedingRegistrationNumber ->
-                    RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber
-                }
-                .bind()
+            val registrationNumber =
+                BreedingRegistrationNumber.create(input.registrationNumber)
+                    .mapError { _: BlankBreedingRegistrationNumber ->
+                        RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber
+                    }
+                    .bind()
 
-        val horse =
-            bloodHorseRepository
-                .findById(BloodHorseId(input.bloodHorseId))
-                .toResultOr {
-                    RegisterBreedingRegistrationUseCaseError.HorseNotFound(input.bloodHorseId)
-                }
-                .bind()
+            val horse =
+                bloodHorseRepository
+                    .findById(BloodHorseId(input.bloodHorseId))
+                    .toResultOr {
+                        RegisterBreedingRegistrationUseCaseError.HorseNotFound(input.bloodHorseId)
+                    }
+                    .bind()
 
-        val registration = BreedingRegistration.create(registrationNumber, horse)
-        breedingRegistrationRepository.save(registration).getOrElse {
-            error("新規の繁殖登録の保存で楽観ロック競合はありえない: id=${registration.id.value}")
+            val registration = BreedingRegistration.create(registrationNumber, horse)
+            breedingRegistrationRepository.save(registration).getOrElse {
+                error("新規の繁殖登録の保存で楽観ロック競合はありえない: id=${registration.id.value}")
+            }
         }
     }
 }

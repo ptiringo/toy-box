@@ -5,7 +5,10 @@ import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.StudbookPermissions
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
 import com.github.michaelbull.result.Err
@@ -15,6 +18,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -38,6 +42,17 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     private val tester = MockMvcTester.create(mockMvc)
 
+    @BeforeEach
+    fun stubResolveActor() {
+        every { resolveActor(any()) } returns
+            Ok(
+                Actor(
+                    AccountId(UUID.randomUUID()),
+                    setOf(StudbookPermissions.COVERING_REPORT_SUBMIT),
+                )
+            )
+    }
+
     private val uri = "/api/coveringReports"
 
     /** デシリアライズに通る正しい提出リクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
@@ -57,7 +72,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
                 coveringYear = Year.of(2024),
                 submittedOn = LocalDate.of(2024, 10, 1),
             )
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every { submitCoveringReport(any(), any<Command<SubmitCoveringReportCommand>>()) } returns
             Ok(saved)
 
         tester
@@ -74,7 +89,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `StallionRegistrationNotFound で 422 と problem+json が返ること`() {
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every { submitCoveringReport(any(), any<Command<SubmitCoveringReportCommand>>()) } returns
             Err(SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(UUID.randomUUID()))
 
         tester
@@ -92,7 +107,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `NotStallion で 422 と problem+json が返ること`() {
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every { submitCoveringReport(any(), any<Command<SubmitCoveringReportCommand>>()) } returns
             Err(
                 SubmitCoveringReportUseCaseError.PreconditionViolated(
                     SubmitCoveringReportError.NotStallion
@@ -115,7 +130,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `AlreadySubmittedForYear で 409 と problem+json が返ること`() {
         val existing = BreedingFixture.coveringReport()
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every { submitCoveringReport(any(), any<Command<SubmitCoveringReportCommand>>()) } returns
             Err(
                 SubmitCoveringReportUseCaseError.PreconditionViolated(
                     SubmitCoveringReportError.AlreadySubmittedForYear(Year.of(2024), existing.id)

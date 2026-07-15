@@ -5,6 +5,7 @@ import com.example.api.controller.breeding.problem.toProblemDetail
 import com.example.api.controller.breeding.request.SubmitCoveringReportRequest
 import com.example.api.controller.breeding.request.toCommand
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -82,11 +83,12 @@ class CoveringReportController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/coveringReports")
     fun submit(
+        actor: Actor,
         @OperationRequestBody(description = "提出する種付成績報告（種牡馬の繁殖登録ID・種付年）")
         @RequestBody
-        request: SubmitCoveringReportRequest
+        request: SubmitCoveringReportRequest,
     ): CoveringReportResponse =
-        submitCoveringReport(Command.now(request.toCommand(), clock))
+        submitCoveringReport(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
