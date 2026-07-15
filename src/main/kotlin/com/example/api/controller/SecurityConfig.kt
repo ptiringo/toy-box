@@ -20,8 +20,12 @@ import org.springframework.web.servlet.HandlerExceptionResolver
  * `JwtDecoder` Bean で差し替えられる）。
  *
  * **認可（何をしてよいか）はフィルタ層で判断しない。** ロール・権限の出所は自前 DB であり、認可は application
- * 層が担う。したがってここでの規則は「[PUBLIC_ENDPOINTS] は誰でも / それ以外は認証済みなら通す」の 2 種類だけで、認証済みユーザーが 403
- * になる経路は存在しない（`AccessDeniedHandler` を置いていないのはこのため）。
+ * 層が担う。したがってここでの規則は「[PUBLIC_ENDPOINTS] は誰でも / それ以外は認証済みなら通す」の 2 種類だけで、 **フィルタ層に 403
+ * の経路は無い**（`AccessDeniedHandler` を置いていないのはこのため）。認証済みでも権限が 足りなければ 403 は返るが、それは application 層のユースケースが
+ * `Forbidden` を返し（または `Actor` 解決時に account 未登録で `account-not-provisioned`）、中央の MVC 例外
+ * funnel（[GlobalExceptionHandler]）が `application/problem+json`
+ * で描くもので、フィルタ層由来ではない。`AccessDeniedHandler` 無しで 403 が problem+json になることは `AuthorizationE2eTest`
+ * で実配線のまま実測している。
  *
  * 本クラスが `config` ではなく adapter リング（`controller`）に居るのは、401 の RFC 9457 応答を組み立てる [problem] ビルダが adapter
  * リングにあるため。内側のリングから参照すると ArchUnit の `onionLayers` に違反する。 HTTP セキュリティは adapter の関心事でもあり、配置としても正しい。
