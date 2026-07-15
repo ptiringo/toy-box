@@ -40,6 +40,7 @@ paths:
 - `@RestController` は `controller`、`@Service` は `application`、Spring の `@Repository`（ポート実装）は `infrastructure` に置く
 - `@McpTool` を持つ Spring Bean は `mcp` に置く（application 層に直付けしない）。ArchUnit は `ArchSupport.kt` の `adapter("mcp", MCP)` で `mcp` を adapter リングとして強制する（[ADR-0035](../../docs/adr/0035-mcp-interface-adapter.md)）
 - **書き込みユースケース（`Command` を受ける `invoke`）には `@Transactional` を付与しトランザクション境界とする**（複数集約書き込みの失敗時原子性。ArchUnit `commandHandlingInvokesAreTransactional` で強制、読み取り系は対象外。[ADR-0051](../../docs/adr/0051-transactional-use-case-boundary.md)）。実行機構（`TransactionTemplate` 等）への依存は引き続き禁止
+- **認可は application 層が担い、書き込みユースケースは第 1 引数に認可の主体 `Actor`（`domain.shared`）を取る**（`invoke(actor, command)`）。判定は `binding {}` の外の early-return 形に統一し（`val p = XxxPermissions.YYY; if (!actor.can(p)) return Err(XxxUseCaseError.Forbidden(p))`）、権限不足は `application.shared.AuthorizationError` を実装した `Forbidden` バリアントで表して adapter 層で 403 に写す。読み取り（GET）は認証のみで権限不要のため `Actor` を取らない。`commandHandlingInvokesAreTransactional` は `[Actor, Command]` の 2 引数 `invoke` を対象とする。権限語彙は各コンテキストが持つ（`StudbookPermissions` / `RacingPermissions`）。設計経緯は [ADR-0067](../../docs/adr/0067-authorization-actor-in-shared-kernel.md)
 
 ### ドメインモデルとドメインサービスの分け方
 
@@ -64,7 +65,7 @@ paths:
 
 ```
 domain/
-├── shared/                      # 共有カーネル（Command / Entity 基底）。全コンテキストから参照可
+├── shared/                      # 共有カーネル（Command / Entity 基底 / Actor / AccountId / Permission）。全コンテキストから参照可
 ├── studbook/                    # 軽種馬登録コンテキスト（JAIRS: 血統登録・繁殖登録）
 │   ├── model/                   # ドメインモデルリング
 │   │   ├── breeding/
@@ -88,12 +89,14 @@ domain/
 │   └── service/                 # ドメインサービスリング
 │       ├── album/               #   releaseAlbum
 │       └── single/              #   releaseSingle
-└── tennis/model/
+├── tennis/model/
+└── iam/                         # 認可コンテキスト（#606: アカウントと役割・権限）
+    └── model/account/           #   Account, SubjectId, Role, AccountRepository
 ```
 
 ## 境界づけられたコンテキストの分離
 
-`application` / `domain` / `infrastructure` 各層の直下のパッケージ名（`studbook` / `racing` / `sakamichi` / `tennis`）を境界づけられたコンテキストとみなし、**コンテキスト間の依存は層やリングをまたぐ場合も含めて一切禁止**する（例: `application.studbook` → `domain.tennis.model` は違反）。`model` / `service` のサブ階層はコンテキスト名の判定に影響しない。
+`application` / `domain` / `infrastructure` 各層の直下のパッケージ名（`studbook` / `racing` / `sakamichi` / `tennis` / `iam`）を境界づけられたコンテキストとみなし、**コンテキスト間の依存は層やリングをまたぐ場合も含めて一切禁止**する（例: `application.studbook` → `domain.tennis.model` は違反）。`model` / `service` のサブ階層はコンテキスト名の判定に影響しない。
 
 - `domain.shared` は共有カーネルであり、コンテキスト分離の対象外（どのコンテキストからも参照可）
 - 新しいコンテキストを追加する場合、`<context>/model/`（必要なら `service/`）を切るだけで自動的に分離ルールの対象になる

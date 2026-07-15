@@ -24,7 +24,7 @@ Virtual Thread (`spring.threads.virtual.enabled=true`) を有効化し、ブロ�
 
 **Spring MVC の標準的な `@RestController` パターン**を採用する。Controller が HTTP エンドポイントを定義し、戻り値のオブジェクトを Jackson が JSON にシリアライズする。ドメインはフレームワーク非依存のピュアなモデルに保つ。リクエスト処理は Virtual Thread 上で走るため、原則 **同期コードで書く**（`suspend` / `Mono` / `Flux` を導入しない）。
 
-オニオンアーキテクチャの 4 リング（domainModel / domainService / applicationService / adapter）構成。`domain` 配下は境界づけられたコンテキスト（`studbook` / `racing` / `sakamichi` / `tennis`）ごとに `model/` と `service/` へ分割し、adapter は `controller`（REST）/ `infrastructure`（永続化）/ `mcp` の 3 つ。**コンテキスト間の依存は層・リングをまたぐ場合も含めて禁止**（`domain.shared` は共有カーネルで対象外）。ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`@AggregateRoot` / `@ValueObject` / `@field:Identity` / `@Repository` / `@DomainEvent` 等）で DDD ビルディングブロックの役割を表明する。
+オニオンアーキテクチャの 4 リング（domainModel / domainService / applicationService / adapter）構成。`domain` 配下は境界づけられたコンテキスト（`studbook` / `racing` / `sakamichi` / `tennis` / `iam`）ごとに `model/` と `service/` へ分割し、adapter は `controller`（REST）/ `infrastructure`（永続化）/ `mcp` の 3 つ。**コンテキスト間の依存は層・リングをまたぐ場合も含めて禁止**（`domain.shared` は共有カーネルで対象外）。ドメインモデルには [jMolecules](https://github.com/xmolecules/jmolecules) のアノテーション（`@AggregateRoot` / `@ValueObject` / `@field:Identity` / `@Repository` / `@DomainEvent` 等）で DDD ビルディングブロックの役割を表明する。
 
 各リングの責務・依存方向・Spring 依存可否、パッケージ構成、各パターン（Value Object は `@JvmInline value class`、Entity は ID 同一性＋自己検証ファクトリ＋イミュータブル、Command／Domain Event の封筒、軽量 CQRS の Query / Read Model）の規約とコード例は **`.claude/rules/architecture.md`**（`.kt` 編集時にロード）に集約している。規約は ArchUnit + jMolecules（`src/test/kotlin/com/example/api/architecture/`）と detekt カスタムルールで機械的に強制され、違反すると `./gradlew check` が落ちる。
 
@@ -90,7 +90,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 認証は GCP Identity Platform に委譲し、この API は **OAuth2 リソースサーバとして ID トークン（JWT）を検証するだけ**とする（資格情報を保持しない）。設定は `SecurityConfig`（**`controller` パッケージ**に置く。RFC 9457 の `problem()` ビルダが adapter リングにあり、内側から参照するとオニオン規約に反するため）と `application.yml` の `spring.security.oauth2.resourceserver.jwt.issuer-uri` / `.audiences`。issuer が OIDC discovery を公開しているため `JwtDecoder` は自前で書かない。決定経緯は [ADR-0064](docs/adr/0064-authn-via-identity-platform-authz-in-app.md)。
 
 - **`permitAll` は運用・CI が壊れるエンドポイントに限る**: `/actuator/health`（Cloud Run のヘルスチェック）、`/v3/api-docs` 配下と Swagger UI（`generateOpenApiDocs` が forked bootRun 経由で取得するため、認証を掛けると OpenAPI lint のゲートが壊れる）、MCP エンドポイント（クライアントがトークンを持てない）。それ以外は `authenticated`。
-- **認可（何をしてよいか）はフィルタ層で判断しない**。ロール・権限の出所は自前 DB で、認可は application 層が担う。
+- **認可（何をしてよいか）はフィルタ層で判断しない**。ロール・権限の出所は自前 DB で、認可は application 層が担う。認可の主体 `Actor`（`AccountId` / `Permission` 込み）は共有カーネル `domain.shared` に置き、書き込みユースケースが第 1 引数に取って `actor.can(permission)` で判断する（権限不足は `Forbidden`＝403）。`Account` 集約は `iam` コンテキスト。設計経緯は [ADR-0067](docs/adr/0067-authorization-actor-in-shared-kernel.md)。
 - 本番（Cloud Run）は `GCP_PROJECT_ID` を環境変数で受け取る（`deploy.yml`）。注入されないと issuer が既定値に落ち、全トークンが 401 になる。
 
 ## Google Cloud 操作のガードレール

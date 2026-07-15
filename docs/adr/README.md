@@ -75,3 +75,5 @@
 | [0063](0063-dprint-config-file-formatting.md) | 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする | Accepted |
 | [0064](0064-authn-via-identity-platform-authz-in-app.md) | 認証は GCP Identity Platform に委譲し、認可の権限は自前 DB に持つ | Accepted |
 | [0065](0065-claude-code-on-the-web-support.md) | Claude Code on the web を軽量変更ワークフローとして最小サポートする | Accepted |
+| [0066](0066-gh-cli-via-gh-token-on-web.md) | Claude Code on the web で gh CLI を GH_TOKEN 認証で使う | Accepted |
+| [0067](0067-authorization-actor-in-shared-kernel.md) | 認可の主体 Actor を共有カーネルに置き application 層でロール認可する | Accepted |

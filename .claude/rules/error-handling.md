@@ -26,6 +26,7 @@ paths:
 - ドメイン操作の失敗のしかたが **1 種類** なら単一の `data class` をエラー型として持つ
 - 失敗のしかたが **2 種類以上** なら `sealed interface` に昇格し、`when` の網羅性チェックで漏れを防ぐ
 - 共通親 `interface`（`DomainError` 等）は **当面導入しない**。Controller 境界で横串のハンドリングが重複し始めた段階で初めて切り出す
+- **認可の権限不足（403）だけは横串マーカー `application.shared.AuthorizationError` を持つ**（`val permission: Permission` を要求する例外的な共通 interface）。各ユースケースの `Forbidden` バリアントがこれを実装し、adapter 層は `Forbidden -> forbidden(permission)`（`controller/problem/AuthorizationProblem.kt`）で一様に 403（`error_code=forbidden`）へ写す。全ユースケースで同一の描画に揃うため、ここだけは横串の共通化を先取りする（#606 / [ADR-0067](../../docs/adr/0067-authorization-actor-in-shared-kernel.md)）。認証済みだが `account` 未登録の場合は `ActorArgumentResolver` が別途 403（`account-not-provisioned`）を返す
 - エラーバリアントの `Throwable` 保持は、外部 API / ファイル I/O など **例外起因のバリアントだけ** に持たせる。共通 interface に `cause: Throwable?` を強制しない
 - ドメインオブジェクトの不変条件違反（例: 名前のブランク）は、そのドメインオブジェクトの `companion object.create()` ファクトリで `Result<T, ValidationError>` を返して表現する。application 層は受けたエラーを必要に応じて自分のエラー型に wrap する
 - **単一エラー型を固定のエラーへ写す `mapError` は、変換元の型をラムダパラメータで明示する**（例: `mapError { _: BlankHorseName -> InvalidName }`）。パラメータを参照しないラムダは、変換元エラー型が sealed interface へ昇格（バリアント追加）されてもコンパイルが通り、新バリアントが既存の誤った errorCode・メッセージへ無音で変換される。型明示をトリップワイヤにして、昇格（型の付け替え）時に全変換箇所をコンパイルエラーで浮かび上がらせる。変換元が**既に sealed** の場合は型明示ではなく、cause を保持する wrap（`PreconditionViolated(it)`）または網羅 `when` で写す（バリアント追加を型検査で検知できる形を保つ）
