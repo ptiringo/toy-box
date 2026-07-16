@@ -120,4 +120,28 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
             .extractingPath("$.blood_horse_id")
             .isEqualTo(id.toString())
     }
+
+    @Test
+    fun `RegistrationNumberAlreadyTaken で 409 と problem+json が返ること`() {
+        every {
+            registerBreedingRegistration(any(), any<Command<RegisterBreedingRegistrationCommand>>())
+        } returns
+            Err(
+                RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
+                    "B-2024-0001"
+                )
+            )
+
+        tester
+            .post()
+            .uri(uri)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validBody)
+            .assertThat()
+            .hasStatus(HttpStatus.CONFLICT)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("breeding-registration-number-already-taken")
+    }
 }
