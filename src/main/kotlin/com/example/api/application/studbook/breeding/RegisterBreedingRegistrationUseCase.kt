@@ -11,6 +11,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
+import com.example.api.domain.studbook.service.breeding.ensureBreedingRegistrationNumberAvailable
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -42,6 +43,10 @@ sealed interface RegisterBreedingRegistrationUseCaseError {
 
     /** 繁殖登録の対象として指定された軽種馬が存在しない。 */
     data class HorseNotFound(val bloodHorseId: UUID) : RegisterBreedingRegistrationUseCaseError
+
+    /** 繁殖登録番号が既に他の繁殖登録に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterBreedingRegistrationUseCaseError
 
     /** 繁殖登録に必要な権限を持たない。 */
     data class Forbidden(override val permission: Permission) :
@@ -83,6 +88,17 @@ class RegisterBreedingRegistrationUseCase(
                         RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber
                     }
                     .bind()
+
+            ensureBreedingRegistrationNumberAvailable(
+                    registrationNumber,
+                    breedingRegistrationRepository,
+                )
+                .mapError {
+                    RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
+                        it.number.value
+                    )
+                }
+                .bind()
 
             val horse =
                 bloodHorseRepository

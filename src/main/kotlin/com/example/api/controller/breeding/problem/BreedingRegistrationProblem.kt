@@ -36,5 +36,13 @@ fun RegisterBreedingRegistrationUseCaseError.toProblemDetail(): ProblemDetail =
                     detail = "繁殖登録の対象として指定された軽種馬が存在しません。",
                 )
                 .apply { setProperty("blood_horse_id", bloodHorseId) }
+        is RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "breeding-registration-number-already-taken",
+                    title = "Breeding registration number already taken",
+                    detail = "申請された繁殖登録番号は既に他の繁殖登録に採番されています。",
+                )
+                .apply { setProperty("registration_number", registrationNumber) }
         is RegisterBreedingRegistrationUseCaseError.Forbidden -> forbidden(permission)
     }

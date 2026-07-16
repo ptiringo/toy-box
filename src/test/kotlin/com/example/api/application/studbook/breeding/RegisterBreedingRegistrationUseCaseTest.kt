@@ -42,6 +42,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 mockk<BloodHorseRepository> { every { findById(mare.id) } returns mare }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase =
@@ -71,6 +72,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 mockk<BloodHorseRepository> { every { findById(stallion.id) } returns stallion }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { save(any()) } answers { Ok(firstArg()) }
                 }
             val useCase =
@@ -122,7 +124,10 @@ class RegisterBreedingRegistrationUseCaseTest {
                 mockk<BloodHorseRepository> {
                     every { findById(BloodHorseId(bloodHorseId)) } returns null
                 }
-            val breedingRegistrationRepository = mockk<BreedingRegistrationRepository>()
+            val breedingRegistrationRepository =
+                mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
+                }
             val useCase =
                 RegisterBreedingRegistrationUseCase(
                     bloodHorseRepository,
@@ -163,6 +168,35 @@ class RegisterBreedingRegistrationUseCaseTest {
                 result.getError() ==
                     RegisterBreedingRegistrationUseCaseError.Forbidden(
                         StudbookPermissions.BREEDING_REGISTRATION_REGISTER
+                    )
+            )
+            verify(exactly = 0) { bloodHorseRepository.findById(any()) }
+            verify(exactly = 0) { breedingRegistrationRepository.save(any()) }
+        }
+
+        @Test
+        fun `繁殖登録番号が既に使用済みのとき RegistrationNumberAlreadyTaken を返し永続化されない`() {
+            val breedingRegistrationRepository =
+                mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(any()) } returns true
+                }
+            val bloodHorseRepository = mockk<BloodHorseRepository>()
+            val useCase =
+                RegisterBreedingRegistrationUseCase(
+                    bloodHorseRepository,
+                    breedingRegistrationRepository,
+                )
+
+            val result =
+                useCase(
+                    actor,
+                    command(RegisterBreedingRegistrationCommand(UUID.randomUUID(), "B-2024-0001")),
+                )
+
+            assert(
+                result.getError() ==
+                    RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
+                        "B-2024-0001"
                     )
             )
             verify(exactly = 0) { bloodHorseRepository.findById(any()) }
