@@ -12,6 +12,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseReposito
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
+import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.infrastructure.studbook.StudbookSeeder
@@ -159,4 +160,7 @@ class FailingBloodHorseRepository(private val delegate: BloodHorseRepository) :
     }
 
     override fun existsByName(name: HorseName): Boolean = delegate.existsByName(name)
+
+    override fun existsByRegistrationNumber(number: PedigreeRegistrationNumber): Boolean =
+        delegate.existsByRegistrationNumber(number)
 }

@@ -13,4 +13,7 @@ import org.springframework.data.repository.CrudRepository
 interface BloodHorseSpringDataRepository : CrudRepository<BloodHorseRow, UUID> {
     /** 馬名（`blood_horse.name`）が一致する行が存在するか。馬名の一意性照合に用いる。 */
     fun existsByName(name: String): Boolean
+
+    /** 血統登録番号（`blood_horse.registration_number`）が一致する行が存在するか。登録番号の一意性照合に用いる。 */
+    fun existsByRegistrationNumber(registrationNumber: String): Boolean
 }

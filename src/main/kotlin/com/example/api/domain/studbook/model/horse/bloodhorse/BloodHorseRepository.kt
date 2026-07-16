@@ -32,4 +32,7 @@ interface BloodHorseRepository {
 
     /** 指定の馬名が既に他の軽種馬に付与されているかを判定する（馬名の一意性照合用）。 */
     fun existsByName(name: HorseName): Boolean
+
+    /** 指定の血統登録番号が既にいずれかの軽種馬に採番されているかを判定する（血統登録番号の一意性照合用）。 */
+    fun existsByRegistrationNumber(number: PedigreeRegistrationNumber): Boolean
 }

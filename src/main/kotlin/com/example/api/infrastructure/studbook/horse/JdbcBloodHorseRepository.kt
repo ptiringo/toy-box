@@ -63,6 +63,9 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
 
     override fun existsByName(name: HorseName): Boolean = rows.existsByName(name.value)
 
+    override fun existsByRegistrationNumber(number: PedigreeRegistrationNumber): Boolean =
+        rows.existsByRegistrationNumber(number.value)
+
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
      *

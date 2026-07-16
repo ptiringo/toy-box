@@ -276,4 +276,30 @@ class JdbcBloodHorseRepositoryContractTest(
 
         assert(conflicted.getError() == UpdateConflict)
     }
+
+    @Test
+    fun `既に保存済みの登録番号は existsByRegistrationNumber が true を返す`() {
+        val horse = BloodHorseFixture.bloodHorse() // registrationNumber = "2023104567"
+        seeder.seedInspectionFor(horse)
+        repository.save(horse).unwrap()
+
+        assert(
+            repository.existsByRegistrationNumber(
+                PedigreeRegistrationNumber.create("2023104567").unwrap()
+            )
+        )
+    }
+
+    @Test
+    fun `未使用の登録番号は existsByRegistrationNumber が false を返す`() {
+        val horse = BloodHorseFixture.bloodHorse() // registrationNumber = "2023104567"
+        seeder.seedInspectionFor(horse)
+        repository.save(horse).unwrap()
+
+        assert(
+            !repository.existsByRegistrationNumber(
+                PedigreeRegistrationNumber.create("9999999999").unwrap()
+            )
+        )
+    }
 }
