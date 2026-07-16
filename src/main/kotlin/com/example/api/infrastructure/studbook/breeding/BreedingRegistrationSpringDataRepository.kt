@@ -10,4 +10,7 @@ import org.springframework.data.repository.CrudRepository
  * [com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository] とは別物。
  * ドメインポートの実装は本リポジトリを委譲先に持つアダプタ [JdbcBreedingRegistrationRepository] が担う。
  */
-interface BreedingRegistrationSpringDataRepository : CrudRepository<BreedingRegistrationRow, UUID>
+interface BreedingRegistrationSpringDataRepository : CrudRepository<BreedingRegistrationRow, UUID> {
+    /** 繁殖登録番号（`breeding_registration.registration_number`）が一致する行が存在するか。登録番号の一意性照合に用いる。 */
+    fun existsByRegistrationNumber(registrationNumber: String): Boolean
+}

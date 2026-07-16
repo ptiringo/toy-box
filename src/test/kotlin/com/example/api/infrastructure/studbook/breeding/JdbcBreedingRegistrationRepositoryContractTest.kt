@@ -227,4 +227,32 @@ class JdbcBreedingRegistrationRepositoryContractTest(
 
         assertThrows<DataIntegrityViolationException> { rows.save(inconsistent) }
     }
+
+    @Test
+    fun `既に保存済みの繁殖登録番号は existsByRegistrationNumber が true を返す`() {
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        val number = BreedingRegistrationNumber.create("B-2024-0001").unwrap()
+        repository.save(BreedingRegistration.create(number, mare)).unwrap()
+
+        assert(repository.existsByRegistrationNumber(number))
+    }
+
+    @Test
+    fun `未使用の繁殖登録番号は existsByRegistrationNumber が false を返す`() {
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository
+            .save(
+                BreedingRegistration.create(
+                    BreedingRegistrationNumber.create("B-2024-0001").unwrap(),
+                    mare,
+                )
+            )
+            .unwrap()
+
+        assert(
+            !repository.existsByRegistrationNumber(
+                BreedingRegistrationNumber.create("B-9999-9999").unwrap()
+            )
+        )
+    }
 }

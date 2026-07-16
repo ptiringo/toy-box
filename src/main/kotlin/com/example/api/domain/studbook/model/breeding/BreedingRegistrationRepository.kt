@@ -24,4 +24,7 @@ interface BreedingRegistrationRepository {
     fun save(
         breedingRegistration: BreedingRegistration
     ): Result<BreedingRegistration, UpdateConflict>
+
+    /** 指定の繁殖登録番号が既にいずれかの繁殖登録に採番されているかを判定する（繁殖登録番号の一意性照合用）。 */
+    fun existsByRegistrationNumber(number: BreedingRegistrationNumber): Boolean
 }
