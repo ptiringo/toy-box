@@ -39,7 +39,7 @@
 | BloodHorse | 軽種馬 | 集約ルート | 血統及び個体識別を明らかにする血統登録の成立によって誕生する個体。ライフサイクル全体を通じて同一の `BloodHorse` が各ロールを担う。 | 禁止: 単に「Horse」と呼ぶと文脈で曖昧。父母・ロールも別個体として扱わない |
 | HorseName | 馬名 | 値オブジェクト | 血統登録済みの個体に一度だけ付与できる名。出生時は未命名（`null`）。 | — |
 | HorseNamed | 馬名登録された | ドメインイベント | 馬名登録（`BloodHorse.assignName`）の成功時に「起きたこと」を表すイベント。遷移後の集約とともに `StateTransition` で同梱して返し、発行は application 層が担う（[ADR-0029](adr/0029-domain-events-via-state-transition-return.md)）。 | 禁止: `Command`（何をしたいか）と混同しない。本型は結果（何が起きたか） |
-| PedigreeRegistrationNumber | 血統登録番号 | 値オブジェクト | 血統登録の成立時に交付される番号。 | — |
+| PedigreeRegistrationNumber | 血統登録番号 | 値オブジェクト | 血統登録の成立時に交付される番号。血統登録原簿の中で一意（登録規程 第3〜4条）。繁殖登録番号とは別の採番空間。 | — |
 | MicrochipNumber | マイクロチップ番号 | 値オブジェクト | 個体識別に用いるマイクロチップの番号。 | — |
 | StudBookEntry | 血統登録申請（個体識別の束） | 値オブジェクト | 申請者が持ち込む仔馬自身の個体識別情報の束。父母は集約をまたぐためここには含めない。 | — |
 | DnaParentageResult | DNA 型親子判定結果 | 値オブジェクト | 申告された父母との親子関係の DNA 型検査結果（`CONSISTENT` のときのみ血統登録可）。 | — |
@@ -69,7 +69,7 @@
 | CoveringValidityError | 種付有効性違反 | 値オブジェクト（sealed） | 種付が種畜証明書の有効区域外（`OutsideValidRegion`）／有効期間外（`OutsideValidPeriod`）であることを表す。 | sealed 親型は jMolecules 非付与のためカタログには出ない |
 | FoalingOutcome | 分娩結果 | 値オブジェクト（sealed） | 種付した繁殖牝馬がその年に迎えた帰結。生産（`LiveFoal`）と産駒なし各区分の sealed 語彙。 | sealed 親型自体は jMolecules 非付与（カタログには variant のみ出る） |
 | FoalingOutcome.LiveFoal | 生産（産駒あり） | 値オブジェクト | 分娩により生存産駒を得た帰結。血統登録（`BloodHorse.create`）の入力に接続する。 | — |
-| BreedingRegistrationNumber | 繁殖登録番号 | 値オブジェクト | 繁殖登録に交付される番号。 | — |
+| BreedingRegistrationNumber | 繁殖登録番号 | 値オブジェクト | 繁殖登録に交付される番号。繁殖登録原簿の中で一意（登録規程 第5条）。血統登録番号とは別の採番空間。 | — |
 | BreedingResultSummaryView | 繁殖成績年次集計 | 読み取りモデル（@QueryModel） | (種牡馬, 種付年) 単位の繁殖成績。様式第2号（繁殖登録原簿〈雄〉）に対応。種付雌馬数・受胎数・生産数・受胎率・生産率を持つ。 | 軽量 CQRS（L2）の読みモデルのため application 層に置く |
 | 種付雌馬数 | 種付雌馬数 | 集計値 | その種牡馬がその年に種付けした雌馬数（`covering` を持つ年次成績の件数）。 | — |
 | 受胎数／受胎率 | 受胎数／受胎率 | 集計値 | 種付雌馬数のうち受胎が確認された件数（不受胎を除く。流産・死産・生後直死は受胎に含む）／その種付雌馬数比。 | — |
