@@ -260,6 +260,24 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("breed-mismatch")
         }
+
+        @Test
+        fun `RegistrationNumberAlreadyTaken で 409 と problem+json が返ること`() {
+            every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken("2023104567"))
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("registration-number-already-taken")
+        }
     }
 
     @Nested
@@ -469,6 +487,26 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("blank-origin-country")
+        }
+
+        @Test
+        fun `RegistrationNumberAlreadyTaken で 409 と problem+json が返ること`() {
+            every {
+                registerImportedHorse(any(), any<Command<RegisterImportedHorseCommand>>())
+            } returns
+                Err(RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken("2020900001"))
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("registration-number-already-taken")
         }
     }
 }
