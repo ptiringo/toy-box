@@ -81,15 +81,28 @@ class JdbcBloodHorseRepositoryContractTest(
 
     /** 内国産の父母を持つ命名済みの軽種馬を組み立てる（前提条件を満たす父=雄・母=雌・品種/ DNA 整合）。父母・仔馬自身の審査行は seed 済み。 */
     private fun namedDomesticFoal(): BloodHorse {
-        val sire = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
-        val dam = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        val sire =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(
+                    sex = Sex.MALE,
+                    registrationNumber = "SIRE-${generateId()}",
+                )
+            )
+        val dam =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(
+                    sex = Sex.FEMALE,
+                    registrationNumber = "DAM-${generateId()}",
+                )
+            )
         val foal =
             BloodHorse.create(
                     sire = sire,
                     dam = dam,
                     entry = BloodHorseFixture.studBookEntry(sex = Sex.MALE),
                     inspection = BloodHorseFixture.inspection(),
-                    registrationNumber = PedigreeRegistrationNumber.create("2023109999").unwrap(),
+                    registrationNumber =
+                        PedigreeRegistrationNumber.create("FOAL-${generateId()}").unwrap(),
                 )
                 .unwrap()
         seeder.seedInspectionFor(foal)

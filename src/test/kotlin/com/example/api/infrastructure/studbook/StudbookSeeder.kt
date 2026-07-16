@@ -55,11 +55,15 @@ class StudbookSeeder(
     }
 
     /** 任意 ID の馬行（輸入馬の最小構成）を審査行ごと作り ID を返す（生 Row の sire/dam・種牡馬用）。 */
-    fun seedHorseRow(id: UUID = generateId(), sex: String = "MALE"): UUID {
+    fun seedHorseRow(
+        id: UUID = generateId(),
+        sex: String = "MALE",
+        registrationNumber: String = "SEED-$id",
+    ): UUID {
         horseRows.save(
             BloodHorseRow(
                 id = id,
-                registrationNumber = "2020900001",
+                registrationNumber = registrationNumber,
                 sex = sex,
                 coatColor = "BAY",
                 breedType = "THOROUGHBRED",
@@ -75,11 +79,15 @@ class StudbookSeeder(
     }
 
     /** 任意 ID の繁殖登録行を対象馬・審査行ごと作り ID を返す（生 Row の breeding_registration_id 用）。 */
-    fun seedRegistrationRow(id: UUID = generateId(), role: String = "BROODMARE"): UUID {
+    fun seedRegistrationRow(
+        id: UUID = generateId(),
+        role: String = "BROODMARE",
+        registrationNumber: String = "SEED-REG-$id",
+    ): UUID {
         registrationRows.save(
             BreedingRegistrationRow(
                 id = id,
-                registrationNumber = "B-0001",
+                registrationNumber = registrationNumber,
                 registeredHorseId =
                     seedHorseRow(sex = if (role == "STALLION") "MALE" else "FEMALE"),
                 breedingRole = role,
