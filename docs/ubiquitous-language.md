@@ -306,6 +306,7 @@ graph LR
 | CoveringReportRepository | リポジトリポート | domain.studbook.model.breeding |
 | HorseInspectionRepository | リポジトリポート | domain.studbook.model.inspection |
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
+| ensureBreedingRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.breeding |
 | ensurePedigreeRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.horse |
 | nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
