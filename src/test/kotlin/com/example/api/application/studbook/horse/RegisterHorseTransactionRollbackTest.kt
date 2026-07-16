@@ -93,8 +93,10 @@ class RegisterHorseTransactionRollbackTest(
 
     @Test
     fun `内国産血統登録で軽種馬の保存がインフラ障害で失敗すると先行する審査の保存もロールバックされる`() {
-        val sireFixture = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
-        val damFixture = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        val sireFixture =
+            BloodHorseFixture.bloodHorse(sex = Sex.MALE, registrationNumber = "SIRE-2023100001")
+        val damFixture =
+            BloodHorseFixture.bloodHorse(sex = Sex.FEMALE, registrationNumber = "DAM-2023100001")
         seeder.seedInspectionFor(sireFixture)
         seeder.seedInspectionFor(damFixture)
         val sire = failingRepository.save(sireFixture).unwrap()

@@ -45,6 +45,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 7. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 8. 供用停止の共在不変条件が CHECK 制約でスキーマ側にも強制されること
  * 9. 並行削除された集約への save が UpdateConflict を返すこと
+ * 10. 繁殖登録番号の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -254,5 +255,22 @@ class JdbcBreedingRegistrationRepositoryContractTest(
                 BreedingRegistrationNumber.create("B-9999-9999").unwrap()
             )
         )
+    }
+
+    @Test
+    fun `同一繁殖登録番号の二重insertはUNIQUE制約で拒否される`() {
+        val number = BreedingRegistrationNumber.create("DUP-B-0001").unwrap()
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository.save(BreedingRegistration.create(number, mare)).unwrap()
+
+        // 別個体・同じ繁殖登録番号
+        val other =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(sex = Sex.MALE, registrationNumber = "OTHER-2024-0001")
+            )
+
+        assertThrows<DataIntegrityViolationException> {
+            repository.save(BreedingRegistration.create(number, other))
+        }
     }
 }

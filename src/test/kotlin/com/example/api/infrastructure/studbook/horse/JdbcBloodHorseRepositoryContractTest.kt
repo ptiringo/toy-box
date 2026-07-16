@@ -46,6 +46,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 9. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 10. 並行削除された集約への save が UpdateConflict を返すこと
  * 11. 馬名の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
+ * 12. 血統登録番号の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -314,5 +315,19 @@ class JdbcBloodHorseRepositoryContractTest(
                 PedigreeRegistrationNumber.create("9999999999").unwrap()
             )
         )
+    }
+
+    @Test
+    fun `同一血統登録番号の二重insertはUNIQUE制約で拒否される`() {
+        // ドメインサービス ensurePedigreeRegistrationNumberAvailable の検証をすり抜ける
+        // read-then-insert 並行競合（#532）の backstop。
+        val first = BloodHorseFixture.bloodHorse(registrationNumber = "DUP-2024-0001")
+        seeder.seedInspectionFor(first)
+        repository.save(first).unwrap()
+
+        val duplicate = BloodHorseFixture.bloodHorse(registrationNumber = "DUP-2024-0001")
+        seeder.seedInspectionFor(duplicate)
+
+        assertThrows<DataIntegrityViolationException> { repository.save(duplicate) }
     }
 }

@@ -70,11 +70,23 @@ class JdbcBreedingResultRepositoryContractTest(
     private fun seededBreedingResult(): BreedingResult {
         val broodmareRegistration =
             BreedingFixture.breedingRegistration(
-                broodmare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+                broodmare =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.FEMALE,
+                            registrationNumber = "MARE-${generateId()}",
+                        )
+                    )
             )
         val stallionRegistration =
             BreedingFixture.stallionRegistration(
-                stallion = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
+                stallion =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.MALE,
+                            registrationNumber = "STALLION-${generateId()}",
+                        )
+                    )
             )
         seeder.seedRegistration(broodmareRegistration)
         seeder.seedRegistration(stallionRegistration)
