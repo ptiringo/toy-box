@@ -82,6 +82,7 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
  * [RegisterInStudBookUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
  *
  * - VO 検証エラーは入力不正として 400 Bad Request
+ * - 申請された血統登録番号が既に他の軽種馬で使用済みは、原簿の既存登録番号と衝突するため 409 Conflict
  * - 父母の不在（ボディ内 sire_id / dam_id の参照先不在）・ドメイン前提条件違反は、整った入力だが意味的に 処理できないため 422 Unprocessable
  *   Entity（判断基準は ADR-0018 / ADR-0021、api-design.md「404 vs 422」）
  */
@@ -94,6 +95,14 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Invalid registration number",
                 detail = "registration_number は空であってはいけません。",
             )
+        is RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "registration-number-already-taken",
+                    title = "Registration number already taken",
+                    detail = "申請された血統登録番号は既に他の軽種馬で使用されています。",
+                )
+                .apply { setProperty("registration_number", registrationNumber) }
         RegisterInStudBookUseCaseError.InvalidMicrochipNumber ->
             problem(
                 status = HttpStatus.BAD_REQUEST,
@@ -164,7 +173,8 @@ private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
  * [RegisterImportedHorseUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に
  * 変換する。
  *
- * 輸入馬登録は父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）のみで、すべて 400 Bad Request とする。
+ * 輸入馬登録は父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）のみで、原則 400 Bad Request とする。
+ * ただし申請された血統登録番号が既に他の軽種馬で使用済みの場合のみ、原簿の既存登録番号と衝突するため 409 Conflict とする。
  */
 fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -175,6 +185,14 @@ fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Invalid registration number",
                 detail = "registration_number は空であってはいけません。",
             )
+        is RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "registration-number-already-taken",
+                    title = "Registration number already taken",
+                    detail = "申請された血統登録番号は既に他の軽種馬で使用されています。",
+                )
+                .apply { setProperty("registration_number", registrationNumber) }
         RegisterImportedHorseUseCaseError.InvalidMicrochipNumber ->
             problem(
                 status = HttpStatus.BAD_REQUEST,

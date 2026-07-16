@@ -61,6 +61,7 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { findAllById(setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
                     every { save(any()) } answers { Ok(firstArg()) }
@@ -104,7 +105,10 @@ class RegisterInStudBookUseCaseTest {
 
         @Test
         fun `マイクロチップ番号が不正なとき InvalidMicrochipNumber を返し永続化されない`() {
-            val repository = mockk<BloodHorseRepository>()
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
+                }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
             val result =
@@ -121,12 +125,31 @@ class RegisterInStudBookUseCaseTest {
         }
 
         @Test
+        fun `血統登録番号が既に使用済みのとき RegistrationNumberAlreadyTaken を返し永続化されない`() {
+            val bloodHorseRepository =
+                mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns true
+                }
+            val horseInspectionRepository = mockk<HorseInspectionRepository>()
+            val useCase = RegisterInStudBookUseCase(bloodHorseRepository, horseInspectionRepository)
+
+            val result = useCase(actor, command(validPayload(UUID.randomUUID(), UUID.randomUUID())))
+
+            assert(
+                result.getError() ==
+                    RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken("2023104567")
+            )
+            verify(exactly = 0) { bloodHorseRepository.save(any()) }
+        }
+
+        @Test
         fun `父が見つからないとき SireNotFound を返し永続化されない`() {
             val sireId = UUID.randomUUID()
             val damId = UUID.randomUUID()
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
                         mapOf(BloodHorseId(damId) to dam)
                 }
@@ -145,6 +168,7 @@ class RegisterInStudBookUseCaseTest {
             val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
             val repository =
                 mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
                         mapOf(BloodHorseId(sireId) to sire)
                 }
@@ -162,6 +186,7 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { findAllById(setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
                 }
@@ -185,6 +210,7 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val bloodHorseRepository =
                 mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(any()) } returns false
                     every { findAllById(setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
                 }

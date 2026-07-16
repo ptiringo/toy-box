@@ -26,6 +26,7 @@ import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
+import com.example.api.domain.studbook.service.horse.ensurePedigreeRegistrationNumberAvailable
 import com.example.api.domain.studbook.service.horse.registerFoal
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
@@ -72,6 +73,10 @@ data class RegisterFoalCommand(
 sealed interface RegisterFoalUseCaseError {
     /** 血統登録番号がブランク。 */
     data object InvalidRegistrationNumber : RegisterFoalUseCaseError
+
+    /** 血統登録番号が既に他の軽種馬に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterFoalUseCaseError
 
     /** マイクロチップ番号が 15 桁の数字でない。 */
     data object InvalidMicrochipNumber : RegisterFoalUseCaseError
@@ -138,6 +143,7 @@ class RegisterFoalUseCase(
                         RegisterFoalUseCaseError.InvalidRegistrationNumber
                     }
                     .bind()
+            ensureRegistrationNumberAvailable(registrationNumber).bind()
             // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
             // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
             val inspection = buildInspection(input).bind()
@@ -191,6 +197,13 @@ class RegisterFoalUseCase(
             RegisteredBloodHorse(saved, inspection)
         }
     }
+
+    /** 血統登録番号の一意性を検証する。既に採番済みなら [RegisterFoalUseCaseError.RegistrationNumberAlreadyTaken] に写す。 */
+    private fun ensureRegistrationNumberAvailable(
+        registrationNumber: PedigreeRegistrationNumber
+    ): Result<Unit, RegisterFoalUseCaseError> =
+        ensurePedigreeRegistrationNumberAvailable(registrationNumber, bloodHorseRepository)
+            .mapError { RegisterFoalUseCaseError.RegistrationNumberAlreadyTaken(it.number.value) }
 
     /** 仔馬の個体識別を組み立てる（生産者を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildFoalIdentity(

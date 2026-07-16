@@ -24,6 +24,7 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionRepositor
 import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
+import com.example.api.domain.studbook.service.horse.ensurePedigreeRegistrationNumberAvailable
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -66,6 +67,10 @@ data class RegisterImportedHorseCommand(
 sealed interface RegisterImportedHorseUseCaseError {
     /** 血統登録番号がブランク。 */
     data object InvalidRegistrationNumber : RegisterImportedHorseUseCaseError
+
+    /** 血統登録番号が既に他の軽種馬に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterImportedHorseUseCaseError
 
     /** マイクロチップ番号が 15 桁の数字でない。 */
     data object InvalidMicrochipNumber : RegisterImportedHorseUseCaseError
@@ -113,6 +118,13 @@ class RegisterImportedHorseUseCase(
                         RegisterImportedHorseUseCaseError.InvalidRegistrationNumber
                     }
                     .bind()
+            ensurePedigreeRegistrationNumberAvailable(registrationNumber, bloodHorseRepository)
+                .mapError {
+                    RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken(
+                        it.number.value
+                    )
+                }
+                .bind()
             val microchipNumber =
                 MicrochipNumber.create(input.microchipNumber)
                     .mapError { _: InvalidMicrochipNumber ->
