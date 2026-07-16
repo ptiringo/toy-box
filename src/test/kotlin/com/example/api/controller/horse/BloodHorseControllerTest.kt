@@ -266,17 +266,24 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             every { registerInStudBook(any(), any<Command<RegisterInStudBookCommand>>()) } returns
                 Err(RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken("2023104567"))
 
-            tester
-                .post()
-                .uri("/api/bloodHorses")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(validBody)
-                .assertThat()
+            val result =
+                tester
+                    .post()
+                    .uri("/api/bloodHorses")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(validBody)
+                    .exchange()
+
+            assertThat(result)
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("registration-number-already-taken")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.registration_number")
+                .isEqualTo("2023104567")
         }
     }
 
@@ -496,17 +503,24 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken("2020900001"))
 
-            tester
-                .post()
-                .uri(uri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(validBody)
-                .assertThat()
+            val result =
+                tester
+                    .post()
+                    .uri(uri)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(validBody)
+                    .exchange()
+
+            assertThat(result)
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("registration-number-already-taken")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.registration_number")
+                .isEqualTo("2020900001")
         }
     }
 }

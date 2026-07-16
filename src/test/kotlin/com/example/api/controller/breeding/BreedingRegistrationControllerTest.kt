@@ -14,6 +14,7 @@ import com.github.michaelbull.result.Ok
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.util.UUID
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -132,16 +133,23 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
                 )
             )
 
-        tester
-            .post()
-            .uri(uri)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(validBody)
-            .assertThat()
+        val result =
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .exchange()
+
+        assertThat(result)
             .hasStatus(HttpStatus.CONFLICT)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
             .bodyJson()
             .extractingPath("$.error_code")
             .isEqualTo("breeding-registration-number-already-taken")
+        assertThat(result)
+            .bodyJson()
+            .extractingPath("$.registration_number")
+            .isEqualTo("B-2024-0001")
     }
 }
