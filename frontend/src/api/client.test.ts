@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiGet } from "./client";
+import { apiGet } from "./client";
 
 const token = async () => "id-token-123";
 
@@ -46,7 +46,10 @@ describe("apiGet", () => {
       ),
     );
 
-    await expect(apiGet("/api/bloodHorses", token)).rejects.toBeInstanceOf(ApiError);
+    await expect(apiGet("/api/bloodHorses", token)).rejects.toMatchObject({
+      status: 403,
+      problem: { title: "Forbidden", detail: "権限がありません", status: 403 },
+    });
   });
 
   it("トークン未取得（null）なら fetch せず ApiError(status=401)", async () => {
