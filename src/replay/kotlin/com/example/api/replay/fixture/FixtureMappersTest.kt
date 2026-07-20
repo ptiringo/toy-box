@@ -1,7 +1,9 @@
 package com.example.api.replay.fixture
 
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.replay.FoalingOutcomeName
 import com.example.api.replay.submissionInstant
+import com.example.api.replay.toFixtureName
 import com.example.api.replay.toInput
 import com.example.api.replay.toOutcome
 import java.time.LocalDate
@@ -40,6 +42,21 @@ class FixtureMappersTest {
             LocalDate.of(2001, 9, 30).atTime(12, 0).atZone(ZoneId.of("Asia/Tokyo")).toInstant()
 
         assert(instant == expected)
+    }
+
+    @Test
+    fun `全区分名が写像をラウンドトリップして自身へ戻る`() {
+        // FoalingOutcome の variant 追加は toFixtureName() の網羅 when が compile error で検知する。
+        // 本テストは残りの追従漏れ（enum に足したのに toOutcome() の対応が誤っている等）を検知する。
+        for (name in FoalingOutcomeName.entries) {
+            val fixture =
+                when (name) {
+                    FoalingOutcomeName.LiveFoal -> FoalingFixture(name.name, "2002-03-25")
+                    else -> FoalingFixture(name.name)
+                }
+
+            assert(fixture.toOutcome().toFixtureName() == name)
+        }
     }
 
     @Test
