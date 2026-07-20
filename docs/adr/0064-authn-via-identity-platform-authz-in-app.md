@@ -44,3 +44,20 @@
 - MCP エンドポイントは `permitAll` のまま残る。MCP クライアントへの認証の載せ方（[ADR-0035](0035-mcp-interface-adapter.md) の adapter）は別途決める必要がある。
 - 本番（Cloud Run）は `GCP_PROJECT_ID` を環境変数で受け取る。プロジェクト ID は秘密ではないため Secret Manager には置かない。この値が注入されないと issuer が既定値に落ち、全トークンが 401 になる。
 - 結論は指示ファイル側に置き、経緯は本 ADR に残す（`permitAll` の範囲は CLAUDE.md「認証」、slice テストの方針は `.claude/rules/testing.md`）。
+
+## 追補（2026-07-20）: Identity Platform を Terraform 化
+
+本 ADR が「Terraform 管理の射程に入る」とした点を実装した。`infra/modules/identity-platform/`
+（`google_identity_platform_config`）で **email/password サインインの有効化と `authorized_domains`
+（ローカル E2E 用に `localhost` を含む）を宣言的に管理**する。`identitytoolkit` API 有効化も
+`google_project_service` に含める。
+
+`google_identity_platform_config` は API 上削除できない（provider の Delete は恒久的な no-op で、
+`terraform destroy` しても state から外れるだけで GCP 側の設定はそのまま残る）。`deletion_policy` 引数は
+このリソースには存在しない（provider 7.39/7.40 の実装で確認済み）ため付けない。
+
+**今回スコープ外（手動 or 段階 B）**:
+- **Web config の `apiKey` / `authDomain`** は当面 Console の「Application setup details」で手動取得し、
+  フロントの `frontend/.env.local` に入れる。Terraform 取得（`google-beta` + `google_firebase_web_app`
+  + `data.google_firebase_web_app_config`）は GCP プロジェクトの Firebase 化を伴うため段階 B として分けた。
+- **テストユーザー**は Terraform にリソースが無いため Console / gcloud で手動作成する。
