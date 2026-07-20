@@ -3,6 +3,7 @@ resource "google_project_service" "project" {
     "artifactregistry",
     "iam",
     "iamcredentials",
+    "identitytoolkit",
     "orgpolicy",
     "run",
     "secretmanager",
@@ -46,6 +47,16 @@ module "prisma_postgres" {
 
   api_runner_email = module.cloudrun.api_runner_email
   project_name     = var.prisma_project_name
+
+  depends_on = [google_project_service.project]
+}
+
+# Identity Platform（認証委譲先。email/password + authorized_domains）。ADR-0064 / #612。
+# identitytoolkit API 有効化に依存させ、初回 apply の順序レースを避ける。
+module "identity_platform" {
+  source = "./modules/identity-platform"
+
+  project_id = "ptiringo-toy-box"
 
   depends_on = [google_project_service.project]
 }
