@@ -28,6 +28,8 @@ export function BloodHorseListPage() {
         if (active) {
           setRows(data);
           setStatus(200);
+          // 再フェッチが成功したら、前回失敗時の error を引きずらないようにクリアする。
+          setError(null);
         }
       } catch (e) {
         if (!active) return;
