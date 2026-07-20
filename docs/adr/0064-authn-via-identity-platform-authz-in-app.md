@@ -56,6 +56,13 @@
 `terraform destroy` しても state から外れるだけで GCP 側の設定はそのまま残る）。`deletion_policy` 引数は
 このリソースには存在しない（provider 7.39/7.40 の実装で確認済み）ため付けない。
 
+**Terraform が config の source of truth になる点に注意**: `authorized_domains` と `sign_in` は
+full-replace で書き込まれるため、Console で手動追加したドメインやサインイン方式は apply のたびに
+上書き・削除される（現スコープは email/password + `localhost` に収束する）。既に手動で config が
+初期化済みの環境では、初回 apply が create ではなく既存リソースの diff として扱われないことがあり、
+その場合は `terraform import google_identity_platform_config.default projects/ptiringo-toy-box/config`
+を検討する（HCP の speculative plan で create と出たら import すべきサイン）。
+
 **今回スコープ外（手動 or 段階 B）**:
 - **Web config の `apiKey` / `authDomain`** は当面 Console の「Application setup details」で手動取得し、
   フロントの `frontend/.env.local` に入れる。Terraform 取得（`google-beta` + `google_firebase_web_app`

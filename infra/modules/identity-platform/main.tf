@@ -18,4 +18,9 @@ resource "google_identity_platform_config" "default" {
   # no-op に固定されているため、そもそも実削除が起きない＝ABANDON 相当が常時の挙動）。
   # google 7.39.0 / 7.40.0（GA・beta とも）で deletion_policy を指定すると
   # `terraform validate` が Unsupported argument で落ちることを実機確認済み。
+  # registry docs（terraform.io の resource ページ）には deletion_policy が記載されているが、
+  # これは magic-modules の doc テンプレートが持つ boilerplate であり、実際に生成された
+  # provider の resource schema（resource_identity_platform_config.go の Schema map）には
+  # 該当 field が存在しない。docs と実 schema が食い違うケースなので、docs だけを見て
+  # 「引数を足すべき」と早合点しないこと（実測で Unsupported argument になることを確認済み）。
 }
