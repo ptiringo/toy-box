@@ -75,3 +75,4 @@
 | [0063](0063-dprint-config-file-formatting.md) | 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする | Accepted |
 | [0064](0064-authn-via-identity-platform-authz-in-app.md) | 認証は GCP Identity Platform に委譲し、認可の権限は自前 DB に持つ | Accepted |
 | [0065](0065-claude-code-on-the-web-support.md) | Claude Code on the web を軽量変更ワークフローとして最小サポートする | Accepted |
+| [0068](0068-manual-infra-apply-with-notification.md) | infra の HCP Terraform apply を手動承認 + 通知にする（auto_apply 無効化） | Accepted |
