@@ -34,9 +34,9 @@ describe("BloodHorseListPage", () => {
       {
         id: "h1",
         registration_number: "0000000001",
-        sex: "牡",
-        coat_color: "鹿毛",
-        breed_type: "サラブレッド",
+        sex: "FEMALE",
+        coat_color: "BAY",
+        breed_type: "THOROUGHBRED",
         date_of_birth: "2020-01-01",
         breeder: "テスト牧場",
         name: null,
