@@ -20,30 +20,68 @@ import java.time.ZoneOffset
 private val TOKYO: ZoneId = ZoneId.of("Asia/Tokyo")
 
 /**
+ * フィクスチャの分娩区分名。[FoalingOutcome] の各 variant と 1:1 に対応する。
+ *
+ * 種付せず（[FoalingOutcome.NotCovered]）は分娩結果としてフィクスチャに現れないため持たない（理由は [toOutcome] の KDoc）。variant
+ * との対応の閉じ（増減の追従）は [toFixtureName] の網羅 when が compile 時に強制する。
+ */
+enum class FoalingOutcomeName {
+    LiveFoal,
+    NotConceived,
+    Abortion,
+    TwinAbortion,
+    Stillbirth,
+    TwinStillbirth,
+    NeonatalDeath,
+    TwinNeonatalDeath,
+}
+
+/**
  * フィクスチャの分娩区分名を [FoalingOutcome] に写す。未知の区分名は前提エラーとして例外にする（フィクスチャの記述ミス）。
  *
  * 種付せず（[FoalingOutcome.NotCovered]）はここに現れない。種付を行わなかった年は分娩結果の区分ではなく フィクスチャの
  * kind（UncoveredSeasonFixture）で表し、
  * [com.example.api.application.studbook.breeding.RecordUncoveredUseCase] が
  * 起こす終端の繁殖成績として実体化する。分娩結果として NotCovered を渡すと BreedingResult.recordFoaling が require で弾く（Err
- * ではなく例外）ため、写像の入口で塞ぐ。
+ * ではなく例外）ため、写像の入口（[FoalingOutcomeName] に持たせない）で塞ぐ。
  */
-fun FoalingFixture.toOutcome(): FoalingOutcome =
-    when (outcome) {
-        "LiveFoal" ->
+fun FoalingFixture.toOutcome(): FoalingOutcome {
+    val name = FoalingOutcomeName.entries.find { it.name == outcome } ?: error("未知の分娩区分名: $outcome")
+    return when (name) {
+        FoalingOutcomeName.LiveFoal ->
             FoalingOutcome.LiveFoal(
                 LocalDate.parse(
                     requireNotNull(foalingDate) { "LiveFoal には foalingDate が必要: $this" }
                 )
             )
-        "NotConceived" -> FoalingOutcome.NotConceived
-        "Abortion" -> FoalingOutcome.Abortion
-        "TwinAbortion" -> FoalingOutcome.TwinAbortion
-        "Stillbirth" -> FoalingOutcome.Stillbirth
-        "TwinStillbirth" -> FoalingOutcome.TwinStillbirth
-        "NeonatalDeath" -> FoalingOutcome.NeonatalDeath
-        "TwinNeonatalDeath" -> FoalingOutcome.TwinNeonatalDeath
-        else -> error("未知の分娩区分名: $outcome")
+        FoalingOutcomeName.NotConceived -> FoalingOutcome.NotConceived
+        FoalingOutcomeName.Abortion -> FoalingOutcome.Abortion
+        FoalingOutcomeName.TwinAbortion -> FoalingOutcome.TwinAbortion
+        FoalingOutcomeName.Stillbirth -> FoalingOutcome.Stillbirth
+        FoalingOutcomeName.TwinStillbirth -> FoalingOutcome.TwinStillbirth
+        FoalingOutcomeName.NeonatalDeath -> FoalingOutcome.NeonatalDeath
+        FoalingOutcomeName.TwinNeonatalDeath -> FoalingOutcome.TwinNeonatalDeath
+    }
+}
+
+/**
+ * [FoalingOutcome] の variant をフィクスチャの分娩区分名へ写す。
+ *
+ * sealed の網羅 when により、variant の増減を compile error として [FoalingOutcomeName]（ひいては [toOutcome]）へ
+ * 伝えるトリップワイヤ。種付せず（[FoalingOutcome.NotCovered]）だけは分娩結果の区分名を持たないため null （フィクスチャでは kind＝uncovered
+ * で表す）。
+ */
+fun FoalingOutcome.toFixtureName(): FoalingOutcomeName? =
+    when (this) {
+        is FoalingOutcome.LiveFoal -> FoalingOutcomeName.LiveFoal
+        FoalingOutcome.NotConceived -> FoalingOutcomeName.NotConceived
+        FoalingOutcome.Abortion -> FoalingOutcomeName.Abortion
+        FoalingOutcome.TwinAbortion -> FoalingOutcomeName.TwinAbortion
+        FoalingOutcome.Stillbirth -> FoalingOutcomeName.Stillbirth
+        FoalingOutcome.TwinStillbirth -> FoalingOutcomeName.TwinStillbirth
+        FoalingOutcome.NeonatalDeath -> FoalingOutcomeName.NeonatalDeath
+        FoalingOutcome.TwinNeonatalDeath -> FoalingOutcomeName.TwinNeonatalDeath
+        FoalingOutcome.NotCovered -> null
     }
 
 /** フィクスチャの出典をラベル付きの一覧に写す（レポートに全件出し、典拠を辿れるようにする）。 */
