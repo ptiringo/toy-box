@@ -66,3 +66,9 @@ terraform.rc
 # リポジトリ管理しない（決定事項は ADR / Issue に残す）
 .superpowers/
 docs/superpowers/
+
+### frontend ###
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/coverage/
