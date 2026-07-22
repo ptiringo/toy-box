@@ -3,6 +3,9 @@ package com.example.api.controller.horse
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseCommand
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseError
@@ -12,6 +15,7 @@ import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
 import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
+import com.example.api.controller.horse.request.RegisterCarriedOverHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
@@ -46,6 +50,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var registerInStudBook: RegisterInStudBookUseCase
     @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
+    @MockkBean private lateinit var registerCarriedOverHorse: RegisterCarriedOverHorseUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -448,6 +453,67 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("blank-origin-country")
+        }
+    }
+
+    @Nested
+    inner class RegisterCarriedOverCase {
+        private val uri = "/api/bloodHorses:registerCarriedOver"
+
+        /** 父母 ID・DNA・原産国・揚陸日のいずれも持たない移行取り込みのリクエストボディ。 */
+        private val validBody =
+            jsonMapper.writeValueAsString(
+                RegisterCarriedOverHorseRequest(
+                    sex = SexDto.FEMALE,
+                    coatColor = CoatColorDto.BLACK,
+                    breedType = BreedTypeDto.THOROUGHBRED,
+                    dateOfBirth = LocalDate.of(2002, 3, 31),
+                    breeder = "ノーザンファーム",
+                    microchipNumber = "392140000000003",
+                    registrationNumber = "2002100501",
+                )
+            )
+
+        @Test
+        fun `正常な入力で 201 Created と出自 CARRIED_OVER が返ること`() {
+            val saved =
+                RegisteredBloodHorse(
+                    BloodHorseFixture.carriedOverBloodHorse(),
+                    BloodHorseFixture.inspection(),
+                )
+            every {
+                registerCarriedOverHorse(any<Command<RegisterCarriedOverHorseCommand>>())
+            } returns Ok(saved)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .extractingPath("$.origin.type")
+                .isEqualTo("CARRIED_OVER")
+        }
+
+        @Test
+        fun `BlankBreeder で 400 と problem+json が返ること`() {
+            every {
+                registerCarriedOverHorse(any<Command<RegisterCarriedOverHorseCommand>>())
+            } returns Err(RegisterCarriedOverHorseUseCaseError.BlankBreeder)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("blank-breeder")
         }
     }
 }
