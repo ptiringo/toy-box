@@ -61,11 +61,12 @@ sealed interface RegisterInStudBookError {
  *
  * 父・母は別個体（別集約）であり、参照は [BloodHorseId] 経由で表す。父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件は集約をまたぐが、
  * 父・母を引数で受け取る生成ファクトリ [create] がその場で自己検証する（Jockey.create と同じく、検証を満たさなければ生成しない）。 コンストラクタは private
- * とし、生成は [create] / [createImported] のみに限る。
+ * とし、生成は [create] / [createImported] / [createCarriedOver] のみに限る。
  *
- * 出自（内国産か輸入か）は [origin] に集約する。内国産馬は父・母の軽種馬ID（[Origin.Domestic]）を、 父母が当システムに存在しない個体
- * （輸入馬・基礎輸入馬）は原産国・揚陸日（[Origin.Imported]）を持つ。両者は相互排他であり、sealed [Origin] で型として強制する（ADR-0020）。
- * 内国産馬の生成は [create]、輸入馬の生成は [createImported] が担い、経路を分ける。
+ * 出自（内国産か輸入か移行取り込みか）は [origin] に集約する。内国産馬は父・母の軽種馬ID（[Origin.Domestic]）を、 父母が当システムに存在しない個体
+ * （輸入馬・基礎輸入馬）は原産国・揚陸日（[Origin.Imported]）を、先行原簿に血統記録済みの移行取り込みは追加の属性を持たない（[Origin.CarriedOver]）。
+ * 三者は相互排他であり、sealed [Origin] で型として強制する（ADR-0020）。 内国産馬の生成は [create]、輸入馬の生成は
+ * [createImported]、移行取り込みの生成は [createCarriedOver] が担い、経路を分ける。
  *
  * 状態はイミュータブルに扱う。出生時は血統登録のみで馬名を持たず（[name] は null）、後日の「馬名登録」で一度だけ命名される。 命名は [assignName] が 馬名を持つ新しい
  * [BloodHorse] を返すことで表し、同一性（[id]）は引き継ぐ。元のインスタンスは変更しない。
@@ -217,11 +218,36 @@ private constructor(
             )
 
         /**
+         * 先行する登録原簿に血統登録済みの馬を、移行取り込み（carried-over）として [BloodHorse] に生成する。
+         *
+         * JAIRS の業務手続ではなくシステム境界の移行経路（#633 / ADR-0069）。父母・血統は先行原簿に
+         * 記録済みで当システムには存在しないため、内国産馬の前提条件（父=雄・母=雌・DNA 親子整合・
+         * 親仔の品種整合）は適用されず、本ファクトリは検証を持たず生成する。生成直後は未命名（[name] は null）。
+         */
+        fun createCarriedOver(
+            entry: CarriedOverHorseEntry,
+            inspection: HorseInspection,
+            registrationNumber: PedigreeRegistrationNumber,
+        ): BloodHorse =
+            BloodHorse(
+                id = BloodHorseId(generateId()),
+                registrationNumber = registrationNumber,
+                sex = entry.sex,
+                coatColor = entry.coatColor,
+                breedType = entry.breedType,
+                dateOfBirth = entry.dateOfBirth,
+                breeder = entry.breeder,
+                inspectionId = inspection.id,
+                origin = Origin.CarriedOver,
+                name = null,
+            )
+
+        /**
          * 永続化層に保存済みの状態から [BloodHorse] を再構成（リハイドレート）する。
          *
-         * 既に [create] / [createImported] を通過して保存された状態の復元であり、前提条件の再検証も ID の再採番も
-         * 行わない。永続化アダプター（infrastructure 層）からの復元専用であり、新規生成には [create] / [createImported]
-         * を使うこと。出自（[origin]）・馬名（[name]）も保存済みの値をそのまま引き継ぐ。
+         * 既に [create] / [createImported] / [createCarriedOver] を通過して保存された状態の復元であり、前提条件の 再検証も ID
+         * の再採番も行わない。永続化アダプター（infrastructure 層）からの復元専用であり、新規生成には [create] / [createImported] /
+         * [createCarriedOver] を使うこと。出自（[origin]）・馬名（[name]）も保存済みの 値をそのまま引き継ぐ。
          *
          * @param version DB の version 列の値（楽観ロック）
          */

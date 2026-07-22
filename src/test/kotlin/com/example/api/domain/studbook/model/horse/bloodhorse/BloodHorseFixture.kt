@@ -93,6 +93,28 @@ object BloodHorseFixture {
             registrationNumber = PedigreeRegistrationNumber.create("2020900001").unwrap(),
         )
 
+    /** 既定値を持つ [CarriedOverHorseEntry]（移行取り込み）を生成する。必要な属性のみ上書きする。 */
+    fun carriedOverHorseEntry(
+        sex: Sex = Sex.MALE,
+        coatColor: CoatColor = CoatColor.BAY,
+        breedType: BreedType = BreedType.THOROUGHBRED,
+    ): CarriedOverHorseEntry =
+        CarriedOverHorseEntry(
+            sex = sex,
+            coatColor = coatColor,
+            breedType = breedType,
+            dateOfBirth = DateOfBirth(LocalDate.of(2002, 3, 31)),
+            breeder = Breeder.create("ノーザンファーム").unwrap(),
+        )
+
+    /** 既定値を持つ移行取り込みの [BloodHorse]（出自 [Origin.CarriedOver]）を生成する。 */
+    fun carriedOverBloodHorse(sex: Sex = Sex.FEMALE): BloodHorse =
+        BloodHorse.createCarriedOver(
+            entry = carriedOverHorseEntry(sex = sex),
+            inspection = inspection(parentage = ParentageDetermination.NotApplicable),
+            registrationNumber = PedigreeRegistrationNumber.create("2002100501").unwrap(),
+        )
+
     /** 既定値を持つ内国産の [BloodHorse]（父母を ID 参照する [Origin.Domestic]）を生成する。 */
     fun domesticBloodHorse(): BloodHorse =
         BloodHorse.create(

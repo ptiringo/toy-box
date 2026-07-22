@@ -42,6 +42,7 @@
 | PedigreeRegistrationNumber | 血統登録番号 | 値オブジェクト | 血統登録の成立時に交付される番号。 | — |
 | MicrochipNumber | マイクロチップ番号 | 値オブジェクト | 個体識別に用いるマイクロチップの番号。 | — |
 | StudBookEntry | 血統登録申請（個体識別の束） | 値オブジェクト | 申請者が持ち込む仔馬自身の個体識別情報の束。父母は集約をまたぐためここには含めない。 | — |
+| CarriedOverHorseEntry | 移行取り込み（carried-over）の個体識別の束 | 値オブジェクト | 先行する登録原簿に血統登録済みの馬をシステム境界で取り込む際の入力。JAIRS の手続ではなくシステム境界の移行経路。血統は先行原簿に記録済みのため父母 ID を持たず、輸入馬（`ImportedHorseEntry`）と異なり原産国・揚陸日も持たない（#633）。 | — |
 | DnaParentageResult | DNA 型親子判定結果 | 値オブジェクト | 申告された父母との親子関係の DNA 型検査結果（`CONSISTENT` のときのみ血統登録可）。 | — |
 | BreedType | 品種 | 値オブジェクト | サラブレッド等の品種。親仔の品種整合の検証に用いる。 | — |
 | CoatColor | 毛色 | 値オブジェクト | 馬の毛色。 | — |
@@ -247,6 +248,7 @@ graph LR
 | BreedingReportDeadline | 値オブジェクト | domain.studbook.model.breeding |
 | BreedingResultId | 値オブジェクト | domain.studbook.model.breeding |
 | BreedingRetirement | 値オブジェクト | domain.studbook.model.breeding |
+| CarriedOverHorseEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | CoatColor | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Covering | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
@@ -271,6 +273,7 @@ graph LR
 | LandingDate | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | MicrochipNumber | 値オブジェクト | domain.studbook.model.inspection |
 | Origin | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Origin.CarriedOver | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Domestic | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Imported | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | OriginCountry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |

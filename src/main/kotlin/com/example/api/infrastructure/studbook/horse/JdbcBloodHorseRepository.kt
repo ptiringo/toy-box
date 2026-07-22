@@ -99,6 +99,7 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
                             .orThrow(),
                     landingDate = LandingDate(checkNotNull(landingDate) { "輸入の揚陸日が欠落: id=$id" }),
                 )
+            ORIGIN_CARRIED_OVER -> Origin.CarriedOver
             else -> error("未知の origin_type です: $originType (id=$id)")
         }
 
@@ -136,11 +137,13 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
                     originCountry = o.originCountry.name,
                     landingDate = o.landingDate.value,
                 )
+            Origin.CarriedOver -> base.copy(originType = ORIGIN_CARRIED_OVER)
         }
     }
 
     private companion object {
         const val ORIGIN_DOMESTIC = "DOMESTIC"
         const val ORIGIN_IMPORTED = "IMPORTED"
+        const val ORIGIN_CARRIED_OVER = "CARRIED_OVER"
     }
 }
