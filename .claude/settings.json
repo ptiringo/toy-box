@@ -12,7 +12,10 @@
       "Bash(terraform apply *)",
       "Bash(terraform apply)",
       "Bash(terraform destroy *)",
-      "Bash(terraform destroy)"
+      "Bash(terraform destroy)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)"
     ],
     "ask": [
       "Bash(gcloud * create *)",
