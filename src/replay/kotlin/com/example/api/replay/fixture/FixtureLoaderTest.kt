@@ -38,7 +38,7 @@ class FixtureLoaderTest {
             "manifest と fixtures/*.json が不一致: $files vs $declared"
         }
         val covered = fixtures.filterIsInstance<CoveredSeasonFixture>()
-        // 内国産の基礎馬も出生国は事実（「日本」）として facts に持つ。合成は輸入年月日だけ（#633）。
+        // 内国産の基礎馬も出生国は事実（「日本」）として facts に持つ（#633）。
         assert(covered.any { it.facts.broodmare.originCountry == "日本" })
         // 未命名の産駒がある（血統登録のみで馬名登録が未了）。
         assert(covered.any { it.facts.foal != null && it.facts.foal.name == null })
@@ -48,13 +48,13 @@ class FixtureLoaderTest {
 
     @Test
     fun `内国産馬の出生国は合成ではなく事実として facts に載る`() {
-        // 出生国は JBIS の産地から分かる事実なので、内国産馬（seed 経路の都合で輸入馬として登録せざるをえない馬）
-        // でも合成層には置かない。置くと「facts に出生国が無い馬に嘘の出生国を書ける」余地が残る。
+        // 出生国は JBIS の産地から分かる事実なので、内国産馬（移行取り込み経路で seed する馬）でも
+        // 合成層には置かない。置くと「facts に出生国が無い馬に嘘の出生国を書ける」余地が残る。
         val fixture = FixtureLoader.load("02-domestic-barren.json") as CoveredSeasonFixture
 
         assert(fixture.facts.broodmare.originCountry == "日本")
-        // 合成しているのは輸入馬経路に載せるための架空の輸入年月日だけ。
-        assert(fixture.synthesized.broodmare.landingDate.isNotEmpty())
+        // 移行取り込み経路（RegisterCarriedOverHorse）で seed するため揚陸日を持たない（#633）。
+        assert(fixture.synthesized.broodmare.landingDate == null)
     }
 
     @Test

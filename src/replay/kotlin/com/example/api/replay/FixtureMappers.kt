@@ -1,6 +1,7 @@
 package com.example.api.replay
 
 import com.example.api.application.studbook.breeding.StudCertificateInput
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseCommand
 import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
@@ -103,10 +104,18 @@ fun StudCertificateFixture.toInput(): StudCertificateInput =
     )
 
 /**
- * 公開事実（[facts]）と合成値（[synth]）を合成して輸入馬登録の入力を作る。
+ * 産地が日本＝内国産。seed の経路判定に使う（#633）。
  *
- * 出生国は内国産馬（「日本」）も含めて常に事実を使う。内国産馬も seed 経路が RegisterImportedHorse しかないため
- * 輸入馬として登録せざるをえないが、そこで合成するのは架空の輸入年月日（[HorseSynthesized.landingDate]）だけで、 事実である出生国は歪めない（#633）。
+ * 内国産馬に輸入登録の事実は存在しないため移行取り込み（[carriedOverCommand]）で seed し、
+ * 外国産の基礎馬は実際に輸入登録された馬なので輸入馬経路（[importedCommand]）で seed する。
+ */
+val HorseFacts.isDomestic: Boolean
+    get() = originCountry == "日本"
+
+/**
+ * 公開事実（[facts]）と合成値（[synth]）を合成して輸入馬登録の入力を作る（外国産の基礎馬の seed）。
+ *
+ * 輸入登録は実際に起きた事実であり、合成しているのは JBIS 非公開の輸入年月日（[HorseSynthesized.landingDate]） だけで、事実である出生国は歪めない。
  */
 fun importedCommand(facts: HorseFacts, synth: HorseSynthesized): RegisterImportedHorseCommand =
     RegisterImportedHorseCommand(
@@ -117,7 +126,29 @@ fun importedCommand(facts: HorseFacts, synth: HorseSynthesized): RegisterImporte
         breeder = facts.breeder,
         microchipNumber = synth.microchipNumber,
         originCountry = facts.originCountry,
-        landingDate = LocalDate.parse(synth.landingDate),
+        landingDate =
+            LocalDate.parse(
+                requireNotNull(synth.landingDate) { "輸入馬経路の seed には landingDate が必要: $facts" }
+            ),
+        registrationNumber = synth.pedigreeRegistrationNumber,
+    )
+
+/**
+ * 公開事実（[facts]）と合成値（[synth]）を合成して移行取り込み登録の入力を作る（内国産の基礎馬の seed。#633）。
+ *
+ * 輸入馬経路（[importedCommand]）と異なり揚陸日を要しないため、架空の輸入年月日の合成が不要になる。
+ */
+fun carriedOverCommand(
+    facts: HorseFacts,
+    synth: HorseSynthesized,
+): RegisterCarriedOverHorseCommand =
+    RegisterCarriedOverHorseCommand(
+        sex = Sex.valueOf(facts.sex),
+        coatColor = CoatColor.valueOf(facts.coatColor),
+        breedType = BreedType.valueOf(facts.breedType),
+        dateOfBirth = LocalDate.parse(facts.dateOfBirth),
+        breeder = facts.breeder,
+        microchipNumber = synth.microchipNumber,
         registrationNumber = synth.pedigreeRegistrationNumber,
     )
 

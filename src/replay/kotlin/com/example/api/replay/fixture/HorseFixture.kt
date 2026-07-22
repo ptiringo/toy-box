@@ -65,8 +65,8 @@ data class CoveredFacts(
 /**
  * 基礎馬（種牡馬・繁殖牝馬）の公開事実。
  *
- * [originCountry] は内国産馬なら「日本」。JBIS の産地から分かる事実なので、輸入馬・内国産馬のいずれでも必ず書く （書き忘れは読み込み時に落ちる）。内国産馬を輸入馬経路で
- * seed せざるをえない綻び（#633）は [HorseSynthesized.landingDate]（架空の輸入年月日）に局在させる。
+ * [originCountry] は内国産馬なら「日本」。JBIS の産地から分かる事実なので、輸入馬・内国産馬のいずれでも必ず書く （書き忘れは読み込み時に落ちる）。seed
+ * の経路はこの事実から導出する: 「日本」なら移行取り込み、 それ以外なら輸入馬経路（#633。導出の根拠は FixtureMappers.isDomestic の KDoc）。
  */
 data class HorseFacts(
     val sex: String,
@@ -115,12 +115,13 @@ data class CoveredSynthesized(
 /**
  * 基礎馬の合成値。
  *
- * 出生国はここには無い（内国産馬の「日本」も含めて事実なので [HorseFacts.originCountry] が持つ）。 現在 seed 経路は RegisterImportedHorse
- * しかないため内国産馬も輸入馬として登録せざるをえないが、そのために 合成しているのは架空の輸入年月日（[landingDate]）だけである（#633）。
+ * 出生国はここには無い（内国産馬の「日本」も含めて事実なので [HorseFacts.originCountry] が持つ）。 [landingDate]
+ * は輸入馬経路（RegisterImportedHorse）で seed する外国産の基礎馬のみが持つ（輸入登録は 実際に起きた事実だが、輸入年月日は JBIS
+ * 非公開のため合成）。内国産の基礎馬は移行取り込み経路 （RegisterCarriedOverHorse）で seed するため揚陸日を持たない（#633）。
  */
 data class HorseSynthesized(
     val microchipNumber: String,
-    val landingDate: String,
+    val landingDate: String? = null,
     val pedigreeRegistrationNumber: String,
     val breedingRegistrationNumber: String,
 )
