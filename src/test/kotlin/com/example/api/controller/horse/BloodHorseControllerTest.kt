@@ -515,5 +515,43 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("blank-breeder")
         }
+
+        @Test
+        fun `InvalidRegistrationNumber で 400 と problem+json が返ること`() {
+            every {
+                registerCarriedOverHorse(any<Command<RegisterCarriedOverHorseCommand>>())
+            } returns Err(RegisterCarriedOverHorseUseCaseError.InvalidRegistrationNumber)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("invalid-registration-number")
+        }
+
+        @Test
+        fun `InvalidMicrochipNumber で 400 と problem+json が返ること`() {
+            every {
+                registerCarriedOverHorse(any<Command<RegisterCarriedOverHorseCommand>>())
+            } returns Err(RegisterCarriedOverHorseUseCaseError.InvalidMicrochipNumber)
+
+            tester
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("invalid-microchip-number")
+        }
     }
 }
