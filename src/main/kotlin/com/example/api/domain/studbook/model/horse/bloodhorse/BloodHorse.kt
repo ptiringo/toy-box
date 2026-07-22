@@ -79,7 +79,7 @@ sealed interface RegisterInStudBookError {
  * @property dateOfBirth 生年月日
  * @property breeder 生産者
  * @property inspectionId 個体識別・親子判定を行った審査（[HorseInspection]）の ID。識別子（マイクロチップ）は審査側が保持する
- * @property origin 出自（内国産＝父母ID／輸入＝原産国・揚陸日）。相互排他を [Origin] で型強制する
+ * @property origin 出自（内国産＝父母ID／輸入＝原産国・揚陸日／移行取り込み＝属性なし）。相互排他を [Origin] で型強制する
  * @property name 馬名。未命名なら null。命名は [assignName] でのみ行う
  */
 @AggregateRoot
