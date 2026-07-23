@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
@@ -15,6 +16,7 @@ import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
@@ -24,6 +26,7 @@ import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -33,8 +36,8 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 軽種馬リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する Create（内国産馬の血統登録）と、 個体への カスタムメソッド
- * `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 父母不明の輸入馬は前提条件が
+ * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する List（一覧取得）と Create（内国産馬の血統登録）、
+ * 個体へのカスタムメソッド `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 父母不明の輸入馬は前提条件が
  * 大きく異なるため、コレクションへのカスタムメソッド `:registerImported`（[AIP-136](https://google.aip.dev/136)）として
  * 登録経路を分ける。また、先行する登録原簿に血統登録済みの馬をシステム境界で取り込む移行経路として
  * `:registerCarriedOver`（[AIP-136](https://google.aip.dev/136)）を提供する。エラーレスポンスは RFC 9457 (Problem
@@ -46,8 +49,38 @@ class BloodHorseController(
     private val registerImportedHorse: RegisterImportedHorseUseCase,
     private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
     private val nameHorse: NameHorseUseCase,
+    private val findBloodHorses: FindBloodHorsesUseCase,
     private val clock: Clock,
 ) {
+    @Operation(
+        operationId = "listBloodHorses",
+        summary = "軽種馬の一覧を取得する",
+        description = "登録済みの軽種馬を id 昇順（登録順）でサマリ表現の配列として返す。該当が無ければ空配列を返す。",
+        tags = ["BloodHorse"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "軽種馬サマリの一覧（該当なしは空配列）",
+                    content =
+                        [
+                            Content(
+                                array =
+                                    ArraySchema(
+                                        schema =
+                                            Schema(
+                                                implementation = BloodHorseSummaryResponse::class
+                                            )
+                                    ),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                )
+            ],
+    )
+    @GetMapping("/api/bloodHorses")
+    fun list(): List<BloodHorseSummaryResponse> = findBloodHorses().map { it.toSummaryResponse() }
+
     @Operation(
         operationId = "registerBloodHorse",
         summary = "軽種馬を血統登録する",

@@ -1,0 +1,60 @@
+# frontend（Vite + React + TS）の lint/build/test ワークフロー
+#
+# 目的: frontend/ の変更時に Biome lint・tsc 型チェック込みビルド・vitest を実行し、
+# ローカルの pre-commit（biome-frontend）と合わせて frontend の品質ゲートを CI でも担保する。
+# Node のバージョンは mise.toml が単一の出所（mise-action が toolchain を供給。ADR-0064 とは無関係）。
+
+name: frontend
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    name: Lint, build and test frontend
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          # http backend ツール（kotlin-lsp/tfctl）を config から外す（mise.ci.toml。#510）。
+          MISE_ENV: ci
+        with:
+          # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
+          # install_args のツール名は mise.toml の [tools] キーと一致させる（lock は backend 修飾名で
+          # 同定するため、短縮名では --locked が lock エントリを引けず落ちる。node はそのままのキー）。
+          install_args: "node"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Biome lint
+        run: npm run lint
+
+      - name: Build (tsc + vite build)
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
