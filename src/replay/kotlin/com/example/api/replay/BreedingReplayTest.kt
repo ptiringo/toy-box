@@ -19,9 +19,9 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  *
  * `01-imported-normal` は両親とも輸入馬＝事実どおりの seed 経路で入れられるため、一周完了を回帰アンカーとして固定する。
  * 分岐（馬名登録の有無・産駒登録の有無）を検証するテストは、「◯◯の段階が無いこと」が手前の停止でも 成立してしまう空振りを避けるため、判断地点への到達を前提条件として明示する。
- * ただしこの前提条件も `assert` にはしない。将来モデル側の綻び（例: 内国産馬の seed 経路）が直って
- * 分岐地点より手前で停止するようになった場合、それ自体は「発見」でありビルド失敗にしてはならないため、 `assumeTrue` で表現し、到達しなければテストは失敗ではなく skipped
- * として可視化する。
+ * ただしこの前提条件も `assert` にはしない。将来モデル側の綻びが直って分岐地点より手前で停止するように
+ * なった場合、それ自体は「発見」でありビルド失敗にしてはならないため、`assumeTrue` で表現し、到達しなければ テストは失敗ではなく skipped として可視化する（内国産馬の
+ * seed 経路の綻びは #633 で解消済み）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)

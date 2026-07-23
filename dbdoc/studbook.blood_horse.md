@@ -17,7 +17,7 @@
 | breeder | varchar(255) |  | false |  |  | 生産者 |
 | inspection_id | uuid |  | false |  | [studbook.horse_inspection](studbook.horse_inspection.md) | 個体識別審査（horse_inspection）の ID |
 | name | varchar(255) |  | true |  |  | 馬名（未命名なら NULL） |
-| origin_type | varchar(16) |  | false |  |  | 出自の判別子（DOMESTIC/IMPORTED） |
+| origin_type | varchar(16) |  | false |  |  | 出自の判別子（DOMESTIC/IMPORTED/CARRIED_OVER） |
 | sire_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 父馬 ID（内国産のみ） |
 | dam_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 母馬 ID（内国産のみ） |
 | origin_country | varchar(255) |  | true |  |  | 原産国（輸入のみ） |
@@ -28,7 +28,7 @@
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL)))) |
+| chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL)) OR (((origin_type)::text = 'CARRIED_OVER'::text) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)))) |
 | blood_horse_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (dam_id) REFERENCES studbook.blood_horse(id) |
 | fk_blood_horse_sire | FOREIGN KEY | FOREIGN KEY (sire_id) REFERENCES studbook.blood_horse(id) |

@@ -14,19 +14,24 @@ import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterFoalCommand
 import com.example.api.application.studbook.horse.RegisterFoalUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
+import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.replay.fixture.CoveredSeasonFixture
+import com.example.api.replay.fixture.HorseFacts
 import com.example.api.replay.fixture.HorseFixture
+import com.example.api.replay.fixture.HorseSynthesized
 import com.example.api.replay.fixture.UncoveredSeasonFixture
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.fold
+import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Year
@@ -39,6 +44,7 @@ import org.springframework.stereotype.Component
 @Component
 class ReplayEngine(
     private val registerImportedHorse: RegisterImportedHorseUseCase,
+    private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
     private val registerBreedingRegistration: RegisterBreedingRegistrationUseCase,
     private val recordCovering: RecordCoveringUseCase,
     private val recordUncovered: RecordUncoveredUseCase,
@@ -54,6 +60,23 @@ class ReplayEngine(
             is UncoveredSeasonFixture -> runUncovered(fixture)
         }
 
+    /**
+     * 基礎馬（種牡馬・繁殖牝馬）1 頭を seed する。
+     *
+     * 産地が日本（内国産）なら移行取り込み経路、外国産なら輸入馬経路で登録する（#633。導出の根拠は [com.example.api.replay.fixture.HorseFacts]
+     * と isDomestic の KDoc）。
+     */
+    private fun seedHorse(
+        facts: HorseFacts,
+        synth: HorseSynthesized,
+        clock: Clock,
+    ): Result<RegisteredBloodHorse, Any> =
+        if (facts.isDomestic) {
+            registerCarriedOverHorse(Command.now(carriedOverCommand(facts, synth), clock))
+        } else {
+            registerImportedHorse(Command.now(importedCommand(facts, synth), clock))
+        }
+
     /** 種付を行った年の経路: seed ×2 → 繁殖登録 ×2 → 種付 → 種付成績報告 → 出生報告 → 産駒登録 → 馬名登録 → 繁殖成績報告。 */
     private fun runCovered(fixture: CoveredSeasonFixture): HorseReplayOutcome {
         val session = ReplaySession(fixture)
@@ -63,27 +86,17 @@ class ReplayEngine(
         // 種付年は公開事実ではなく表示年からの換算（合成値）なので synthesized 側から取る。
         val neutralInstant: Instant = submissionInstant(LocalDate.of(synth.coveringYear, 4, 1))
 
-        // 0. 基礎馬（種牡馬・繁殖牝馬）を輸入馬経路で seed（親不在で登録可）。
-        //    内国産馬も現状これしか経路がないため、事実の出生国＋合成した輸入年月日で通す。
+        // 0. 基礎馬（種牡馬・繁殖牝馬）を seed（親不在で登録可）。
+        //    産地が日本なら移行取り込み、外国産なら輸入馬経路（#633）。
         val stallion =
             session.step(
                 ReplayStep.REGISTER_STALLION,
-                registerImportedHorse(
-                    Command.now(
-                        importedCommand(facts.stallion, synth.stallion),
-                        seasonClock(neutralInstant),
-                    )
-                ),
+                seedHorse(facts.stallion, synth.stallion, seasonClock(neutralInstant)),
             ) ?: return session.stop()
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
-                registerImportedHorse(
-                    Command.now(
-                        importedCommand(facts.broodmare, synth.broodmare),
-                        seasonClock(neutralInstant),
-                    )
-                ),
+                seedHorse(facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
             ) ?: return session.stop()
 
         // 1. 繁殖登録（雄・雌）。
@@ -230,16 +243,11 @@ class ReplayEngine(
         // 繁殖年は公開事実ではなく表示年からの換算（合成値）なので synthesized 側から取る。
         val neutralInstant: Instant = submissionInstant(LocalDate.of(synth.breedingYear, 4, 1))
 
-        // 0. 繁殖牝馬を輸入馬経路で seed（内国産だが現状これしか経路がない。#633）。
+        // 0. 繁殖牝馬を seed（産地が日本なら移行取り込み、外国産なら輸入馬経路。#633）。
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
-                registerImportedHorse(
-                    Command.now(
-                        importedCommand(facts.broodmare, synth.broodmare),
-                        seasonClock(neutralInstant),
-                    )
-                ),
+                seedHorse(facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
             ) ?: return session.stop()
 
         // 1. 繁殖登録（雌のみ）。

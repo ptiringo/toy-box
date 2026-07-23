@@ -46,6 +46,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 9. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 10. 並行削除された集約への save が UpdateConflict を返すこと
  * 11. 馬名の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
+ * 12. 出自 CarriedOver の往復と CHECK 強制（バリアント固有列の混入を拒否）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -143,6 +144,29 @@ class JdbcBloodHorseRepositoryContractTest(
         origin as Origin.Imported
         assert(origin.originCountry == expectedOrigin.originCountry)
         assert(origin.landingDate == expectedOrigin.landingDate)
+    }
+
+    @Test
+    fun `移行取り込みの馬は出自CarriedOverのまま往復できる`() {
+        val carried = BloodHorseFixture.carriedOverBloodHorse()
+        seeder.seedInspectionFor(carried)
+
+        val saved = repository.save(carried).unwrap()
+        val found = repository.findById(carried.id)
+
+        assert(saved.id == carried.id)
+        assert(found != null)
+        // 出自 CarriedOver（属性なし）が判別子だけで往復する
+        assert(found!!.origin == Origin.CarriedOver)
+        assert(found.name == null)
+    }
+
+    @Test
+    fun `CARRIED_OVER行にバリアント固有列が混入するとCHECK制約が弾く`() {
+        // マッパーは常に整合行を書くが、DB 単独でも sealed Origin の不変条件が破れないこと（多層防御）
+        val row = domesticRow().copy(originType = "CARRIED_OVER")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
     }
 
     @Test

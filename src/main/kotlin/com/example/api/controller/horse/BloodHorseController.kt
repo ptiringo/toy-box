@@ -2,10 +2,12 @@ package com.example.api.controller.horse
 
 import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCase
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCase
 import com.example.api.controller.horse.problem.toProblemDetail
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
+import com.example.api.controller.horse.request.RegisterCarriedOverHorseRequest
 import com.example.api.controller.horse.request.RegisterHorseNameRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.controller.horse.request.toCommand
@@ -37,12 +39,15 @@ import org.springframework.web.bind.annotation.RestController
  * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する List（一覧取得）と Create（内国産馬の血統登録）、
  * 個体へのカスタムメソッド `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 父母不明の輸入馬は前提条件が
  * 大きく異なるため、コレクションへのカスタムメソッド `:registerImported`（[AIP-136](https://google.aip.dev/136)）として
- * 登録経路を分ける。エラーレスポンスは RFC 9457 (Problem Details) 形式で返す。
+ * 登録経路を分ける。また、先行する登録原簿に血統登録済みの馬をシステム境界で取り込む移行経路として
+ * `:registerCarriedOver`（[AIP-136](https://google.aip.dev/136)）を提供する。エラーレスポンスは RFC 9457 (Problem
+ * Details) 形式で返す。
  */
 @RestController
 class BloodHorseController(
     private val registerInStudBook: RegisterInStudBookUseCase,
     private val registerImportedHorse: RegisterImportedHorseUseCase,
+    private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
     private val nameHorse: NameHorseUseCase,
     private val findBloodHorses: FindBloodHorsesUseCase,
     private val clock: Clock,
@@ -170,6 +175,50 @@ class BloodHorseController(
         request: RegisterImportedHorseRequest
     ): BloodHorseResponse =
         registerImportedHorse(Command.now(request.toCommand(), clock))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
+
+    @Operation(
+        summary = "既登録馬を移行取り込みで血統登録する",
+        description =
+            "先行する登録原簿に血統登録済みの馬（内国産の基礎繁殖馬など）を、システム境界の移行経路として取り込む。" +
+                "JAIRS の登録手続ではないため父母・原産国・揚陸日を受け取らない。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+        tags = ["BloodHorse"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "201",
+                    description = "血統登録成功（登録された軽種馬リソースを返す）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BloodHorseResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "400",
+                    description = "入力値が不正（登録番号・マイクロチップ・生産者など）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/api/bloodHorses:registerCarriedOver")
+    fun registerCarriedOver(
+        @OperationRequestBody(description = "移行取り込みで血統登録する馬の入力")
+        @RequestBody
+        request: RegisterCarriedOverHorseRequest
+    ): BloodHorseResponse =
+        registerCarriedOverHorse(Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

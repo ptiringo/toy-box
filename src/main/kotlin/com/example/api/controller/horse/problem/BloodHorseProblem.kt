@@ -1,6 +1,7 @@
 package com.example.api.controller.horse.problem
 
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
+import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
@@ -192,5 +193,36 @@ fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 code = "blank-origin-country",
                 title = "Origin country is blank",
                 detail = "origin_country は空であってはいけません。",
+            )
+    }
+
+/**
+ * [RegisterCarriedOverHorseUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail]
+ * に変換する。
+ *
+ * 移行取り込みは父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）のみで、すべて 400 Bad Request とする。
+ */
+fun RegisterCarriedOverHorseUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        RegisterCarriedOverHorseUseCaseError.InvalidRegistrationNumber ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-registration-number",
+                title = "Invalid registration number",
+                detail = "registration_number は空であってはいけません。",
+            )
+        RegisterCarriedOverHorseUseCaseError.InvalidMicrochipNumber ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-microchip-number",
+                title = "Invalid microchip number",
+                detail = "microchip_number は 15 桁の数字でなければなりません。",
+            )
+        RegisterCarriedOverHorseUseCaseError.BlankBreeder ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "blank-breeder",
+                title = "Breeder is blank",
+                detail = "breeder は空であってはいけません。",
             )
     }
