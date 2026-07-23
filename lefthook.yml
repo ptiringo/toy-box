@@ -26,6 +26,16 @@ pre-commit:
       run: mise exec -- ./gradlew detekt --daemon
       tags: lint
 
+    # Biome による frontend の lint/フォーマットチェック
+    # root を frontend に切ると、実行ディレクトリだけでなく {staged_files} も frontend/ からの
+    # 相対パスへ書き換わる（cd するだけだと絶対パス化されない root 相対の staged_files が二重に
+    # frontend/ を含んで解決できなくなる。実測で確認済み）。
+    biome-frontend:
+      root: "frontend/"
+      glob: "frontend/**/*.{ts,tsx,json}"
+      run: npx biome check {staged_files}
+      tags: lint
+
     # actionlint による GitHub Actions ワークフローの lint
     actionlint:
       glob: ".github/workflows/*.{yml,yaml}"

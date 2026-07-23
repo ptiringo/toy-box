@@ -1,5 +1,7 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.studbook.horse.BloodHorseView
+import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
@@ -15,8 +17,11 @@ import com.example.api.controller.horse.request.RegisterBloodHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
+import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -46,6 +51,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var registerInStudBook: RegisterInStudBookUseCase
     @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
+    @MockkBean private lateinit var findBloodHorses: FindBloodHorsesUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -70,6 +76,53 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 registrationNumber = "2023104567",
             )
         )
+
+    @Nested
+    inner class ListCase {
+        @Test
+        fun `軽種馬一覧が200で snake_case のサマリ配列として返ること`() {
+            val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
+            every { findBloodHorses() } returns
+                listOf(
+                    BloodHorseView(
+                        id = id,
+                        registrationNumber = "REG-001",
+                        sex = Sex.FEMALE,
+                        coatColor = CoatColor.BAY,
+                        breedType = BreedType.THOROUGHBRED,
+                        dateOfBirth = LocalDate.of(2020, 4, 10),
+                        breeder = "Coolmore",
+                        name = null,
+                    )
+                )
+
+            val body = tester.get().uri("/api/bloodHorses").assertThat().hasStatusOk().bodyJson()
+
+            body.extractingPath("$[0].id").isEqualTo(id.toString())
+            body.extractingPath("$[0].registration_number").isEqualTo("REG-001")
+            body.extractingPath("$[0].sex").isEqualTo("FEMALE")
+            body.extractingPath("$[0].coat_color").isEqualTo("BAY")
+            body.extractingPath("$[0].breed_type").isEqualTo("THOROUGHBRED")
+            body.extractingPath("$[0].date_of_birth").isEqualTo("2020-04-10")
+            // 未命名は name = null で公開されること
+            body.extractingPath("$[0].name").isNull()
+        }
+
+        @Test
+        fun `登録が無ければ200で空配列を返すこと`() {
+            every { findBloodHorses() } returns emptyList()
+
+            tester
+                .get()
+                .uri("/api/bloodHorses")
+                .assertThat()
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$")
+                .asArray()
+                .isEmpty()
+        }
+    }
 
     @Nested
     inner class SuccessCase {
