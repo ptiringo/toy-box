@@ -5,7 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 export function RequireAuth() {
   const { user, loading } = useAuth();
   if (loading) {
-    return <p>認証状態を確認中…</p>;
+    return <div className="loading">認証状態を確認中…</div>;
   }
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 }

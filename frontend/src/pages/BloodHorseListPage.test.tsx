@@ -29,7 +29,7 @@ function renderPage() {
 }
 
 describe("BloodHorseListPage", () => {
-  it("フェッチ成功時はテーブルを表示し、エラー banner は出ずステータス200が可視化される", async () => {
+  it("成功時はテーブルを表示し、wire enum を日本語ラベルで描き、エラーは出ずステータス200が可視化される", async () => {
     apiGetMock.mockResolvedValue([
       {
         id: "h1",
@@ -48,13 +48,18 @@ describe("BloodHorseListPage", () => {
     await waitFor(() => {
       expect(screen.getByText("0000000001")).toBeInTheDocument();
     });
-    expect(screen.getByText(/直近レスポンス: 200/)).toBeInTheDocument();
+    // wire 値（FEMALE / BAY / THOROUGHBRED）ではなく日本語ラベルで描かれる。
+    expect(screen.getByText("牝")).toBeInTheDocument();
+    expect(screen.getByText("鹿毛")).toBeInTheDocument();
+    expect(screen.getByText("サラブレッド")).toBeInTheDocument();
+    // ステータス可視化（バッジに直近レスポンスが出る）
+    expect(screen.getByTitle("直近レスポンス")).toHaveTextContent("200");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    // name が null の行は「（未命名）」で描画される。
-    expect(screen.getByText("（未命名）")).toBeInTheDocument();
+    // name が null の行は「未命名」で描画される。
+    expect(screen.getByText("未命名")).toBeInTheDocument();
   });
 
-  it("フェッチ失敗時はエラー banner が出て、ステータスが可視化される", async () => {
+  it("失敗時はエラー banner が出て、ステータスが可視化される", async () => {
     apiGetMock.mockRejectedValue(new ApiError(401));
 
     renderPage();
@@ -62,6 +67,6 @@ describe("BloodHorseListPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
-    expect(screen.getByText(/直近レスポンス: 401/)).toBeInTheDocument();
+    expect(screen.getByTitle("直近レスポンス")).toHaveTextContent("401");
   });
 });
