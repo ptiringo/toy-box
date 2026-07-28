@@ -156,6 +156,20 @@ private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
                 title = "Breed mismatch",
                 detail = "仔の品種が父母の品種と整合しません。",
             )
+        RegisterInStudBookError.GrayFoalFromNonGrayParents ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
+                code = "gray-foal-from-non-gray-parents",
+                title = "Gray foal from non-gray parents",
+                detail = "芦毛でない父母の間に生まれた仔を芦毛として登録することはできません。",
+            )
+        RegisterInStudBookError.NonChestnutFoalFromChestnutParents ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
+                code = "non-chestnut-foal-from-chestnut-parents",
+                title = "Non-chestnut foal from chestnut parents",
+                detail = "栗毛（栃栗毛を含む）の父母の間に生まれた仔は栗毛でなければなりません。",
+            )
     }
 
 /**

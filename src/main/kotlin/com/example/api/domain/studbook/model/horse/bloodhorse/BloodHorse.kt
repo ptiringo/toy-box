@@ -51,6 +51,19 @@ sealed interface RegisterInStudBookError {
 
     /** 仔の品種が父母の品種と整合しない。 */
     data object BreedMismatch : RegisterInStudBookError
+
+    /**
+     * 芦毛以外の父母の間に生まれた仔を芦毛として登録しようとした（登録規程実施基準 第9条第1項(2)ア）。
+     *
+     * 父母のいずれかが芦毛または白毛なら該当しない（判定の詳細は [CoatColor.violatesGrayRule]）。
+     */
+    data object GrayFoalFromNonGrayParents : RegisterInStudBookError
+
+    /**
+     * 栗毛（栃栗毛を含む）同士の父母の間に生まれた仔を栗毛以外として登録しようとした （登録規程実施基準 第9条第1項(2)イ）。仔が白毛の場合は該当しない（判定の詳細は
+     * [CoatColor.violatesChestnutRule]）。
+     */
+    data object NonChestnutFoalFromChestnutParents : RegisterInStudBookError
 }
 
 /**
@@ -59,7 +72,7 @@ sealed interface RegisterInStudBookError {
  * 血統登録（血統及び個体識別を明らかにする登録）の成立によって誕生する個体であり、ライフサイクル全体（繁殖登録・競走馬登録など）を通じて 同一の [BloodHorse]
  * が各ロール（繁殖牝馬・種牡馬・競走馬）を担う。
  *
- * 父・母は別個体（別集約）であり、参照は [BloodHorseId] 経由で表す。父=雄・母=雌・親子の DNA 整合・親仔の品種整合といった前提条件は集約をまたぐが、
+ * 父・母は別個体（別集約）であり、参照は [BloodHorseId] 経由で表す。父=雄・母=雌・親子の DNA 整合・親仔の品種整合・親仔の毛色整合といった前提条件は集約をまたぐが、
  * 父・母を引数で受け取る生成ファクトリ [create] がその場で自己検証する（Jockey.create と同じく、検証を満たさなければ生成しない）。 コンストラクタは private
  * とし、生成は [create] / [createImported] / [createCarriedOver] のみに限る。
  *
@@ -146,6 +159,7 @@ private constructor(
          * - 母が雌であること
          * - 確定済み審査の親子判定が申告父母を確認していること
          * - 仔の品種が父母の品種と整合すること
+         * - 仔の毛色が父母の毛色と整合すること（芦毛・栗毛の遺伝ルール）
          *
          * 検証を満たさなければ生成せず [RegisterInStudBookError] を返す。生成された [BloodHorse] は父母を ID
          * （[BloodHorseId]）経由で参照する。生成直後は未命名（[name] は null）。
@@ -171,6 +185,10 @@ private constructor(
                     Err(RegisterInStudBookError.ParentageNotConfirmed)
                 !entry.breedType.isConsistentWith(sire.breedType, dam.breedType) ->
                     Err(RegisterInStudBookError.BreedMismatch)
+                entry.coatColor.violatesGrayRule(sire.coatColor, dam.coatColor) ->
+                    Err(RegisterInStudBookError.GrayFoalFromNonGrayParents)
+                entry.coatColor.violatesChestnutRule(sire.coatColor, dam.coatColor) ->
+                    Err(RegisterInStudBookError.NonChestnutFoalFromChestnutParents)
                 else ->
                     Ok(
                         BloodHorse(
