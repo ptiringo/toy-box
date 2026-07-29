@@ -91,7 +91,7 @@ sealed interface RegisterInStudBookUseCaseError {
  * 血統登録ユースケース。
  *
  * 境界の生入力を VO に変換し（不正なら検証エラー）、父・母を [BloodHorseRepository] で引き当て、生成ファクトリ [BloodHorse.create]
- * で前提条件（父=雄・母=雌・DNA 親子整合・品種整合）を検証してから、誕生した [BloodHorse] を 永続化する。Controller
+ * で前提条件（父=雄・母=雌・DNA 親子整合・品種整合・毛色整合）を検証してから、誕生した [BloodHorse] を 永続化する。Controller
  * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
  * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterInStudBookUseCaseError]

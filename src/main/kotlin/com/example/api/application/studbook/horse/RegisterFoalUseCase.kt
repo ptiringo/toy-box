@@ -99,8 +99,8 @@ sealed interface RegisterFoalUseCaseError {
  * 生産産駒登録ユースケース。
  *
  * 境界の生入力を VO に変換し（不正なら検証エラー）、繁殖成績・繁殖登録・父（種付の種牡馬）・母（繁殖牝馬）を 各ポートで引き当て、ドメインサービス registerFoal
- * で前提条件（分娩結果が生産であること、および委譲先 registerInStudBook の父=雄・母=雌・DNA 親子整合・品種整合）を検証してから、誕生した [BloodHorse]
- * を永続化する。 Controller 層は本クラスのみに依存し、ポートやドメインサービスは知らない。
+ * で前提条件（分娩結果が生産であること、および委譲先 registerInStudBook の父=雄・母=雌・DNA 親子整合・品種整合・毛色整合）を検証してから、誕生した
+ * [BloodHorse] を永続化する。 Controller 層は本クラスのみに依存し、ポートやドメインサービスは知らない。
  *
  * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterFoalUseCaseError]
  */

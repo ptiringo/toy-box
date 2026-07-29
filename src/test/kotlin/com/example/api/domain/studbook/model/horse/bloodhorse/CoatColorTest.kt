@@ -38,8 +38,9 @@ class CoatColorTest {
     }
 
     @Test
-    fun `栗毛同士の父母から生まれた仔が栃栗毛なら栗毛規則に該当しないこと`() {
+    fun `栗毛同士の父母から生まれた仔が栗毛または栃栗毛なら栗毛規則に該当しないこと`() {
         // 第9条(2)イ は栃栗毛を栗毛に含める
+        assert(!CoatColor.CHESTNUT.violatesChestnutRule(CoatColor.CHESTNUT, CoatColor.CHESTNUT))
         assert(
             !CoatColor.DARK_CHESTNUT.violatesChestnutRule(CoatColor.CHESTNUT, CoatColor.CHESTNUT)
         )
