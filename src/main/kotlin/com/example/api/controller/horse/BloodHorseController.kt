@@ -112,7 +112,7 @@ class BloodHorseController(
                 ),
                 ApiResponse(
                     responseCode = "422",
-                    description = "父母が存在しない、または前提条件（父=雄・母=雌・DNA 整合・品種整合）を満たさない",
+                    description = "父母が存在しない、または前提条件（父=雄・母=雌・DNA 整合・品種整合・毛色整合）を満たさない",
                     content =
                         [
                             Content(

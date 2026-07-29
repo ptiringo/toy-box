@@ -45,7 +45,7 @@
 | CarriedOverHorseEntry | 移行取り込み（carried-over）の個体識別の束 | 値オブジェクト | 先行する登録原簿に血統登録済みの馬をシステム境界で取り込む際の入力。JAIRS の手続ではなくシステム境界の移行経路。血統は先行原簿に記録済みのため父母 ID を持たず、輸入馬（`ImportedHorseEntry`）と異なり原産国・揚陸日も持たない（#633）。 | — |
 | DnaParentageResult | DNA 型親子判定結果 | 値オブジェクト | 申告された父母との親子関係の DNA 型検査結果（`CONSISTENT` のときのみ血統登録可）。 | — |
 | BreedType | 品種 | 値オブジェクト | サラブレッド等の品種。親仔の品種整合の検証に用いる。 | — |
-| CoatColor | 毛色 | 値オブジェクト | 馬の毛色。 | — |
+| CoatColor | 毛色 | 値オブジェクト | 馬の毛色。親仔の毛色整合（芦毛・栗毛の遺伝ルール、登録規程実施基準 第9条第1項(2)）の検証に用いる。 | — |
 | DateOfBirth | 生年月日 | 値オブジェクト | 個体の生年月日。 | — |
 | Breeder | 生産者 | 値オブジェクト | 個体を生産した者。 | — |
 | FoalIdentity | 仔馬の個体識別 | 値オブジェクト | 産駒の個体識別情報。 | — |
@@ -92,7 +92,7 @@
 
 集約をまたぐ前提条件のうち、協力集約を**引数で受け取れば構築時に自己検証できる**ものは集約の `create` ファクトリへ移した（[ADR-0014](adr/0014-self-validating-factory-over-confinement.md)）。したがって血統登録・繁殖登録・種付記録は**ドメインサービスではなくファクトリ**である:
 
-- 血統登録 = `BloodHorse.create`（父=雄・母=雌・DNA 親子整合・品種整合を検証）／輸入馬は `BloodHorse.createImported`
+- 血統登録 = `BloodHorse.create`（父=雄・母=雌・DNA 親子整合・品種整合・毛色整合を検証）／輸入馬は `BloodHorse.createImported`
 - 繁殖登録 = `BreedingRegistration.create`（雄雌共通、性から `BreedingRole` を決定）
 - 種付記録 = `BreedingResult.create`（繁殖牝馬×種牡馬の登録ロールを検証）
 
