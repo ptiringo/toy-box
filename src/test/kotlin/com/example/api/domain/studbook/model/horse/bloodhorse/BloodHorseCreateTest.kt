@@ -76,4 +76,42 @@ class BloodHorseCreateTest {
 
         assert(result.getError() == RegisterInStudBookError.BreedMismatch)
     }
+
+    @Test
+    fun `芦毛以外の父母の仔が芦毛だと GrayFoalFromNonGrayParents を返すこと`() {
+        val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE, coatColor = CoatColor.BAY)
+        val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE, coatColor = CoatColor.CHESTNUT)
+        val entry = BloodHorseFixture.studBookEntry(coatColor = CoatColor.GRAY)
+
+        val result =
+            BloodHorse.create(sire, dam, entry, BloodHorseFixture.inspection(), registrationNumber)
+
+        assert(result.getError() == RegisterInStudBookError.GrayFoalFromNonGrayParents)
+    }
+
+    @Test
+    fun `栗毛同士の父母の仔が栗毛以外だと NonChestnutFoalFromChestnutParents を返すこと`() {
+        val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE, coatColor = CoatColor.CHESTNUT)
+        val dam =
+            BloodHorseFixture.bloodHorse(sex = Sex.FEMALE, coatColor = CoatColor.DARK_CHESTNUT)
+        val entry = BloodHorseFixture.studBookEntry(coatColor = CoatColor.BAY)
+
+        val result =
+            BloodHorse.create(sire, dam, entry, BloodHorseFixture.inspection(), registrationNumber)
+
+        assert(result.getError() == RegisterInStudBookError.NonChestnutFoalFromChestnutParents)
+    }
+
+    @Test
+    fun `父が芦毛なら仔が芦毛でも血統登録できること`() {
+        val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE, coatColor = CoatColor.GRAY)
+        val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE, coatColor = CoatColor.BAY)
+        val entry = BloodHorseFixture.studBookEntry(coatColor = CoatColor.GRAY)
+
+        val bloodHorse =
+            BloodHorse.create(sire, dam, entry, BloodHorseFixture.inspection(), registrationNumber)
+                .unwrap()
+
+        assert(bloodHorse.coatColor == CoatColor.GRAY)
+    }
 }

@@ -58,9 +58,13 @@ object BloodHorseFixture {
      * テストで父・母や種牡馬・繁殖牝馬として使う「既に登録済みの馬」を、前提条件検証を経ずに用意するためのもの。 検証を持たない [BloodHorse.createImported]
      * を経由するため、性・品種・ID は自由に指定できる。
      */
-    fun bloodHorse(sex: Sex = Sex.MALE, breedType: BreedType = BreedType.THOROUGHBRED): BloodHorse =
+    fun bloodHorse(
+        sex: Sex = Sex.MALE,
+        coatColor: CoatColor = CoatColor.BAY,
+        breedType: BreedType = BreedType.THOROUGHBRED,
+    ): BloodHorse =
         BloodHorse.createImported(
-            entry = importedHorseEntry(sex = sex, breedType = breedType),
+            entry = importedHorseEntry(sex = sex, coatColor = coatColor, breedType = breedType),
             inspection = inspection(parentage = ParentageDetermination.NotApplicable),
             registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
         )

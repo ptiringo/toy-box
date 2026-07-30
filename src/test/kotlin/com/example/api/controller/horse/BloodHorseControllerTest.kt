@@ -299,6 +299,50 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .extractingPath("$.error_code")
                 .isEqualTo("breed-mismatch")
         }
+
+        @Test
+        fun `前提条件違反（GrayFoalFromNonGrayParents）が 422 と problem+json に変換されること`() {
+            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(
+                    RegisterInStudBookUseCaseError.PreconditionViolated(
+                        RegisterInStudBookError.GrayFoalFromNonGrayParents
+                    )
+                )
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("gray-foal-from-non-gray-parents")
+        }
+
+        @Test
+        fun `前提条件違反（NonChestnutFoalFromChestnutParents）が 422 と problem+json に変換されること`() {
+            every { registerInStudBook(any<Command<RegisterInStudBookCommand>>()) } returns
+                Err(
+                    RegisterInStudBookUseCaseError.PreconditionViolated(
+                        RegisterInStudBookError.NonChestnutFoalFromChestnutParents
+                    )
+                )
+
+            tester
+                .post()
+                .uri("/api/bloodHorses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("non-chestnut-foal-from-chestnut-parents")
+        }
     }
 
     @Nested

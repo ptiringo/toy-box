@@ -22,7 +22,7 @@ import com.github.michaelbull.result.mapError
  * - 出生日 = 分娩結果（[FoalingOutcome.LiveFoal.foalingDate]）。申請者入力ではなく繁殖記録から確定する
  *
  * 産駒が生まれていない帰結（不受胎・流産・死産など [FoalingOutcome.LiveFoal] 以外）からは登録できず [RegisterFoalError.NotLiveFoal]
- * を返す。父=雄・母=雌・DNA 親子整合・親仔の品種整合といった前提条件の検証は委譲先の [BloodHorse.create] が担う。
+ * を返す。父=雄・母=雌・DNA 親子整合・親仔の品種整合・親仔の毛色整合といった前提条件の検証は委譲先の [BloodHorse.create] が担う。
  *
  * 父母が当システムに存在しない輸入馬・基礎輸入馬の登録経路は本サービスの対象外であり、別途設計する（#267）。
  *
