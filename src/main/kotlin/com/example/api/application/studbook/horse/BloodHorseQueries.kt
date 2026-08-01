@@ -1,5 +1,7 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+
 /**
  * 軽種馬一覧の読み取りポート（軽量 CQRS / L2 の Query 側。ADR-0031）。
  *
@@ -10,4 +12,11 @@ package com.example.api.application.studbook.horse
 interface BloodHorseQueries {
     /** 登録済みの全軽種馬を id 昇順（＝登録順。id は UUIDv7 相当）で返す（該当なしは空リスト）。 */
     fun findAll(): List<BloodHorseView>
+
+    /**
+     * ID で単一軽種馬の詳細ビューを引く。存在しなければ null（単純 lookup は Result を強制しない。error-handling.md）。
+     *
+     * 一覧の [findAll] が返す軽量サマリ [BloodHorseView] と異なり、マイクロチップ番号と出自を含む [BloodHorseDetailView] を返す。
+     */
+    fun findById(id: BloodHorseId): BloodHorseDetailView?
 }
