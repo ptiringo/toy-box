@@ -303,7 +303,12 @@ graph LR
 
 | 用語 | 種別 | パッケージ |
 | --- | --- | --- |
-| Player | 集約ルート | domain.tennis.model |
-| PlayerId | 値オブジェクト | domain.tennis.model |
+| Player | 集約ルート | domain.tennis.model.player |
+| Country | 値オブジェクト | domain.tennis.model.player |
+| DateOfBirth | 値オブジェクト | domain.tennis.model.player |
+| Handedness | 値オブジェクト | domain.tennis.model.player |
+| PlayerId | 値オブジェクト | domain.tennis.model.player |
+| PlayerName | 値オブジェクト | domain.tennis.model.player |
+| TurnedProDate | 値オブジェクト | domain.tennis.model.player |
 
 <!-- END GENERATED:ubiquitous-language -->
