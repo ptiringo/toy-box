@@ -6,10 +6,10 @@ import io.mockk.mockk
 import java.util.UUID
 import org.junit.jupiter.api.Test
 
-class FindBreedingResultSummaryUseCaseTest {
+class ListBreedingResultSummariesUseCaseTest {
 
     private val queries = mockk<BreedingResultSummaryQueries>()
-    private val useCase = FindBreedingResultSummaryUseCase(queries)
+    private val useCase = ListBreedingResultSummariesUseCase(queries)
 
     private val stallionId = BloodHorseId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
@@ -22,7 +22,7 @@ class FindBreedingResultSummaryUseCaseTest {
             )
         every { queries.findByStallion(stallionId) } returns rows
 
-        val result = useCase(FindBreedingResultSummaryQuery(stallionId))
+        val result = useCase(ListBreedingResultSummariesQuery(stallionId))
 
         assert(result == rows)
     }
@@ -31,7 +31,7 @@ class FindBreedingResultSummaryUseCaseTest {
     fun `該当する成績が無ければ空リストを返す`() {
         every { queries.findByStallion(stallionId) } returns emptyList()
 
-        val result = useCase(FindBreedingResultSummaryQuery(stallionId))
+        val result = useCase(ListBreedingResultSummariesQuery(stallionId))
 
         assert(result.isEmpty())
     }

@@ -1,8 +1,8 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultSummaryView
-import com.example.api.application.studbook.breeding.FindBreedingResultSummaryQuery
-import com.example.api.application.studbook.breeding.FindBreedingResultSummaryUseCase
+import com.example.api.application.studbook.breeding.ListBreedingResultSummariesQuery
+import com.example.api.application.studbook.breeding.ListBreedingResultSummariesUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.util.UUID
@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @AutoConfigureMockMvc(addFilters = false)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
-    @MockkBean private lateinit var findBreedingResultSummary: FindBreedingResultSummaryUseCase
+    @MockkBean private lateinit var listBreedingResultSummaries: ListBreedingResultSummariesUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -28,7 +28,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `種牡馬IDの集計一覧が200で件数と率つきの配列で返ること`() {
         // BreedingResultSummaryView.of(stallionId, 2024, 6, 4, 1) → 受胎率 4/6=66.7%
-        every { findBreedingResultSummary(any<FindBreedingResultSummaryQuery>()) } returns
+        every { listBreedingResultSummaries(any<ListBreedingResultSummariesQuery>()) } returns
             listOf(BreedingResultSummaryView.of(stallionId, 2024, 6, 4, 1))
 
         val body =
@@ -46,7 +46,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `集計の件数フィールドが snake_case で公開されること`() {
-        every { findBreedingResultSummary(any<FindBreedingResultSummaryQuery>()) } returns
+        every { listBreedingResultSummaries(any<ListBreedingResultSummariesQuery>()) } returns
             listOf(BreedingResultSummaryView.of(stallionId, 2024, 6, 4, 1))
 
         tester
@@ -61,7 +61,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `該当なしは200で空配列を返すこと`() {
-        every { findBreedingResultSummary(any<FindBreedingResultSummaryQuery>()) } returns
+        every { listBreedingResultSummaries(any<ListBreedingResultSummariesQuery>()) } returns
             emptyList()
 
         tester
