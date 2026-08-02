@@ -1,7 +1,7 @@
 package com.example.api.controller.jockey
 
-import com.example.api.application.racing.jockey.FindJockeyQuery
-import com.example.api.application.racing.jockey.FindJockeyUseCase
+import com.example.api.application.racing.jockey.GetJockeyQuery
+import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyNotFound
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 class JockeyControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
 
-    @MockkBean private lateinit var findJockey: FindJockeyUseCase
+    @MockkBean private lateinit var getJockey: GetJockeyUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -127,7 +127,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `存在するIDで 200 OK とリソース表現が返ること`() {
             val id = generateId()
-            every { findJockey(FindJockeyQuery(id)) } returns
+            every { getJockey(GetJockeyQuery(id)) } returns
                 Ok(JockeyView(id = id, firstName = "武", lastName = "豊"))
 
             val response =
@@ -142,7 +142,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `存在しないIDで 404 と jockey_id 付きの problem+json が返ること`() {
             val id = generateId()
-            every { findJockey(FindJockeyQuery(id)) } returns Err(JockeyNotFound(id))
+            every { getJockey(GetJockeyQuery(id)) } returns Err(JockeyNotFound(id))
 
             tester
                 .get()

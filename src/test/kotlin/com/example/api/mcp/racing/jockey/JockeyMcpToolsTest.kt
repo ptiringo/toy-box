@@ -1,7 +1,7 @@
 package com.example.api.mcp.racing.jockey
 
-import com.example.api.application.racing.jockey.FindJockeyQuery
-import com.example.api.application.racing.jockey.FindJockeyUseCase
+import com.example.api.application.racing.jockey.GetJockeyQuery
+import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyNotFound
 import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.domain.shared.generateId
@@ -15,20 +15,20 @@ import org.junit.jupiter.api.assertThrows
 /**
  * MCP アダプタ [JockeyMcpTools] の slice 相当ユニットテスト。
  *
- * adapter リングのため [FindJockeyUseCase] を mockk でスタブし、Result → MCP ツール結果（成功 DTO /
+ * adapter リングのため [GetJockeyUseCase] を mockk でスタブし、Result → MCP ツール結果（成功 DTO /
  * 失敗時の例外送出）への変換のみを検証する（testing.md: adapter は slice 相当で入出力変換を検証）。
  */
 class JockeyMcpToolsTest {
-    private val findJockeyUseCase = mockk<FindJockeyUseCase>()
-    private val tools = JockeyMcpTools(findJockeyUseCase)
+    private val getJockeyUseCase = mockk<GetJockeyUseCase>()
+    private val tools = JockeyMcpTools(getJockeyUseCase)
 
     @Test
     fun `存在するIDならJockeyMcpResultを返す`() {
         val id = generateId()
-        every { findJockeyUseCase(FindJockeyQuery(id)) } returns
+        every { getJockeyUseCase(GetJockeyQuery(id)) } returns
             Ok(JockeyView(id = id, firstName = "武", lastName = "豊"))
 
-        val result = tools.findJockey(id.toString())
+        val result = tools.getJockey(id.toString())
 
         assert(result == JockeyMcpResult(id = id.toString(), firstName = "武", lastName = "豊"))
     }
@@ -36,14 +36,14 @@ class JockeyMcpToolsTest {
     @Test
     fun `存在しないIDなら例外を送出する（MCPのisErrorへ写す）`() {
         val id = generateId()
-        every { findJockeyUseCase(FindJockeyQuery(id)) } returns Err(JockeyNotFound(id))
+        every { getJockeyUseCase(GetJockeyQuery(id)) } returns Err(JockeyNotFound(id))
 
-        val ex = assertThrows<NoSuchElementException> { tools.findJockey(id.toString()) }
+        val ex = assertThrows<NoSuchElementException> { tools.getJockey(id.toString()) }
         assert(ex.message == "jockey not found: $id")
     }
 
     @Test
     fun `不正なUUID文字列なら例外を送出する`() {
-        assertThrows<IllegalArgumentException> { tools.findJockey("not-a-uuid") }
+        assertThrows<IllegalArgumentException> { tools.getJockey("not-a-uuid") }
     }
 }

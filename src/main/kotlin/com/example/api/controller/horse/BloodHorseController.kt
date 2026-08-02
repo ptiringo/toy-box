@@ -1,8 +1,8 @@
 package com.example.api.controller.horse
 
-import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
 import com.example.api.application.studbook.horse.GetBloodHorseQuery
 import com.example.api.application.studbook.horse.GetBloodHorseUseCase
+import com.example.api.application.studbook.horse.ListBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
@@ -51,7 +51,7 @@ class BloodHorseController(
     private val registerImportedHorse: RegisterImportedHorseUseCase,
     private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
     private val nameHorse: NameHorseUseCase,
-    private val findBloodHorses: FindBloodHorsesUseCase,
+    private val listBloodHorses: ListBloodHorsesUseCase,
     private val getBloodHorse: GetBloodHorseUseCase,
     private val clock: Clock,
 ) {
@@ -82,7 +82,7 @@ class BloodHorseController(
             ],
     )
     @GetMapping("/api/bloodHorses")
-    fun list(): List<BloodHorseSummaryResponse> = findBloodHorses().map { it.toSummaryResponse() }
+    fun list(): List<BloodHorseSummaryResponse> = listBloodHorses().map { it.toSummaryResponse() }
 
     @Operation(
         operationId = "getBloodHorse",

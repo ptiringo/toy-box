@@ -22,8 +22,8 @@ data class BloodHorseNotFound(val id: UUID)
 /**
  * 軽種馬照会ユースケース（軽量 CQRS（L2）の読み取り側。ADR-0031）。
  *
- * 一覧の [FindBloodHorsesUseCase] と対になる by-id 照会。名前は AIP の標準メソッド名（List / Get）に寄せ、
- * 一覧（`FindBloodHorses〜`）との差が末尾の `s` 一文字だけになるのを避ける。
+ * 一覧の [ListBloodHorsesUseCase] と対になる by-id 照会。読み取りユースケースの名前は AIP の標準メソッド名 （Get /
+ * List）に寄せる（`.claude/rules/architecture.md`「読み取り経路（軽量 CQRS / L2）」）。
  *
  * 書き込みユースケース（[RegisterInStudBookUseCase] 等）と同列に `@Service` で公開するが、依存するのは 書き込みポートではなく読み取りポート
  * [BloodHorseQueries]。集約を組まず [BloodHorseDetailView] を返す。

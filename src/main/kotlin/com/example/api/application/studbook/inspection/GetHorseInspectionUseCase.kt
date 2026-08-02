@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service
  *
  * @property id 照会対象審査の生 UUID
  */
-data class FindHorseInspectionQuery(val id: UUID)
+data class GetHorseInspectionQuery(val id: UUID)
 
 /** 照会対象の審査が存在しない。URL パス上の操作対象の不在として Controller 境界で 404 に写す（api-design.md）。 */
 data class HorseInspectionNotFound(val id: UUID)
@@ -28,9 +28,9 @@ data class HorseInspectionNotFound(val id: UUID)
  * @return 照会できた [HorseInspectionView]、または対象不在を表す [HorseInspectionNotFound]
  */
 @Service
-class FindHorseInspectionUseCase(private val horseInspectionQueries: HorseInspectionQueries) {
+class GetHorseInspectionUseCase(private val horseInspectionQueries: HorseInspectionQueries) {
     operator fun invoke(
-        query: FindHorseInspectionQuery
+        query: GetHorseInspectionQuery
     ): Result<HorseInspectionView, HorseInspectionNotFound> =
         horseInspectionQueries.findById(HorseInspectionId(query.id)).toResultOr {
             HorseInspectionNotFound(query.id)

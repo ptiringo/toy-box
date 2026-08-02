@@ -11,14 +11,14 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Test
 
 /**
- * 照会ユースケース [FindHorseInspectionUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
+ * 照会ユースケース [GetHorseInspectionUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
  *
  * 読み取りポート [HorseInspectionQueries] を mockk でスタブし、ヒット時は [HorseInspectionView] を、不在時は
  * [HorseInspectionNotFound] を返す分岐を検証する（testing.md: applicationService はポート境界をモックする）。
  */
-class FindHorseInspectionUseCaseTest {
+class GetHorseInspectionUseCaseTest {
     private val horseInspectionQueries = mockk<HorseInspectionQueries>()
-    private val findHorseInspection = FindHorseInspectionUseCase(horseInspectionQueries)
+    private val getHorseInspection = GetHorseInspectionUseCase(horseInspectionQueries)
 
     @Test
     fun `存在するIDなら対応するHorseInspectionViewをOkで返す`() {
@@ -32,7 +32,7 @@ class FindHorseInspectionUseCaseTest {
             )
         every { horseInspectionQueries.findById(HorseInspectionId(id)) } returns view
 
-        val result = findHorseInspection(FindHorseInspectionQuery(id))
+        val result = getHorseInspection(GetHorseInspectionQuery(id))
 
         assert(result.get() == view)
     }
@@ -42,7 +42,7 @@ class FindHorseInspectionUseCaseTest {
         val id = generateId()
         every { horseInspectionQueries.findById(HorseInspectionId(id)) } returns null
 
-        val result = findHorseInspection(FindHorseInspectionQuery(id))
+        val result = getHorseInspection(GetHorseInspectionQuery(id))
 
         assert(result.getError() == HorseInspectionNotFound(id))
     }
