@@ -1,5 +1,8 @@
 package com.example.api.support
 
+import java.sql.Connection
+import java.sql.DriverManager
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -17,6 +20,10 @@ import org.testcontainers.utility.DockerImageName
  *
  * 本クラスを継承するテストでは、Flyway が起動時に `db/migration/V*.sql` をこの PostgreSQL コンテナへ適用する （Boot 4.1 + Flyway
  * 12 + flyway-database-postgresql で自動実行されることを併せて担保する）。
+ *
+ * **DB の後始末も本クラスが担う**（#440 / ADR-0070）。コンテナはプロセス内で共有されるため、テストが書いた行は 明示的に消さない限り後続のテストへ漏れる。
+ * [truncateAllTables] を `@BeforeEach` に置くことで、継承した時点で 必ず後始末が効き、テスト側が書き忘れうる余地を無くしている。`@Transactional`
+ * によるロールバック分離は 採らない（トランザクション意味論を検証するテストが実コミットを要求するため適用範囲を 100% にできず、 隔離方式が二重化する。ADR-0070）。
  */
 // テストが継承して共有コンテナを得るための基底クラス。object 化すると継承できないため、
 // 「companion のユーティリティだけなら object にせよ」という detekt の指摘はここでは当たらない。
@@ -35,6 +42,52 @@ abstract class PostgresContainerSupport {
             registry.add("spring.datasource.url", postgres::getJdbcUrl)
             registry.add("spring.datasource.username", postgres::getUsername)
             registry.add("spring.datasource.password", postgres::getPassword)
+        }
+
+        /**
+         * Flyway が作った実テーブルを `スキーマ名.テーブル名` の完全修飾名で列挙する。
+         *
+         * スキーマはコンテキスト別に分かれ（ADR-0048）今後も増えるため、スキーマ名もテーブル名もハードコード しない。除外するのはシステムスキーマと Flyway
+         * の内部管理テーブル（`flyway_schema_history`。V13 の方針で 既定スキーマに残る）だけ。
+         */
+        fun truncatableTables(): List<String> = connect().use { selectTableNames(it) }
+
+        private fun connect(): Connection =
+            DriverManager.getConnection(postgres.jdbcUrl, postgres.username, postgres.password)
+
+        private fun selectTableNames(connection: Connection): List<String> =
+            connection.createStatement().use { statement ->
+                statement.executeQuery(TABLE_NAME_QUERY).use { resultSet ->
+                    buildList { while (resultSet.next()) add(resultSet.getString(1)) }
+                }
+            }
+
+        private val TABLE_NAME_QUERY =
+            """
+            SELECT format('%I.%I', schemaname, tablename)
+            FROM pg_tables
+            WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+                AND tablename <> 'flyway_schema_history'
+            ORDER BY 1
+            """
+                .trimIndent()
+    }
+
+    /**
+     * 各テストの前に全テーブルを空にする。
+     *
+     * Spring の `JdbcClient` ではなくコンテナへ直接つなぐのは、テスト側の接続やトランザクション状態、 `@SpringBootTest`
+     * の構成に後始末を依存させないため。全テーブルを 1 文でまとめて TRUNCATE するので FK の依存順（ADR-0053）を考える必要が無い。
+     */
+    @BeforeEach
+    fun truncateAllTables() {
+        connect().use { connection ->
+            val tables = selectTableNames(connection)
+            // 列挙が空振りしても TRUNCATE は無言で成功し「後始末しているつもり」になるため、ここで落とす
+            check(tables.isNotEmpty()) { "TRUNCATE 対象のテーブルが 1 つも見つからない（Flyway 未適用か列挙条件の誤り）" }
+            connection.createStatement().use { statement ->
+                statement.execute("TRUNCATE TABLE ${tables.joinToString()} CASCADE")
+            }
         }
     }
 }
