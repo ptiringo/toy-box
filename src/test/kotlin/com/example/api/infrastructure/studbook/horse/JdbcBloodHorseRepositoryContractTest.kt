@@ -13,17 +13,14 @@ import com.example.api.infrastructure.studbook.StudbookSeeder
 import com.example.api.infrastructure.studbook.breeding.BreedingRegistrationSpringDataRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.util.UUID
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -54,16 +51,10 @@ class JdbcBloodHorseRepositoryContractTest(
     private val rows: BloodHorseSpringDataRepository,
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
-    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcBloodHorseRepository(rows)
     private val seeder = StudbookSeeder(inspectionRows, rows, registrationRows)
-
-    @BeforeEach
-    fun cleanUp() {
-        deleteAllStudbookTables(jdbcClient)
-    }
 
     private fun domesticRow(id: UUID = generateId()) =
         BloodHorseRow(

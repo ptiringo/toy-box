@@ -10,10 +10,8 @@ import com.example.api.infrastructure.studbook.StudbookSeeder
 import com.example.api.infrastructure.studbook.breeding.BreedingRegistrationSpringDataRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
 import java.time.LocalDate
 import java.util.UUID
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -38,11 +36,6 @@ class JdbcBloodHorseQueriesContractTest(
 
     private val queries = JdbcBloodHorseQueries(jdbcClient)
     private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
-
-    @BeforeEach
-    fun cleanUp() {
-        deleteAllStudbookTables(jdbcClient)
-    }
 
     @Test
     fun `登録済みの馬を全件 id 昇順で返す`() {

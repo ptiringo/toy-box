@@ -4,7 +4,6 @@ import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
 import com.github.michaelbull.result.unwrap
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestConstructor
@@ -29,11 +28,6 @@ class JdbcJockeyRepositoryContractTest(private val rows: JockeySpringDataReposit
     PostgresContainerSupport() {
 
     private val repository = JdbcJockeyRepository(rows)
-
-    @BeforeEach
-    fun cleanUp() {
-        rows.deleteAll()
-    }
 
     @Test
     fun `外部採番のIDを持つ新規行はversionがnullなのでinsertされる`() {
