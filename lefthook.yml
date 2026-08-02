@@ -114,7 +114,25 @@ pre-commit:
       tags: lint
 
 pre-push:
+  # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
+  piped: true
   commands:
+    # Docker 到達性の事前確認（#679 / ADR-0070）。
+    #
+    # 後続の full-test は Testcontainers（PostgreSQL）に依存するため Docker デーモンを要求する。
+    # デーモンが不調だと Testcontainers が接続を試み続けてテストが長時間ハングし、端末上は
+    # 「push が無反応」に見えてネットワーク側を疑う切り分けに時間を取られる（実際 #365 の作業中に
+    # 踏んだ）。ゲート自体は残したまま、テストを起動する前に到達性を確かめて理由と対処つきで
+    # 即座に失敗させる。判定条件とタイムアウトの理由はスクリプト側のコメントに書いてある。
+    #
+    # glob は full-test と揃える（テストが走らない push で Docker を要求しない）。
+    # priority で full-test より先に走らせる（lefthook の既定はコマンド名の辞書順）。
+    docker-available:
+      priority: 1
+      glob: "**/*.{kt,kts,java}"
+      run: scripts/check-docker-available.sh
+      tags: test
+
     # プッシュ前に全体のテストを実行
     #
     # git worktree（リンクされた作業ツリー）では Gradle daemon を使わない（#482）。
@@ -131,6 +149,7 @@ pre-push:
     # そこで挙げられた暫定回避策。将来 org.gradle.daemon.scope（キャッシュ共有のまま daemon を
     # スコープ分離）が実装されたら、性能を犠牲にしない形へ置き換えられる。
     full-test:
+      priority: 2
       glob: "**/*.{kt,kts,java}"
       run: mise exec -- ./gradlew test $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
       tags: test
