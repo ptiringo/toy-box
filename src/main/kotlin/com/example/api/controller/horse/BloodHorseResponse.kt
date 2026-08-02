@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.studbook.horse.BloodHorseDetailView
 import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
@@ -54,4 +55,24 @@ fun RegisteredBloodHorse.toResponse(): BloodHorseResponse =
         microchipNumber = inspection.microchipNumber.value,
         origin = bloodHorse.origin.toApi(),
         name = bloodHorse.name?.value,
+    )
+
+/**
+ * 読み取りモデル [BloodHorseDetailView] を軽種馬リソースの表現へ変換する（読み取り経路。Get の成功レスポンス）。
+ *
+ * 書き込み経路の [RegisteredBloodHorse] 版と同じ [BloodHorseResponse] を組む。全操作で単一のリソース表現を
+ * 共用する方針（ADR-0008）に従い、Get 専用の DTO は作らない。
+ */
+fun BloodHorseDetailView.toResponse(): BloodHorseResponse =
+    BloodHorseResponse(
+        id = id,
+        registrationNumber = registrationNumber,
+        sex = sex.toApi(),
+        coatColor = coatColor.toApi(),
+        breedType = breedType.toApi(),
+        dateOfBirth = dateOfBirth,
+        breeder = breeder,
+        microchipNumber = microchipNumber,
+        origin = origin.toApi(),
+        name = name,
     )
