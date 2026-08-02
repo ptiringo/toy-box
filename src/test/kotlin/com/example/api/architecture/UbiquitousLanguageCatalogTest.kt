@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
  *
  * コードが唯一の出所であり、ビルディングブロックを足し引きするとカタログが乖離してこのテストが落ちる。 再生成するには次を実行してドキュメントを更新し、差分をコミットする:
  * ```
- * ./gradlew test --tests "*UbiquitousLanguageCatalogTest" -DubiquitousLanguage.update=true
+ * ./gradlew :test --tests "*UbiquitousLanguageCatalogTest" -DubiquitousLanguage.update=true
  * ```
  *
  * 定義・和名・別名・禁止語といった意味づけは手書きセクションが担い、本テストは型の一覧（どの用語が存在すべきか） だけをゲートする。KDoc はバイトコードに残らないため自動抽出の対象外。
@@ -45,7 +45,7 @@ class UbiquitousLanguageCatalogTest {
 
         assert(current.trim() == expected.trim()) {
             "ユビキタス言語カタログ（docs/ubiquitous-language.md の自動生成ブロック）がコードと乖離しています。" +
-                "次で再生成してコミットしてください: ./gradlew test " +
+                "次で再生成してコミットしてください: ./gradlew :test " +
                 "--tests \"*UbiquitousLanguageCatalogTest\" -DubiquitousLanguage.update=true"
         }
     }

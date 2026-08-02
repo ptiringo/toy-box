@@ -15,7 +15,7 @@
 > 落ちる。次でカタログを再生成し、併せて下の手書き用語集にも定義を足してからコミットする。
 >
 > ```bash
-> ./gradlew test --tests "*UbiquitousLanguageCatalogTest" -DubiquitousLanguage.update=true
+> ./gradlew :test --tests "*UbiquitousLanguageCatalogTest" -DubiquitousLanguage.update=true
 > ```
 
 ---
