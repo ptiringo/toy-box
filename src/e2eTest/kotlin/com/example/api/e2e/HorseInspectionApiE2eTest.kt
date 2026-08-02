@@ -99,5 +99,7 @@ class HorseInspectionApiE2eTest(val restTestClient: RestTestClient) : PostgresCo
             .isEqualTo("CONSISTENT")
             .jsonPath("$.features.hair_whorl")
             .isEqualTo("頭部正中")
+            .jsonPath("$.features.white_markings")
+            .isEqualTo("流星")
     }
 }

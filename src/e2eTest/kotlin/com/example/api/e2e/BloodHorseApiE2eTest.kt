@@ -20,6 +20,9 @@ import org.springframework.test.web.servlet.client.RestTestClient
  * アプリを実 port で起動し（@SpringBootTest RANDOM_PORT）、Testcontainers PostgreSQL を
  * [PostgresContainerSupport] 経由で実配線したまま、[RestTestClient] で HTTP 越しに叩く（`JockeyApiE2eTest` と同型）。
  *
+ * `/api` 配下は認証必須（ADR-0064）なので、各リクエストに Bearer トークンを載せる。`JwtDecoder` は [TestJwtDecoderConfiguration]
+ * の HS256 実装に差し替え、実 JWKS を引かずに認証フィルタを本物のまま通す。
+ *
  * 内国産馬の血統登録は父母が登録済みであることを要求するため、往復シナリオでは父母不明の輸入馬を登録する カスタムメソッド `:registerImported` で父母を 2 頭 seed
  * してから産駒を血統登録する。父母も通常の血統登録で 作ろうとすると更にその父母が要る無限後退になるため、輸入馬を系統の起点に使う。
  */

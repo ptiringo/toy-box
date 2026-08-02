@@ -32,7 +32,9 @@ private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
  *
  * 書き込み側の `JdbcBloodHorseRepository`（集約 `BloodHorse` を `BloodHorseRow` 経由で復元する）とは別経路として、
  * `studbook.blood_horse` を [JdbcClient] で直接 SELECT し、集約を組まずに平坦な [BloodHorseView] へ詰める。 enum
- * 列（性・毛色・品種）は enum 名文字列を `valueOf` でドメイン enum へ戻す。
+ * 列（性・毛色・品種）は enum 名文字列を `valueOf` でドメイン enum へ戻す。一覧 [findAll] は `blood_horse` 単独から
+ * [BloodHorseView] を組むのに対し、単体取得 [findById] は `studbook.horse_inspection` と JOIN して
+ * マイクロチップ番号も含めた完全表現 [BloodHorseDetailView] を組む。
  */
 @Repository
 class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQueries {

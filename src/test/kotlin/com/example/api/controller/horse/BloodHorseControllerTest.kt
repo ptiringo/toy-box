@@ -660,9 +660,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     }
 
     @Nested
-    inner class 軽種馬の取得 {
-        private val tester = MockMvcTester.create(mockMvc)
-
+    inner class GetCase {
         @Test
         fun `存在する ID で 200 OK と軽種馬リソースの完全表現が返ること`() {
             val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
