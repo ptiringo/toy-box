@@ -9,14 +9,14 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Test
 
 /**
- * 照会ユースケース [FindJockeyUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
+ * 照会ユースケース [GetJockeyUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
  *
  * 読み取りポート [JockeyQueries] を mockk でスタブし、ヒット時は [JockeyView] を、不在時は [JockeyNotFound] を
  * 返す分岐を検証する（testing.md: applicationService は Repository / Query ポート境界をモックする）。
  */
-class FindJockeyUseCaseTest {
+class GetJockeyUseCaseTest {
     private val jockeyQueries = mockk<JockeyQueries>()
-    private val findJockey = FindJockeyUseCase(jockeyQueries)
+    private val getJockey = GetJockeyUseCase(jockeyQueries)
 
     @Test
     fun `存在するIDなら対応するJockeyViewをOkで返す`() {
@@ -24,7 +24,7 @@ class FindJockeyUseCaseTest {
         val view = JockeyView(id = id, firstName = "武", lastName = "豊")
         every { jockeyQueries.findById(JockeyId(id)) } returns view
 
-        val result = findJockey(FindJockeyQuery(id))
+        val result = getJockey(GetJockeyQuery(id))
 
         assert(result.get() == view)
     }
@@ -34,7 +34,7 @@ class FindJockeyUseCaseTest {
         val id = generateId()
         every { jockeyQueries.findById(JockeyId(id)) } returns null
 
-        val result = findJockey(FindJockeyQuery(id))
+        val result = getJockey(GetJockeyQuery(id))
 
         assert(result.getError() == JockeyNotFound(id))
     }

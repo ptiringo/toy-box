@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service
  *
  * @property id 照会対象ジョッキーの生 UUID
  */
-data class FindJockeyQuery(val id: UUID)
+data class GetJockeyQuery(val id: UUID)
 
 /** 照会対象のジョッキーが存在しない。URL パス上の操作対象の不在として Controller 境界で 404 に写す（api-design.md）。 */
 data class JockeyNotFound(val id: UUID)
@@ -28,7 +28,7 @@ data class JockeyNotFound(val id: UUID)
  * @return 照会できた [JockeyView]、または対象不在を表す [JockeyNotFound]
  */
 @Service
-class FindJockeyUseCase(private val jockeyQueries: JockeyQueries) {
-    operator fun invoke(query: FindJockeyQuery): Result<JockeyView, JockeyNotFound> =
+class GetJockeyUseCase(private val jockeyQueries: JockeyQueries) {
+    operator fun invoke(query: GetJockeyQuery): Result<JockeyView, JockeyNotFound> =
         jockeyQueries.findById(JockeyId(query.id)).toResultOr { JockeyNotFound(query.id) }
 }

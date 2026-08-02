@@ -1,7 +1,7 @@
 package com.example.api.controller.jockey
 
-import com.example.api.application.racing.jockey.FindJockeyQuery
-import com.example.api.application.racing.jockey.FindJockeyUseCase
+import com.example.api.application.racing.jockey.GetJockeyQuery
+import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.controller.jockey.problem.toProblemDetail
@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class JockeyController(
     private val registerJockey: JockeyRegistrationUseCase,
-    private val findJockey: FindJockeyUseCase,
+    private val getJockey: GetJockeyUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -126,8 +126,7 @@ class JockeyController(
     )
     @GetMapping("/api/jockeys/{id}")
     fun get(@Parameter(description = "取得するジョッキーの生 UUID") @PathVariable id: UUID): JockeyResponse {
-        val view =
-            findJockey(FindJockeyQuery(id)).mapError { it.toProblemDetail() }.orThrowProblem()
+        val view = getJockey(GetJockeyQuery(id)).mapError { it.toProblemDetail() }.orThrowProblem()
         return view.toResponse()
     }
 }

@@ -1,6 +1,6 @@
 package com.example.api.controller
 
-import com.example.api.application.racing.jockey.FindJockeyUseCase
+import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
@@ -35,7 +35,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
 
-    @MockkBean private lateinit var findJockey: FindJockeyUseCase
+    @MockkBean private lateinit var getJockey: GetJockeyUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
