@@ -11,17 +11,14 @@ import com.example.api.infrastructure.studbook.StudbookSeeder
 import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.time.Year
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -45,16 +42,10 @@ class JdbcCoveringReportRepositoryContractTest(
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val horseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
-    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcCoveringReportRepository(rows)
     private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
-
-    @BeforeEach
-    fun cleanUp() {
-        deleteAllStudbookTables(jdbcClient)
-    }
 
     /** 親（種牡馬とその繁殖登録）を seed 済みの繁殖登録を返す。 */
     private fun seededStallionRegistration(): BreedingRegistration {

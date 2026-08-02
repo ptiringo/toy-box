@@ -4,11 +4,8 @@ import com.example.api.replay.fixture.CoveredSeasonFixture
 import com.example.api.replay.fixture.FixtureLoader
 import com.example.api.replay.fixture.StudCertificateFixture
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -25,10 +22,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
-class ReplayStopBranchTest(private val engine: ReplayEngine, private val jdbcClient: JdbcClient) :
-    PostgresContainerSupport() {
-
-    @BeforeEach fun cleanUp() = deleteAllStudbookTables(jdbcClient)
+class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainerSupport() {
 
     /** 回帰アンカーの種畜証明だけを差し替える（他の値はすべて元のまま）。 */
     private fun anchorWithStudCertificate(

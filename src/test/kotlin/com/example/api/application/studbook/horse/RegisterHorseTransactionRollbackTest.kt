@@ -17,7 +17,6 @@ import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataReposit
 import com.example.api.infrastructure.studbook.horse.JdbcBloodHorseRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
 import java.time.Instant
@@ -30,7 +29,6 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.dao.DataAccessResourceFailureException
-import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -50,7 +48,6 @@ class RegisterHorseTransactionRollbackTest(
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val bloodHorseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
-    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
 
     private val seeder = StudbookSeeder(inspectionRows, bloodHorseRows, registrationRows)
@@ -65,9 +62,8 @@ class RegisterHorseTransactionRollbackTest(
     }
 
     @BeforeEach
-    fun cleanUp() {
+    fun resetFailureInjection() {
         failingRepository.failOnSave = false
-        deleteAllStudbookTables(jdbcClient)
     }
 
     @Test

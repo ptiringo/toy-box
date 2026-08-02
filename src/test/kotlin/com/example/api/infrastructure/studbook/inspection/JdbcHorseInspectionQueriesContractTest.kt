@@ -6,8 +6,6 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -36,11 +34,6 @@ class JdbcHorseInspectionQueriesContractTest(
 ) : PostgresContainerSupport() {
 
     private val queries = JdbcHorseInspectionQueries(jdbcClient)
-
-    @BeforeEach
-    fun cleanUp() {
-        deleteAllStudbookTables(jdbcClient)
-    }
 
     @Test
     fun `DNA判定と特徴記述子を持つ審査をIDでViewとして引ける`() {

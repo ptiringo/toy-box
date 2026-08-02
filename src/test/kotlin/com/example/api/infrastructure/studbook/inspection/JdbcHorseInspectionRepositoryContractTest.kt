@@ -8,15 +8,12 @@ import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
 import com.github.michaelbull.result.unwrap
 import java.util.UUID
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -33,17 +30,11 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JdbcHorseInspectionRepositoryContractTest(
-    private val rows: HorseInspectionSpringDataRepository,
-    private val jdbcClient: JdbcClient,
+    private val rows: HorseInspectionSpringDataRepository
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcHorseInspectionRepository(rows)
     private val microchip = MicrochipNumber.create("392140000000001").unwrap()
-
-    @BeforeEach
-    fun cleanUp() {
-        deleteAllStudbookTables(jdbcClient)
-    }
 
     private fun byDnaRow(id: UUID = generateId()) =
         HorseInspectionRow(
