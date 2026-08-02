@@ -45,6 +45,14 @@ paths:
 - **Kotlin の変更は `test` ではなく `check` で締める**。ArchUnit の規約テスト・detekt カスタムルール・`koverVerifyMature`（成熟ゲート）は focused な `--tests` 実行では走らないため、緑を見て完了と判断すると `check` で落ちる。
 - **CI でコンパイルだけしたいときは `assemble` を使う**（例: CodeQL のビルドステップ）。`build -x test` は `check` 配下の検証（ktfmt / detekt / `koverVerifyMature`）を巻き込み、コンパイルが目的のジョブでカバレッジゲートを誤発火させる。
 
+## DB を触るテストの後始末（基底クラスが担う・テスト側に書かない）
+
+Testcontainers の PostgreSQL はプロセス内で共有されるため、テストが書いた行は消さない限り後続へ漏れる。後始末は `PostgresContainerSupport`（`src/test/.../support/`）の `@BeforeEach` に一元化されている（[ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）。
+
+- **テスト側にクリーンアップを書かない**。基底クラスを継承した時点で必ず効く（`src/test` だけでなく `src/e2eTest` / `src/replay` も同じ基底クラスを継承する）。対象テーブルは `pg_tables` から動的に列挙するので、マイグレーションでテーブルが増えても手で追従する必要はない。
+- **`@Transactional` によるロールバック分離は採らない**。トランザクション意味論を検証するテスト（publish-after-commit / ユースケース Tx 境界）が実コミットを要求するため適用範囲を 100% にできず、隔離方式が二重化する（実測の根拠は [ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）。
+- テスト本文の `rows.deleteAll()` は後始末ではなく「並行削除の再現」という検証の一部。混同して消さないこと。
+
 ## テスト実行性能（コンテキストキャッシュ優先・並列化しない）
 
 Spring テストの主コストは `ApplicationContext` の構築。速度の本筋は**並列化ではなくコンテキストキャッシュの再利用最大化**にある（実測の根拠は [ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）。
