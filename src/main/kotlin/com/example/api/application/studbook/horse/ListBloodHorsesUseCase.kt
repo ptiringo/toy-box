@@ -9,6 +9,6 @@ import org.springframework.stereotype.Service
  * を取らず、`Command` 封筒も使わない。
  */
 @Service
-class FindBloodHorsesUseCase(private val bloodHorseQueries: BloodHorseQueries) {
+class ListBloodHorsesUseCase(private val bloodHorseQueries: BloodHorseQueries) {
     operator fun invoke(): List<BloodHorseView> = bloodHorseQueries.findAll()
 }

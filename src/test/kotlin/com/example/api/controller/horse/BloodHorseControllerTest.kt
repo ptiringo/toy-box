@@ -3,9 +3,9 @@ package com.example.api.controller.horse
 import com.example.api.application.studbook.horse.BloodHorseDetailView
 import com.example.api.application.studbook.horse.BloodHorseNotFound
 import com.example.api.application.studbook.horse.BloodHorseView
-import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
 import com.example.api.application.studbook.horse.GetBloodHorseQuery
 import com.example.api.application.studbook.horse.GetBloodHorseUseCase
+import com.example.api.application.studbook.horse.ListBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
@@ -62,7 +62,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
     @MockkBean private lateinit var registerCarriedOverHorse: RegisterCarriedOverHorseUseCase
-    @MockkBean private lateinit var findBloodHorses: FindBloodHorsesUseCase
+    @MockkBean private lateinit var listBloodHorses: ListBloodHorsesUseCase
     @MockkBean private lateinit var getBloodHorse: GetBloodHorseUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
@@ -94,7 +94,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `軽種馬一覧が200で snake_case のサマリ配列として返ること`() {
             val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
-            every { findBloodHorses() } returns
+            every { listBloodHorses() } returns
                 listOf(
                     BloodHorseView(
                         id = id,
@@ -122,7 +122,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `登録が無ければ200で空配列を返すこと`() {
-            every { findBloodHorses() } returns emptyList()
+            every { listBloodHorses() } returns emptyList()
 
             tester
                 .get()
