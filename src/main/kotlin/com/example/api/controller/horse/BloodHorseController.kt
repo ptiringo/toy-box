@@ -1,6 +1,8 @@
 package com.example.api.controller.horse
 
 import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
+import com.example.api.application.studbook.horse.GetBloodHorseQuery
+import com.example.api.application.studbook.horse.GetBloodHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
@@ -50,6 +52,7 @@ class BloodHorseController(
     private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
     private val nameHorse: NameHorseUseCase,
     private val findBloodHorses: FindBloodHorsesUseCase,
+    private val getBloodHorse: GetBloodHorseUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -80,6 +83,45 @@ class BloodHorseController(
     )
     @GetMapping("/api/bloodHorses")
     fun list(): List<BloodHorseSummaryResponse> = findBloodHorses().map { it.toSummaryResponse() }
+
+    @Operation(
+        operationId = "getBloodHorse",
+        summary = "軽種馬を ID で取得する",
+        description =
+            "指定された ID の軽種馬を、マイクロチップ番号と出自を含むリソース表現で返す。存在しない場合は RFC 9457 形式の problem+json を 404 で返す。",
+        tags = ["BloodHorse"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "軽種馬リソースの表現",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BloodHorseResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "指定 ID の軽種馬が存在しない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @GetMapping("/api/bloodHorses/{id}")
+    fun get(@Parameter(description = "取得する軽種馬の生 UUID") @PathVariable id: UUID): BloodHorseResponse =
+        getBloodHorse(GetBloodHorseQuery(id))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
 
     @Operation(
         operationId = "registerBloodHorse",

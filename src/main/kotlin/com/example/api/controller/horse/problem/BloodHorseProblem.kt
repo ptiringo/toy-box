@@ -1,5 +1,6 @@
 package com.example.api.controller.horse.problem
 
+import com.example.api.application.studbook.horse.BloodHorseNotFound
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseError
@@ -240,3 +241,22 @@ fun RegisterCarriedOverHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 detail = "breeder は空であってはいけません。",
             )
     }
+
+/**
+ * [BloodHorseNotFound]（照会対象の軽種馬不在）を 404 Not Found の [ProblemDetail] に変換する。
+ *
+ * URL パス上の操作対象が不在のケースなので 404（api-design.md「リソース不在のステータス（404 vs 422）」）。
+ * 馬名登録のパス対象不在（`NameHorseUseCaseError.HorseNotFound`）と意味もステータスも同じであるため `errorCode` を共用し、detail
+ * だけ照会用の文言にする。クライアントから見た分類軸を 1 つに保つのが狙いで、 発生箇所ごとに type を割らない。
+ *
+ * なお `blood-horse-not-found` は繁殖登録のボディ内参照先不在（422）で既に使われている。同一 type が 404 と 422
+ * の両方を持つと場合分けを濁すため、こちらへは流用しない。
+ */
+fun BloodHorseNotFound.toProblemDetail(): ProblemDetail =
+    problem(
+            status = HttpStatus.NOT_FOUND,
+            code = "horse-not-found",
+            title = "Horse not found",
+            detail = "指定された ID の軽種馬は存在しません。",
+        )
+        .apply { setProperty("blood_horse_id", id) }
