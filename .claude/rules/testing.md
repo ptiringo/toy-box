@@ -59,7 +59,7 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 
 - **distinct なコンテキスト構成を増やさない**。キャッシュは「同一の unique 構成」のときだけ再利用される（キーは classes / context customizers / active profiles / property sources 等の組合せ）。`@MockkBean` は context customizer を足してキーを分けるので**乱発しない**、`@Import` 構成は揃える、`@SpringBootTest(webEnvironment=...)` を不必要に散らさない。
 - **`@DirtiesContext` は原則使わない**（キャッシュを退避させ再構築を強いる）。状態リークは設計で断つ。
-- **テスト並列化（`maxParallelForks` / JUnit 5 の `junit.jupiter.execution.parallel`）は採らない**。フォークはキャッシュが JVM 単位のため逆効果、JVM 内並列は `@MockBean`/`@MockkBean` や共有状態を使うテストを Spring 公式が非推奨とする。再評価は #338（永続化層）でテスト隔離を整えてから。
+- **テスト並列化（`maxParallelForks` / JUnit 5 の `junit.jupiter.execution.parallel`）は採らない**。フォークはキャッシュが JVM 単位のため逆効果、JVM 内並列は `@MockBean`/`@MockkBean` や共有状態を使うテストを Spring 公式が非推奨とする。加えて DB を触るテストの後始末（共有コンテナの全テーブル TRUNCATE。[ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）は JVM 内並列と両立しない（他スレッドのデータまで消す）。再評価は #690。
 - 速度を縮めたいときの効く順: ビルドキャッシュ/デーモン（[ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）→ コンテキスト構成の共通化 → （将来）隔離を整えた上での並列化。
 
 ## E2E（ブラックボックス API テスト・ゲート外）
