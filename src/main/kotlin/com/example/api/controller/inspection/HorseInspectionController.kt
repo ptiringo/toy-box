@@ -1,7 +1,7 @@
 package com.example.api.controller.inspection
 
-import com.example.api.application.studbook.inspection.FindHorseInspectionQuery
-import com.example.api.application.studbook.inspection.FindHorseInspectionUseCase
+import com.example.api.application.studbook.inspection.GetHorseInspectionQuery
+import com.example.api.application.studbook.inspection.GetHorseInspectionUseCase
 import com.example.api.application.studbook.inspection.RecordHorseInspectionUseCase
 import com.example.api.controller.inspection.problem.toProblemDetail
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class HorseInspectionController(
     private val recordHorseInspection: RecordHorseInspectionUseCase,
-    private val findHorseInspection: FindHorseInspectionUseCase,
+    private val getHorseInspection: GetHorseInspectionUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -118,7 +118,7 @@ class HorseInspectionController(
     fun get(
         @Parameter(description = "取得する審査の生 UUID") @PathVariable id: UUID
     ): HorseInspectionResponse =
-        findHorseInspection(FindHorseInspectionQuery(id))
+        getHorseInspection(GetHorseInspectionQuery(id))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
