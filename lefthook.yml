@@ -117,7 +117,7 @@ pre-push:
   # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
   piped: true
   commands:
-    # Docker 到達性の事前確認（#679 / ADR-0070）。
+    # Docker 到達性の事前確認（#679 / ADR-0071）。
     #
     # 後続の full-test は Testcontainers（PostgreSQL）に依存するため Docker デーモンを要求する。
     # デーモンが不調だと Testcontainers が接続を試み続けてテストが長時間ハングし、端末上は

@@ -1,4 +1,4 @@
-# 0070. pre-push の Docker 依存は fail fast ガードで扱い、テストの切り分けは行わない
+# 0071. pre-push の Docker 依存は fail fast ガードで扱い、テストの切り分けは行わない
 
 - Status: Accepted
 - Date: 2026-08-02

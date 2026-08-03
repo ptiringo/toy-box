@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
  *
  * @property stallionId 照会対象の種牡馬の `BloodHorseId`
  */
-data class FindBreedingResultSummaryQuery(val stallionId: BloodHorseId)
+data class ListBreedingResultSummariesQuery(val stallionId: BloodHorseId)
 
 /**
  * 繁殖成績の年次集計を照会するユースケース（軽量 CQRS / L2 の読み取り側。ADR-0031）。
@@ -19,9 +19,9 @@ data class FindBreedingResultSummaryQuery(val stallionId: BloodHorseId)
  * コレクション照会のため失敗バリアントは設けない（該当なし＝空リスト）。
  */
 @Service
-class FindBreedingResultSummaryUseCase(
+class ListBreedingResultSummariesUseCase(
     private val breedingResultSummaryQueries: BreedingResultSummaryQueries
 ) {
-    operator fun invoke(query: FindBreedingResultSummaryQuery): List<BreedingResultSummaryView> =
+    operator fun invoke(query: ListBreedingResultSummariesQuery): List<BreedingResultSummaryView> =
         breedingResultSummaryQueries.findByStallion(query.stallionId)
 }

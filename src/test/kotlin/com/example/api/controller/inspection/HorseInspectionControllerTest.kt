@@ -1,7 +1,7 @@
 package com.example.api.controller.inspection
 
-import com.example.api.application.studbook.inspection.FindHorseInspectionQuery
-import com.example.api.application.studbook.inspection.FindHorseInspectionUseCase
+import com.example.api.application.studbook.inspection.GetHorseInspectionQuery
+import com.example.api.application.studbook.inspection.GetHorseInspectionUseCase
 import com.example.api.application.studbook.inspection.HorseInspectionNotFound
 import com.example.api.application.studbook.inspection.HorseInspectionView
 import com.example.api.application.studbook.inspection.RecordHorseInspectionCommand
@@ -44,7 +44,7 @@ import tools.jackson.databind.json.JsonMapper
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper) {
     @MockkBean private lateinit var recordHorseInspection: RecordHorseInspectionUseCase
-    @MockkBean private lateinit var findHorseInspection: FindHorseInspectionUseCase
+    @MockkBean private lateinit var getHorseInspection: GetHorseInspectionUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -201,7 +201,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                     parentage = ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT),
                     features = IdentificationFeatures("頭部正中", null, null),
                 )
-            every { findHorseInspection(FindHorseInspectionQuery(id)) } returns Ok(view)
+            every { getHorseInspection(GetHorseInspectionQuery(id)) } returns Ok(view)
 
             tester
                 .get()
@@ -216,7 +216,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
         @Test
         fun `存在しない ID で 404 と inspection_id 付きの problem+json が返ること`() {
             val id = UUID.fromString("44444444-4444-4444-4444-444444444444")
-            every { findHorseInspection(FindHorseInspectionQuery(id)) } returns
+            every { getHorseInspection(GetHorseInspectionQuery(id)) } returns
                 Err(HorseInspectionNotFound(id))
 
             val result = tester.get().uri("/api/horseInspections/$id").exchange()

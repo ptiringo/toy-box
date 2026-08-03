@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # pre-push で全テストを起動する前に Docker の到達性を確認し、到達できなければ
-# 理由と対処を明示して即座に失敗させる（ADR-0070 / #679）。
+# 理由と対処を明示して即座に失敗させる（ADR-0071 / #679）。
 #
 # 背景: pre-push の `./gradlew test` は Testcontainers（PostgreSQL）に依存するため Docker
 # デーモンを要求する。デーモンが不調だと Testcontainers が接続を試み続けてテストが長時間

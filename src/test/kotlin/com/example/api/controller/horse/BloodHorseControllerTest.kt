@@ -1,7 +1,11 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.studbook.horse.BloodHorseDetailView
+import com.example.api.application.studbook.horse.BloodHorseNotFound
 import com.example.api.application.studbook.horse.BloodHorseView
-import com.example.api.application.studbook.horse.FindBloodHorsesUseCase
+import com.example.api.application.studbook.horse.GetBloodHorseQuery
+import com.example.api.application.studbook.horse.GetBloodHorseUseCase
+import com.example.api.application.studbook.horse.ListBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
@@ -21,9 +25,11 @@ import com.example.api.controller.horse.request.RegisterCarriedOverHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
+import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.Err
@@ -56,7 +62,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
     @MockkBean private lateinit var registerCarriedOverHorse: RegisterCarriedOverHorseUseCase
-    @MockkBean private lateinit var findBloodHorses: FindBloodHorsesUseCase
+    @MockkBean private lateinit var listBloodHorses: ListBloodHorsesUseCase
+    @MockkBean private lateinit var getBloodHorse: GetBloodHorseUseCase
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -87,7 +94,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `軽種馬一覧が200で snake_case のサマリ配列として返ること`() {
             val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
-            every { findBloodHorses() } returns
+            every { listBloodHorses() } returns
                 listOf(
                     BloodHorseView(
                         id = id,
@@ -115,7 +122,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
         @Test
         fun `登録が無ければ200で空配列を返すこと`() {
-            every { findBloodHorses() } returns emptyList()
+            every { listBloodHorses() } returns emptyList()
 
             tester
                 .get()
@@ -649,6 +656,69 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("invalid-microchip-number")
+        }
+    }
+
+    @Nested
+    inner class GetCase {
+        @Test
+        fun `存在する ID で 200 OK と軽種馬リソースの完全表現が返ること`() {
+            val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
+            val sireId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+            val damId = UUID.fromString("33333333-3333-3333-3333-333333333333")
+            val view =
+                BloodHorseDetailView(
+                    id = id,
+                    registrationNumber = "2023100001",
+                    sex = Sex.MALE,
+                    coatColor = CoatColor.BAY,
+                    breedType = BreedType.THOROUGHBRED,
+                    dateOfBirth = LocalDate.of(2023, 4, 10),
+                    breeder = "ノーザンファーム",
+                    microchipNumber = "392140000000001",
+                    origin =
+                        Origin.Domestic(sireId = BloodHorseId(sireId), damId = BloodHorseId(damId)),
+                    name = null,
+                )
+            every { getBloodHorse(GetBloodHorseQuery(id)) } returns Ok(view)
+
+            val result = tester.get().uri("/api/bloodHorses/$id").exchange()
+
+            assertThat(result).hasStatus(HttpStatus.OK)
+            assertThat(result).bodyJson().extractingPath("$.id").isEqualTo(id.toString())
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.registration_number")
+                .isEqualTo("2023100001")
+            // マイクロチップと出自を含む完全表現（サマリではない）が返ること。
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.microchip_number")
+                .isEqualTo("392140000000001")
+            assertThat(result).bodyJson().extractingPath("$.origin.type").isEqualTo("DOMESTIC")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.origin.sire_id")
+                .isEqualTo(sireId.toString())
+        }
+
+        @Test
+        fun `存在しない ID で 404 と blood_horse_id 付きの problem+json が返ること`() {
+            val id = UUID.fromString("44444444-4444-4444-4444-444444444444")
+            every { getBloodHorse(GetBloodHorseQuery(id)) } returns Err(BloodHorseNotFound(id))
+
+            val result = tester.get().uri("/api/bloodHorses/$id").exchange()
+
+            assertThat(result)
+                .hasStatus(HttpStatus.NOT_FOUND)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("horse-not-found")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.blood_horse_id")
+                .isEqualTo(id.toString())
         }
     }
 }

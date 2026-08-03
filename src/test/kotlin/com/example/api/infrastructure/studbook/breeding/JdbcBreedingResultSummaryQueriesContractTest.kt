@@ -6,7 +6,6 @@ import com.example.api.infrastructure.studbook.StudbookSeeder
 import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
 import com.example.api.support.PostgresContainerSupport
-import com.example.api.support.deleteAllStudbookTables
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
@@ -42,8 +41,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     private val otherStallion = generateId()
 
     @BeforeEach
-    fun cleanUp() {
-        deleteAllStudbookTables(jdbcClient)
+    fun seedStallions() {
         seeder.seedHorseRow(id = stallion, sex = "MALE")
         seeder.seedHorseRow(id = otherStallion, sex = "MALE")
     }

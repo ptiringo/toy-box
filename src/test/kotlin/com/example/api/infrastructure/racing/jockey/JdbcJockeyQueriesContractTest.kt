@@ -3,7 +3,6 @@ package com.example.api.infrastructure.racing.jockey
 import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -35,11 +34,6 @@ class JdbcJockeyQueriesContractTest(
 ) : PostgresContainerSupport() {
 
     private val queries = JdbcJockeyQueries(jdbcClient)
-
-    @BeforeEach
-    fun cleanUp() {
-        rows.deleteAll()
-    }
 
     @Test
     fun `保存済みのジョッキーをIDでJockeyViewとして引ける`() {

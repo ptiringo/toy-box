@@ -51,7 +51,7 @@ paths:
 
 ### 読み取り経路（軽量 CQRS / L2）
 
-読み取り（クエリ）系は、書き込み側の集約を**経由しない**独立経路として実装する（軽量 CQRS = L2。ストア分離・結果整合・イベントソーシング = L3 は採らない）。決定経緯は [ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)、リファレンス実装は `racing/jockey`（`FindJockeyUseCase`）。
+読み取り（クエリ）系は、書き込み側の集約を**経由しない**独立経路として実装する（軽量 CQRS = L2。ストア分離・結果整合・イベントソーシング = L3 は採らない）。決定経緯は [ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)、リファレンス実装は `racing/jockey`（`GetJockeyUseCase`）。
 
 - **Read Model（View）とクエリポートは `application` に置く**（ドメインを汚さない）。書き込みの「集約 + Repository ポートは `domain.*.model`」と非対称だが、これは意図したもの。読みモデルは集約のライフサイクル（生成・状態遷移・整合性境界）を持たないため domain には置かない
 - **View には jMolecules の `@QueryModel`（`org.jmolecules.architecture.cqrs`）を付ける**。不変条件を持たないフラットな DTO で、値の等価性が自然なため `data class` でよい。`@QueryModel` が `application` に居ることは ArchUnit [`queryModelsResideInApplication`] で強制する（DDD ビルディングブロックを `domain.*.model` に縛る [`dddBuildingBlocksResideInDomainModel`] と対称）
@@ -59,6 +59,7 @@ paths:
 - **infrastructure の実装は集約を組まずストアから直接 View へ詰める**（例: `JdbcJockeyQueries` が `JdbcClient` で `jockey` を直 SELECT し、書き込みの `JockeyRow`／集約を経由しない）。同じテーブルを読んでも、経路（write=集約復元 / read=View 直組み）とモデルを分離するのが L2 の価値であり、「write ポートに finder を生やす」誘惑には乗らない
 - **読み取りも write と対称に `application` を必ず通す**（現行オニオンの依存方向を維持。infrastructure → application のポート実装はアダプターの依存として onion ルールが許容する）
 - クエリ入力 DTO は `〜Query` サフィックス。書き込み系の `Command<T>` 封筒（発生時刻メタデータ）は読み取りでは**使わない**（発生時刻は書き込みイベントの概念）
+- **ユースケース名は Google AIP の標準メソッド名に寄せる**。by-id の単数照会は `Get〜UseCase`、コレクション照会は `List〜sUseCase`（**必ず複数形**にし、単数形の名前で `List` を返さない）。入力 DTO も `Get〜Query` / `List〜Query` と対応させる。adapter 側（`operationId`・Controller のハンドラ名）が既に Get / List で揃っているため、application 層をこれに合わせて語彙を一本化する。一方 **クエリポート（`〜Queries`）のメソッド名は `findById` / `findAll` / `findBy〜` のままにする**。ポートは「無いかもしれないものを探す」意味論で `find` が正しく、ユースケース名（何をする操作か）とポート名（どう引くか）は別の語彙（[#688](https://github.com/ptiringo/toy-box/issues/688)）
 
 ## パッケージ構造
 

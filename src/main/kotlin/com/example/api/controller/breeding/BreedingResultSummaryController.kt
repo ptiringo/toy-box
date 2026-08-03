@@ -1,7 +1,7 @@
 package com.example.api.controller.breeding
 
-import com.example.api.application.studbook.breeding.FindBreedingResultSummaryQuery
-import com.example.api.application.studbook.breeding.FindBreedingResultSummaryUseCase
+import com.example.api.application.studbook.breeding.ListBreedingResultSummariesQuery
+import com.example.api.application.studbook.breeding.ListBreedingResultSummariesUseCase
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -19,12 +19,12 @@ import org.springframework.web.bind.annotation.RestController
  * 繁殖成績の年次集計リソースの HTTP アダプター（軽量 CQRS / L2 の読み取り側。ADR-0031）。
  *
  * JAIRS 様式第2号（繁殖登録原簿〈雄〉）に対応し、ある種牡馬の (種付年) ごとの繁殖成績（種付雌馬数・受胎率・ 生産率）を List で返す。読み取り経路は書き込み集約を一切経由せず
- * [FindBreedingResultSummaryUseCase] が
+ * [ListBreedingResultSummariesUseCase] が
  * [com.example.api.application.studbook.breeding.BreedingResultSummaryQueries] 経由でストアから直接組む。
  */
 @RestController
 class BreedingResultSummaryController(
-    private val findBreedingResultSummary: FindBreedingResultSummaryUseCase
+    private val listBreedingResultSummaries: ListBreedingResultSummariesUseCase
 ) {
     @Operation(
         summary = "種牡馬の繁殖成績の年次集計を取得する",
@@ -59,7 +59,6 @@ class BreedingResultSummaryController(
     fun list(
         @Parameter(description = "集計対象の種牡馬の生 UUID") @RequestParam stallionId: UUID
     ): List<BreedingResultSummaryResponse> =
-        findBreedingResultSummary(FindBreedingResultSummaryQuery(BloodHorseId(stallionId))).map {
-            it.toResponse()
-        }
+        listBreedingResultSummaries(ListBreedingResultSummariesQuery(BloodHorseId(stallionId)))
+            .map { it.toResponse() }
 }
