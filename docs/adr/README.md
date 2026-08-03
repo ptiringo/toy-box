@@ -79,3 +79,4 @@
 | [0068](0068-manual-infra-apply-with-notification.md) | infra の HCP Terraform apply を手動承認 + 通知にする（auto_apply 無効化） | Accepted |
 | [0069](0069-carried-over-registration-path.md) | 内国産既存馬はシステム境界の移行取り込み経路で血統登録する | Accepted |
 | [0070](0070-db-test-cleanup-via-truncate-not-transactional.md) | DB を触るテストの後始末は基底クラスの TRUNCATE に一元化し、@Transactional 分離は採らない | Accepted |
+| [0071](0071-pre-push-docker-fail-fast-guard.md) | pre-push の Docker 依存は fail fast ガードで扱い、テストの切り分けは行わない | Accepted |

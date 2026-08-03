@@ -65,7 +65,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 - **mise**: セットアップは `mise install`、確認は `mise list`。管理対象のツール一覧は `mise.toml` が出所（ビルド用 JDK、各種 lint / 解析、tbls、lefthook、fnox、terraform / tfctl、kotlin-lsp 等）。JDK のバージョン要件は `build.gradle.kts` の Gradle toolchain で宣言し、実体は mise が供給する（toolchain auto-detection が `JAVA_HOME` / `PATH` 経由で検出する）。
   - **`mise.lock` は生成したホストの platform 分しか記録しない**。macOS で生成した lock のまま Linux CI で `--locked` すると解決できず落ちるので、必要な platform のエントリを揃える（`http` backend は `mise lock` が sha を永続化しないため、公式の SHA256SUMS から手で追記する）。
   - **CI で `mise-action` の `install_args` にツールを列挙するときは `mise.toml` の `[tools]` キー（backend 修飾名）と完全一致させる**。短縮名では `--locked` が解決できず落ちる。ローカルの `--dry-run` は既インストール済みだと見逃す。
-- **Lefthook**: Git フックは `lefthook.yml` が出所（セットアップは `lefthook install`）。pre-commit で各種 lint、pre-push で全テスト、commit-msg で Conventional Commits 形式を検査する。フック全体の手動実行は `lefthook run pre-commit`、個別スキップは `LEFTHOOK_EXCLUDE=<name> git commit`。
+- **Lefthook**: Git フックは `lefthook.yml` が出所（セットアップは `lefthook install`）。pre-commit で各種 lint、pre-push で全テスト、commit-msg で Conventional Commits 形式を検査する。フック全体の手動実行は `lefthook run pre-commit`、個別スキップは `LEFTHOOK_EXCLUDE=<name> git commit`。pre-push は Testcontainers を使うため Docker を要求し、到達できなければテストを起動する前に理由つきで落とす（[ADR-0071](docs/adr/0071-pre-push-docker-fail-fast-guard.md)、詳細は `.claude/rules/testing.md`）。
 
 ## MCP サーバー設定
 

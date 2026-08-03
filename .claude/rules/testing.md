@@ -53,6 +53,14 @@ Testcontainers の PostgreSQL はプロセス内で共有されるため、テ�
 - **`@Transactional` によるロールバック分離は採らない**。トランザクション意味論を検証するテスト（publish-after-commit / ユースケース Tx 境界）が実コミットを要求するため適用範囲を 100% にできず、隔離方式が二重化する（実測の根拠は [ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）。
 - テスト本文の `rows.deleteAll()` は後始末ではなく「並行削除の再現」という検証の一部。混同して消さないこと。
 
+## ローカルゲートと Docker
+
+pre-push（lefthook の `full-test`）は `./gradlew test` を丸ごと回す。**Testcontainers 依存テストも対象のまま**で、Docker 不要なテストだけを切り出す運用は採らない（[ADR-0071](../../docs/adr/0071-pre-push-docker-fail-fast-guard.md)。穴が空くのが永続化契約テストという最も守りたい場所になること、`@Tag` の付け忘れが危険側に転ぶことが理由）。したがって **push には Docker が要る**。
+
+- pre-push の先頭で `scripts/check-docker-available.sh` が Docker 到達性を確認し、駄目なら理由と対処を出して即座に落とす（`piped: true` で `full-test` は走らない）。ハングして「push が無反応」に見える状態を潰すためのガードで、ゲートの範囲は変えない。
+- 判定は `docker info` の成否のみ。**Docker は生きているが Testcontainers だけ失敗する**ケース（イメージの pull 不可・リソース枯渇等）はガードを素通りし、従来どおりテストの失敗として出る。
+- Docker が復旧しないまま push したいときは **`LEFTHOOK_EXCLUDE=docker-available,full-test git push`**（`--no-verify` は gitleaks 等まで飛ばすので最後の手段）。同じテストは CI（`api-tests.yml`）で走る。
+
 ## テスト実行性能（コンテキストキャッシュ優先・並列化しない）
 
 Spring テストの主コストは `ApplicationContext` の構築。速度の本筋は**並列化ではなくコンテキストキャッシュの再利用最大化**にある（実測の根拠は [ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）。
