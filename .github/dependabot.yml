@@ -65,6 +65,25 @@ updates:
         patterns:
           - "*"
 
+  # Enable updates for frontend npm dependencies
+  # frontend/ は #612 で追加されて以降ここに宣言が無く、一度も自動更新の対象になっていなかった。
+  # その結果 react-router が導入時の 7.0.0 に固定され、公表された脆弱性が積み上がった（#693）。
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # 他エコシステムと同じ方針（#381）。minor / patch を集約し、major は個別 PR に残す。
+      # react は react / react-dom / @types/* が版を揃える必要があり、major 更新は
+      # react-router v8（peer に react >= 19 を要求）の移行判断と一体で扱うため束ねない。
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
+
   # Enable updates for Terraform providers
   - package-ecosystem: "terraform"
     directory: "/infra"
