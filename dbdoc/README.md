@@ -10,6 +10,8 @@
 | [studbook.breeding_result](studbook.breeding_result.md) | 11 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.horse_inspection](studbook.horse_inspection.md) | 8 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.covering_report](studbook.covering_report.md) | 5 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
+| [iam.account](iam.account.md) | 3 | この API の利用者アカウント（IdP の subject に世界を結びつける） | BASE TABLE |
+| [iam.world](iam.world.md) | 4 | プレイヤーごとの世界（セーブデータ）。全ドメインのデータはいずれかの世界に属する | BASE TABLE |
 
 ## Relations
 
@@ -23,6 +25,7 @@ erDiagram
 "studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
 "studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
 "studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
+"iam.world" }o--|| "iam.account" : "FOREIGN KEY (account_id) REFERENCES iam.account(id) ON DELETE CASCADE"
 
 "racing.jockey" {
   uuid id
@@ -84,6 +87,17 @@ erDiagram
   uuid stallion_breeding_registration_id FK
   integer covering_year
   date submitted_on
+  bigint version
+}
+"iam.account" {
+  uuid id
+  varchar_255_ subject_id
+  bigint version
+}
+"iam.world" {
+  uuid id
+  uuid account_id FK
+  varchar_64_ name
   bigint version
 }
 ```
