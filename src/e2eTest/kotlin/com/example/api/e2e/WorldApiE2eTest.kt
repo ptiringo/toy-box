@@ -103,6 +103,20 @@ class WorldApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSup
         val bob = provision("sub-bob")
         createWorld(alice, "アリスの牧場")
 
+        // アリスの一覧には「はじまりの世界」＋作った「アリスの牧場」の 2 件が現れる。
+        restTestClient
+            .get()
+            .uri("/api/worlds")
+            .header(HttpHeaders.AUTHORIZATION, alice)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.length()")
+            .isEqualTo(2)
+            .jsonPath("$[?(@.name == 'アリスの牧場')]")
+            .isNotEmpty
+
         // ボブの一覧には初回セットアップで生えた世界しか無い。
         restTestClient
             .get()
@@ -138,6 +152,20 @@ class WorldApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSup
             .expectBody()
             .jsonPath("$.error_code")
             .isEqualTo("world-not-found")
+
+        // アリスから見れば名前も変わっていない（無傷のまま残っている）。
+        restTestClient
+            .get()
+            .uri("/api/worlds")
+            .header(HttpHeaders.AUTHORIZATION, alice)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$[?(@.name == 'アリスの牧場')]")
+            .isNotEmpty
+            .jsonPath("$[?(@.name == 'ボブが乗っ取った牧場')]")
+            .isEmpty
     }
 
     @Test
@@ -153,6 +181,11 @@ class WorldApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSup
             .exchange()
             .expectStatus()
             .isNotFound
+            .expectHeader()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody()
+            .jsonPath("$.error_code")
+            .isEqualTo("world-not-found")
 
         // アリスから見れば無傷のまま残っている。
         restTestClient
