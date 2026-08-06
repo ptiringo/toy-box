@@ -65,6 +65,31 @@ updates:
         patterns:
           - "*"
 
+  # Enable updates for frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # React 本体と型定義はバージョン系列を揃える必要がある（react 19 に上げて @types/react が
+      # 18 のままだと型エラーになる）。react / react-dom / それぞれの @types を major も含め
+      # 常に 1 PR へ束ね、片側だけ進む状態を作らない。
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      # 残りの minor / patch を集約。react 系（上のグループ）はグループ定義順で先勝ちのため
+      # ここには入らない。major は個別 PR に残る。
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
+
   # Enable updates for Terraform providers
   - package-ecosystem: "terraform"
     directory: "/infra"
