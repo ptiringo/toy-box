@@ -5,6 +5,7 @@ import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -15,6 +16,15 @@ class CurrentAccountArgumentResolverTest {
 
     private val accounts = mockk<AccountRepository>()
     private val resolver = CurrentAccountArgumentResolver(accounts)
+
+    /**
+     * `SecurityContextHolder` はデフォルトで ThreadLocal 実装であり、Gradle のテスト実行はスレッドを
+     * 使い回す。テストがここへ書き込んだ認証情報を残したままにすると、同一スレッド上で後に実行される 他のテストへ漏れ得るため、各テスト後に必ずクリアする。
+     */
+    @AfterEach
+    fun clearSecurityContext() {
+        SecurityContextHolder.clearContext()
+    }
 
     private fun authenticateWith(subject: String) {
         val jwt =

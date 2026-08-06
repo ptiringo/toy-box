@@ -3,6 +3,7 @@ package com.example.api.controller
 import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.shared.AccountId
+import java.util.UUID
 import org.springframework.core.MethodParameter
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
@@ -29,9 +30,17 @@ class AccountNotProvisionedException(val subjectId: String) :
 class CurrentAccountArgumentResolver(private val accounts: AccountRepository) :
     HandlerMethodArgumentResolver {
 
+    /**
+     * `@CurrentAccount accountId: AccountId` を持つハンドラ引数を判定する。
+     *
+     * 注意: `AccountId` は `@JvmInline value class` のため、通常の（他インターフェースをオーバーライドしない） メソッド引数として使われると JVM
+     * シグネチャ上は下敷きの `UUID` へ消去され、メソッド名もマングルされる （`.claude/rules/architecture.md`「ArchUnit で Kotlin
+     * の呼び出しを縛るときの空振り」と同種の事情）。 したがって Spring がリフレクションで観測する `parameter.parameterType` は常に
+     * `UUID::class.java` になり、 `AccountId::class.java` とは一致しない。アノテーションの有無に加え、消去後の実際の型（`UUID`）で判定する。
+     */
     override fun supportsParameter(parameter: MethodParameter): Boolean =
         parameter.hasParameterAnnotation(CurrentAccount::class.java) &&
-            parameter.parameterType == AccountId::class.java
+            parameter.parameterType == UUID::class.java
 
     override fun resolveArgument(
         parameter: MethodParameter,
