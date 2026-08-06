@@ -81,6 +81,36 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `トークンは正当だがアカウント未登録の例外発生時に 403 と規約付与済みの problem+json が返ること`() {
+        // CurrentAccountArgumentResolver が投げる AccountNotProvisionedException を、
+        // ユースケース呼び出し前に届く例外として模して funnel の描画を検証する。
+        every { registerJockey(any<Command<RegisterJockeyCommand>>()) } throws
+            AccountNotProvisionedException("test-subject")
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .hasStatus(HttpStatus.FORBIDDEN)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("account-not-provisioned")
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .bodyJson()
+            .extractingPath("$.type")
+            .isEqualTo("urn:problem-type:account-not-provisioned")
+    }
+
+    @Test
     fun `想定外の例外発生時に 500 と problem+json が返ること`() {
         every { registerJockey(any<Command<RegisterJockeyCommand>>()) } throws
             RuntimeException("予期しない障害")
