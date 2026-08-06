@@ -36,10 +36,10 @@ class DomainModelingRulesTest {
     @ArchTest val dddBuildingBlocks = JMoleculesDddRules.all()
 
     /**
-     * DDD ビルディングブロック（jMolecules アノテーション付きクラス）はドメインモデルリングに置くこと。
+     * 値オブジェクト以外の DDD ビルディングブロックはドメインモデルリングに置くこと。
      *
-     * 集約ルート / エンティティ / 値オブジェクト / リポジトリポートに加え、ドメインイベント（`@DomainEvent`）も
-     * 対象に含める。イベントもドメインモデルの一員であり、フレームワーク非依存の domain.*.model に置く（ADR-0029）。
+     * 集約ルート / エンティティ / リポジトリポートに加え、ドメインイベント（`@DomainEvent`）も対象に含める。 イベントもドメインモデルの一員であり、フレームワーク非依存の
+     * domain.*.model に置く（ADR-0029）。
      */
     @ArchTest
     val dddBuildingBlocksResideInDomainModel =
@@ -49,13 +49,26 @@ class DomainModelingRulesTest {
             .or()
             .areAnnotatedWith(DddEntity::class.java)
             .or()
-            .areAnnotatedWith(ValueObject::class.java)
-            .or()
             .areAnnotatedWith(DddRepository::class.java)
             .or()
             .areAnnotatedWith(DomainEvent::class.java)
             .should()
             .resideInAPackage(DOMAIN_MODEL)
+
+    /**
+     * 値オブジェクトはドメインモデルリング、または共有カーネル（`domain.shared`）に置くこと。
+     *
+     * 共有カーネルを許すのは値オブジェクトだけに限る。`AccountId` / `WorldId` のように全コンテキストが読む
+     * 横断的な値は、コンテキスト間依存が全面禁止されている以上ここにしか置けない。一方で集約・リポジトリ ポートまで共有カーネルに置けるようにすると、各コンテキストの語彙が shared
+     * へ流れ込んで腐る。
+     */
+    @ArchTest
+    val valueObjectsResideInDomainModelOrSharedKernel =
+        classes()
+            .that()
+            .areAnnotatedWith(ValueObject::class.java)
+            .should()
+            .resideInAnyPackage(DOMAIN_MODEL, DOMAIN_SHARED)
 
     /**
      * 読み取りモデル（`@QueryModel`）は application 層に置くこと。

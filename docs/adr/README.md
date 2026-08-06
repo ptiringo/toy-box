@@ -76,6 +76,7 @@
 | [0064](0064-authn-via-identity-platform-authz-in-app.md) | 認証は GCP Identity Platform に委譲し、認可の権限は自前 DB に持つ | Accepted |
 | [0065](0065-claude-code-on-the-web-support.md) | Claude Code on the web を軽量変更ワークフローとして最小サポートする | Accepted |
 | [0066](0066-gh-cli-via-gh-token-on-web.md) | Claude Code on the web で gh CLI を GH_TOKEN 認証で使う | Accepted |
+| [0067](0067-per-player-world-tenant-isolation.md) | プレイヤーごとの世界によるテナント分離 | Accepted |
 | [0068](0068-manual-infra-apply-with-notification.md) | infra の HCP Terraform apply を手動承認 + 通知にする（auto_apply 無効化） | Accepted |
 | [0069](0069-carried-over-registration-path.md) | 内国産既存馬はシステム境界の移行取り込み経路で血統登録する | Accepted |
 | [0070](0070-db-test-cleanup-via-truncate-not-transactional.md) | DB を触るテストの後始末は基底クラスの TRUNCATE に一元化し、@Transactional 分離は採らない | Accepted |

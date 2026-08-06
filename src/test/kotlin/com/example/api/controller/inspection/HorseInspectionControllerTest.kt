@@ -9,6 +9,7 @@ import com.example.api.application.studbook.inspection.RecordHorseInspectionUseC
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.DnaParentageResultDto
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
@@ -45,6 +46,9 @@ import tools.jackson.databind.json.JsonMapper
 class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper) {
     @MockkBean private lateinit var recordHorseInspection: RecordHorseInspectionUseCase
     @MockkBean private lateinit var getHorseInspection: GetHorseInspectionUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 

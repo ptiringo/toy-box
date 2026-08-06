@@ -2,9 +2,11 @@ package com.example.api.architecture
 
 import com.example.api.ApiApplication
 import com.example.api.domain.shared.Command
+import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.type
+import com.tngtech.archunit.core.domain.JavaMethod
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
@@ -124,9 +126,10 @@ class OnionLayerRulesTest {
      * E>`（kotlin-result）が inline value class のため、Kotlin コンパイラがプラットフォーム宣言の衝突回避で メソッド名をマングルする（例:
      * `invoke-Zyo9ksc`）。完全一致では実バイトコード名と食い違い空振りする （ミューテーション検証で確認済み）。
      *
-     * 前方一致に加えて `haveRawParameterTypes(Command)` を AND 条件に置くことで、前方一致の広すぎる当たりを `Command`
-     * 封筒を受け取るメソッドだけに絞り安全にしている。裏返すと、`Command` 封筒を受けない書き込みメソッドや 多引数の `invoke` はこのガードの対象外（規約＝「書き込みは
-     * `Command` 単項 `invoke`」に依存する）。
+     * 前方一致に加えて「**最終引数**が `Command` 封筒である」ことを AND 条件に置くことで、前方一致の広すぎる当たりを `Command`
+     * 封筒を受け取るメソッドだけに絞り安全にしている。`haveRawParameterTypes(Command)`（引数が `Command`
+     * 単項ちょうど）ではなく最終引数の判定にしているのは、`invoke(accountId, command)` のような Actor 等を前置する多引数の書き込み `invoke`
+     * も対象に含めるため。`Command` 封筒を受けない書き込みメソッドはこのガードの対象外（規約＝「書き込みは 最終引数に `Command` を取る `invoke`」に依存する）。
      */
     @ArchTest
     val commandHandlingInvokesAreTransactional =
@@ -136,8 +139,13 @@ class OnionLayerRulesTest {
             .resideInAPackage(APPLICATION)
             .and()
             .haveNameStartingWith("invoke")
-            .and()
-            .haveRawParameterTypes(Command::class.java)
+            .and(takesCommandAsLastParameter)
             .should()
             .beAnnotatedWith(Transactional::class.java)
 }
+
+/** 最終引数に [Command] 封筒を取ること。 */
+private val takesCommandAsLastParameter =
+    DescribedPredicate.describe<JavaMethod>("最終引数に Command 封筒を取る") { method ->
+        method.rawParameterTypes.lastOrNull()?.isEquivalentTo(Command::class.java) == true
+    }

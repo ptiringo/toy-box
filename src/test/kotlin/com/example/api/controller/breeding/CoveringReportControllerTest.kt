@@ -4,6 +4,7 @@ import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
@@ -31,6 +32,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class CoveringReportControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var submitCoveringReport: SubmitCoveringReportUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 

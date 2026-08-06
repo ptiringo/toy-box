@@ -3,6 +3,7 @@ package com.example.api.controller.breeding
 import com.example.api.application.studbook.breeding.BreedingResultSummaryView
 import com.example.api.application.studbook.breeding.ListBreedingResultSummariesQuery
 import com.example.api.application.studbook.breeding.ListBreedingResultSummariesUseCase
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.util.UUID
@@ -20,6 +21,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var listBreedingResultSummaries: ListBreedingResultSummariesUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 

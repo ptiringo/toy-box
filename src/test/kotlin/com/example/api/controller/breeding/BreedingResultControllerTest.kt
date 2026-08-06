@@ -13,6 +13,7 @@ import com.example.api.application.studbook.breeding.SubmitBreedingReportCommand
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCase
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
@@ -51,6 +52,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var recordUncovered: RecordUncoveredUseCase
     @MockkBean private lateinit var reportFoaling: ReportFoalingUseCase
     @MockkBean private lateinit var submitReport: SubmitBreedingReportUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 

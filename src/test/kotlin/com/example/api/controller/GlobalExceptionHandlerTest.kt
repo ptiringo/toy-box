@@ -6,6 +6,7 @@ import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.jockey.JockeyController
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.generateId
@@ -36,6 +37,9 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
 
     @MockkBean private lateinit var getJockey: GetJockeyUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -74,6 +78,36 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
             .bodyJson()
             .extractingPath("$.error_code")
             .isEqualTo("duplicate-jockey")
+    }
+
+    @Test
+    fun `トークンは正当だがアカウント未登録の例外発生時に 403 と規約付与済みの problem+json が返ること`() {
+        // CurrentAccountArgumentResolver が投げる AccountNotProvisionedException を、
+        // ユースケース呼び出し前に届く例外として模して funnel の描画を検証する。
+        every { registerJockey(any<Command<RegisterJockeyCommand>>()) } throws
+            AccountNotProvisionedException("test-subject")
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .hasStatus(HttpStatus.FORBIDDEN)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("account-not-provisioned")
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .bodyJson()
+            .extractingPath("$.type")
+            .isEqualTo("urn:problem-type:account-not-provisioned")
     }
 
     @Test

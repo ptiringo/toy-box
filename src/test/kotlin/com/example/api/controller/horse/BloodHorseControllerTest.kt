@@ -23,6 +23,7 @@ import com.example.api.config.ClockConfiguration
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
 import com.example.api.controller.horse.request.RegisterCarriedOverHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
@@ -64,6 +65,9 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var registerCarriedOverHorse: RegisterCarriedOverHorseUseCase
     @MockkBean private lateinit var listBloodHorses: ListBloodHorsesUseCase
     @MockkBean private lateinit var getBloodHorse: GetBloodHorseUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 

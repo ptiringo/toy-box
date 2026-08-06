@@ -8,6 +8,7 @@ import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.Command
@@ -37,6 +38,9 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
 
     @MockkBean private lateinit var getJockey: GetJockeyUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 

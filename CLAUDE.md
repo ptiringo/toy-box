@@ -89,8 +89,12 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 認証は GCP Identity Platform に委譲し、この API は **OAuth2 リソースサーバとして ID トークン（JWT）を検証するだけ**とする（資格情報を保持しない）。設定は `SecurityConfig`（**`controller` パッケージ**に置く。RFC 9457 の `problem()` ビルダが adapter リングにあり、内側から参照するとオニオン規約に反するため）と `application.yml` の `spring.security.oauth2.resourceserver.jwt.issuer-uri` / `.audiences`。issuer が OIDC discovery を公開しているため `JwtDecoder` は自前で書かない。決定経緯は [ADR-0064](docs/adr/0064-authn-via-identity-platform-authz-in-app.md)。
 
-- **`permitAll` は運用・CI が壊れるエンドポイントに限る**: `/actuator/health`（Cloud Run のヘルスチェック）、`/v3/api-docs` 配下と Swagger UI（`generateOpenApiDocs` が forked bootRun 経由で取得するため、認証を掛けると OpenAPI lint のゲートが壊れる）、MCP エンドポイント（クライアントがトークンを持てない）。それ以外は `authenticated`。
+- **`permitAll` は運用・CI が壊れるエンドポイントに限る**: `/actuator/health`（Cloud Run のヘルスチェック）、`/v3/api-docs` 配下と Swagger UI（`generateOpenApiDocs` が forked bootRun 経由で取得するため、認証を掛けると OpenAPI lint のゲートが壊れる）、MCP エンドポイント（クライアントがトークンを持てない）。それ以外は `authenticated`
+  （`/api/worlds` も `/api/me:provision` も含む）。
 - **認可（何をしてよいか）はフィルタ層で判断しない**。ロール・権限の出所は自前 DB で、認可は application 層が担う。
+  自前 DB に持たせる中身は「ロールと権限」ではなく**「プレイヤーごとの世界（セーブデータ）の所有関係」**（テナント
+  分離）。唯一の認可判断は「この世界はあなたのものか」で、`iam` コンテキストの `Account` / `World` が担う
+  （[ADR-0067](docs/adr/0067-per-player-world-tenant-isolation.md)）。
 - 本番（Cloud Run）は `GCP_PROJECT_ID` を環境変数で受け取る（`deploy.yml`）。注入されないと issuer が既定値に落ち、全トークンが 401 になる。
 
 ## Google Cloud 操作のガードレール

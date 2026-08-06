@@ -32,6 +32,7 @@ paths:
 - **コントローラーの slice テストは `@WebMvcTest` + `MockMvcTester`**（実例: `HelloControllerTest` / `BloodHorseControllerTest`）。認証フィルタは `@AutoConfigureMockMvc(addFilters = false)` で無効化する（slice は HTTP 契約の検証に集中させる。認証は `SecurityConfigTest` と E2E が担保）。
 - **アプリ全体の統合テストは `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@AutoConfigureRestTestClient` + `RestTestClient`**（Spring Framework 6.2 の `RestClient` ベース sync テストクライアント）。
 - **Controller に横断 Bean（例: `Clock`）を注入したら、その Controller を載せる _全_ slice テストに `@Import` を足す**。slice は web 層しかロードしないため、足し忘れると `NoSuchBeanDefinitionException` でコンテキスト生成が落ちる。落ちるのは対象 Controller のテストだけとは限らず、その Controller を踏み台にしている別テスト（`GlobalExceptionHandlerTest` 等）まで芋づるで落ちる。`grep -rn "WebMvcTest(" src/test` で載せている slice を全部洗い出すこと。Bean 定義は `ApiApplication` の `@Bean` ではなく専用 `@Configuration` に切り出すと `@Import` 単独で取り込める。
+- **`@WebMvcTest` には `@MockkBean AccountRepository` が要る**。`WebMvcConfig`（`CurrentAccountArgumentResolver` の登録元）が `WebMvcConfigurer` である以上、この resolver は全 `@WebMvcTest` スライスに自動で載る。`AccountRepository` を差し込まないとコンテキスト生成が `NoSuchBeanDefinitionException` で loud に落ちる（コンテキストキャッシュの分岐は増えない。忘れても即座に検知できる）。
 
 ## 実行
 
