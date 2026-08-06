@@ -44,6 +44,20 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * トークンは正当だが、この API にアカウントが未登録。
+     *
+     * 認証は通っているので 401 ではなく 403。フロントエンドは `POST /api/me:provision` を叩けば解消する。
+     */
+    @ExceptionHandler(AccountNotProvisionedException::class)
+    fun handleAccountNotProvisioned(): ProblemDetail =
+        problem(
+            status = HttpStatus.FORBIDDEN,
+            code = "account-not-provisioned",
+            title = "Account not provisioned",
+            detail = "この API にアカウントが登録されていません。初回セットアップを実行してください。",
+        )
+
+    /**
      * 基底クラスが組み立てた標準例外の応答に、本プロジェクトの RFC 9457 規約（`type` / `errorCode`）を付与する。
      *
      * [ConventionalProblemDetail] 型の ProblemDetail（業務エラー由来）は規約済みとみなして触らない。

@@ -4,6 +4,7 @@ import com.example.api.application.studbook.breeding.RegisterBreedingRegistratio
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.github.michaelbull.result.Err
@@ -29,6 +30,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     @MockkBean
     private lateinit var registerBreedingRegistration: RegisterBreedingRegistrationUseCase
+
+    // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
+    @MockkBean private lateinit var accounts: AccountRepository
 
     private val tester = MockMvcTester.create(mockMvc)
 
