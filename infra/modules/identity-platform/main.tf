@@ -9,6 +9,15 @@ resource "google_identity_platform_config" "default" {
       enabled           = true
       password_required = true
     }
+
+    # 電話番号認証は使わないが、API は無効時も phone_number を
+    # `{enabled: false, testPhoneNumbers: {}}` として必ず返す。HCL 側でブロックを省くと
+    # Terraform が「[{enabled=false}] → []」を毎回 update として計画し、apply しても
+    # サーバ値が state に書き戻されるため収束しない（永久差分）。既定値をそのまま明示して止める。
+    phone_number {
+      enabled            = false
+      test_phone_numbers = {}
+    }
   }
 
   authorized_domains = var.authorized_domains
