@@ -27,6 +27,8 @@ fun ProvisionMeError.toProblemDetail(): ProblemDetail =
                 title = "Invalid default world name",
                 detail = "既定の世界名がサーバ側の不変条件を満たしていません。",
             )
+        // 実際に同時リクエストが競合すると多くは DB の UNIQUE 制約違反（500）になり、このバリアントには
+        // 到達しないことが多い（既知の限界。詳細は ProvisionMeError.Conflict の KDoc）。
         is ProvisionMeError.Conflict ->
             problem(
                 status = HttpStatus.CONFLICT,

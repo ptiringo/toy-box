@@ -12,6 +12,7 @@ import com.github.michaelbull.result.getOrThrow
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DuplicateKeyException
 
 /** [JdbcWorldRepository] と [JdbcWorldQueries] が契約を満たすことを実 DB で検証する。 */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -34,11 +35,11 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
             .getOrThrow { AssertionError(it.toString()) }
 
     @Test
-    fun `保存した世界を ID で引き当てられる`() {
+    fun `所有付き lookup で自分の世界を ID で引き当てられる`() {
         val ownerId = newOwner("sub-world-roundtrip")
         val saved = saveWorld(ownerId, "はじまりの牧場")
 
-        val found = worlds.findById(saved.id)
+        val found = worlds.findOwnedBy(ownerId, saved.id)
 
         assert(found?.id == saved.id)
         assert(found?.accountId == ownerId)
@@ -46,12 +47,21 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
     }
 
     @Test
-    fun `未登録の世界IDを引くと null`() {
+    fun `未登録の世界IDを所有付き lookup で引くと null`() {
         val ownerId = newOwner("sub-world-missing")
         val saved = saveWorld(ownerId, "実在する世界")
         worlds.deleteById(saved.id)
 
-        assert(worlds.findById(saved.id) == null)
+        assert(worlds.findOwnedBy(ownerId, saved.id) == null)
+    }
+
+    @Test
+    fun `他人の世界を所有付き lookup で引くと null`() {
+        val owner = newOwner("sub-world-owner")
+        val intruder = newOwner("sub-world-intruder")
+        val saved = saveWorld(owner, "他人の牧場")
+
+        assert(worlds.findOwnedBy(intruder, saved.id) == null)
     }
 
     @Test
@@ -77,7 +87,33 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
         val renamed = saved.rename("新名").getOrThrow { AssertionError(it.toString()) }
         worlds.save(renamed).getOrThrow { AssertionError(it.toString()) }
 
-        assert(worlds.findById(saved.id)?.name == WorldName("新名"))
+        assert(worlds.findOwnedBy(ownerId, saved.id)?.name == WorldName("新名"))
+    }
+
+    @Test
+    fun `同名の世界は未所持と判定される`() {
+        val ownerId = newOwner("sub-world-name-exists")
+
+        assert(!worlds.existsByAccountIdAndName(ownerId, WorldName("未使用の名前")))
+
+        saveWorld(ownerId, "使用済みの名前")
+
+        assert(worlds.existsByAccountIdAndName(ownerId, WorldName("使用済みの名前")))
+    }
+
+    @Test
+    fun `同名の世界を重複作成すると Err ではなく DuplicateKeyException が飛ぶ`() {
+        // I-1: save は OptimisticLockingFailureException しか捕まえないため、UNIQUE 制約違反
+        // （DuplicateKeyException）は Err(UpdateConflict) に化けず未捕捉のまま伝播する。
+        // このためユースケース側は existsByAccountIdAndName による事前照会で重複を弾く必要があり、
+        // save 自体は「事前照会をすり抜けた極小のレース窓」に対する backstop として未捕捉のまま残す。
+        val ownerId = newOwner("sub-world-duplicate")
+        saveWorld(ownerId, "重複名")
+        val duplicate = World.create(ownerId, "重複名").getOrThrow { AssertionError(it.toString()) }
+
+        val thrown = runCatching { worlds.save(duplicate) }.exceptionOrNull()
+
+        assert(thrown is DuplicateKeyException)
     }
 
     @Test

@@ -25,7 +25,7 @@ class DeleteWorldUseCaseTest {
     @Test
     fun `自分の世界は削除できる`() {
         val world = WorldFixture.world(accountId = ownerId, version = 1L)
-        every { worlds.findById(world.id) } returns world
+        every { worlds.findOwnedBy(ownerId, world.id) } returns world
 
         useCase(ownerId, Command.now(DeleteWorldCommand(world.id.value), clock)).getOrThrow {
             AssertionError(it.toString())
@@ -37,7 +37,7 @@ class DeleteWorldUseCaseTest {
     @Test
     fun `他人の世界は削除できず NotFound を返す`() {
         val world = WorldFixture.world(accountId = AccountId(generateId()), version = 1L)
-        every { worlds.findById(world.id) } returns world
+        every { worlds.findOwnedBy(ownerId, world.id) } returns null
 
         val error =
             useCase(ownerId, Command.now(DeleteWorldCommand(world.id.value), clock)).getError()

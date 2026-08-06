@@ -16,8 +16,8 @@ import org.springframework.stereotype.Repository
 @Repository
 class JdbcWorldRepository(private val rows: WorldSpringDataRepository) : WorldRepository {
 
-    override fun findById(id: WorldId): World? =
-        rows.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findOwnedBy(accountId: AccountId, id: WorldId): World? =
+        rows.findByIdAndAccountId(id.value, accountId.value)?.toDomain()
 
     override fun save(world: World): Result<World, UpdateConflict> =
         try {
@@ -30,6 +30,9 @@ class JdbcWorldRepository(private val rows: WorldSpringDataRepository) : WorldRe
 
     override fun existsByAccountId(accountId: AccountId): Boolean =
         rows.existsByAccountId(accountId.value)
+
+    override fun existsByAccountIdAndName(accountId: AccountId, name: WorldName): Boolean =
+        rows.existsByAccountIdAndName(accountId.value, name.value)
 
     private fun WorldRow.toDomain(): World =
         World.reconstitute(WorldId(id), AccountId(accountId), WorldName(name), version)

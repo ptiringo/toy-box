@@ -6,6 +6,8 @@ import com.example.api.domain.iam.model.world.WorldRepository
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.map
@@ -25,11 +27,17 @@ sealed interface CreateWorldError {
     /** 名前が不変条件を満たさない。 */
     data class InvalidName(val cause: WorldNameValidationError) : CreateWorldError
 
-    /** 同一アカウント内に同名の世界が既にある（DB の UNIQUE 制約に弾かれた）。 */
+    /** 同一アカウント内に同名の世界が既にある。 */
     data object Conflict : CreateWorldError
 }
 
-/** 自分の世界を新しく作るユースケース。 */
+/**
+ * 自分の世界を新しく作るユースケース。
+ *
+ * 同名の世界の作成は、DB の `UNIQUE (account_id, name)` に検知を委ねず [WorldRepository.existsByAccountIdAndName]
+ * で事前照会して弾く（I-1: UNIQUE 制約違反はトランザクション abort を伴うため未捕捉の例外＝500 になり、 `Conflict`＝409 に届かない。DB の UNIQUE
+ * 制約は事前照会をすり抜けた極小のレース窓に対する backstop として残る）。
+ */
 @Service
 class CreateWorldUseCase(private val worlds: WorldRepository) {
 
@@ -40,8 +48,19 @@ class CreateWorldUseCase(private val worlds: WorldRepository) {
     ): Result<WorldView, CreateWorldError> =
         World.create(accountId, command.payload.name)
             .mapError { CreateWorldError.InvalidName(it) }
+            .andThen { world -> checkNameAvailable(accountId, world) }
             .andThen { world ->
                 worlds.save(world).mapError { _: UpdateConflict -> CreateWorldError.Conflict }
             }
             .map { WorldView(it.id.value, it.name.value) }
+
+    private fun checkNameAvailable(
+        accountId: AccountId,
+        world: World,
+    ): Result<World, CreateWorldError> =
+        if (worlds.existsByAccountIdAndName(accountId, world.name)) {
+            Err(CreateWorldError.Conflict)
+        } else {
+            Ok(world)
+        }
 }

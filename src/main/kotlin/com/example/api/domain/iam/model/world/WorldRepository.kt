@@ -14,13 +14,23 @@ import org.jmolecules.ddd.annotation.Repository
  */
 @Repository
 interface WorldRepository {
-    /** 世界IDで検索する。存在しなければ null。 */
-    fun findById(id: WorldId): World?
+    /**
+     * 指定のアカウントが所有する世界を ID で検索する。
+     *
+     * 所有していない世界・存在しない世界のいずれも null。**世界を触る操作は必ずこの口を通す**（所有を問わない `findById`
+     * は用意しない。所有チェック漏れが「例外も出ず静かに混ざる」欠陥になるため、口を 1 つに寄せて SQL 側の `WHERE id = ? AND account_id = ?`
+     * で強制する）。
+     */
+    fun findOwnedBy(accountId: AccountId, id: WorldId): World?
 
     /**
      * 世界を永続化する。
      *
      * 集約の [World.version] が null なら insert、非 null なら楽観ロック付き update になる。
+     *
+     * **同一アカウント内の名前重複（DB の `UNIQUE (account_id, name)`）はここでは検知しない**。UNIQUE 違反は PostgreSQL
+     * 側でトランザクションを abort 済みの状態で例外として飛ぶため、呼び出し側は [existsByAccountIdAndName] で事前照会し、この `save`
+     * を呼ぶ前に重複を弾くこと。
      */
     fun save(world: World): Result<World, UpdateConflict>
 
@@ -29,4 +39,7 @@ interface WorldRepository {
 
     /** そのアカウントが世界を 1 つでも持っているかを判定する（初回ログインの判別用）。 */
     fun existsByAccountId(accountId: AccountId): Boolean
+
+    /** 同一アカウント内に同名の世界が既にあるかを判定する（作成・改名前の事前照会用）。 */
+    fun existsByAccountIdAndName(accountId: AccountId, name: WorldName): Boolean
 }
