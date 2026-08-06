@@ -18,6 +18,8 @@ import org.springframework.boot.runApplication
     tags =
         [
             Tag(name = "Hello", description = "サンプル"),
+            Tag(name = "Me", description = "利用者自身（IAM: 初回ログインのセットアップ）"),
+            Tag(name = "World", description = "世界リソース（IAM: プレイヤーごとのセーブデータの CRUD）"),
             Tag(name = "Jockey", description = "騎手リソース（JRA: 騎手の登録・取得）"),
             Tag(name = "BloodHorse", description = "軽種馬リソース（JAIRS: 血統登録・馬名登録）"),
             Tag(name = "HorseInspection", description = "審査リソース（JAIRS: 個体識別・親子判定の記録・取得）"),
