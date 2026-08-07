@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.service.breeding
 
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.CoveringReportRepository
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
@@ -11,8 +13,10 @@ import java.time.LocalDate
 import java.time.Year
 import org.junit.jupiter.api.Test
 
-class SubmitCoveringReportTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
 
+class SubmitCoveringReportTest {
     @Test
     fun `同年の提出が無ければ種付成績報告が生成されること`() {
         val stallionRegistration = BreedingFixture.stallionRegistration()
@@ -20,6 +24,7 @@ class SubmitCoveringReportTest {
             mockk<CoveringReportRepository> {
                 every {
                     findByStallionRegistrationIdAndCoveringYear(
+                        worldId,
                         stallionRegistration.id,
                         Year.of(2024),
                     )
@@ -28,6 +33,7 @@ class SubmitCoveringReportTest {
 
         val report =
             submitCoveringReport(
+                    worldId,
                     stallionRegistration = stallionRegistration,
                     coveringYear = Year.of(2024),
                     submittedOn = LocalDate.of(2024, 9, 1),
@@ -47,6 +53,7 @@ class SubmitCoveringReportTest {
             mockk<CoveringReportRepository> {
                 every {
                     findByStallionRegistrationIdAndCoveringYear(
+                        worldId,
                         stallionRegistration.id,
                         Year.of(2024),
                     )
@@ -55,6 +62,7 @@ class SubmitCoveringReportTest {
 
         val result =
             submitCoveringReport(
+                worldId,
                 stallionRegistration = stallionRegistration,
                 coveringYear = Year.of(2024),
                 submittedOn = LocalDate.of(2024, 9, 1),
@@ -72,11 +80,13 @@ class SubmitCoveringReportTest {
         val broodmareRegistration = BreedingFixture.breedingRegistration()
         val repository =
             mockk<CoveringReportRepository> {
-                every { findByStallionRegistrationIdAndCoveringYear(any(), any()) } returns null
+                every { findByStallionRegistrationIdAndCoveringYear(worldId, any(), any()) } returns
+                    null
             }
 
         val result =
             submitCoveringReport(
+                worldId,
                 stallionRegistration = broodmareRegistration,
                 coveringYear = Year.of(2024),
                 submittedOn = LocalDate.of(2024, 9, 1),

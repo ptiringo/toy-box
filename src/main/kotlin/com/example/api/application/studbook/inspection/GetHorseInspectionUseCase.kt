@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.inspection
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.toResultOr
@@ -30,9 +31,10 @@ data class HorseInspectionNotFound(val id: UUID)
 @Service
 class GetHorseInspectionUseCase(private val horseInspectionQueries: HorseInspectionQueries) {
     operator fun invoke(
-        query: GetHorseInspectionQuery
+        actor: Actor,
+        query: GetHorseInspectionQuery,
     ): Result<HorseInspectionView, HorseInspectionNotFound> =
-        horseInspectionQueries.findById(HorseInspectionId(query.id)).toResultOr {
+        horseInspectionQueries.findById(actor.worldId, HorseInspectionId(query.id)).toResultOr {
             HorseInspectionNotFound(query.id)
         }
 }

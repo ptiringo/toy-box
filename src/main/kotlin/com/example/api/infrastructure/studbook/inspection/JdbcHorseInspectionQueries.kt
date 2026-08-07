@@ -2,6 +2,7 @@ package com.example.api.infrastructure.studbook.inspection
 
 import com.example.api.application.studbook.inspection.HorseInspectionQueries
 import com.example.api.application.studbook.inspection.HorseInspectionView
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 import java.util.UUID
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -19,18 +20,19 @@ import org.springframework.stereotype.Repository
 @Repository
 class JdbcHorseInspectionQueries(private val jdbcClient: JdbcClient) : HorseInspectionQueries {
 
-    override fun findById(id: HorseInspectionId): HorseInspectionView? =
+    override fun findById(worldId: WorldId, id: HorseInspectionId): HorseInspectionView? =
         jdbcClient
             .sql(
                 """
                 SELECT id, microchip_number, parentage_type, dna_parentage_result,
                     feature_hair_whorl, feature_white_markings, feature_nose_print
                 FROM studbook.horse_inspection
-                WHERE id = :id
+                WHERE id = :id AND world_id = :worldId
                 """
                     .trimIndent()
             )
             .param("id", id.value)
+            .param("worldId", worldId.value)
             .query { rs, _ ->
                 HorseInspectionView(
                     id = rs.getObject("id", UUID::class.java),

@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.service.horse
 
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
@@ -10,16 +12,19 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 
-class NameHorseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
 
+class NameHorseTest {
     private val name = HorseName.create("オグリキャップ").unwrap()
 
     @Test
     fun `未使用の馬名なら命名済みの状態遷移を返す`() {
         val horse = BloodHorseFixture.bloodHorse() // 未命名
-        val repository = mockk<BloodHorseRepository> { every { existsByName(name) } returns false }
+        val repository =
+            mockk<BloodHorseRepository> { every { existsByName(worldId, name) } returns false }
 
-        val transition = nameHorse(horse, name, repository).unwrap()
+        val transition = nameHorse(worldId, horse, name, repository).unwrap()
 
         assert(transition.aggregate.id == horse.id)
         assert(transition.aggregate.name == name)
@@ -29,9 +34,10 @@ class NameHorseTest {
     @Test
     fun `既に使用済みの馬名なら NameAlreadyTaken を返し命名しない`() {
         val horse = BloodHorseFixture.bloodHorse() // 未命名
-        val repository = mockk<BloodHorseRepository> { every { existsByName(name) } returns true }
+        val repository =
+            mockk<BloodHorseRepository> { every { existsByName(worldId, name) } returns true }
 
-        val error = nameHorse(horse, name, repository).getError()
+        val error = nameHorse(worldId, horse, name, repository).getError()
 
         assert(error == NameHorseError.NameAlreadyTaken(name))
     }
@@ -40,9 +46,10 @@ class NameHorseTest {
     fun `対象が既に命名済みなら AlreadyNamed を返す`() {
         val existing = HorseName.create("トウカイテイオー").unwrap()
         val named = BloodHorseFixture.bloodHorse().assignName(existing).unwrap().aggregate
-        val repository = mockk<BloodHorseRepository> { every { existsByName(name) } returns false }
+        val repository =
+            mockk<BloodHorseRepository> { every { existsByName(worldId, name) } returns false }
 
-        val error = nameHorse(named, name, repository).getError()
+        val error = nameHorse(worldId, named, name, repository).getError()
 
         assert(error == NameHorseError.AlreadyNamed(existing))
     }

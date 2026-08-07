@@ -19,6 +19,7 @@
 | outcome_foaling_date | date |  | true |  |  | 分娩日（生産 LIVE_FOAL のときのみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 | report_submitted_on | date |  | true |  |  | 繁殖成績報告書（様式第14号）の提出日（未提出は NULL） |
+| world_id | uuid |  | false |  | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_registration](studbook.breeding_registration.md) | この行が属する世界（セーブデータ）のID |
 
 ## Constraints
 
@@ -28,27 +29,31 @@
 | chk_breeding_result_foaling_date | CHECK | CHECK (((outcome_foaling_date IS NULL) OR ((outcome_type)::text = 'LIVE_FOAL'::text))) |
 | chk_breeding_result_outcome_covering | CHECK | CHECK ((((covering_date IS NULL) AND ((outcome_type)::text = 'NOT_COVERED'::text)) OR ((covering_date IS NOT NULL) AND ((outcome_type IS NULL) OR ((outcome_type)::text <> 'NOT_COVERED'::text))))) |
 | chk_breeding_result_report_needs_outcome | CHECK | CHECK (((report_submitted_on IS NULL) OR (outcome_type IS NOT NULL))) |
-| fk_breeding_result_breeding_registration | FOREIGN KEY | FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id) |
-| fk_breeding_result_covering_stallion | FOREIGN KEY | FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id) |
 | breeding_result_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | uq_breeding_result_registration_year | UNIQUE | UNIQUE (breeding_registration_id, breeding_year) |
+| fk_breeding_result_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
+| fk_breeding_result_covering_stallion | FOREIGN KEY | FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id) |
+| fk_breeding_result_breeding_registration | FOREIGN KEY | FOREIGN KEY (world_id, breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id) |
+| uq_breeding_result_world_id_id | UNIQUE | UNIQUE (world_id, id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | breeding_result_pkey | CREATE UNIQUE INDEX breeding_result_pkey ON studbook.breeding_result USING btree (id) |
-| ix_breeding_result_registration_year | CREATE INDEX ix_breeding_result_registration_year ON studbook.breeding_result USING btree (breeding_registration_id, breeding_year) |
-| ix_breeding_result_covering_stallion_id | CREATE INDEX ix_breeding_result_covering_stallion_id ON studbook.breeding_result USING btree (covering_stallion_id) |
 | uq_breeding_result_registration_year | CREATE UNIQUE INDEX uq_breeding_result_registration_year ON studbook.breeding_result USING btree (breeding_registration_id, breeding_year) |
+| uq_breeding_result_world_id_id | CREATE UNIQUE INDEX uq_breeding_result_world_id_id ON studbook.breeding_result USING btree (world_id, id) |
+| ix_breeding_result_registration_year | CREATE INDEX ix_breeding_result_registration_year ON studbook.breeding_result USING btree (world_id, breeding_registration_id, breeding_year) |
+| ix_breeding_result_covering_stallion_id | CREATE INDEX ix_breeding_result_covering_stallion_id ON studbook.breeding_result USING btree (world_id, covering_stallion_id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
-"studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
+"studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
+"studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "studbook.breeding_result" {
   uuid id
@@ -62,6 +67,7 @@ erDiagram
   date outcome_foaling_date
   bigint version
   date report_submitted_on
+  uuid world_id FK
 }
 "studbook.breeding_registration" {
   uuid id
@@ -71,6 +77,7 @@ erDiagram
   varchar_32_ retirement_reason
   date retirement_occurred_on
   bigint version
+  uuid world_id FK
 }
 "studbook.blood_horse" {
   uuid id
@@ -87,6 +94,13 @@ erDiagram
   uuid dam_id FK
   varchar_255_ origin_country
   date landing_date
+  bigint version
+  uuid world_id FK
+}
+"iam.world" {
+  uuid id
+  uuid account_id FK
+  varchar_64_ name
   bigint version
 }
 ```

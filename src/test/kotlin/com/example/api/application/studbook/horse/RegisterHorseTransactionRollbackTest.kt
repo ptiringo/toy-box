@@ -1,7 +1,11 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
@@ -21,6 +25,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -50,7 +55,22 @@ class RegisterHorseTransactionRollbackTest(
     private val registrationRows: BreedingRegistrationSpringDataRepository,
 ) : PostgresContainerSupport() {
 
-    private val seeder = StudbookSeeder(inspectionRows, bloodHorseRows, registrationRows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private val actor
+        get() = Actor(accountId = AccountId(generateId()), worldId = worldId)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, bloodHorseRows, registrationRows)
+    }
 
     @TestConfiguration
     class FailingSaveConfiguration {
@@ -71,7 +91,7 @@ class RegisterHorseTransactionRollbackTest(
         failingRepository.failOnSave = true
 
         assertThrows<DataAccessResourceFailureException> {
-            registerImportedHorse(command(importedHorseCommand()))
+            registerImportedHorse(actor, command(importedHorseCommand()))
         }
 
         assert(inspectionRows.count() == 0L) { "審査が孤児として残っている" }
@@ -84,12 +104,12 @@ class RegisterHorseTransactionRollbackTest(
         val damFixture = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         seeder.seedInspectionFor(sireFixture)
         seeder.seedInspectionFor(damFixture)
-        val sire = failingRepository.save(sireFixture).unwrap()
-        val dam = failingRepository.save(damFixture).unwrap()
+        val sire = failingRepository.save(worldId, sireFixture).unwrap()
+        val dam = failingRepository.save(worldId, damFixture).unwrap()
         failingRepository.failOnSave = true
 
         assertThrows<DataAccessResourceFailureException> {
-            registerInStudBook(command(domesticCommand(sire, dam)))
+            registerInStudBook(actor, command(domesticCommand(sire, dam)))
         }
 
         // 父・母の審査（seed 分の 2 行）は残り、ロールバックされた仔馬の審査は残らない
@@ -134,17 +154,24 @@ class FailingBloodHorseRepository(private val delegate: BloodHorseRepository) :
     BloodHorseRepository {
     var failOnSave = false
 
-    override fun findById(id: BloodHorseId): BloodHorse? = delegate.findById(id)
+    override fun findById(worldId: WorldId, id: BloodHorseId): BloodHorse? =
+        delegate.findById(worldId, id)
 
-    override fun findAllById(ids: Set<BloodHorseId>): Map<BloodHorseId, BloodHorse> =
-        delegate.findAllById(ids)
+    override fun findAllById(
+        worldId: WorldId,
+        ids: Set<BloodHorseId>,
+    ): Map<BloodHorseId, BloodHorse> = delegate.findAllById(worldId, ids)
 
-    override fun save(bloodHorse: BloodHorse): Result<BloodHorse, UpdateConflict> {
+    override fun save(
+        worldId: WorldId,
+        bloodHorse: BloodHorse,
+    ): Result<BloodHorse, UpdateConflict> {
         if (failOnSave) {
             throw DataAccessResourceFailureException("インフラ障害を注入（ロールバック検証用）")
         }
-        return delegate.save(bloodHorse)
+        return delegate.save(worldId, bloodHorse)
     }
 
-    override fun existsByName(name: HorseName): Boolean = delegate.existsByName(name)
+    override fun existsByName(worldId: WorldId, name: HorseName): Boolean =
+        delegate.existsByName(worldId, name)
 }

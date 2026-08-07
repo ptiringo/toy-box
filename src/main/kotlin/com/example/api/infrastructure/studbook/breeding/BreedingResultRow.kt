@@ -15,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table
  * ドメインに付けず本クラスに閉じ込め、ドメイン集約とは手書きマッパーで相互変換する（[JdbcBreedingResultRepository]）。
  *
  * - [id] は外部採番の UUIDv7（ドメインの `BreedingResultId` の生値）。`@Id` を付けるが DB 採番はしない。
+ * - [worldId] はこの行が属する世界（セーブデータ）のID。集約は世界を知らないため、マッパーが引数で受け取って書く。
  * - [breedingYear] は `java.time.Year` の int 値。
  * - 種付（nullable な `Covering`）は子テーブルを設けず、[coveringStallionId] / [coveringDate] / [coveringPlace] /
  *   [coveringCertificateNumber] にフラット化する。種付した年は coveringStallionId / coveringDate /
@@ -30,6 +31,7 @@ import org.springframework.data.relational.core.mapping.Table
 @Table(schema = "studbook", name = "breeding_result")
 data class BreedingResultRow(
     @Id @Column("id") val id: UUID,
+    @Column("world_id") val worldId: UUID,
     @Column("breeding_registration_id") val breedingRegistrationId: UUID,
     @Column("breeding_year") val breedingYear: Int,
     @Column("covering_stallion_id") val coveringStallionId: UUID? = null,

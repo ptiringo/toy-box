@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.horse
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
@@ -12,6 +13,7 @@ import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringD
 import com.example.api.support.PostgresContainerSupport
 import java.time.LocalDate
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -35,7 +37,19 @@ class JdbcBloodHorseQueriesContractTest(
 ) : PostgresContainerSupport() {
 
     private val queries = JdbcBloodHorseQueries(jdbcClient)
-    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+    }
 
     @Test
     fun `登録済みの馬を全件 id 昇順で返す`() {
@@ -46,7 +60,7 @@ class JdbcBloodHorseQueriesContractTest(
         seeder.seedHorseRow(id = larger, registrationNumber = "REG-002")
         seeder.seedHorseRow(id = smaller, registrationNumber = "REG-001")
 
-        val views = queries.findAll()
+        val views = queries.findAll(worldId)
 
         assert(views.map { it.id } == listOf(smaller, larger))
         val head = views.first()
@@ -58,14 +72,14 @@ class JdbcBloodHorseQueriesContractTest(
 
     @Test
     fun `1頭も登録が無ければ空リストを返す`() {
-        assert(queries.findAll().isEmpty())
+        assert(queries.findAll(worldId).isEmpty())
     }
 
     @Test
     fun `輸入馬を ID で引き審査のマイクロチップ番号ごと詰めて返す`() {
         val id = seeder.seedHorseRow(registrationNumber = "REG-101")
 
-        val view = queries.findById(BloodHorseId(id))
+        val view = queries.findById(worldId, BloodHorseId(id))
 
         assert(view != null)
         assert(view!!.id == id)
@@ -91,7 +105,7 @@ class JdbcBloodHorseQueriesContractTest(
         val id = generateId()
         seedDomesticHorseRow(id = id, sireId = sireId, damId = damId)
 
-        val view = queries.findById(BloodHorseId(id))
+        val view = queries.findById(worldId, BloodHorseId(id))
 
         assert(view != null)
         val origin = view!!.origin
@@ -105,7 +119,7 @@ class JdbcBloodHorseQueriesContractTest(
         val id = generateId()
         seedCarriedOverHorseRow(id = id)
 
-        val view = queries.findById(BloodHorseId(id))
+        val view = queries.findById(worldId, BloodHorseId(id))
 
         assert(view != null)
         assert(view!!.origin == Origin.CarriedOver)
@@ -113,13 +127,14 @@ class JdbcBloodHorseQueriesContractTest(
 
     @Test
     fun `存在しない ID なら null を返す`() {
-        assert(queries.findById(BloodHorseId(generateId())) == null)
+        assert(queries.findById(worldId, BloodHorseId(generateId())) == null)
     }
 
     /** 内国産（origin_type = DOMESTIC）の馬行を審査行ごと作る。父母行は呼び出し側で先に seed しておくこと。 */
     private fun seedDomesticHorseRow(id: UUID, sireId: UUID, damId: UUID) {
         horseRows.save(
             BloodHorseRow(
+                worldId = worldId.value,
                 id = id,
                 registrationNumber = "REG-104",
                 sex = "MALE",
@@ -139,6 +154,7 @@ class JdbcBloodHorseQueriesContractTest(
     private fun seedCarriedOverHorseRow(id: UUID) {
         horseRows.save(
             BloodHorseRow(
+                worldId = worldId.value,
                 id = id,
                 registrationNumber = "REG-105",
                 sex = "FEMALE",

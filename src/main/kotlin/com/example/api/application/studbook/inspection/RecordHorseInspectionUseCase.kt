@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.inspection
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
@@ -47,16 +48,18 @@ class RecordHorseInspectionUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RecordHorseInspectionCommand>
+        actor: Actor,
+        command: Command<RecordHorseInspectionCommand>,
     ): Result<HorseInspection, InvalidMicrochipNumber> {
         val input = command.payload
         return MicrochipNumber.create(input.microchipNumber).map { microchipNumber ->
             horseInspectionRepository.save(
+                actor.worldId,
                 HorseInspection.create(
                     microchipNumber = microchipNumber,
                     parentage = input.parentage,
                     features = input.features,
-                )
+                ),
             )
         }
     }

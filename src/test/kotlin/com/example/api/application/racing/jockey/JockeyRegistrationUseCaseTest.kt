@@ -3,7 +3,11 @@ package com.example.api.application.racing.jockey
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyRepository
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import io.mockk.every
@@ -13,8 +17,11 @@ import java.time.Instant
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class JockeyRegistrationUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class JockeyRegistrationUseCaseTest {
     private fun command(firstName: String, lastName: String): Command<RegisterJockeyCommand> =
         Command(RegisterJockeyCommand(firstName, lastName), Instant.now())
 
@@ -23,15 +30,15 @@ class JockeyRegistrationUseCaseTest {
         @Test
         fun `名と姓が正しく既存ジョッキーと衝突しないとき登録に成功する`() {
             val repository = mockk<JockeyRepository>()
-            every { repository.findByFullName("武", "豊") } returns null
-            every { repository.save(any()) } answers { firstArg() }
+            every { repository.findByFullName(worldId, "武", "豊") } returns null
+            every { repository.save(worldId, any()) } answers { secondArg() }
             val useCase = JockeyRegistrationUseCase(repository)
 
-            val jockey = useCase(command("武", "豊")).unwrap()
+            val jockey = useCase(actor, command("武", "豊")).unwrap()
 
             assert(jockey.firstName == "武")
             assert(jockey.lastName == "豊")
-            verify(exactly = 1) { repository.save(any()) }
+            verify(exactly = 1) { repository.save(worldId, any()) }
         }
     }
 
@@ -42,13 +49,13 @@ class JockeyRegistrationUseCaseTest {
             val repository = mockk<JockeyRepository>()
             val useCase = JockeyRegistrationUseCase(repository)
 
-            val result = useCase(command("", "豊"))
+            val result = useCase(actor, command("", "豊"))
 
             assert(
                 result.getError() ==
                     JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankFirstName)
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -56,26 +63,26 @@ class JockeyRegistrationUseCaseTest {
             val repository = mockk<JockeyRepository>()
             val useCase = JockeyRegistrationUseCase(repository)
 
-            val result = useCase(command("武", ""))
+            val result = useCase(actor, command("武", ""))
 
             assert(
                 result.getError() ==
                     JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankLastName)
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
         fun `同姓同名のジョッキーが既に存在するとき DuplicateJockey を返し永続化されない`() {
             val existing = Jockey.create("武", "豊").unwrap()
             val repository = mockk<JockeyRepository>()
-            every { repository.findByFullName("武", "豊") } returns existing
+            every { repository.findByFullName(worldId, "武", "豊") } returns existing
             val useCase = JockeyRegistrationUseCase(repository)
 
-            val result = useCase(command("武", "豊"))
+            val result = useCase(actor, command("武", "豊"))
 
             assert(result.getError() == JockeyRegistrationError.DuplicateJockey(existing.id))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
     }
 }

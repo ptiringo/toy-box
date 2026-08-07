@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -19,8 +23,11 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class RecordCoveringUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class RecordCoveringUseCaseTest {
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
     private fun validPayload(breedingRegistrationId: UUID, stallionRegistrationId: UUID) =
         RecordCoveringCommand(
@@ -49,24 +56,29 @@ class RecordCoveringUseCaseTest {
             val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
+                    every { findById(worldId, stallionRegistration.id) } returns
+                        stallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
-                    every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every {
+                        findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any())
+                    } returns null
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
                 useCase(
+                        actor,
                         command(
                             validPayload(
                                 broodmareRegistration.id.value,
                                 stallionRegistration.id.value,
                             )
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -78,7 +90,7 @@ class RecordCoveringUseCaseTest {
             assert(covering?.coveringPlace?.value == "北海道")
             assert(covering?.certificateNumber?.value == "C-2024-0001")
             assert(result.outcome == null)
-            verify(exactly = 1) { breedingResultRepository.save(any()) }
+            verify(exactly = 1) { breedingResultRepository.save(worldId, any()) }
         }
     }
 
@@ -92,14 +104,15 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
                             .copy(certificateNumber = "")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidCertificateNumber)
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -113,13 +126,14 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID()).copy(coveringPlace = "")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidCoveringPlace)
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -134,13 +148,14 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(studCertificate = payload.studCertificate.copy(number = ""))
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidStudCertificateNumber)
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -155,16 +170,17 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(
                             studCertificate =
                                 payload.studCertificate.copy(validRegions = listOf("北海道", ""))
                         )
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidValidRegion)
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -179,16 +195,17 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(
                             studCertificate =
                                 payload.studCertificate.copy(validRegions = emptyList())
                         )
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.EmptyValidRegions)
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -203,6 +220,7 @@ class RecordCoveringUseCaseTest {
             val payload = validPayload(UUID.randomUUID(), UUID.randomUUID())
             val result =
                 useCase(
+                    actor,
                     command(
                         payload.copy(
                             studCertificate =
@@ -211,11 +229,11 @@ class RecordCoveringUseCaseTest {
                                     validPeriodEnd = LocalDate.of(2024, 1, 1),
                                 )
                         )
-                    )
+                    ),
                 )
 
             assert(result.getError() == RecordCoveringUseCaseError.InvalidValidityPeriod)
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -223,18 +241,21 @@ class RecordCoveringUseCaseTest {
             val breedingRegistrationId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(BreedingRegistrationId(breedingRegistrationId)) } returns null
+                    every {
+                        findById(worldId, BreedingRegistrationId(breedingRegistrationId))
+                    } returns null
                 }
             val breedingResultRepository = mockk<BreedingResultRepository>()
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
-            val result = useCase(command(validPayload(breedingRegistrationId, UUID.randomUUID())))
+            val result =
+                useCase(actor, command(validPayload(breedingRegistrationId, UUID.randomUUID())))
 
             assert(
                 result.getError() ==
                     RecordCoveringUseCaseError.BreedingRegistrationNotFound(breedingRegistrationId)
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -243,22 +264,26 @@ class RecordCoveringUseCaseTest {
             val stallionRegistrationId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
-                    every { findById(BreedingRegistrationId(stallionRegistrationId)) } returns null
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
+                    every {
+                        findById(worldId, BreedingRegistrationId(stallionRegistrationId))
+                    } returns null
                 }
             val breedingResultRepository = mockk<BreedingResultRepository>()
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
                 useCase(
-                    command(validPayload(broodmareRegistration.id.value, stallionRegistrationId))
+                    actor,
+                    command(validPayload(broodmareRegistration.id.value, stallionRegistrationId)),
                 )
 
             assert(
                 result.getError() ==
                     RecordCoveringUseCaseError.StallionRegistrationNotFound(stallionRegistrationId)
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -267,30 +292,35 @@ class RecordCoveringUseCaseTest {
             val notStallionRegistration = BreedingFixture.breedingRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
-                    every { findById(notStallionRegistration.id) } returns notStallionRegistration
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
+                    every { findById(worldId, notStallionRegistration.id) } returns
+                        notStallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
-                    every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                    every {
+                        findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any())
+                    } returns null
                 }
             val useCase = RecordCoveringUseCase(registrationRepository, breedingResultRepository)
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(
                             broodmareRegistration.id.value,
                             notStallionRegistration.id.value,
                         )
-                    )
+                    ),
                 )
 
             assert(
                 result.getError() ==
                     RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -301,13 +331,16 @@ class RecordCoveringUseCaseTest {
                 BreedingFixture.breedingResult(broodmareRegistration = broodmareRegistration)
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
+                    every { findById(worldId, stallionRegistration.id) } returns
+                        stallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
                     every {
                         findByBreedingRegistrationIdAndBreedingYear(
+                            worldId,
                             broodmareRegistration.id,
                             Year.of(2024),
                         )
@@ -317,9 +350,10 @@ class RecordCoveringUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(broodmareRegistration.id.value, stallionRegistration.id.value)
-                    )
+                    ),
                 )
 
             assert(
@@ -328,7 +362,7 @@ class RecordCoveringUseCaseTest {
                         RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
                     )
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
     }
 }

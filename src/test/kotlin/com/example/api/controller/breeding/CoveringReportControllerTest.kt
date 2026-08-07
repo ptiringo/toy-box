@@ -5,8 +5,13 @@ import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.controller.ActorArgumentResolver
 import com.example.api.domain.iam.model.account.AccountRepository
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
 import com.github.michaelbull.result.Err
@@ -16,6 +21,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -38,6 +44,20 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var accounts: AccountRepository
     @MockkBean private lateinit var worldQueries: WorldQueries
 
+    @MockkBean private lateinit var actorArgumentResolver: ActorArgumentResolver
+
+    private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
+
+    /**
+     * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
+     * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
+     */
+    @BeforeEach
+    fun stubActor() {
+        every { actorArgumentResolver.supportsParameter(any()) } returns true
+        every { actorArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns actor
+    }
+
     private val tester = MockMvcTester.create(mockMvc)
 
     private val uri = "/api/coveringReports"
@@ -59,8 +79,9 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
                 coveringYear = Year.of(2024),
                 submittedOn = LocalDate.of(2024, 10, 1),
             )
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
-            Ok(saved)
+        every {
+            submitCoveringReport(any<Actor>(), any<Command<SubmitCoveringReportCommand>>())
+        } returns Ok(saved)
 
         tester
             .post()
@@ -76,7 +97,9 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `StallionRegistrationNotFound で 422 と problem+json が返ること`() {
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every {
+            submitCoveringReport(any<Actor>(), any<Command<SubmitCoveringReportCommand>>())
+        } returns
             Err(SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(UUID.randomUUID()))
 
         tester
@@ -94,7 +117,9 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     @Test
     fun `NotStallion で 422 と problem+json が返ること`() {
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every {
+            submitCoveringReport(any<Actor>(), any<Command<SubmitCoveringReportCommand>>())
+        } returns
             Err(
                 SubmitCoveringReportUseCaseError.PreconditionViolated(
                     SubmitCoveringReportError.NotStallion
@@ -117,7 +142,9 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `AlreadySubmittedForYear で 409 と problem+json が返ること`() {
         val existing = BreedingFixture.coveringReport()
-        every { submitCoveringReport(any<Command<SubmitCoveringReportCommand>>()) } returns
+        every {
+            submitCoveringReport(any<Actor>(), any<Command<SubmitCoveringReportCommand>>())
+        } returns
             Err(
                 SubmitCoveringReportUseCaseError.PreconditionViolated(
                     SubmitCoveringReportError.AlreadySubmittedForYear(Year.of(2024), existing.id)

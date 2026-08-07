@@ -1,5 +1,8 @@
 package com.example.api.application.studbook.inspection
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
@@ -9,6 +12,10 @@ import com.github.michaelbull.result.getError
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
 /**
  * 照会ユースケース [GetHorseInspectionUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
@@ -30,9 +37,9 @@ class GetHorseInspectionUseCaseTest {
                 parentage = ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT),
                 features = null,
             )
-        every { horseInspectionQueries.findById(HorseInspectionId(id)) } returns view
+        every { horseInspectionQueries.findById(worldId, HorseInspectionId(id)) } returns view
 
-        val result = getHorseInspection(GetHorseInspectionQuery(id))
+        val result = getHorseInspection(actor, GetHorseInspectionQuery(id))
 
         assert(result.get() == view)
     }
@@ -40,9 +47,9 @@ class GetHorseInspectionUseCaseTest {
     @Test
     fun `存在しないIDならHorseInspectionNotFoundをErrで返す`() {
         val id = generateId()
-        every { horseInspectionQueries.findById(HorseInspectionId(id)) } returns null
+        every { horseInspectionQueries.findById(worldId, HorseInspectionId(id)) } returns null
 
-        val result = getHorseInspection(GetHorseInspectionQuery(id))
+        val result = getHorseInspection(actor, GetHorseInspectionQuery(id))
 
         assert(result.getError() == HorseInspectionNotFound(id))
     }

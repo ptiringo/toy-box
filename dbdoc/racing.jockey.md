@@ -12,29 +12,41 @@
 | first_name | varchar(255) |  | false |  |  | 名 |
 | last_name | varchar(255) |  | false |  |  | 姓 |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
+| world_id | uuid |  | false |  | [iam.world](iam.world.md) | この行が属する世界（セーブデータ）のID |
 
 ## Constraints
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
 | jockey_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| fk_jockey_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
+| uq_jockey_world_id_id | UNIQUE | UNIQUE (world_id, id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | jockey_pkey | CREATE UNIQUE INDEX jockey_pkey ON racing.jockey USING btree (id) |
+| uq_jockey_world_id_id | CREATE UNIQUE INDEX uq_jockey_world_id_id ON racing.jockey USING btree (world_id, id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
+"racing.jockey" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "racing.jockey" {
   uuid id
   varchar_255_ first_name
   varchar_255_ last_name
+  bigint version
+  uuid world_id FK
+}
+"iam.world" {
+  uuid id
+  uuid account_id FK
+  varchar_64_ name
   bigint version
 }
 ```

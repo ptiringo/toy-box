@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
@@ -79,7 +80,8 @@ class RegisterCarriedOverHorseUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterCarriedOverHorseCommand>
+        actor: Actor,
+        command: Command<RegisterCarriedOverHorseCommand>,
     ): Result<RegisteredBloodHorse, RegisterCarriedOverHorseUseCaseError> = binding {
         val input = command.payload
 
@@ -120,9 +122,9 @@ class RegisterCarriedOverHorseUseCase(
         val bloodHorse = BloodHorse.createCarriedOver(entry, inspection, registrationNumber)
 
         // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
-        horseInspectionRepository.save(inspection)
+        horseInspectionRepository.save(actor.worldId, inspection)
         val saved =
-            bloodHorseRepository.save(bloodHorse).getOrElse {
+            bloodHorseRepository.save(actor.worldId, bloodHorse).getOrElse {
                 error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
             }
         RegisteredBloodHorse(saved, inspection)

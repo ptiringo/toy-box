@@ -1,6 +1,7 @@
 package com.example.api.application.racing.jockey
 
 import com.example.api.domain.racing.model.jockey.JockeyId
+import com.example.api.domain.shared.Actor
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.toResultOr
 import java.util.UUID
@@ -29,6 +30,8 @@ data class JockeyNotFound(val id: UUID)
  */
 @Service
 class GetJockeyUseCase(private val jockeyQueries: JockeyQueries) {
-    operator fun invoke(query: GetJockeyQuery): Result<JockeyView, JockeyNotFound> =
-        jockeyQueries.findById(JockeyId(query.id)).toResultOr { JockeyNotFound(query.id) }
+    operator fun invoke(actor: Actor, query: GetJockeyQuery): Result<JockeyView, JockeyNotFound> =
+        jockeyQueries.findById(actor.worldId, JockeyId(query.id)).toResultOr {
+            JockeyNotFound(query.id)
+        }
 }

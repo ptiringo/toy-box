@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.horse
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -44,24 +45,38 @@ private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
 class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository) :
     BloodHorseRepository {
 
-    override fun findById(id: BloodHorseId): BloodHorse? =
-        rows.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findById(worldId: WorldId, id: BloodHorseId): BloodHorse? =
+        rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
 
-    override fun findAllById(ids: Set<BloodHorseId>): Map<BloodHorseId, BloodHorse> =
-        rows.findAllById(ids.map { it.value }).associate {
+    override fun findAllById(
+        worldId: WorldId,
+        ids: Set<BloodHorseId>,
+    ): Map<BloodHorseId, BloodHorse> =
+        rows.findAllByWorldIdAndIdIn(worldId.value, ids.map { it.value }).associate {
             val horse = it.toDomain()
             horse.id to horse
         }
 
-    override fun save(bloodHorse: BloodHorse): Result<BloodHorse, UpdateConflict> =
+    /**
+     * 軽種馬を指定の世界に永続化する。
+     *
+     * **更新時の `world_id`**: Spring Data JDBC の UPDATE は主キー（＋version）で行を特定するため、誤った [worldId] を渡すと既存行の
+     * `world_id` を書き換えうる。読み取りが常に `(world_id, id)` で絞られる以上、
+     * 呼び出し側が持つ集約は自分の世界のものに限られるが、この口を世界チェック無しの汎用 update として使わないこと。
+     */
+    override fun save(
+        worldId: WorldId,
+        bloodHorse: BloodHorse,
+    ): Result<BloodHorse, UpdateConflict> =
         try {
-            Ok(rows.save(bloodHorse.toRow()).toDomain())
+            Ok(rows.save(bloodHorse.toRow(worldId)).toDomain())
         } catch (_: OptimisticLockingFailureException) {
             // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
             Err(UpdateConflict)
         }
 
-    override fun existsByName(name: HorseName): Boolean = rows.existsByName(name.value)
+    override fun existsByName(worldId: WorldId, name: HorseName): Boolean =
+        rows.existsByWorldIdAndName(worldId.value, name.value)
 
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
@@ -109,10 +124,11 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
      * version は集約が保持する値をそのまま写す（null なら Spring Data JDBC が新規と判定して insert、非 null なら 楽観ロック付き
      * update。ADR-0027 の落とし穴②③）。
      */
-    private fun BloodHorse.toRow(): BloodHorseRow {
+    private fun BloodHorse.toRow(worldId: WorldId): BloodHorseRow {
         val base =
             BloodHorseRow(
                 id = id.value,
+                worldId = worldId.value,
                 registrationNumber = registrationNumber.value,
                 sex = sex.name,
                 coatColor = coatColor.name,

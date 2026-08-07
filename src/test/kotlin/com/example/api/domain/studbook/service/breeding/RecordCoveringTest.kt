@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.service.breeding
 
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
@@ -13,6 +15,9 @@ import io.mockk.mockk
 import java.time.LocalDate
 import java.time.Year
 import org.junit.jupiter.api.Test
+
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
 
 /** [recordCovering] ドメインサービスのユニットテスト */
 class RecordCoveringTest {
@@ -28,11 +33,13 @@ class RecordCoveringTest {
         val stallionRegistration = BreedingFixture.stallionRegistration()
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
         val result =
             recordCovering(
+                    worldId,
                     broodmareRegistration,
                     stallionRegistration,
                     coveringDate,
@@ -59,6 +66,7 @@ class RecordCoveringTest {
             mockk<BreedingResultRepository> {
                 every {
                     findByBreedingRegistrationIdAndBreedingYear(
+                        worldId,
                         broodmareRegistration.id,
                         Year.of(2024),
                     )
@@ -67,6 +75,7 @@ class RecordCoveringTest {
 
         val result =
             recordCovering(
+                worldId,
                 broodmareRegistration,
                 stallionRegistration,
                 coveringDate,
@@ -88,11 +97,13 @@ class RecordCoveringTest {
         val stallionRegistration = BreedingFixture.stallionRegistration()
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
         val result =
             recordCovering(
+                worldId,
                 notBroodmareRegistration,
                 stallionRegistration,
                 coveringDate,
@@ -111,11 +122,13 @@ class RecordCoveringTest {
         val notStallionRegistration = BreedingFixture.breedingRegistration()
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
         val result =
             recordCovering(
+                worldId,
                 broodmareRegistration,
                 notStallionRegistration,
                 coveringDate,
@@ -134,11 +147,13 @@ class RecordCoveringTest {
         val studCertificate = BreedingFixture.studCertificate(validRegions = setOf(place))
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
         val result =
             recordCovering(
+                    worldId,
                     BreedingFixture.breedingRegistration(),
                     BreedingFixture.stallionRegistration(),
                     coveringDate,
@@ -159,11 +174,13 @@ class RecordCoveringTest {
         val studCertificate = BreedingFixture.studCertificate(validRegions = setOf(validRegion))
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
         val result =
             recordCovering(
+                worldId,
                 BreedingFixture.breedingRegistration(),
                 BreedingFixture.stallionRegistration(),
                 coveringDate,

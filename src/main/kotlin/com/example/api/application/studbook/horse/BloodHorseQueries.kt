@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 
 /**
@@ -10,13 +11,13 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
  * 実装（infrastructure）は集約・`BloodHorseRow` を経由せず `studbook.blood_horse` を直接読む。
  */
 interface BloodHorseQueries {
-    /** 登録済みの全軽種馬を id 昇順（＝登録順。id は UUIDv7 相当）で返す（該当なしは空リスト）。 */
-    fun findAll(): List<BloodHorseView>
+    /** 指定の世界の全軽種馬を id 昇順（＝登録順。id は UUIDv7 相当）で返す（該当なしは空リスト）。 */
+    fun findAll(worldId: WorldId): List<BloodHorseView>
 
     /**
-     * ID で単一軽種馬の詳細ビューを引く。存在しなければ null（単純 lookup は Result を強制しない。error-handling.md）。
+     * 指定の世界の中から ID で単一軽種馬の詳細ビューを引く。その世界に無ければ null （単純 lookup は Result を強制しない。error-handling.md）。
      *
      * 一覧の [findAll] が返す軽量サマリ [BloodHorseView] と異なり、マイクロチップ番号と出自を含む [BloodHorseDetailView] を返す。
      */
-    fun findById(id: BloodHorseId): BloodHorseDetailView?
+    fun findById(worldId: WorldId, id: BloodHorseId): BloodHorseDetailView?
 }

@@ -1,6 +1,9 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
@@ -14,6 +17,7 @@ import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.support.PostgresContainerSupport
 import com.github.michaelbull.result.unwrap
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -52,6 +56,20 @@ class NameHorseUseCasePublishAfterCommitTest(
 
     private val transactionTemplate = TransactionTemplate(transactionManager)
 
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private val actor
+        get() = Actor(accountId = AccountId(generateId()), worldId = worldId)
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+    }
+
     @BeforeEach
     fun resetRecordingListener() {
         recordingListener.received.clear()
@@ -61,7 +79,8 @@ class NameHorseUseCasePublishAfterCommitTest(
     fun `馬名登録ユースケースが成功するとコミット後に HorseNamed が購読者へ届く`() {
         val horse = persistUnnamedHorse()
 
-        nameHorse(Command(NameHorseCommand(horse.id.value, "アフターコミット"), Instant.now())).unwrap()
+        nameHorse(actor, Command(NameHorseCommand(horse.id.value, "アフターコミット"), Instant.now()))
+            .unwrap()
 
         val event = recordingListener.received.single()
         assert(event.bloodHorseId == horse.id)
@@ -93,14 +112,14 @@ class NameHorseUseCasePublishAfterCommitTest(
     private fun persistUnnamedHorse(): BloodHorse {
         val inspection =
             BloodHorseFixture.inspection(parentage = ParentageDetermination.NotApplicable)
-        horseInspectionRepository.save(inspection)
+        horseInspectionRepository.save(worldId, inspection)
         val horse =
             BloodHorse.createImported(
                 entry = BloodHorseFixture.importedHorseEntry(),
                 inspection = inspection,
                 registrationNumber = PedigreeRegistrationNumber.create("2020900123").unwrap(),
             )
-        return bloodHorseRepository.save(horse).unwrap()
+        return bloodHorseRepository.save(worldId, horse).unwrap()
     }
 
     private fun horseNamed(name: String): HorseNamed =

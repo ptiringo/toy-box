@@ -4,9 +4,11 @@ import com.example.api.application.racing.jockey.GetJockeyQuery
 import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
+import com.example.api.controller.CurrentActor
 import com.example.api.controller.jockey.problem.toProblemDetail
 import com.example.api.controller.jockey.request.RegisterJockeyRequest
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -84,12 +86,14 @@ class JockeyController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/jockeys")
     fun register(
+        @CurrentActor actor: Actor,
         @OperationRequestBody(description = "登録するジョッキーの氏名")
         @RequestBody
-        request: RegisterJockeyRequest
+        request: RegisterJockeyRequest,
     ): JockeyResponse {
         val command = Command.now(RegisterJockeyCommand(request.firstName, request.lastName), clock)
-        val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
+        val jockey =
+            registerJockey(actor, command).mapError { it.toProblemDetail() }.orThrowProblem()
         return jockey.toResponse()
     }
 
@@ -125,8 +129,12 @@ class JockeyController(
             ],
     )
     @GetMapping("/api/jockeys/{id}")
-    fun get(@Parameter(description = "取得するジョッキーの生 UUID") @PathVariable id: UUID): JockeyResponse {
-        val view = getJockey(GetJockeyQuery(id)).mapError { it.toProblemDetail() }.orThrowProblem()
+    fun get(
+        @CurrentActor actor: Actor,
+        @Parameter(description = "取得するジョッキーの生 UUID") @PathVariable id: UUID,
+    ): JockeyResponse {
+        val view =
+            getJockey(actor, GetJockeyQuery(id)).mapError { it.toProblemDetail() }.orThrowProblem()
         return view.toResponse()
     }
 }

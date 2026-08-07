@@ -15,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table
  * ドメインに付けず本クラスに閉じ込め、ドメイン集約とは手書きマッパーで相互変換する（[JdbcBloodHorseRepository]）。
  *
  * - [id] は外部採番の UUIDv7（ドメインの `BloodHorseId` の生値）。`@Id` を付けるが DB 採番はしない。
+ * - [worldId] はこの行が属する世界（セーブデータ）のID。集約は世界を知らないため、マッパーが引数で受け取って書く。
  * - 各種 enum（性・毛色・品種）は enum 名を文字列で持つ。
  * - 出自（sealed `Origin`）は子テーブルを設けず、判別子 [originType]（`DOMESTIC` / `IMPORTED`）と各バリアントの
  *   属性列をフラットに並べて表す。内国産なら [sireId] / [damId] が non-null、輸入なら [originCountry] / [landingDate] が
@@ -25,6 +26,7 @@ import org.springframework.data.relational.core.mapping.Table
 @Table(schema = "studbook", name = "blood_horse")
 data class BloodHorseRow(
     @Id @Column("id") val id: UUID,
+    @Column("world_id") val worldId: UUID,
     @Column("registration_number") val registrationNumber: String,
     @Column("sex") val sex: String,
     @Column("coat_color") val coatColor: String,

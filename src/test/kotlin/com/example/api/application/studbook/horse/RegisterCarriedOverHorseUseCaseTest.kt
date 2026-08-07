@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
@@ -19,8 +23,11 @@ import java.time.LocalDate
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class RegisterCarriedOverHorseUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class RegisterCarriedOverHorseUseCaseTest {
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
     private fun validPayload() =
         RegisterCarriedOverHorseCommand(
@@ -39,17 +46,19 @@ class RegisterCarriedOverHorseUseCaseTest {
 
     /** 審査ポートのスタブ。`save` は引数（確定済み審査）をそのまま返す。 */
     private fun inspectionRepository() =
-        mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }
+        mockk<HorseInspectionRepository> { every { save(worldId, any()) } answers { secondArg() } }
 
     @Nested
     inner class SuccessCase {
         @Test
         fun `正しい入力のとき移行取り込みの馬が登録され永続化される`() {
             val repository =
-                mockk<BloodHorseRepository> { every { save(any()) } answers { Ok(firstArg()) } }
+                mockk<BloodHorseRepository> {
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
+                }
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
-            val registered = useCase(command(validPayload())).unwrap()
+            val registered = useCase(actor, command(validPayload())).unwrap()
 
             val bloodHorse = registered.bloodHorse
             assert(bloodHorse.origin == Origin.CarriedOver)
@@ -57,7 +66,7 @@ class RegisterCarriedOverHorseUseCaseTest {
             assert(registered.inspection.microchipNumber.value == "392140000000003")
             // 親子判定は当システムでは実施しない（先行原簿で確認済みの取り込みのため）
             assert(registered.inspection.parentage == ParentageDetermination.NotApplicable)
-            verify(exactly = 1) { repository.save(any()) }
+            verify(exactly = 1) { repository.save(worldId, any()) }
         }
     }
 
@@ -68,12 +77,12 @@ class RegisterCarriedOverHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload().copy(registrationNumber = "")))
+            val result = useCase(actor, command(validPayload().copy(registrationNumber = "")))
 
             assert(
                 result.getError() == RegisterCarriedOverHorseUseCaseError.InvalidRegistrationNumber
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -81,10 +90,10 @@ class RegisterCarriedOverHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload().copy(microchipNumber = "123")))
+            val result = useCase(actor, command(validPayload().copy(microchipNumber = "123")))
 
             assert(result.getError() == RegisterCarriedOverHorseUseCaseError.InvalidMicrochipNumber)
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -92,10 +101,10 @@ class RegisterCarriedOverHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload().copy(breeder = " ")))
+            val result = useCase(actor, command(validPayload().copy(breeder = " ")))
 
             assert(result.getError() == RegisterCarriedOverHorseUseCaseError.BlankBreeder)
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
     }
 }

@@ -1,7 +1,11 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -21,15 +25,18 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 
-class NameHorseUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class NameHorseUseCaseTest {
     private fun command(bloodHorseId: UUID, name: String): Command<NameHorseCommand> =
         Command(NameHorseCommand(bloodHorseId = bloodHorseId, name = name), Instant.now())
 
     /** 審査ポートのスタブ。命名後の response 組み立て用に既定の審査を返す。 */
     private fun inspectionRepository() =
         mockk<HorseInspectionRepository> {
-            every { findById(any()) } returns BloodHorseFixture.inspection()
+            every { findById(worldId, any()) } returns BloodHorseFixture.inspection()
         }
 
     /** イベント発行のスパイ。発行の有無と発行されたイベントを verify で検証する。 */
@@ -42,18 +49,18 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
-                    every { existsByName(any()) } returns false
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every { findById(worldId, horse.id) } returns horse
+                    every { existsByName(worldId, any()) } returns false
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository(), eventPublisher)
 
-            val registered = useCase(command(horse.id.value, "オグリキャップ")).unwrap()
+            val registered = useCase(actor, command(horse.id.value, "オグリキャップ")).unwrap()
 
             assert(registered.bloodHorse.id == horse.id)
             assert(registered.bloodHorse.name?.value == "オグリキャップ")
             // save には命名済み（assignName 反映後）の集約が渡ること
-            verify(exactly = 1) { repository.save(match { it.name?.value == "オグリキャップ" }) }
+            verify(exactly = 1) { repository.save(worldId, match { it.name?.value == "オグリキャップ" }) }
             // 保存成功後に HorseNamed が発行されること
             verify(exactly = 1) {
                 eventPublisher.publishEvent(
@@ -70,11 +77,11 @@ class NameHorseUseCaseTest {
             val repository = mockk<BloodHorseRepository>()
             val useCase = NameHorseUseCase(repository, inspectionRepository(), eventPublisher)
 
-            val result = useCase(command(UUID.randomUUID(), "ア"))
+            val result = useCase(actor, command(UUID.randomUUID(), "ア"))
 
             assert(result.getError() == NameHorseUseCaseError.InvalidName)
-            verify(exactly = 0) { repository.findById(any()) }
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.findById(worldId, any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
             verify(exactly = 0) { eventPublisher.publishEvent(any()) }
         }
 
@@ -82,13 +89,15 @@ class NameHorseUseCaseTest {
         fun `対象の馬が見つからないとき HorseNotFound を返し永続化されない`() {
             val id = UUID.randomUUID()
             val repository =
-                mockk<BloodHorseRepository> { every { findById(BloodHorseId(id)) } returns null }
+                mockk<BloodHorseRepository> {
+                    every { findById(worldId, BloodHorseId(id)) } returns null
+                }
             val useCase = NameHorseUseCase(repository, inspectionRepository(), eventPublisher)
 
-            val result = useCase(command(id, "オグリキャップ"))
+            val result = useCase(actor, command(id, "オグリキャップ"))
 
             assert(result.getError() == NameHorseUseCaseError.HorseNotFound(id))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
             verify(exactly = 0) { eventPublisher.publishEvent(any()) }
         }
 
@@ -97,15 +106,16 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
-                    every { existsByName(HorseName.create("オグリキャップ").unwrap()) } returns true
+                    every { findById(worldId, horse.id) } returns horse
+                    every { existsByName(worldId, HorseName.create("オグリキャップ").unwrap()) } returns
+                        true
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository(), eventPublisher)
 
-            val result = useCase(command(horse.id.value, "オグリキャップ"))
+            val result = useCase(actor, command(horse.id.value, "オグリキャップ"))
 
             assert(result.getError() == NameHorseUseCaseError.NameAlreadyTaken("オグリキャップ"))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
             verify(exactly = 0) { eventPublisher.publishEvent(any()) }
         }
 
@@ -118,15 +128,15 @@ class NameHorseUseCaseTest {
                     .aggregate
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(named.id) } returns named
-                    every { existsByName(any()) } returns false
+                    every { findById(worldId, named.id) } returns named
+                    every { existsByName(worldId, any()) } returns false
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository(), eventPublisher)
 
-            val result = useCase(command(named.id.value, "トウカイテイオー"))
+            val result = useCase(actor, command(named.id.value, "トウカイテイオー"))
 
             assert(result.getError() == NameHorseUseCaseError.AlreadyNamed("オグリキャップ"))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
             verify(exactly = 0) { eventPublisher.publishEvent(any()) }
         }
 
@@ -136,21 +146,21 @@ class NameHorseUseCaseTest {
             // save をスタブしない（strict mockk）: 審査欠落で save に到達した場合は例外で即時失敗させる
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
-                    every { existsByName(any()) } returns false
+                    every { findById(worldId, horse.id) } returns horse
+                    every { existsByName(worldId, any()) } returns false
                 }
             val inspectionRepository =
-                mockk<HorseInspectionRepository> { every { findById(any()) } returns null }
+                mockk<HorseInspectionRepository> { every { findById(worldId, any()) } returns null }
             val useCase = NameHorseUseCase(repository, inspectionRepository, eventPublisher)
 
-            val result = useCase(command(horse.id.value, "オグリキャップ"))
+            val result = useCase(actor, command(horse.id.value, "オグリキャップ"))
 
             assert(
                 result.getError() ==
                     NameHorseUseCaseError.InspectionNotFound(horse.inspectionId.value)
             )
             // 審査が欠落した場合、改名済みの集約は保存しない（エラーなのに命名状態だけ永続化されるのを防ぐ）
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
             verify(exactly = 0) { eventPublisher.publishEvent(any()) }
         }
 
@@ -159,13 +169,13 @@ class NameHorseUseCaseTest {
             val horse = BloodHorseFixture.bloodHorse()
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findById(horse.id) } returns horse
-                    every { existsByName(any()) } returns false
-                    every { save(any()) } returns Err(UpdateConflict)
+                    every { findById(worldId, horse.id) } returns horse
+                    every { existsByName(worldId, any()) } returns false
+                    every { save(worldId, any()) } returns Err(UpdateConflict)
                 }
             val useCase = NameHorseUseCase(repository, inspectionRepository(), eventPublisher)
 
-            val result = useCase(command(horse.id.value, "オグリキャップ"))
+            val result = useCase(actor, command(horse.id.value, "オグリキャップ"))
 
             assert(
                 result.getError() == NameHorseUseCaseError.ConcurrentModification(horse.id.value)

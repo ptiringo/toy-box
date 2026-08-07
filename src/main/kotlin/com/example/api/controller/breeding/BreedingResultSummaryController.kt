@@ -2,6 +2,8 @@ package com.example.api.controller.breeding
 
 import com.example.api.application.studbook.breeding.ListBreedingResultSummariesQuery
 import com.example.api.application.studbook.breeding.ListBreedingResultSummariesUseCase
+import com.example.api.controller.CurrentActor
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -57,8 +59,12 @@ class BreedingResultSummaryController(
     )
     @GetMapping("/api/breedingResultSummaries")
     fun list(
-        @Parameter(description = "集計対象の種牡馬の生 UUID") @RequestParam stallionId: UUID
+        @CurrentActor actor: Actor,
+        @Parameter(description = "集計対象の種牡馬の生 UUID") @RequestParam stallionId: UUID,
     ): List<BreedingResultSummaryResponse> =
-        listBreedingResultSummaries(ListBreedingResultSummariesQuery(BloodHorseId(stallionId)))
+        listBreedingResultSummaries(
+                actor,
+                ListBreedingResultSummariesQuery(BloodHorseId(stallionId)),
+            )
             .map { it.toResponse() }
 }

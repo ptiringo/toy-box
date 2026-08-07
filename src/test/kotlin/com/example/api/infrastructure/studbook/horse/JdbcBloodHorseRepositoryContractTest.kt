@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.horse
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
@@ -17,6 +18,7 @@ import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
@@ -54,10 +56,23 @@ class JdbcBloodHorseRepositoryContractTest(
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcBloodHorseRepository(rows)
-    private val seeder = StudbookSeeder(inspectionRows, rows, registrationRows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, rows, registrationRows)
+    }
 
     private fun domesticRow(id: UUID = generateId()) =
         BloodHorseRow(
+            worldId = worldId.value,
             id = id,
             registrationNumber = "2023104567",
             sex = Sex.MALE.name,
@@ -119,8 +134,8 @@ class JdbcBloodHorseRepositoryContractTest(
         seeder.seedInspectionFor(imported)
         val expectedOrigin = imported.origin as Origin.Imported
 
-        val saved = repository.save(imported).unwrap()
-        val found = repository.findById(imported.id)
+        val saved = repository.save(worldId, imported).unwrap()
+        val found = repository.findById(worldId, imported.id)
 
         assert(saved.id == imported.id)
         assert(found != null)
@@ -142,8 +157,8 @@ class JdbcBloodHorseRepositoryContractTest(
         val carried = BloodHorseFixture.carriedOverBloodHorse()
         seeder.seedInspectionFor(carried)
 
-        val saved = repository.save(carried).unwrap()
-        val found = repository.findById(carried.id)
+        val saved = repository.save(worldId, carried).unwrap()
+        val found = repository.findById(worldId, carried.id)
 
         assert(saved.id == carried.id)
         assert(found != null)
@@ -165,8 +180,8 @@ class JdbcBloodHorseRepositoryContractTest(
         val foal = namedDomesticFoal()
         val expectedOrigin = foal.origin as Origin.Domestic
 
-        repository.save(foal).unwrap()
-        val found = repository.findById(foal.id)
+        repository.save(worldId, foal).unwrap()
+        val found = repository.findById(worldId, foal.id)
 
         assert(found != null)
         // 命名済みの馬名が往復する
@@ -183,11 +198,11 @@ class JdbcBloodHorseRepositoryContractTest(
     fun `findAllByIdはヒットしたIDだけをまとめて返す`() {
         val importedFixture = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
         seeder.seedInspectionFor(importedFixture)
-        val imported = repository.save(importedFixture).unwrap()
-        val foal = repository.save(namedDomesticFoal()).unwrap()
+        val imported = repository.save(worldId, importedFixture).unwrap()
+        val foal = repository.save(worldId, namedDomesticFoal()).unwrap()
         val missing = BloodHorseId(generateId())
 
-        val found = repository.findAllById(setOf(imported.id, foal.id, missing))
+        val found = repository.findAllById(worldId, setOf(imported.id, foal.id, missing))
 
         assert(found.size == 2)
         assert(found[imported.id]?.id == imported.id)
@@ -217,76 +232,81 @@ class JdbcBloodHorseRepositoryContractTest(
 
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
-        assert(repository.findById(BloodHorseId(generateId())) == null)
+        assert(repository.findById(worldId, BloodHorseId(generateId())) == null)
     }
 
     @Test
     fun `既に付与済みの馬名は existsByName が true を返す`() {
-        repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ" で命名済み
+        repository.save(worldId, namedDomesticFoal()).unwrap() // "オグリキャップ" で命名済み
 
-        assert(repository.existsByName(HorseName.create("オグリキャップ").unwrap()))
+        assert(repository.existsByName(worldId, HorseName.create("オグリキャップ").unwrap()))
     }
 
     @Test
     fun `未使用の馬名は existsByName が false を返す`() {
-        repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ"
+        repository.save(worldId, namedDomesticFoal()).unwrap() // "オグリキャップ"
 
-        assert(!repository.existsByName(HorseName.create("トウカイテイオー").unwrap()))
+        assert(!repository.existsByName(worldId, HorseName.create("トウカイテイオー").unwrap()))
     }
 
     @Test
     fun `同一馬名の二重insertはUNIQUE制約で拒否される`() {
         // ドメインサービス nameHorse の existsByName 検証をすり抜ける
         // read-then-insert 並行競合（#532）の backstop。
-        repository.save(namedDomesticFoal()).unwrap() // "オグリキャップ" で命名済み
+        repository.save(worldId, namedDomesticFoal()).unwrap() // "オグリキャップ" で命名済み
         val duplicate = namedDomesticFoal() // 別個体・同じ馬名
 
-        assertThrows<DataIntegrityViolationException> { repository.save(duplicate) }
+        assertThrows<DataIntegrityViolationException> { repository.save(worldId, duplicate) }
     }
 
     @Test
     fun `保存済み集約の再saveはupdateになりversionが進む`() {
         val fixture = BloodHorseFixture.bloodHorse()
         seeder.seedInspectionFor(fixture)
-        val inserted = repository.save(fixture).unwrap()
+        val inserted = repository.save(worldId, fixture).unwrap()
         assert(inserted.version != null)
 
         val named = inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
-        val updated = repository.save(named).unwrap()
+        val updated = repository.save(worldId, named).unwrap()
 
         assert(updated.version!! > inserted.version!!)
         assert(rows.count() == 1L)
-        assert(repository.findById(inserted.id)?.name?.value == "オグリキャップ")
+        assert(repository.findById(worldId, inserted.id)?.name?.value == "オグリキャップ")
     }
 
     @Test
     fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
         val fixture = BloodHorseFixture.bloodHorse()
         seeder.seedInspectionFor(fixture)
-        val inserted = repository.save(fixture).unwrap()
+        val inserted = repository.save(worldId, fixture).unwrap()
         repository
-            .save(inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate)
+            .save(
+                worldId,
+                inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate,
+            )
             .unwrap()
 
         val conflicted =
             repository.save(
-                inserted.assignName(HorseName.create("トウカイテイオー").unwrap()).unwrap().aggregate
+                worldId,
+                inserted.assignName(HorseName.create("トウカイテイオー").unwrap()).unwrap().aggregate,
             )
 
         assert(conflicted.getError() == UpdateConflict)
-        assert(repository.findById(inserted.id)?.name?.value == "オグリキャップ")
+        assert(repository.findById(worldId, inserted.id)?.name?.value == "オグリキャップ")
     }
 
     @Test
     fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
         val fixture = BloodHorseFixture.bloodHorse()
         seeder.seedInspectionFor(fixture)
-        val inserted = repository.save(fixture).unwrap()
+        val inserted = repository.save(worldId, fixture).unwrap()
         rows.deleteAll()
 
         val conflicted =
             repository.save(
-                inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
+                worldId,
+                inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate,
             )
 
         assert(conflicted.getError() == UpdateConflict)

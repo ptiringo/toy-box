@@ -3,6 +3,7 @@ package com.example.api.infrastructure.racing.jockey
 import com.example.api.application.racing.jockey.JockeyQueries
 import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.domain.racing.model.jockey.JockeyId
+import com.example.api.domain.shared.WorldId
 import java.util.UUID
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -20,10 +21,18 @@ import org.springframework.stereotype.Repository
 @Repository
 class JdbcJockeyQueries(private val jdbcClient: JdbcClient) : JockeyQueries {
 
-    override fun findById(id: JockeyId): JockeyView? =
+    override fun findById(worldId: WorldId, id: JockeyId): JockeyView? =
         jdbcClient
-            .sql("SELECT id, first_name, last_name FROM racing.jockey WHERE id = :id")
+            .sql(
+                """
+                SELECT id, first_name, last_name
+                FROM racing.jockey
+                WHERE id = :id AND world_id = :worldId
+                """
+                    .trimIndent()
+            )
             .param("id", id.value)
+            .param("worldId", worldId.value)
             .query { rs, _ ->
                 JockeyView(
                     id = rs.getObject("id", UUID::class.java),

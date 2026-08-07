@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.breeding.BreedingReportDeadline
@@ -63,13 +64,14 @@ sealed interface SubmitBreedingReportUseCaseError {
 class SubmitBreedingReportUseCase(private val breedingResultRepository: BreedingResultRepository) {
     @Transactional
     operator fun invoke(
-        command: Command<SubmitBreedingReportCommand>
+        actor: Actor,
+        command: Command<SubmitBreedingReportCommand>,
     ): Result<BreedingResult, SubmitBreedingReportUseCaseError> = binding {
         val input = command.payload
 
         val breedingResult =
             breedingResultRepository
-                .findById(BreedingResultId(input.breedingResultId))
+                .findById(actor.worldId, BreedingResultId(input.breedingResultId))
                 .toResultOr {
                     SubmitBreedingReportUseCaseError.BreedingResultNotFound(input.breedingResultId)
                 }
@@ -82,7 +84,7 @@ class SubmitBreedingReportUseCase(private val breedingResultRepository: Breeding
                 .bind()
 
         breedingResultRepository
-            .save(submitted)
+            .save(actor.worldId, submitted)
             .mapError { _: UpdateConflict ->
                 SubmitBreedingReportUseCaseError.ConcurrentModification(input.breedingResultId)
             }

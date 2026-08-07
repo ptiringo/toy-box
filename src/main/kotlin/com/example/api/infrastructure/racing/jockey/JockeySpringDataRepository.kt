@@ -11,6 +11,10 @@ import org.springframework.data.repository.CrudRepository
  * [JdbcJockeyRepository] が担う。
  */
 interface JockeySpringDataRepository : CrudRepository<JockeyRow, UUID> {
-    /** 同姓同名（名・姓の完全一致）で検索する。 */
-    fun findByFirstNameAndLastName(firstName: String, lastName: String): JockeyRow?
+    /** 指定の世界の中から同姓同名（名・姓の完全一致）で検索する。 */
+    fun findByWorldIdAndFirstNameAndLastName(
+        worldId: UUID,
+        firstName: String,
+        lastName: String,
+    ): JockeyRow?
 }

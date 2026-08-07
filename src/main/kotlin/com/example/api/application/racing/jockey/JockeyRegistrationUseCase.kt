@@ -4,6 +4,7 @@ import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.racing.model.jockey.JockeyRepository
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -49,17 +50,19 @@ sealed interface JockeyRegistrationError {
 class JockeyRegistrationUseCase(private val jockeyRepository: JockeyRepository) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterJockeyCommand>
+        actor: Actor,
+        command: Command<RegisterJockeyCommand>,
     ): Result<Jockey, JockeyRegistrationError> {
         val input = command.payload
         return Jockey.create(input.firstName, input.lastName)
             .mapError { JockeyRegistrationError.InvalidJockey(it) }
             .andThen { jockey ->
-                val duplicate = jockeyRepository.findByFullName(input.firstName, input.lastName)
+                val duplicate =
+                    jockeyRepository.findByFullName(actor.worldId, input.firstName, input.lastName)
                 if (duplicate != null) {
                     Err(JockeyRegistrationError.DuplicateJockey(duplicate.id))
                 } else {
-                    Ok(jockeyRepository.save(jockey))
+                    Ok(jockeyRepository.save(actor.worldId, jockey))
                 }
             }
     }

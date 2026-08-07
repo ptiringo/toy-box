@@ -1,6 +1,7 @@
 package com.example.api.application.racing.jockey
 
 import com.example.api.domain.racing.model.jockey.JockeyId
+import com.example.api.domain.shared.WorldId
 
 /**
  * ジョッキーの読み取りポート（軽量 CQRS（L2）の Query 側。ADR-0031）。
@@ -14,6 +15,6 @@ import com.example.api.domain.racing.model.jockey.JockeyId
  * write と対称に維持）。
  */
 interface JockeyQueries {
-    /** ID でジョッキービューを引く。存在しなければ null（単純 lookup は Result を強制しない。error-handling.md）。 */
-    fun findById(id: JockeyId): JockeyView?
+    /** 指定の世界の中から ID でジョッキービューを引く。その世界に無ければ null （単純 lookup は Result を強制しない。error-handling.md）。 */
+    fun findById(worldId: WorldId, id: JockeyId): JockeyView?
 }

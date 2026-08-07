@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
@@ -87,7 +88,8 @@ class NameHorseUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<NameHorseCommand>
+        actor: Actor,
+        command: Command<NameHorseCommand>,
     ): Result<RegisteredBloodHorse, NameHorseUseCaseError> = binding {
         val input = command.payload
 
@@ -98,12 +100,12 @@ class NameHorseUseCase(
 
         val horse =
             bloodHorseRepository
-                .findById(BloodHorseId(input.bloodHorseId))
+                .findById(actor.worldId, BloodHorseId(input.bloodHorseId))
                 .toResultOr { NameHorseUseCaseError.HorseNotFound(input.bloodHorseId) }
                 .bind()
 
         val transition =
-            nameHorse(horse, horseName, bloodHorseRepository)
+            nameHorse(actor.worldId, horse, horseName, bloodHorseRepository)
                 .mapError { error ->
                     when (error) {
                         is NameHorseError.NameAlreadyTaken ->
@@ -120,7 +122,7 @@ class NameHorseUseCase(
         // 血統登録時に審査を必ず生成・保存しているため、欠落は通常ありえない内部不整合相当。
         val inspection =
             horseInspectionRepository
-                .findById(transition.aggregate.inspectionId)
+                .findById(actor.worldId, transition.aggregate.inspectionId)
                 .toResultOr {
                     NameHorseUseCaseError.InspectionNotFound(
                         transition.aggregate.inspectionId.value
@@ -130,7 +132,7 @@ class NameHorseUseCase(
 
         val named =
             bloodHorseRepository
-                .save(transition.aggregate)
+                .save(actor.worldId, transition.aggregate)
                 .mapError { _: UpdateConflict ->
                     NameHorseUseCaseError.ConcurrentModification(input.bloodHorseId)
                 }

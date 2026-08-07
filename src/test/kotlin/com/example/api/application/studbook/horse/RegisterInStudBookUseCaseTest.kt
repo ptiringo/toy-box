@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -23,8 +27,11 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class RegisterInStudBookUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class RegisterInStudBookUseCaseTest {
     /** すべて正しい既定のペイロード。変種は `copy` で 1 項目だけ差し替える。 */
     private fun validPayload(sireId: UUID, damId: UUID) =
         RegisterInStudBookCommand(
@@ -45,7 +52,7 @@ class RegisterInStudBookUseCaseTest {
 
     /** 審査ポートのスタブ。`save` は引数（確定済み審査）をそのまま返す。 */
     private fun inspectionRepository() =
-        mockk<HorseInspectionRepository> { every { save(any()) } answers { firstArg() } }
+        mockk<HorseInspectionRepository> { every { save(worldId, any()) } answers { secondArg() } }
 
     @Nested
     inner class SuccessCase {
@@ -55,13 +62,14 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                    every { findAllById(worldId, setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val registered = useCase(command(validPayload(sire.id.value, dam.id.value))).unwrap()
+            val registered =
+                useCase(actor, command(validPayload(sire.id.value, dam.id.value))).unwrap()
 
             val bloodHorse = registered.bloodHorse
             assert(bloodHorse.origin == Origin.Domestic(sireId = sire.id, damId = dam.id))
@@ -70,8 +78,8 @@ class RegisterInStudBookUseCaseTest {
             assert(bloodHorse.inspectionId == registered.inspection.id)
             assert(registered.inspection.microchipNumber.value == "392140000000001")
             // 父・母の引き当ては逐次 findById ではなく 1 回の一括 lookup で行う。
-            verify(exactly = 1) { repository.findAllById(setOf(sire.id, dam.id)) }
-            verify(exactly = 1) { repository.save(any()) }
+            verify(exactly = 1) { repository.findAllById(worldId, setOf(sire.id, dam.id)) }
+            verify(exactly = 1) { repository.save(worldId, any()) }
         }
     }
 
@@ -84,14 +92,15 @@ class RegisterInStudBookUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
                             .copy(registrationNumber = "")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RegisterInStudBookUseCaseError.InvalidRegistrationNumber)
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -101,14 +110,15 @@ class RegisterInStudBookUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
                             .copy(microchipNumber = "123")
-                    )
+                    ),
                 )
 
             assert(result.getError() == RegisterInStudBookUseCaseError.InvalidMicrochipNumber)
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -118,15 +128,16 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
-                        mapOf(BloodHorseId(damId) to dam)
+                    every {
+                        findAllById(worldId, setOf(BloodHorseId(sireId), BloodHorseId(damId)))
+                    } returns mapOf(BloodHorseId(damId) to dam)
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload(sireId, damId)))
+            val result = useCase(actor, command(validPayload(sireId, damId)))
 
             assert(result.getError() == RegisterInStudBookUseCaseError.SireNotFound(sireId))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -136,15 +147,16 @@ class RegisterInStudBookUseCaseTest {
             val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findAllById(setOf(BloodHorseId(sireId), BloodHorseId(damId))) } returns
-                        mapOf(BloodHorseId(sireId) to sire)
+                    every {
+                        findAllById(worldId, setOf(BloodHorseId(sireId), BloodHorseId(damId)))
+                    } returns mapOf(BloodHorseId(sireId) to sire)
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload(sireId, damId)))
+            val result = useCase(actor, command(validPayload(sireId, damId)))
 
             assert(result.getError() == RegisterInStudBookUseCaseError.DamNotFound(damId))
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -153,12 +165,12 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val repository =
                 mockk<BloodHorseRepository> {
-                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                    every { findAllById(worldId, setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
                 }
             val useCase = RegisterInStudBookUseCase(repository, inspectionRepository())
 
-            val result = useCase(command(validPayload(sire.id.value, dam.id.value)))
+            val result = useCase(actor, command(validPayload(sire.id.value, dam.id.value)))
 
             assert(
                 result.getError() ==
@@ -166,7 +178,7 @@ class RegisterInStudBookUseCaseTest {
                         RegisterInStudBookError.SireNotMale
                     )
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -176,15 +188,15 @@ class RegisterInStudBookUseCaseTest {
             val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
             val bloodHorseRepository =
                 mockk<BloodHorseRepository> {
-                    every { findAllById(setOf(sire.id, dam.id)) } returns
+                    every { findAllById(worldId, setOf(sire.id, dam.id)) } returns
                         mapOf(sire.id to sire, dam.id to dam)
                 }
             val inspectionRepository = mockk<HorseInspectionRepository>()
             val useCase = RegisterInStudBookUseCase(bloodHorseRepository, inspectionRepository)
 
-            useCase(command(validPayload(sire.id.value, dam.id.value)))
+            useCase(actor, command(validPayload(sire.id.value, dam.id.value)))
 
-            verify(exactly = 0) { inspectionRepository.save(any()) }
+            verify(exactly = 0) { inspectionRepository.save(worldId, any()) }
         }
     }
 }

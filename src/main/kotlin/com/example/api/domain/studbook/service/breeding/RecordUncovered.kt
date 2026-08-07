@@ -1,5 +1,6 @@
 package com.example.api.domain.studbook.service.breeding
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
@@ -30,12 +31,14 @@ import java.time.Year
  * @return 起こされた種付せずの [BreedingResult]、または前提条件違反を表す [RecordUncoveredError]
  */
 fun recordUncovered(
+    worldId: WorldId,
     broodmareRegistration: BreedingRegistration,
     breedingYear: Year,
     breedingResultRepository: BreedingResultRepository,
 ): Result<BreedingResult, RecordUncoveredError> {
     val existingForYear =
         breedingResultRepository.findByBreedingRegistrationIdAndBreedingYear(
+            worldId,
             broodmareRegistration.id,
             breedingYear,
         )

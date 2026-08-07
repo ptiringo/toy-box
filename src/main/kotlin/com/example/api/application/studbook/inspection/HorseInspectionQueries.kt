@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.inspection
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
 
 /**
@@ -12,6 +13,6 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionId
  * 読み取りポートは集約のライフサイクルを持たないため、書き込みポートが付ける jMolecules `@Repository` は**付けない**。
  */
 interface HorseInspectionQueries {
-    /** ID で審査ビューを引く。存在しなければ null（単純 lookup は Result を強制しない。error-handling.md）。 */
-    fun findById(id: HorseInspectionId): HorseInspectionView?
+    /** 指定の世界の中から ID で審査ビューを引く。その世界に無ければ null （単純 lookup は Result を強制しない。error-handling.md）。 */
+    fun findById(worldId: WorldId, id: HorseInspectionId): HorseInspectionView?
 }

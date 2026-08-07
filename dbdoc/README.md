@@ -4,12 +4,12 @@
 
 | Name | Columns | Comment | Type |
 | ---- | ------- | ------- | ---- |
-| [racing.jockey](racing.jockey.md) | 4 | 騎手（JRA 競馬コンテキスト） | BASE TABLE |
-| [studbook.breeding_registration](studbook.breeding_registration.md) | 7 | 繁殖登録（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.blood_horse](studbook.blood_horse.md) | 15 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.breeding_result](studbook.breeding_result.md) | 11 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.horse_inspection](studbook.horse_inspection.md) | 8 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.covering_report](studbook.covering_report.md) | 5 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
+| [racing.jockey](racing.jockey.md) | 5 | 騎手（JRA 競馬コンテキスト） | BASE TABLE |
+| [studbook.breeding_registration](studbook.breeding_registration.md) | 8 | 繁殖登録（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.blood_horse](studbook.blood_horse.md) | 16 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.breeding_result](studbook.breeding_result.md) | 12 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.horse_inspection](studbook.horse_inspection.md) | 9 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.covering_report](studbook.covering_report.md) | 6 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
 | [iam.account](iam.account.md) | 3 | この API の利用者アカウント（IdP の subject に世界を結びつける） | BASE TABLE |
 | [iam.world](iam.world.md) | 4 | プレイヤーごとの世界（セーブデータ）。全ドメインのデータはいずれかの世界に属する | BASE TABLE |
 
@@ -18,13 +18,19 @@
 ```mermaid
 erDiagram
 
-"studbook.breeding_registration" }o--|| "studbook.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES studbook.blood_horse(id)"
-"studbook.blood_horse" }o--o| "studbook.blood_horse" : "FOREIGN KEY (dam_id) REFERENCES studbook.blood_horse(id)"
-"studbook.blood_horse" }o--o| "studbook.blood_horse" : "FOREIGN KEY (sire_id) REFERENCES studbook.blood_horse(id)"
-"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id)"
-"studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
-"studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
-"studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
+"racing.jockey" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.breeding_registration" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.breeding_registration" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, registered_horse_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.blood_horse" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, dam_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, sire_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id)"
+"studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
+"studbook.horse_inspection" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.covering_report" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
 "iam.world" }o--|| "iam.account" : "FOREIGN KEY (account_id) REFERENCES iam.account(id) ON DELETE CASCADE"
 
 "racing.jockey" {
@@ -32,6 +38,7 @@ erDiagram
   varchar_255_ first_name
   varchar_255_ last_name
   bigint version
+  uuid world_id FK
 }
 "studbook.breeding_registration" {
   uuid id
@@ -41,6 +48,7 @@ erDiagram
   varchar_32_ retirement_reason
   date retirement_occurred_on
   bigint version
+  uuid world_id FK
 }
 "studbook.blood_horse" {
   uuid id
@@ -58,6 +66,7 @@ erDiagram
   varchar_255_ origin_country
   date landing_date
   bigint version
+  uuid world_id FK
 }
 "studbook.breeding_result" {
   uuid id
@@ -71,6 +80,7 @@ erDiagram
   date outcome_foaling_date
   bigint version
   date report_submitted_on
+  uuid world_id FK
 }
 "studbook.horse_inspection" {
   uuid id
@@ -81,6 +91,7 @@ erDiagram
   varchar_255_ feature_white_markings
   varchar_255_ feature_nose_print
   bigint version
+  uuid world_id FK
 }
 "studbook.covering_report" {
   uuid id
@@ -88,6 +99,7 @@ erDiagram
   integer covering_year
   date submitted_on
   bigint version
+  uuid world_id FK
 }
 "iam.account" {
   uuid id

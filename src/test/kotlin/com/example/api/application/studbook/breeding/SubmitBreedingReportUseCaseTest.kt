@@ -1,7 +1,11 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
@@ -21,8 +25,11 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class SubmitBreedingReportUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class SubmitBreedingReportUseCaseTest {
     /** 分娩結果確定済み（提出可能）な繁殖成績。繁殖年 2024 → 提出期限は 2025-05-31。 */
     private fun reportedResult(): BreedingResult =
         BreedingFixture.breedingResult()
@@ -42,19 +49,19 @@ class SubmitBreedingReportUseCaseTest {
             val reported = reportedResult()
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(reported.id) } returns reported
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every { findById(worldId, reported.id) } returns reported
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
             // UTC 15:00 = JST 翌日 0:00 → 提出日は 6/1（期限 5/31 を超過）
             val issuedAt = Instant.parse("2025-05-31T15:00:00Z")
 
-            val result = useCase(command(reported.id.value, issuedAt)).unwrap()
+            val result = useCase(actor, command(reported.id.value, issuedAt)).unwrap()
 
             assert(result.reportSubmittedOn == LocalDate.of(2025, 6, 1))
             assert(result.reportSubmittedLate == true)
             // save には提出済みの集約が渡ること
-            verify(exactly = 1) { repository.save(match { it.reportSubmittedOn != null }) }
+            verify(exactly = 1) { repository.save(worldId, match { it.reportSubmittedOn != null }) }
         }
     }
 
@@ -65,17 +72,18 @@ class SubmitBreedingReportUseCaseTest {
             val breedingResultId = UUID.randomUUID()
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(BreedingResultId(breedingResultId)) } returns null
+                    every { findById(worldId, BreedingResultId(breedingResultId)) } returns null
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
-            val result = useCase(command(breedingResultId, Instant.parse("2025-05-01T00:00:00Z")))
+            val result =
+                useCase(actor, command(breedingResultId, Instant.parse("2025-05-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
                     SubmitBreedingReportUseCaseError.BreedingResultNotFound(breedingResultId)
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -83,12 +91,12 @@ class SubmitBreedingReportUseCaseTest {
             val unreported = BreedingFixture.breedingResult()
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(unreported.id) } returns unreported
+                    every { findById(worldId, unreported.id) } returns unreported
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
             val result =
-                useCase(command(unreported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
+                useCase(actor, command(unreported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
@@ -96,7 +104,7 @@ class SubmitBreedingReportUseCaseTest {
                         SubmitBreedingReportError.OutcomeNotRecorded
                     )
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -104,11 +112,12 @@ class SubmitBreedingReportUseCaseTest {
             val submitted = reportedResult().submitReport(LocalDate.of(2025, 5, 1)).unwrap()
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(submitted.id) } returns submitted
+                    every { findById(worldId, submitted.id) } returns submitted
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
-            val result = useCase(command(submitted.id.value, Instant.parse("2025-05-02T00:00:00Z")))
+            val result =
+                useCase(actor, command(submitted.id.value, Instant.parse("2025-05-02T00:00:00Z")))
 
             assert(
                 result.getError() ==
@@ -116,7 +125,7 @@ class SubmitBreedingReportUseCaseTest {
                         SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1))
                     )
             )
-            verify(exactly = 0) { repository.save(any()) }
+            verify(exactly = 0) { repository.save(worldId, any()) }
         }
 
         @Test
@@ -124,12 +133,13 @@ class SubmitBreedingReportUseCaseTest {
             val reported = reportedResult()
             val repository =
                 mockk<BreedingResultRepository> {
-                    every { findById(reported.id) } returns reported
-                    every { save(any()) } returns Err(UpdateConflict)
+                    every { findById(worldId, reported.id) } returns reported
+                    every { save(worldId, any()) } returns Err(UpdateConflict)
                 }
             val useCase = SubmitBreedingReportUseCase(repository)
 
-            val result = useCase(command(reported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
+            val result =
+                useCase(actor, command(reported.id.value, Instant.parse("2025-05-01T00:00:00Z")))
 
             assert(
                 result.getError() ==

@@ -23,6 +23,7 @@
 | origin_country | varchar(255) |  | true |  |  | 原産国（輸入のみ） |
 | landing_date | date |  | true |  |  | 輸入上陸日（輸入のみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
+| world_id | uuid |  | false | [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.horse_inspection](studbook.horse_inspection.md) | この行が属する世界（セーブデータ）のID |
 
 ## Constraints
 
@@ -30,31 +31,35 @@
 | ---- | ---- | ---------- |
 | chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL)) OR (((origin_type)::text = 'CARRIED_OVER'::text) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)))) |
 | blood_horse_pkey | PRIMARY KEY | PRIMARY KEY (id) |
-| fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (dam_id) REFERENCES studbook.blood_horse(id) |
-| fk_blood_horse_sire | FOREIGN KEY | FOREIGN KEY (sire_id) REFERENCES studbook.blood_horse(id) |
-| fk_blood_horse_inspection | FOREIGN KEY | FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id) |
-| uq_blood_horse_name | UNIQUE | UNIQUE (name) |
+| fk_blood_horse_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
+| fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (world_id, dam_id) REFERENCES studbook.blood_horse(world_id, id) |
+| fk_blood_horse_sire | FOREIGN KEY | FOREIGN KEY (world_id, sire_id) REFERENCES studbook.blood_horse(world_id, id) |
+| uq_blood_horse_world_id_id | UNIQUE | UNIQUE (world_id, id) |
+| fk_blood_horse_inspection | FOREIGN KEY | FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id) |
+| uq_blood_horse_name | UNIQUE | UNIQUE (world_id, name) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | blood_horse_pkey | CREATE UNIQUE INDEX blood_horse_pkey ON studbook.blood_horse USING btree (id) |
-| ix_blood_horse_inspection_id | CREATE INDEX ix_blood_horse_inspection_id ON studbook.blood_horse USING btree (inspection_id) |
-| ix_blood_horse_sire_id | CREATE INDEX ix_blood_horse_sire_id ON studbook.blood_horse USING btree (sire_id) |
-| ix_blood_horse_dam_id | CREATE INDEX ix_blood_horse_dam_id ON studbook.blood_horse USING btree (dam_id) |
-| uq_blood_horse_name | CREATE UNIQUE INDEX uq_blood_horse_name ON studbook.blood_horse USING btree (name) |
+| uq_blood_horse_world_id_id | CREATE UNIQUE INDEX uq_blood_horse_world_id_id ON studbook.blood_horse USING btree (world_id, id) |
+| ix_blood_horse_inspection_id | CREATE INDEX ix_blood_horse_inspection_id ON studbook.blood_horse USING btree (world_id, inspection_id) |
+| ix_blood_horse_sire_id | CREATE INDEX ix_blood_horse_sire_id ON studbook.blood_horse USING btree (world_id, sire_id) |
+| ix_blood_horse_dam_id | CREATE INDEX ix_blood_horse_dam_id ON studbook.blood_horse USING btree (world_id, dam_id) |
+| uq_blood_horse_name | CREATE UNIQUE INDEX uq_blood_horse_name ON studbook.blood_horse USING btree (world_id, name) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"studbook.breeding_registration" }o--|| "studbook.blood_horse" : "FOREIGN KEY (registered_horse_id) REFERENCES studbook.blood_horse(id)"
-"studbook.blood_horse" }o--o| "studbook.blood_horse" : "FOREIGN KEY (dam_id) REFERENCES studbook.blood_horse(id)"
-"studbook.blood_horse" }o--o| "studbook.blood_horse" : "FOREIGN KEY (sire_id) REFERENCES studbook.blood_horse(id)"
-"studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (covering_stallion_id) REFERENCES studbook.blood_horse(id)"
-"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id)"
+"studbook.breeding_registration" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, registered_horse_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, dam_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, sire_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id)"
+"studbook.blood_horse" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "studbook.blood_horse" {
   uuid id
@@ -72,6 +77,7 @@ erDiagram
   varchar_255_ origin_country
   date landing_date
   bigint version
+  uuid world_id FK
 }
 "studbook.breeding_registration" {
   uuid id
@@ -81,6 +87,7 @@ erDiagram
   varchar_32_ retirement_reason
   date retirement_occurred_on
   bigint version
+  uuid world_id FK
 }
 "studbook.breeding_result" {
   uuid id
@@ -94,6 +101,7 @@ erDiagram
   date outcome_foaling_date
   bigint version
   date report_submitted_on
+  uuid world_id FK
 }
 "studbook.horse_inspection" {
   uuid id
@@ -103,6 +111,13 @@ erDiagram
   varchar_255_ feature_hair_whorl
   varchar_255_ feature_white_markings
   varchar_255_ feature_nose_print
+  bigint version
+  uuid world_id FK
+}
+"iam.world" {
+  uuid id
+  uuid account_id FK
+  varchar_64_ name
   bigint version
 }
 ```

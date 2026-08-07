@@ -1,9 +1,15 @@
 package com.example.api.replay
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.replay.fixture.CoveredSeasonFixture
 import com.example.api.replay.fixture.FixtureLoader
 import com.example.api.replay.fixture.StudCertificateFixture
 import com.example.api.support.PostgresContainerSupport
+import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestConstructor
@@ -23,6 +29,17 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainerSupport() {
+
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val actor
+        get() = Actor(accountId = AccountId(generateId()), worldId = WorldId(worldIdValue))
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に、ハーネスが書き込む世界を作る（#704）。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+    }
 
     /** 回帰アンカーの種畜証明だけを差し替える（他の値はすべて元のまま）。 */
     private fun anchorWithStudCertificate(
@@ -44,7 +61,7 @@ class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainer
         // 種付場所は 北海道 のまま、有効区域だけを 青森 に差し替える。
         val fixture = anchorWithStudCertificate { it.copy(validRegions = listOf("青森")) }
 
-        val outcome = engine.run(fixture)
+        val outcome = engine.run(actor, fixture)
 
         assert(outcome.stoppedAt == ReplayStep.RECORD_COVERING) {
             "停止しなかった: stoppedAt=${outcome.stoppedAt} / steps=${outcome.steps}"
@@ -62,7 +79,7 @@ class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainer
             it.copy(validPeriodStart = "2001-05-01", validPeriodEnd = "2001-07-31")
         }
 
-        val outcome = engine.run(fixture)
+        val outcome = engine.run(actor, fixture)
 
         assert(outcome.stoppedAt == ReplayStep.RECORD_COVERING) {
             "停止しなかった: stoppedAt=${outcome.stoppedAt} / steps=${outcome.steps}"

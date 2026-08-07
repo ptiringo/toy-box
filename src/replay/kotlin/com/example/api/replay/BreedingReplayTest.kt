@@ -1,9 +1,15 @@
 package com.example.api.replay
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.replay.fixture.FixtureLoader
 import com.example.api.support.PostgresContainerSupport
 import java.nio.file.Path
+import java.util.UUID
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestConstructor
@@ -24,9 +30,20 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSupport() {
 
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val actor
+        get() = Actor(accountId = AccountId(generateId()), worldId = WorldId(worldIdValue))
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に、ハーネスが書き込む世界を作る（#704）。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+    }
+
     @Test
     fun `輸入牝馬と輸入種牡馬の正常系は繁殖サイクルを最後まで一周する`() {
-        val outcome = engine.run(FixtureLoader.load("01-imported-normal.json"))
+        val outcome = engine.run(actor, FixtureLoader.load("01-imported-normal.json"))
 
         assert(outcome.stoppedAt == null) {
             "想定外の停止: ${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
@@ -42,7 +59,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
 
     @Test
     fun `未命名の産駒では馬名登録の段階を実行しない`() {
-        val outcome = engine.run(FixtureLoader.load("05-unnamed-foal.json"))
+        val outcome = engine.run(actor, FixtureLoader.load("05-unnamed-foal.json"))
 
         // 「NAME_FOAL が無いこと」だけを見ると、その手前で停止した場合にも通ってしまう（空振り）。
         // 分岐地点（産駒血統登録）に到達していなければ「停止＝発見」なので失敗にせず skip する。
@@ -55,7 +72,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
 
     @Test
     fun `産駒なしの年は産駒登録を経ずに繁殖成績報告まで到達する`() {
-        val outcome = engine.run(FixtureLoader.load("02-domestic-barren.json"))
+        val outcome = engine.run(actor, FixtureLoader.load("02-domestic-barren.json"))
 
         // 同上。産駒登録が「無いこと」は、繁殖成績報告まで到達して初めて「スキップされた」と言える。
         // 分岐地点に到達していなければ「停止＝発見」なので失敗にせず skip する。
@@ -69,7 +86,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
 
     @Test
     fun `種付なしの年は種付記録を経ずに繁殖成績報告まで到達する`() {
-        val outcome = engine.run(FixtureLoader.load("06-uncovered-season.json"))
+        val outcome = engine.run(actor, FixtureLoader.load("06-uncovered-season.json"))
 
         // 「種付の段階が無いこと」だけを見ると、その手前で停止した場合にも通ってしまう（空振り）。
         // 繁殖成績報告まで到達して初めて「種付を経ずに一周した」と言える。到達しなければ「停止＝発見」
@@ -99,7 +116,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
     @Test
     fun `全フィクスチャを流して突合レポートを書き出す`() {
         // 停止は「発見」なので失敗にしない。観測をレポートへ落とすことがこのテストの目的。
-        val outcomes = FixtureLoader.loadAll().map(engine::run)
+        val outcomes = FixtureLoader.loadAll().map { engine.run(actor, it) }
 
         assert(outcomes.isNotEmpty())
         val report = ReconciliationReport.render(outcomes)

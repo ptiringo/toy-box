@@ -1,6 +1,7 @@
 package com.example.api.domain.studbook.service.horse
 
 import com.example.api.domain.shared.StateTransition
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
@@ -26,17 +27,19 @@ import com.github.michaelbull.result.mapError
  * 照合するのは **馬名登録原簿に既存の馬名との完全一致** のみ。保護馬名（GI 勝馬名・種牡馬名 等）の照合と、
  * 紛らわしい馬名の曖昧一致はマスタ整備・類似判定を要するため本サービスの対象外とし、別途継続検討する（#478）。
  *
+ * @param worldId 一意性を照合する範囲となる世界のID（馬名の一意性は世界の中で閉じる）
  * @param bloodHorse 命名対象の軽種馬
  * @param horseName 付与する馬名
  * @param bloodHorseRepository 馬名の既存使用を引き当てる軽種馬ポート（読み取りのみ）
  * @return 命名済みの [BloodHorse] と [HorseNamed] を同梱した [StateTransition]、または [NameHorseError]
  */
 fun nameHorse(
+    worldId: WorldId,
     bloodHorse: BloodHorse,
     horseName: HorseName,
     bloodHorseRepository: BloodHorseRepository,
 ): Result<StateTransition<BloodHorse, HorseNamed>, NameHorseError> {
-    if (bloodHorseRepository.existsByName(horseName)) {
+    if (bloodHorseRepository.existsByName(worldId, horseName)) {
         return Err(NameHorseError.NameAlreadyTaken(horseName))
     }
     return bloodHorse.assignName(horseName).mapError { NameHorseError.AlreadyNamed(it.currentName) }

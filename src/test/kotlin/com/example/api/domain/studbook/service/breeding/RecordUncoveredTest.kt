@@ -1,5 +1,7 @@
 package com.example.api.domain.studbook.service.breeding
 
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
@@ -11,6 +13,9 @@ import io.mockk.mockk
 import java.time.Year
 import org.junit.jupiter.api.Test
 
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+
 /** [recordUncovered] ドメインサービスのユニットテスト */
 class RecordUncoveredTest {
     private val breedingYear = Year.of(2024)
@@ -20,10 +25,12 @@ class RecordUncoveredTest {
         val broodmareRegistration = BreedingFixture.breedingRegistration()
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
-        val result = recordUncovered(broodmareRegistration, breedingYear, repository).unwrap()
+        val result =
+            recordUncovered(worldId, broodmareRegistration, breedingYear, repository).unwrap()
 
         assert(result.breedingRegistrationId == broodmareRegistration.id)
         assert(result.breedingYear == breedingYear)
@@ -39,13 +46,14 @@ class RecordUncoveredTest {
             mockk<BreedingResultRepository> {
                 every {
                     findByBreedingRegistrationIdAndBreedingYear(
+                        worldId,
                         broodmareRegistration.id,
                         breedingYear,
                     )
                 } returns existing
             }
 
-        val result = recordUncovered(broodmareRegistration, breedingYear, repository)
+        val result = recordUncovered(worldId, broodmareRegistration, breedingYear, repository)
 
         assert(
             result.getError() ==
@@ -60,11 +68,11 @@ class RecordUncoveredTest {
             BreedingFixture.breedingResult(broodmareRegistration = broodmareRegistration)
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
                     existingCovered
             }
 
-        val result = recordUncovered(broodmareRegistration, breedingYear, repository)
+        val result = recordUncovered(worldId, broodmareRegistration, breedingYear, repository)
 
         assert(
             result.getError() ==
@@ -77,10 +85,11 @@ class RecordUncoveredTest {
         val notBroodmareRegistration = BreedingFixture.stallionRegistration()
         val repository =
             mockk<BreedingResultRepository> {
-                every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                every { findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any()) } returns
+                    null
             }
 
-        val result = recordUncovered(notBroodmareRegistration, breedingYear, repository)
+        val result = recordUncovered(worldId, notBroodmareRegistration, breedingYear, repository)
 
         assert(result.getError() == RecordUncoveredError.NotBroodmare)
     }

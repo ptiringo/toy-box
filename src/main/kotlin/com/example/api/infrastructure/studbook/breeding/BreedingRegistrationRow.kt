@@ -15,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table
  * ドメインに付けず本クラスに閉じ込め、ドメイン集約とは手書きマッパーで相互変換する（[JdbcBreedingRegistrationRepository]）。
  *
  * - [id] は外部採番の UUIDv7（ドメインの `BreedingRegistrationId` の生値）。`@Id` を付けるが DB 採番はしない。
+ * - [worldId] はこの行が属する世界（セーブデータ）のID。集約は世界を知らないため、マッパーが引数で受け取って書く。
  * - [breedingRole] は [com.example.api.domain.studbook.model.breeding.BreedingRole] の enum 名を文字列で持つ
  *   （列名 `breeding_role` は `role` が SQL キーワードのため接頭辞を付けたもの）。
  * - 供用停止（`BreedingRetirement`）は nullable な値オブジェクトのため、[retirementReason]（enum 名）と
@@ -25,6 +26,7 @@ import org.springframework.data.relational.core.mapping.Table
 @Table(schema = "studbook", name = "breeding_registration")
 data class BreedingRegistrationRow(
     @Id @Column("id") val id: UUID,
+    @Column("world_id") val worldId: UUID,
     @Column("registration_number") val registrationNumber: String,
     @Column("registered_horse_id") val registeredHorseId: UUID,
     @Column("breeding_role") val breedingRole: String,

@@ -1,9 +1,12 @@
 package com.example.api.infrastructure.racing.jockey
 
 import com.example.api.domain.racing.model.jockey.Jockey
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
 import com.github.michaelbull.result.unwrap
+import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestConstructor
@@ -26,13 +29,24 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JdbcJockeyRepositoryContractTest(private val rows: JockeySpringDataRepository) :
     PostgresContainerSupport() {
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+    }
 
     private val repository = JdbcJockeyRepository(rows)
 
     @Test
     fun `外部採番のIDを持つ新規行はversionがnullなのでinsertされる`() {
         val id = generateId()
-        val saved = rows.save(JockeyRow(id = id, firstName = "武", lastName = "豊"))
+        val saved =
+            rows.save(JockeyRow(worldId = worldId.value, id = id, firstName = "武", lastName = "豊"))
 
         // 外部採番した ID がそのまま採用され、新規 insert で version が採番される（null ではなくなる）
         assert(saved.id == id)
@@ -44,7 +58,8 @@ class JdbcJockeyRepositoryContractTest(private val rows: JockeySpringDataReposit
     @Test
     fun `既存行をupdateするとversionがインクリメントされる`() {
         val id = generateId()
-        val inserted = rows.save(JockeyRow(id = id, firstName = "幸", lastName = "福永"))
+        val inserted =
+            rows.save(JockeyRow(worldId = worldId.value, id = id, firstName = "幸", lastName = "福永"))
 
         val updated = rows.save(inserted.copy(firstName = "祐一"))
 
@@ -59,8 +74,8 @@ class JdbcJockeyRepositoryContractTest(private val rows: JockeySpringDataReposit
     fun `ドメイン集約をsaveしfindByFullNameでID不変のまま再構成できる`() {
         val jockey = Jockey.create("克典", "横山").unwrap()
 
-        val saved = repository.save(jockey)
-        val found = repository.findByFullName("克典", "横山")
+        val saved = repository.save(worldId, jockey)
+        val found = repository.findByFullName(worldId, "克典", "横山")
 
         // value class ID が DB 往復しても保たれ、ID ベースの等価性で同一集約とみなせる
         assert(saved.id == jockey.id)
@@ -72,6 +87,6 @@ class JdbcJockeyRepositoryContractTest(private val rows: JockeySpringDataReposit
 
     @Test
     fun `存在しない名前のfindByFullNameはnullを返す`() {
-        assert(repository.findByFullName("該当", "無し") == null)
+        assert(repository.findByFullName(worldId, "該当", "無し") == null)
     }
 }

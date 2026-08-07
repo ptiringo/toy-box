@@ -44,7 +44,11 @@ class OnionLayerRulesTest {
             .applicationServices(APPLICATION)
             .adapter("rest", CONTROLLER)
             .adapter("persistence", INFRASTRUCTURE)
-            .adapter("mcp", MCP)
+    // adapter("mcp", MCP) は外している。世界スコープ化（#704）で MCP ツールを一旦削除したため
+    // `com.example.api.mcp` が空になり、onionArchitecture() が「Layer 'mcp adapter' is empty」で落ちる。
+    // withOptionalLayers(true) は全レイヤーを任意にして他の層の空振りまで許すので採らない。
+    // MCP を戻すのは #712（MCP アダプタと世界スコープの関係を決める）。そのとき この行と ArchSupport の
+    // MCP 定数を復活させる（ADR-0035）。
 
     /** domain 層はフレームワークに依存しないこと。 */
     @ArchTest

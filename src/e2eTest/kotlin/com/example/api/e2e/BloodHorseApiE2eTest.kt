@@ -4,6 +4,7 @@ import com.example.api.support.PostgresContainerSupport
 import com.example.api.support.TestJwt
 import com.example.api.support.TestJwtDecoderConfiguration
 import com.jayway.jsonpath.JsonPath
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
@@ -31,6 +32,22 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @Import(TestJwtDecoderConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
+
+    /**
+     * ドメイン API は `Actor`（アカウント ＋ 世界）を要求するため、各テストの前にブートストラップする（#704）。 `:provision`
+     * は冪等で、アカウントと「はじまりの世界」を作る。基底クラスの TRUNCATE（@BeforeEach）は JUnit がスーパークラス側を先に走らせるため、truncate →
+     * provision の順になる。
+     */
+    @BeforeEach
+    fun provisionAccount() {
+        restTestClient
+            .post()
+            .uri("/api/me:provision")
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+            .exchange()
+            .expectStatus()
+            .is2xxSuccessful
+    }
 
     @Test
     fun `存在しない ID の照会は 404 と RFC9457 problem+json を返す`() {

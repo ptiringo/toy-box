@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
@@ -23,6 +24,7 @@ import java.util.UUID
  * seedRegistrationRow）の 2 系統を提供する。
  */
 class StudbookSeeder(
+    private val worldId: WorldId,
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val horseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
@@ -35,17 +37,18 @@ class StudbookSeeder(
     /** 馬を審査行ごと永続化して返す（父・母・種牡馬・繁殖登録対象馬用）。 */
     fun seedHorse(horse: BloodHorse): BloodHorse {
         seedInspectionFor(horse)
-        return JdbcBloodHorseRepository(horseRows).save(horse).unwrap()
+        return JdbcBloodHorseRepository(horseRows).save(worldId, horse).unwrap()
     }
 
     /** 繁殖登録を永続化して返す。対象馬は事前に [seedHorse] しておくこと。 */
     fun seedRegistration(registration: BreedingRegistration): BreedingRegistration =
-        JdbcBreedingRegistrationRepository(registrationRows).save(registration).unwrap()
+        JdbcBreedingRegistrationRepository(registrationRows).save(worldId, registration).unwrap()
 
     /** 任意 ID の審査行を作り ID を返す（生 Row フィクスチャの inspection_id 用）。 */
     fun seedInspectionRow(id: UUID = generateId()): UUID {
         inspectionRows.save(
             HorseInspectionRow(
+                worldId = worldId.value,
                 id = id,
                 microchipNumber = "392140000000001",
                 parentageType = "NOT_APPLICABLE",
@@ -62,6 +65,7 @@ class StudbookSeeder(
     ): UUID {
         horseRows.save(
             BloodHorseRow(
+                worldId = worldId.value,
                 id = id,
                 registrationNumber = registrationNumber,
                 sex = sex,
@@ -82,6 +86,7 @@ class StudbookSeeder(
     fun seedRegistrationRow(id: UUID = generateId(), role: String = "BROODMARE"): UUID {
         registrationRows.save(
             BreedingRegistrationRow(
+                worldId = worldId.value,
                 id = id,
                 registrationNumber = "B-0001",
                 registeredHorseId =

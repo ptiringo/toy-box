@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
@@ -15,6 +16,8 @@ import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.time.Year
+import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
@@ -45,7 +48,19 @@ class JdbcCoveringReportRepositoryContractTest(
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcCoveringReportRepository(rows)
-    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+    }
 
     /** 親（種牡馬とその繁殖登録）を seed 済みの繁殖登録を返す。 */
     private fun seededStallionRegistration(): BreedingRegistration {
@@ -61,8 +76,8 @@ class JdbcCoveringReportRepositoryContractTest(
                 submittedOn = LocalDate.of(2024, 10, 1),
             )
 
-        val saved = repository.save(report).unwrap()
-        val found = repository.findById(report.id)
+        val saved = repository.save(worldId, report).unwrap()
+        val found = repository.findById(worldId, report.id)
 
         assert(saved.version != null)
         assert(found != null)
@@ -80,10 +95,11 @@ class JdbcCoveringReportRepositoryContractTest(
             BreedingFixture.coveringReport(
                 stallionRegistration = seededStallionRegistration()
             ) // coveringYear=2024
-        repository.save(report).unwrap()
+        repository.save(worldId, report).unwrap()
 
         val found =
             repository.findByStallionRegistrationIdAndCoveringYear(
+                worldId,
                 report.stallionRegistrationId,
                 Year.of(2024),
             )
@@ -92,6 +108,7 @@ class JdbcCoveringReportRepositoryContractTest(
         // 別の年は引き当たらない
         assert(
             repository.findByStallionRegistrationIdAndCoveringYear(
+                worldId,
                 report.stallionRegistrationId,
                 Year.of(2099),
             ) == null
@@ -103,11 +120,14 @@ class JdbcCoveringReportRepositoryContractTest(
         // ドメインサービスの一意性検証をすり抜ける read-then-insert 並行競合（#532）の backstop。
         val stallionRegistration = seededStallionRegistration()
         repository
-            .save(BreedingFixture.coveringReport(stallionRegistration = stallionRegistration))
+            .save(
+                worldId,
+                BreedingFixture.coveringReport(stallionRegistration = stallionRegistration),
+            )
             .unwrap()
         val duplicate = BreedingFixture.coveringReport(stallionRegistration = stallionRegistration)
 
-        assertThrows<DataIntegrityViolationException> { repository.save(duplicate) }
+        assertThrows<DataIntegrityViolationException> { repository.save(worldId, duplicate) }
     }
 
     @Test
@@ -115,12 +135,15 @@ class JdbcCoveringReportRepositoryContractTest(
         val stallionRegistration = seededStallionRegistration()
         val inserted =
             repository
-                .save(BreedingFixture.coveringReport(stallionRegistration = stallionRegistration))
+                .save(
+                    worldId,
+                    BreedingFixture.coveringReport(stallionRegistration = stallionRegistration),
+                )
                 .unwrap()
         rows.deleteAll()
 
         // version 非 null の集約の save は update 経路になり、対象行が無いので競合として検出される
-        val conflicted = repository.save(inserted)
+        val conflicted = repository.save(worldId, inserted)
 
         assert(conflicted.getError() == UpdateConflict)
     }
@@ -129,6 +152,7 @@ class JdbcCoveringReportRepositoryContractTest(
     fun `存在しない繁殖登録を参照する行はFK制約で拒否される`() {
         val orphan =
             CoveringReportRow(
+                worldId = worldId.value,
                 id = generateId(),
                 stallionBreedingRegistrationId = generateId(),
                 coveringYear = 2024,
@@ -141,6 +165,6 @@ class JdbcCoveringReportRepositoryContractTest(
 
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
-        assert(repository.findById(CoveringReportId(generateId())) == null)
+        assert(repository.findById(worldId, CoveringReportId(generateId())) == null)
     }
 }

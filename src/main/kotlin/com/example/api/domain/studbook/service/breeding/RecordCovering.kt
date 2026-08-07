@@ -1,5 +1,6 @@
 package com.example.api.domain.studbook.service.breeding
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -36,6 +37,7 @@ import java.time.Year
  * @return 起こされた [BreedingResult]、または前提条件違反を表す [RecordCoveringError]
  */
 fun recordCovering(
+    worldId: WorldId,
     broodmareRegistration: BreedingRegistration,
     stallionRegistration: BreedingRegistration,
     coveringDate: LocalDate,
@@ -47,6 +49,7 @@ fun recordCovering(
     val breedingYear = Year.of(coveringDate.year)
     val existingForYear =
         breedingResultRepository.findByBreedingRegistrationIdAndBreedingYear(
+            worldId,
             broodmareRegistration.id,
             breedingYear,
         )

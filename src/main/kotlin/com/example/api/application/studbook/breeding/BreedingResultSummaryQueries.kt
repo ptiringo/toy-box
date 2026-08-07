@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 
 /**
@@ -10,6 +11,6 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
  * 実装（infrastructure）は集約・`BreedingResultRow` を経由せず `breeding_result` を直接集計する。
  */
 interface BreedingResultSummaryQueries {
-    /** 指定した種牡馬の全種付年の集計を、種付年昇順で返す（該当なしは空リスト）。 */
-    fun findByStallion(stallionId: BloodHorseId): List<BreedingResultSummaryView>
+    /** 指定の世界における、指定した種牡馬の全種付年の集計を、種付年昇順で返す（該当なしは空リスト）。 */
+    fun findByStallion(worldId: WorldId, stallionId: BloodHorseId): List<BreedingResultSummaryView>
 }

@@ -1,8 +1,11 @@
 package com.example.api.infrastructure.racing.jockey
 
 import com.example.api.domain.racing.model.jockey.JockeyId
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
+import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -32,15 +35,25 @@ class JdbcJockeyQueriesContractTest(
     private val jdbcClient: JdbcClient,
     private val rows: JockeySpringDataRepository,
 ) : PostgresContainerSupport() {
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+    }
 
     private val queries = JdbcJockeyQueries(jdbcClient)
 
     @Test
     fun `保存済みのジョッキーをIDでJockeyViewとして引ける`() {
         val id = generateId()
-        rows.save(JockeyRow(id = id, firstName = "武", lastName = "豊"))
+        rows.save(JockeyRow(worldId = worldId.value, id = id, firstName = "武", lastName = "豊"))
 
-        val view = queries.findById(JockeyId(id))
+        val view = queries.findById(worldId, JockeyId(id))
 
         assert(view != null)
         assert(view!!.id == id)
@@ -50,6 +63,6 @@ class JdbcJockeyQueriesContractTest(
 
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
-        assert(queries.findById(JockeyId(generateId())) == null)
+        assert(queries.findById(worldId, JockeyId(generateId())) == null)
     }
 }
