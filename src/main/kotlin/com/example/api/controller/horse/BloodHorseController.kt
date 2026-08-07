@@ -84,8 +84,9 @@ class BloodHorseController(
             ],
     )
     @GetMapping("/api/bloodHorses")
-    fun list(@CurrentActor actor: Actor): List<BloodHorseSummaryResponse> =
-        listBloodHorses(actor).map { it.toSummaryResponse() }
+    fun list(
+        @Parameter(hidden = true) @CurrentActor actor: Actor
+    ): List<BloodHorseSummaryResponse> = listBloodHorses(actor).map { it.toSummaryResponse() }
 
     @Operation(
         operationId = "getBloodHorse",
@@ -121,7 +122,7 @@ class BloodHorseController(
     )
     @GetMapping("/api/bloodHorses/{id}")
     fun get(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "取得する軽種馬の生 UUID") @PathVariable id: UUID,
     ): BloodHorseResponse =
         getBloodHorse(actor, GetBloodHorseQuery(id))
@@ -174,7 +175,7 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses")
     fun register(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "血統登録する軽種馬の登録申請フォーム")
         @RequestBody
         request: RegisterBloodHorseRequest,
@@ -219,7 +220,7 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses:registerImported")
     fun registerImported(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "血統登録する輸入馬・基礎輸入馬の登録申請フォーム")
         @RequestBody
         request: RegisterImportedHorseRequest,
@@ -264,7 +265,7 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/bloodHorses:registerCarriedOver")
     fun registerCarriedOver(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "移行取り込みで血統登録する馬の入力")
         @RequestBody
         request: RegisterCarriedOverHorseRequest,
@@ -329,7 +330,7 @@ class BloodHorseController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/bloodHorses/{bloodHorseId}:registerName")
     fun registerName(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "馬名を登録する軽種馬の生 UUID") @PathVariable bloodHorseId: UUID,
         @OperationRequestBody(description = "馬名") @RequestBody request: RegisterHorseNameRequest,
     ): BloodHorseResponse =

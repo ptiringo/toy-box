@@ -59,7 +59,7 @@ class BreedingResultSummaryController(
     )
     @GetMapping("/api/breedingResultSummaries")
     fun list(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "集計対象の種牡馬の生 UUID") @RequestParam stallionId: UUID,
     ): List<BreedingResultSummaryResponse> =
         listBreedingResultSummaries(

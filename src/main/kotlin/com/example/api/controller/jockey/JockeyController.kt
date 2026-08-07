@@ -86,7 +86,7 @@ class JockeyController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/jockeys")
     fun register(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "登録するジョッキーの氏名")
         @RequestBody
         request: RegisterJockeyRequest,
@@ -130,7 +130,7 @@ class JockeyController(
     )
     @GetMapping("/api/jockeys/{id}")
     fun get(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "取得するジョッキーの生 UUID") @PathVariable id: UUID,
     ): JockeyResponse {
         val view =

@@ -10,6 +10,7 @@ import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
@@ -84,7 +85,7 @@ class CoveringReportController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/coveringReports")
     fun submit(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "提出する種付成績報告（種牡馬の繁殖登録ID・種付年）")
         @RequestBody
         request: SubmitCoveringReportRequest,

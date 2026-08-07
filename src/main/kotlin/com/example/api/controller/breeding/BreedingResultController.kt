@@ -108,7 +108,7 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/breedingResults")
     fun record(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "起票する繁殖成績の年次レコード（種付記録／種付せず）")
         @RequestBody
         request: RecordBreedingResultRequest,
@@ -185,7 +185,7 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/breedingResults/{breedingResultId}:reportFoaling")
     fun reportFoaling(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "分娩結果を報告する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
         @OperationRequestBody(description = "報告する分娩結果") @RequestBody request: ReportFoalingRequest,
     ): BreedingResultResponse {
@@ -258,7 +258,7 @@ class BreedingResultController(
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/api/breedingResults/{breedingResultId}:submitReport")
     fun submitReport(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "繁殖成績報告を提出する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
     ): BreedingResultResponse =
         submitReport(actor, Command.now(SubmitBreedingReportCommand(breedingResultId), clock))

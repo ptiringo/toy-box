@@ -76,7 +76,7 @@ class HorseInspectionController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/horseInspections")
     fun record(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "記録する審査（個体識別・親子判定）")
         @RequestBody
         request: RecordHorseInspectionRequest,
@@ -119,7 +119,7 @@ class HorseInspectionController(
     )
     @GetMapping("/api/horseInspections/{id}")
     fun get(
-        @CurrentActor actor: Actor,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "取得する審査の生 UUID") @PathVariable id: UUID,
     ): HorseInspectionResponse =
         getHorseInspection(actor, GetHorseInspectionQuery(id))
