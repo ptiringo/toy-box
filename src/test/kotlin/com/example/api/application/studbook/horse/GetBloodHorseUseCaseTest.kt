@@ -1,5 +1,8 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
@@ -15,6 +18,10 @@ import io.mockk.every
 import io.mockk.mockk
 import java.time.LocalDate
 import org.junit.jupiter.api.Test
+
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
 /**
  * 照会ユースケース [GetBloodHorseUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
@@ -46,9 +53,9 @@ class GetBloodHorseUseCaseTest {
                     ),
                 name = null,
             )
-        every { bloodHorseQueries.findById(BloodHorseId(id)) } returns view
+        every { bloodHorseQueries.findById(worldId, BloodHorseId(id)) } returns view
 
-        val result = getBloodHorse(GetBloodHorseQuery(id))
+        val result = getBloodHorse(actor, GetBloodHorseQuery(id))
 
         assert(result.get() == view)
     }
@@ -56,9 +63,9 @@ class GetBloodHorseUseCaseTest {
     @Test
     fun `存在しないIDならBloodHorseNotFoundをErrで返す`() {
         val id = generateId()
-        every { bloodHorseQueries.findById(BloodHorseId(id)) } returns null
+        every { bloodHorseQueries.findById(worldId, BloodHorseId(id)) } returns null
 
-        val result = getBloodHorse(GetBloodHorseQuery(id))
+        val result = getBloodHorse(actor, GetBloodHorseQuery(id))
 
         assert(result.getError() == BloodHorseNotFound(id))
     }

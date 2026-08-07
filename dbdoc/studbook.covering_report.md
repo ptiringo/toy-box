@@ -13,14 +13,17 @@
 | covering_year | integer |  | false |  |  | 種付年（java.time.Year の int 値。報告対象年） |
 | submitted_on | date |  | false |  |  | 提出日（日本の暦日）。期限（当年9/30）超過かは導出値のため保存しない |
 | version | bigint |  | false |  |  | 楽観ロック兼 insert 判定用の version |
+| world_id | uuid |  | false |  | [iam.world](iam.world.md) [studbook.breeding_registration](studbook.breeding_registration.md) | この行が属する世界（セーブデータ）のID |
 
 ## Constraints
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| fk_covering_report_stallion_registration | FOREIGN KEY | FOREIGN KEY (stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(id) |
 | covering_report_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | uq_covering_report_stallion_year | UNIQUE | UNIQUE (stallion_breeding_registration_id, covering_year) |
+| fk_covering_report_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
+| fk_covering_report_stallion_registration | FOREIGN KEY | FOREIGN KEY (world_id, stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id) |
+| uq_covering_report_world_id_id | UNIQUE | UNIQUE (world_id, id) |
 
 ## Indexes
 
@@ -28,13 +31,15 @@
 | ---- | ---------- |
 | covering_report_pkey | CREATE UNIQUE INDEX covering_report_pkey ON studbook.covering_report USING btree (id) |
 | uq_covering_report_stallion_year | CREATE UNIQUE INDEX uq_covering_report_stallion_year ON studbook.covering_report USING btree (stallion_breeding_registration_id, covering_year) |
+| uq_covering_report_world_id_id | CREATE UNIQUE INDEX uq_covering_report_world_id_id ON studbook.covering_report USING btree (world_id, id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(id)"
+"studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
+"studbook.covering_report" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "studbook.covering_report" {
   uuid id
@@ -42,6 +47,7 @@ erDiagram
   integer covering_year
   date submitted_on
   bigint version
+  uuid world_id FK
 }
 "studbook.breeding_registration" {
   uuid id
@@ -50,6 +56,13 @@ erDiagram
   varchar_32_ breeding_role
   varchar_32_ retirement_reason
   date retirement_occurred_on
+  bigint version
+  uuid world_id FK
+}
+"iam.world" {
+  uuid id
+  uuid account_id FK
+  varchar_64_ name
   bigint version
 }
 ```

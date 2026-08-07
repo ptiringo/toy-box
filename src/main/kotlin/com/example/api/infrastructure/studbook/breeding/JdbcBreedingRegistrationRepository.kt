@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationNumber
@@ -32,14 +33,15 @@ class JdbcBreedingRegistrationRepository(
     private val rows: BreedingRegistrationSpringDataRepository
 ) : BreedingRegistrationRepository {
 
-    override fun findById(id: BreedingRegistrationId): BreedingRegistration? =
-        rows.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findById(worldId: WorldId, id: BreedingRegistrationId): BreedingRegistration? =
+        rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
 
     override fun save(
-        breedingRegistration: BreedingRegistration
+        worldId: WorldId,
+        breedingRegistration: BreedingRegistration,
     ): Result<BreedingRegistration, UpdateConflict> =
         try {
-            Ok(rows.save(breedingRegistration.toRow()).toDomain())
+            Ok(rows.save(breedingRegistration.toRow(worldId)).toDomain())
         } catch (_: OptimisticLockingFailureException) {
             // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
             Err(UpdateConflict)
@@ -76,9 +78,10 @@ class JdbcBreedingRegistrationRepository(
      * version は集約が保持する値をそのまま写す（null なら Spring Data JDBC が新規と判定して insert、非 null なら 楽観ロック付き
      * update。ADR-0027 の落とし穴②③）。
      */
-    private fun BreedingRegistration.toRow(): BreedingRegistrationRow =
+    private fun BreedingRegistration.toRow(worldId: WorldId): BreedingRegistrationRow =
         BreedingRegistrationRow(
             id = id.value,
+            worldId = worldId.value,
             registrationNumber = registrationNumber.value,
             registeredHorseId = registeredHorseId.value,
             breedingRole = role.name,

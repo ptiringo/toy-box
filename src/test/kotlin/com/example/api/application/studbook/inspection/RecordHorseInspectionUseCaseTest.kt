@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.inspection
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
 import com.example.api.domain.studbook.model.inspection.HorseInspectionRepository
@@ -14,6 +18,10 @@ import io.mockk.mockk
 import io.mockk.slot
 import java.time.Instant
 import org.junit.jupiter.api.Test
+
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
 /**
  * 記録ユースケース [RecordHorseInspectionUseCase] の単体テスト。
@@ -43,16 +51,17 @@ class RecordHorseInspectionUseCaseTest {
     @Test
     fun `正しい入力で審査が保存され保存後の集約がOkで返る`() {
         val saved = slot<HorseInspection>()
-        every { horseInspectionRepository.save(capture(saved)) } answers { saved.captured }
+        every { horseInspectionRepository.save(worldId, capture(saved)) } answers { saved.captured }
         val features = IdentificationFeatures("頭部正中", "左後一白", null)
 
         val result =
             recordHorseInspection(
+                actor,
                 command(
                     microchipNumber = "392140000000001",
                     parentage = ParentageDetermination.ByBloodType,
                     features = features,
-                )
+                ),
             )
 
         val inspection = result.get()
@@ -65,7 +74,7 @@ class RecordHorseInspectionUseCaseTest {
 
     @Test
     fun `マイクロチップ番号が15桁数字でなければInvalidMicrochipNumberを返し保存しない`() {
-        val result = recordHorseInspection(command(microchipNumber = "123"))
+        val result = recordHorseInspection(actor, command(microchipNumber = "123"))
 
         // save をスタブしていない strict mockk のため、save に到達すればここより前に失敗する
         assert(result.getError() == InvalidMicrochipNumber)

@@ -3,6 +3,7 @@ package com.example.api.infrastructure.racing.jockey
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.racing.model.jockey.JockeyRepository
+import com.example.api.domain.shared.WorldId
 import org.springframework.stereotype.Repository
 
 /**
@@ -18,10 +19,11 @@ import org.springframework.stereotype.Repository
 @Repository
 class JdbcJockeyRepository(private val rows: JockeySpringDataRepository) : JockeyRepository {
 
-    override fun findByFullName(firstName: String, lastName: String): Jockey? =
-        rows.findByFirstNameAndLastName(firstName, lastName)?.toDomain()
+    override fun findByFullName(worldId: WorldId, firstName: String, lastName: String): Jockey? =
+        rows.findByWorldIdAndFirstNameAndLastName(worldId.value, firstName, lastName)?.toDomain()
 
-    override fun save(jockey: Jockey): Jockey = rows.save(jockey.toRow()).toDomain()
+    override fun save(worldId: WorldId, jockey: Jockey): Jockey =
+        rows.save(jockey.toRow(worldId)).toDomain()
 
     /** 永続化モデルからドメイン集約を再構成する（検証・採番なし）。 */
     private fun JockeyRow.toDomain(): Jockey =
@@ -33,6 +35,11 @@ class JdbcJockeyRepository(private val rows: JockeySpringDataRepository) : Jocke
      * [Jockey] には更新の語彙（状態遷移メソッド）が現状無いため、`Entity.version`（既定の `null`）を override せず 常に insert
      * のみを扱う。更新が必要になったら集約に version を override して save 一本方式に乗る（ADR-0047）。
      */
-    private fun Jockey.toRow(): JockeyRow =
-        JockeyRow(id = id.value, firstName = firstName, lastName = lastName)
+    private fun Jockey.toRow(worldId: WorldId): JockeyRow =
+        JockeyRow(
+            id = id.value,
+            worldId = worldId.value,
+            firstName = firstName,
+            lastName = lastName,
+        )
 }

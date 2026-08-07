@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.toResultOr
@@ -33,9 +34,10 @@ data class BloodHorseNotFound(val id: UUID)
 @Service
 class GetBloodHorseUseCase(private val bloodHorseQueries: BloodHorseQueries) {
     operator fun invoke(
-        query: GetBloodHorseQuery
+        actor: Actor,
+        query: GetBloodHorseQuery,
     ): Result<BloodHorseDetailView, BloodHorseNotFound> =
-        bloodHorseQueries.findById(BloodHorseId(query.id)).toResultOr {
+        bloodHorseQueries.findById(actor.worldId, BloodHorseId(query.id)).toResultOr {
             BloodHorseNotFound(query.id)
         }
 }

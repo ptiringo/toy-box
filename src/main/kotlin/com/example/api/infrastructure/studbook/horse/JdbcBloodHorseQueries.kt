@@ -3,6 +3,7 @@ package com.example.api.infrastructure.studbook.horse
 import com.example.api.application.studbook.horse.BloodHorseDetailView
 import com.example.api.application.studbook.horse.BloodHorseQueries
 import com.example.api.application.studbook.horse.BloodHorseView
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
@@ -39,7 +40,7 @@ private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
 @Repository
 class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQueries {
 
-    override fun findAll(): List<BloodHorseView> =
+    override fun findAll(worldId: WorldId): List<BloodHorseView> =
         jdbcClient
             .sql(
                 """
@@ -47,10 +48,12 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
                     id, registration_number, sex, coat_color, breed_type,
                     date_of_birth, breeder, name
                 FROM studbook.blood_horse
+                WHERE world_id = :worldId
                 ORDER BY id
                 """
                     .trimIndent()
             )
+            .param("worldId", worldId.value)
             .query { rs, _ ->
                 BloodHorseView(
                     id = rs.getObject("id", UUID::class.java),
@@ -65,7 +68,7 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
             }
             .list()
 
-    override fun findById(id: BloodHorseId): BloodHorseDetailView? =
+    override fun findById(worldId: WorldId, id: BloodHorseId): BloodHorseDetailView? =
         jdbcClient
             .sql(
                 """
@@ -75,12 +78,14 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
                     bh.origin_type, bh.sire_id, bh.dam_id, bh.origin_country, bh.landing_date,
                     hi.microchip_number
                 FROM studbook.blood_horse bh
-                JOIN studbook.horse_inspection hi ON hi.id = bh.inspection_id
-                WHERE bh.id = :id
+                JOIN studbook.horse_inspection hi
+                    ON hi.id = bh.inspection_id AND hi.world_id = bh.world_id
+                WHERE bh.id = :id AND bh.world_id = :worldId
                 """
                     .trimIndent()
             )
             .param("id", id.value)
+            .param("worldId", worldId.value)
             .query { rs, _ ->
                 BloodHorseDetailView(
                     id = rs.getObject("id", UUID::class.java),

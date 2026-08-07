@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
@@ -17,6 +18,7 @@ import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
@@ -52,7 +54,19 @@ class JdbcBreedingRegistrationRepositoryContractTest(
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcBreedingRegistrationRepository(rows)
-    private val seeder = StudbookSeeder(inspectionRows, horseRows, rows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, rows)
+    }
 
     private fun row(
         id: UUID = generateId(),
@@ -60,6 +74,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         retirementOccurredOn: LocalDate? = null,
     ) =
         BreedingRegistrationRow(
+            worldId = worldId.value,
             id = id,
             registrationNumber = "B-0001",
             registeredHorseId = seeder.seedHorseRow(sex = "MALE"),
@@ -97,8 +112,8 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         val registration =
             BreedingRegistration.create(BreedingRegistrationNumber.create("B-1234").unwrap(), mare)
 
-        val saved = repository.save(registration).unwrap()
-        val found = repository.findById(registration.id)
+        val saved = repository.save(worldId, registration).unwrap()
+        val found = repository.findById(worldId, registration.id)
 
         // value class ID が DB 往復しても保たれ、ID ベースの等価性で同一集約とみなせる
         assert(saved.id == registration.id)
@@ -123,8 +138,8 @@ class JdbcBreedingRegistrationRepositoryContractTest(
                 .retire(RetirementReason.DEATH, occurredOn)
                 .unwrap()
 
-        repository.save(retired).unwrap()
-        val found = repository.findById(retired.id)
+        repository.save(worldId, retired).unwrap()
+        val found = repository.findById(worldId, retired.id)
 
         assert(found != null)
         assert(found!!.isRetired)
@@ -136,7 +151,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
 
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
-        assert(repository.findById(BreedingRegistrationId(generateId())) == null)
+        assert(repository.findById(worldId, BreedingRegistrationId(generateId())) == null)
     }
 
     @Test
@@ -145,20 +160,21 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         val inserted =
             repository
                 .save(
+                    worldId,
                     BreedingRegistration.create(
                         BreedingRegistrationNumber.create("B-1234").unwrap(),
                         mare,
-                    )
+                    ),
                 )
                 .unwrap()
         assert(inserted.version != null)
 
         val retired = inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap()
-        val updated = repository.save(retired).unwrap()
+        val updated = repository.save(worldId, retired).unwrap()
 
         assert(updated.version!! > inserted.version!!)
         assert(rows.count() == 1L)
-        assert(repository.findById(inserted.id)?.isRetired == true)
+        assert(repository.findById(worldId, inserted.id)?.isRetired == true)
     }
 
     @Test
@@ -167,23 +183,30 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         val inserted =
             repository
                 .save(
+                    worldId,
                     BreedingRegistration.create(
                         BreedingRegistrationNumber.create("B-1234").unwrap(),
                         mare,
-                    )
+                    ),
                 )
                 .unwrap()
         repository
-            .save(inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap())
+            .save(
+                worldId,
+                inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap(),
+            )
             .unwrap()
 
         val conflicted =
             repository.save(
-                inserted.retire(RetirementReason.USE_CHANGE, LocalDate.of(2026, 5, 1)).unwrap()
+                worldId,
+                inserted.retire(RetirementReason.USE_CHANGE, LocalDate.of(2026, 5, 1)).unwrap(),
             )
 
         assert(conflicted.getError() == UpdateConflict)
-        assert(repository.findById(inserted.id)?.retirement?.reason == RetirementReason.DEATH)
+        assert(
+            repository.findById(worldId, inserted.id)?.retirement?.reason == RetirementReason.DEATH
+        )
     }
 
     @Test
@@ -192,17 +215,19 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         val inserted =
             repository
                 .save(
+                    worldId,
                     BreedingRegistration.create(
                         BreedingRegistrationNumber.create("B-1234").unwrap(),
                         mare,
-                    )
+                    ),
                 )
                 .unwrap()
         rows.deleteAll()
 
         val conflicted =
             repository.save(
-                inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap()
+                worldId,
+                inserted.retire(RetirementReason.DEATH, LocalDate.of(2026, 4, 1)).unwrap(),
             )
 
         assert(conflicted.getError() == UpdateConflict)

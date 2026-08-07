@@ -1,5 +1,6 @@
 package com.example.api.controller
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.domain.iam.model.account.AccountFixture
 import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class CurrentAccountArgumentResolverIntegrationTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 

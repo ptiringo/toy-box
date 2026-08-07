@@ -1,6 +1,7 @@
 package com.example.api.controller.me
 
 import com.example.api.application.iam.me.ProvisionMeUseCase
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.iam.model.account.Account
 import com.example.api.domain.iam.model.account.AccountRepository
@@ -54,6 +55,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 class MeControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var accounts: AccountRepository
     @MockkBean private lateinit var worlds: WorldRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 

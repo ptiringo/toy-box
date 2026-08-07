@@ -38,3 +38,12 @@ tbls 導入（#447 / [ADR-0045](0045-tbls-db-schema-docs.md)）の crit レビ�
 - **良くなる**: コンテキスト境界が DB 層にも一貫して現れ、テーブルの帰属が名前空間で明示される。tbls ドキュメントもスキーマ別に整理される。将来コンテキストを別 DB / サービスへ切り出す際の布石になる。
 - **引き受けるもの**: Flyway の完全修飾 DDL・`CREATE SCHEMA`、Row の `@Table(schema=)` 付与、既存テーブルの移設マイグレーション、tbls 設定調整という多スキーマ運用の複雑さ。新しくテーブルを追加するコンテキストは対応スキーマへの割当を都度決める必要がある。
 - 本 ADR は**決定の記録**であり、実装（移設マイグレーション・Row 修正・tbls 設定）は #509 をクローズしたうえで**後続イシューに分割**する。
+
+## 追補: テナント軸に限りクロススキーマ FK を認める（2026-08-07 / #704）
+
+[ADR-0067](0067-per-player-world-tenant-isolation.md) のテナント分離により、全コンテキストのテーブルが `world_id` で `iam.world` を参照するようになった。本 ADR の「FK はコンテキスト内（同一スキーマ内）に限定。クロススキーマ FK は発生しない」という決定を、**この 1 点に限り例外とする**。
+
+理由: `iam.world` は「別コンテキストのテーブル」ではなく、全コンテキストを横断する**テナント軸**である。Kotlin 側でも `AccountId` / `WorldId` はコンテキストに属さず共有カーネル（`domain.shared`）に置いており、DB 層でその対称を崩す理由がない。加えて、この FK を張らないと世界削除が孤児行を残す（`DeleteWorldUseCase` は `ON DELETE CASCADE` による連鎖削除を前提にしている）。
+
+- 対象は `world_id` の FK 6 本（`ON DELETE CASCADE`）のみ。**コンテキスト間のドメイン参照に FK を張らない方針は変わらない**（引き続き ID 参照のまま）。
+- 集約間 FK（[ADR-0053](0053-foreign-key-backstop-across-aggregates.md)）は複合 FK `(world_id, ref_id) → (world_id, id)` になったが、同一スキーマ内で閉じる点は変わらない。`ON DELETE` は既定（NO ACTION）のままとし、世界削除の連鎖がそれで成立することは契約テスト（`WorldScopeContractTest`）で実測する。

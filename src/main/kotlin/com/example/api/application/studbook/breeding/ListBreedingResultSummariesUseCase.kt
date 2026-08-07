@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import org.springframework.stereotype.Service
 
@@ -22,6 +23,9 @@ data class ListBreedingResultSummariesQuery(val stallionId: BloodHorseId)
 class ListBreedingResultSummariesUseCase(
     private val breedingResultSummaryQueries: BreedingResultSummaryQueries
 ) {
-    operator fun invoke(query: ListBreedingResultSummariesQuery): List<BreedingResultSummaryView> =
-        breedingResultSummaryQueries.findByStallion(query.stallionId)
+    operator fun invoke(
+        actor: Actor,
+        query: ListBreedingResultSummariesQuery,
+    ): List<BreedingResultSummaryView> =
+        breedingResultSummaryQueries.findByStallion(actor.worldId, query.stallionId)
 }

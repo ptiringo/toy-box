@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
@@ -103,7 +104,8 @@ class RegisterInStudBookUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterInStudBookCommand>
+        actor: Actor,
+        command: Command<RegisterInStudBookCommand>,
     ): Result<RegisteredBloodHorse, RegisterInStudBookUseCaseError> = binding {
         val input = command.payload
 
@@ -127,7 +129,7 @@ class RegisterInStudBookUseCase(
         // 父・母を 1 回の一括 lookup で引き当てる（逐次往復と sireId==damId の二重取得を避ける）。
         val sireId = BloodHorseId(input.sireId)
         val damId = BloodHorseId(input.damId)
-        val found = bloodHorseRepository.findAllById(setOf(sireId, damId))
+        val found = bloodHorseRepository.findAllById(actor.worldId, setOf(sireId, damId))
         val sire =
             found[sireId]
                 .toResultOr { RegisterInStudBookUseCaseError.SireNotFound(input.sireId) }
@@ -160,9 +162,9 @@ class RegisterInStudBookUseCase(
                 .bind()
 
         // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
-        horseInspectionRepository.save(inspection)
+        horseInspectionRepository.save(actor.worldId, inspection)
         val saved =
-            bloodHorseRepository.save(bloodHorse).getOrElse {
+            bloodHorseRepository.save(actor.worldId, bloodHorse).getOrElse {
                 error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
             }
         RegisteredBloodHorse(saved, inspection)

@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -68,13 +69,17 @@ class SubmitCoveringReportUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<SubmitCoveringReportCommand>
+        actor: Actor,
+        command: Command<SubmitCoveringReportCommand>,
     ): Result<CoveringReport, SubmitCoveringReportUseCaseError> = binding {
         val input = command.payload
 
         val stallionRegistration =
             breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.stallionBreedingRegistrationId))
+                .findById(
+                    actor.worldId,
+                    BreedingRegistrationId(input.stallionBreedingRegistrationId),
+                )
                 .toResultOr {
                     SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(
                         input.stallionBreedingRegistrationId
@@ -84,6 +89,7 @@ class SubmitCoveringReportUseCase(
 
         val coveringReport =
             submitCoveringReport(
+                    actor.worldId,
                     stallionRegistration,
                     Year.of(input.coveringYear),
                     CoveringReportDeadline.submissionDateOf(command.issuedAt),
@@ -92,7 +98,7 @@ class SubmitCoveringReportUseCase(
                 .mapError { SubmitCoveringReportUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        coveringReportRepository.save(coveringReport).getOrElse {
+        coveringReportRepository.save(actor.worldId, coveringReport).getOrElse {
             error("新規の種付成績報告の保存で楽観ロック競合はありえない: id=${coveringReport.id.value}")
         }
     }

@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -17,6 +18,7 @@ import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
@@ -55,7 +57,19 @@ class JdbcBreedingResultRepositoryContractTest(
 ) : PostgresContainerSupport() {
 
     private val repository = JdbcBreedingResultRepository(rows)
-    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+    }
 
     /** 親（繁殖牝馬の登録と種牡馬）を seed 済みの、分娩結果未報告の成績を組む。 */
     private fun seededBreedingResult(): BreedingResult {
@@ -90,6 +104,7 @@ class JdbcBreedingResultRepositoryContractTest(
     /** 種付せず（covering 全 NULL・区分 NOT_COVERED）の整合した行。CHECK 制約を満たす最小行。 */
     private fun uncoveredRow(id: UUID = generateId()) =
         BreedingResultRow(
+            worldId = worldId.value,
             id = id,
             breedingRegistrationId = seeder.seedRegistrationRow(),
             breedingYear = 2024,
@@ -123,8 +138,8 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `種付した未報告の成績は種付ごと往復し区分はnull`() {
         val result = seededBreedingResult()
 
-        val saved = repository.save(result).unwrap()
-        val found = repository.findById(result.id)
+        val saved = repository.save(worldId, result).unwrap()
+        val found = repository.findById(worldId, result.id)
 
         assert(saved.id == result.id)
         assert(found != null)
@@ -143,8 +158,8 @@ class JdbcBreedingResultRepositoryContractTest(
         val reported =
             seededBreedingResult().recordFoaling(FoalingOutcome.LiveFoal(foalingDate)).unwrap()
 
-        repository.save(reported).unwrap()
-        val found = repository.findById(reported.id)
+        repository.save(worldId, reported).unwrap()
+        val found = repository.findById(worldId, reported.id)
 
         assert(found != null)
         assert(found!!.covering != null)
@@ -156,8 +171,8 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `産駒なし区分を報告した成績は区分が往復し分娩日を持たない`() {
         val reported = seededBreedingResult().recordFoaling(FoalingOutcome.NotConceived).unwrap()
 
-        repository.save(reported).unwrap()
-        val found = repository.findById(reported.id)
+        repository.save(worldId, reported).unwrap()
+        val found = repository.findById(worldId, reported.id)
 
         assert(found != null)
         assert(found!!.outcome == FoalingOutcome.NotConceived)
@@ -167,8 +182,8 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `種付せずの成績は種付なし区分NotCoveredのまま往復できる`() {
         val uncovered = seededUncoveredResult()
 
-        repository.save(uncovered).unwrap()
-        val found = repository.findById(uncovered.id)
+        repository.save(worldId, uncovered).unwrap()
+        val found = repository.findById(worldId, uncovered.id)
 
         assert(found != null)
         // 種付なし＝covering は null、区分は NotCovered で確定
@@ -179,10 +194,11 @@ class JdbcBreedingResultRepositoryContractTest(
     @Test
     fun `findByBreedingRegistrationIdAndBreedingYearで繁殖牝馬と年から引き当てられる`() {
         val result = seededBreedingResult() // breedingYear=2024
-        repository.save(result).unwrap()
+        repository.save(worldId, result).unwrap()
 
         val found =
             repository.findByBreedingRegistrationIdAndBreedingYear(
+                worldId,
                 result.breedingRegistrationId,
                 Year.of(2024),
             )
@@ -191,6 +207,7 @@ class JdbcBreedingResultRepositoryContractTest(
         // 別の年は引き当たらない
         assert(
             repository.findByBreedingRegistrationIdAndBreedingYear(
+                worldId,
                 result.breedingRegistrationId,
                 Year.of(2099),
             ) == null
@@ -227,40 +244,43 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
-        assert(repository.findById(BreedingResultId(generateId())) == null)
+        assert(repository.findById(worldId, BreedingResultId(generateId())) == null)
     }
 
     @Test
     fun `保存済み集約の再saveはupdateになりversionが進む`() {
-        val inserted = repository.save(seededBreedingResult()).unwrap()
+        val inserted = repository.save(worldId, seededBreedingResult()).unwrap()
         assert(inserted.version != null)
 
         val reported = inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()
-        val updated = repository.save(reported).unwrap()
+        val updated = repository.save(worldId, reported).unwrap()
 
         assert(updated.version!! > inserted.version!!)
         assert(rows.count() == 1L)
-        assert(repository.findById(inserted.id)?.outcome == FoalingOutcome.NotConceived)
+        assert(repository.findById(worldId, inserted.id)?.outcome == FoalingOutcome.NotConceived)
     }
 
     @Test
     fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
-        val inserted = repository.save(seededBreedingResult()).unwrap()
-        repository.save(inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()).unwrap()
+        val inserted = repository.save(worldId, seededBreedingResult()).unwrap()
+        repository
+            .save(worldId, inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+            .unwrap()
 
-        val conflicted = repository.save(inserted.recordFoaling(FoalingOutcome.Abortion).unwrap())
+        val conflicted =
+            repository.save(worldId, inserted.recordFoaling(FoalingOutcome.Abortion).unwrap())
 
         assert(conflicted.getError() == UpdateConflict)
-        assert(repository.findById(inserted.id)?.outcome == FoalingOutcome.NotConceived)
+        assert(repository.findById(worldId, inserted.id)?.outcome == FoalingOutcome.NotConceived)
     }
 
     @Test
     fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
-        val inserted = repository.save(seededBreedingResult()).unwrap()
+        val inserted = repository.save(worldId, seededBreedingResult()).unwrap()
         rows.deleteAll()
 
         val conflicted =
-            repository.save(inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+            repository.save(worldId, inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
 
         assert(conflicted.getError() == UpdateConflict)
     }
@@ -274,8 +294,8 @@ class JdbcBreedingResultRepositoryContractTest(
                 .submitReport(LocalDate.of(2025, 5, 30))
                 .unwrap()
 
-        repository.save(submitted).unwrap()
-        val found = repository.findById(submitted.id)
+        repository.save(worldId, submitted).unwrap()
+        val found = repository.findById(worldId, submitted.id)
 
         assert(found != null)
         assert(found!!.reportSubmittedOn == LocalDate.of(2025, 5, 30))
@@ -286,8 +306,8 @@ class JdbcBreedingResultRepositoryContractTest(
     fun `未提出の成績はreport_submitted_onがnullで往復する`() {
         val unsubmitted = seededBreedingResult()
 
-        repository.save(unsubmitted).unwrap()
-        val found = repository.findById(unsubmitted.id)
+        repository.save(worldId, unsubmitted).unwrap()
+        val found = repository.findById(worldId, unsubmitted.id)
 
         assert(found != null)
         assert(found!!.reportSubmittedOn == null)
@@ -299,6 +319,7 @@ class JdbcBreedingResultRepositoryContractTest(
         // 種付済み・分娩結果未報告（outcome_type IS NULL）なのに提出日がある不整合行
         val row =
             BreedingResultRow(
+                worldId = worldId.value,
                 id = generateId(),
                 breedingRegistrationId = seeder.seedRegistrationRow(),
                 breedingYear = 2024,

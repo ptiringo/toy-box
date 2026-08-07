@@ -2,6 +2,7 @@ package com.example.api.support
 
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -52,7 +53,8 @@ abstract class PostgresContainerSupport {
          */
         fun truncatableTables(): List<String> = connect().use { selectTableNames(it) }
 
-        private fun connect(): Connection =
+        /** テストから DB へ直接つなぐ（後始末とフィクスチャ投入の両方が使う）。 */
+        internal fun connect(): Connection =
             DriverManager.getConnection(postgres.jdbcUrl, postgres.username, postgres.password)
 
         private fun selectTableNames(connection: Connection): List<String> =
@@ -89,5 +91,42 @@ abstract class PostgresContainerSupport {
                 statement.execute("TRUNCATE TABLE ${tables.joinToString()} CASCADE")
             }
         }
+    }
+
+    /**
+     * テスト用のアカウントと世界を 1 組作り、世界のIDを返す（#704 / ADR-0067）。
+     *
+     * 世界スコープ化以降、ドメインの行は必ずいずれかの世界に属する（`world_id` の FK）。その前提を各テストが
+     * 手で組むと重複するため基底クラスに置く。[truncateAllTables] が毎テスト前に全テーブルを空にするので、 テストごとに呼び直すこと。
+     *
+     * 呼ぶたびに**アカウントも新しく作る**。「他人の世界」を組み立てられることが、世界をまたぐ参照の拒否を 検証するテストの前提になるため。
+     *
+     * 認証の経路（`ActorArgumentResolver`）を通さず直接 insert するのは、ここで用意したいのが「誰として リクエストするか」ではなく「行が属する世界」だけだから。
+     */
+    protected fun createWorld(name: String = "テスト世界"): UUID {
+        val accountId = UUID.randomUUID()
+        val worldId = UUID.randomUUID()
+        connect().use { connection ->
+            connection
+                .prepareStatement(
+                    "INSERT INTO iam.account (id, subject_id, version) VALUES (?, ?, 0)"
+                )
+                .use { statement ->
+                    statement.setObject(1, accountId)
+                    statement.setString(2, "test-subject-$accountId")
+                    statement.executeUpdate()
+                }
+            connection
+                .prepareStatement(
+                    "INSERT INTO iam.world (id, account_id, name, version) VALUES (?, ?, ?, 0)"
+                )
+                .use { statement ->
+                    statement.setObject(1, worldId)
+                    statement.setObject(2, accountId)
+                    statement.setString(3, name)
+                    statement.executeUpdate()
+                }
+        }
+        return worldId
     }
 }

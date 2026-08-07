@@ -1,6 +1,7 @@
 package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.CoveringReport
 import com.example.api.domain.studbook.model.breeding.CoveringReportId
@@ -23,23 +24,28 @@ import org.springframework.stereotype.Repository
 class JdbcCoveringReportRepository(private val rows: CoveringReportSpringDataRepository) :
     CoveringReportRepository {
 
-    override fun findById(id: CoveringReportId): CoveringReport? =
-        rows.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findById(worldId: WorldId, id: CoveringReportId): CoveringReport? =
+        rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
 
     override fun findByStallionRegistrationIdAndCoveringYear(
+        worldId: WorldId,
         stallionRegistrationId: BreedingRegistrationId,
         coveringYear: Year,
     ): CoveringReport? =
         rows
-            .findByStallionBreedingRegistrationIdAndCoveringYear(
+            .findByWorldIdAndStallionBreedingRegistrationIdAndCoveringYear(
+                worldId.value,
                 stallionRegistrationId.value,
                 coveringYear.value,
             )
             ?.toDomain()
 
-    override fun save(coveringReport: CoveringReport): Result<CoveringReport, UpdateConflict> =
+    override fun save(
+        worldId: WorldId,
+        coveringReport: CoveringReport,
+    ): Result<CoveringReport, UpdateConflict> =
         try {
-            Ok(rows.save(coveringReport.toRow()).toDomain())
+            Ok(rows.save(coveringReport.toRow(worldId)).toDomain())
         } catch (_: OptimisticLockingFailureException) {
             // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
             Err(UpdateConflict)
@@ -61,9 +67,10 @@ class JdbcCoveringReportRepository(private val rows: CoveringReportSpringDataRep
      * version は集約が保持する値をそのまま写す（null なら Spring Data JDBC が新規と判定して insert、非 null なら楽観ロック付き
      * update。ADR-0027 の落とし穴②③）。
      */
-    private fun CoveringReport.toRow(): CoveringReportRow =
+    private fun CoveringReport.toRow(worldId: WorldId): CoveringReportRow =
         CoveringReportRow(
             id = id.value,
+            worldId = worldId.value,
             stallionBreedingRegistrationId = stallionRegistrationId.value,
             coveringYear = coveringYear.value,
             submittedOn = submittedOn,

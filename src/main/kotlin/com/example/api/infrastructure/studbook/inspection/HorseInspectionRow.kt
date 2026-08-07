@@ -14,6 +14,7 @@ import org.springframework.data.relational.core.mapping.Table
  * 閉じ込め、ドメインとは手書きマッパー（[JdbcHorseInspectionRepository]）で相互変換する。
  *
  * - [id] は外部採番の UUIDv7（ドメインの `HorseInspectionId` の生値）。`@Id` を付けるが DB 採番はしない。
+ * - [worldId] はこの行が属する世界（セーブデータ）のID。集約は世界を知らないため、マッパーが引数で受け取って書く。
  * - 親子判定（sealed `ParentageDetermination`）は判別子 [parentageType] と、`ByDna` のみ持つ [dnaParentageResult] に
  *   フラット化する。特徴記述子（nullable `IdentificationFeatures`）は feature_* 列に nullable でフラット化する。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する。
@@ -21,6 +22,7 @@ import org.springframework.data.relational.core.mapping.Table
 @Table(schema = "studbook", name = "horse_inspection")
 data class HorseInspectionRow(
     @Id @Column("id") val id: UUID,
+    @Column("world_id") val worldId: UUID,
     @Column("microchip_number") val microchipNumber: String,
     @Column("parentage_type") val parentageType: String,
     @Column("dna_parentage_result") val dnaParentageResult: String? = null,

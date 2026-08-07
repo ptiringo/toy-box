@@ -68,6 +68,17 @@ class SecurityConfigTest(val restTestClient: RestTestClient) : PostgresContainer
 
     @Test
     fun `有効なトークンは認証を通過しアプリケーションまで届く（不在の馬なので 404）`() {
+        // 世界スコープ化（#704）以降、ドメイン API は Actor（アカウント ＋ 世界）を要求するため、
+        // 先にブートストラップしないと認証は通っても 403 account-not-provisioned で止まる。
+        // ここで観測したいのは「フィルタチェーンを通過したか」なので、その手前の条件を整える。
+        restTestClient
+            .post()
+            .uri("/api/me:provision")
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+            .exchange()
+            .expectStatus()
+            .is2xxSuccessful
+
         // 401（認証で弾かれた）ではなく 404（アプリのユースケースが応答した）であることが、
         // フィルタチェーンを通過した唯一の観測可能な証拠になる。
         restTestClient

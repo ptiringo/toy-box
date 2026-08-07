@@ -1,5 +1,6 @@
 package com.example.api.controller.inspection
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.inspection.GetHorseInspectionQuery
 import com.example.api.application.studbook.inspection.GetHorseInspectionUseCase
 import com.example.api.application.studbook.inspection.HorseInspectionNotFound
@@ -7,10 +8,14 @@ import com.example.api.application.studbook.inspection.HorseInspectionView
 import com.example.api.application.studbook.inspection.RecordHorseInspectionCommand
 import com.example.api.application.studbook.inspection.RecordHorseInspectionUseCase
 import com.example.api.config.ClockConfiguration
+import com.example.api.controller.ActorArgumentResolver
 import com.example.api.controller.horse.DnaParentageResultDto
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
 import com.example.api.domain.iam.model.account.AccountRepository
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
@@ -26,6 +31,7 @@ import io.mockk.every
 import io.mockk.slot
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -49,6 +55,21 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
+
+    @MockkBean private lateinit var actorArgumentResolver: ActorArgumentResolver
+
+    private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
+
+    /**
+     * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
+     * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
+     */
+    @BeforeEach
+    fun stubActor() {
+        every { actorArgumentResolver.supportsParameter(any()) } returns true
+        every { actorArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns actor
+    }
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -81,8 +102,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
         @Test
         fun `正常な入力で 201 Created と DNA 判定つきの審査リソースが返ること`() {
-            every { recordHorseInspection(any<Command<RecordHorseInspectionCommand>>()) } returns
-                Ok(inspectionWithFeatures())
+            every {
+                recordHorseInspection(any<Actor>(), any<Command<RecordHorseInspectionCommand>>())
+            } returns Ok(inspectionWithFeatures())
 
             tester
                 .post()
@@ -103,8 +125,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                     microchipNumber = MicrochipNumber.create("392140000000002").unwrap(),
                     parentage = ParentageDetermination.NotApplicable,
                 )
-            every { recordHorseInspection(any<Command<RecordHorseInspectionCommand>>()) } returns
-                Ok(saved)
+            every {
+                recordHorseInspection(any<Actor>(), any<Command<RecordHorseInspectionCommand>>())
+            } returns Ok(saved)
 
             tester
                 .post()
@@ -129,7 +152,8 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
         @Test
         fun `全フィールド null の features はコマンドで不在（null）へ正規化されること`() {
             val command = slot<Command<RecordHorseInspectionCommand>>()
-            every { recordHorseInspection(capture(command)) } returns Ok(inspectionWithFeatures())
+            every { recordHorseInspection(any<Actor>(), capture(command)) } returns
+                Ok(inspectionWithFeatures())
 
             tester
                 .post()
@@ -157,8 +181,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
         @Test
         fun `InvalidMicrochipNumber で 400 と problem+json が返ること`() {
-            every { recordHorseInspection(any<Command<RecordHorseInspectionCommand>>()) } returns
-                Err(InvalidMicrochipNumber)
+            every {
+                recordHorseInspection(any<Actor>(), any<Command<RecordHorseInspectionCommand>>())
+            } returns Err(InvalidMicrochipNumber)
 
             tester
                 .post()
@@ -205,7 +230,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                     parentage = ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT),
                     features = IdentificationFeatures("頭部正中", null, null),
                 )
-            every { getHorseInspection(GetHorseInspectionQuery(id)) } returns Ok(view)
+            every { getHorseInspection(any<Actor>(), GetHorseInspectionQuery(id)) } returns Ok(view)
 
             tester
                 .get()
@@ -220,7 +245,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
         @Test
         fun `存在しない ID で 404 と inspection_id 付きの problem+json が返ること`() {
             val id = UUID.fromString("44444444-4444-4444-4444-444444444444")
-            every { getHorseInspection(GetHorseInspectionQuery(id)) } returns
+            every { getHorseInspection(any<Actor>(), GetHorseInspectionQuery(id)) } returns
                 Err(HorseInspectionNotFound(id))
 
             val result = tester.get().uri("/api/horseInspections/$id").exchange()

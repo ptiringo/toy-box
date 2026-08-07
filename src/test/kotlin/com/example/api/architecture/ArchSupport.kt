@@ -26,6 +26,8 @@ internal const val APPLICATION = "com.example.api.application.."
 internal const val CONTROLLER = "com.example.api.controller.."
 internal const val INFRASTRUCTURE = "com.example.api.infrastructure.."
 // MCP アダプタ（Model Context Protocol 公開層）。adapter リングに属し、application 層を利用する。
+// 世界スコープ化（#704）で MCP ツールを一旦削除したため現在この層は空で、OnionLayerRulesTest の
+// adapter 登録からも外している。MCP を戻す判断は #712（ADR-0035）。定数はそのときのために残す。
 internal const val MCP = "com.example.api.mcp.."
 
 /**

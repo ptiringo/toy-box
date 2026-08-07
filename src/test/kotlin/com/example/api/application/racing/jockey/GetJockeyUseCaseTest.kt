@@ -1,12 +1,19 @@
 package com.example.api.application.racing.jockey
 
 import com.example.api.domain.racing.model.jockey.JockeyId
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
 /**
  * 照会ユースケース [GetJockeyUseCase] の単体テスト（軽量 CQRS（L2）の読み取り側。ADR-0031）。
@@ -22,9 +29,9 @@ class GetJockeyUseCaseTest {
     fun `存在するIDなら対応するJockeyViewをOkで返す`() {
         val id = generateId()
         val view = JockeyView(id = id, firstName = "武", lastName = "豊")
-        every { jockeyQueries.findById(JockeyId(id)) } returns view
+        every { jockeyQueries.findById(worldId, JockeyId(id)) } returns view
 
-        val result = getJockey(GetJockeyQuery(id))
+        val result = getJockey(actor, GetJockeyQuery(id))
 
         assert(result.get() == view)
     }
@@ -32,9 +39,9 @@ class GetJockeyUseCaseTest {
     @Test
     fun `存在しないIDならJockeyNotFoundをErrで返す`() {
         val id = generateId()
-        every { jockeyQueries.findById(JockeyId(id)) } returns null
+        every { jockeyQueries.findById(worldId, JockeyId(id)) } returns null
 
-        val result = getJockey(GetJockeyQuery(id))
+        val result = getJockey(actor, GetJockeyQuery(id))
 
         assert(result.getError() == JockeyNotFound(id))
     }

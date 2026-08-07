@@ -2,6 +2,7 @@ package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultSummaryQueries
 import com.example.api.application.studbook.breeding.BreedingResultSummaryView
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import java.util.UUID
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -28,7 +29,10 @@ import org.springframework.stereotype.Repository
 class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
     BreedingResultSummaryQueries {
 
-    override fun findByStallion(stallionId: BloodHorseId): List<BreedingResultSummaryView> =
+    override fun findByStallion(
+        worldId: WorldId,
+        stallionId: BloodHorseId,
+    ): List<BreedingResultSummaryView> =
         jdbcClient
             .sql(
                 """
@@ -43,13 +47,14 @@ class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
                     ) AS conceived,
                     COUNT(*) FILTER (WHERE outcome_type = 'LIVE_FOAL') AS live_foals
                 FROM studbook.breeding_result
-                WHERE covering_stallion_id = :stallionId
+                WHERE covering_stallion_id = :stallionId AND world_id = :worldId
                 GROUP BY covering_stallion_id, breeding_year
                 ORDER BY breeding_year
                 """
                     .trimIndent()
             )
             .param("stallionId", stallionId.value)
+            .param("worldId", worldId.value)
             .query { rs, _ ->
                 BreedingResultSummaryView.of(
                     stallionId = rs.getObject("stallion_id", UUID::class.java),

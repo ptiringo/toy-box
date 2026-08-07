@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -62,13 +63,14 @@ sealed interface ReportFoalingUseCaseError {
 class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultRepository) {
     @Transactional
     operator fun invoke(
-        command: Command<ReportFoalingCommand>
+        actor: Actor,
+        command: Command<ReportFoalingCommand>,
     ): Result<BreedingResult, ReportFoalingUseCaseError> = binding {
         val input = command.payload
 
         val breedingResult =
             breedingResultRepository
-                .findById(BreedingResultId(input.breedingResultId))
+                .findById(actor.worldId, BreedingResultId(input.breedingResultId))
                 .toResultOr {
                     ReportFoalingUseCaseError.BreedingResultNotFound(input.breedingResultId)
                 }
@@ -81,7 +83,7 @@ class ReportFoalingUseCase(private val breedingResultRepository: BreedingResultR
                 .bind()
 
         breedingResultRepository
-            .save(reported)
+            .save(actor.worldId, reported)
             .mapError { _: UpdateConflict ->
                 ReportFoalingUseCaseError.ConcurrentModification(input.breedingResultId)
             }

@@ -1,5 +1,6 @@
 package com.example.api.domain.studbook.service.breeding
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.CoveringReport
 import com.example.api.domain.studbook.model.breeding.CoveringReportRepository
@@ -30,6 +31,7 @@ import java.time.Year
  * @return 起こされた [CoveringReport]、または前提条件違反を表す [SubmitCoveringReportError]
  */
 fun submitCoveringReport(
+    worldId: WorldId,
     stallionRegistration: BreedingRegistration,
     coveringYear: Year,
     submittedOn: LocalDate,
@@ -37,6 +39,7 @@ fun submitCoveringReport(
 ): Result<CoveringReport, SubmitCoveringReportError> {
     val existingForYear =
         coveringReportRepository.findByStallionRegistrationIdAndCoveringYear(
+            worldId,
             stallionRegistration.id,
             coveringYear,
         )

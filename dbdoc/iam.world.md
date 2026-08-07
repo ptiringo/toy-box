@@ -8,7 +8,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false |  |  | 世界ID（外部採番の UUIDv7） |
+| id | uuid |  | false | [racing.jockey](racing.jockey.md) [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) [studbook.horse_inspection](studbook.horse_inspection.md) [studbook.covering_report](studbook.covering_report.md) |  | 世界ID（外部採番の UUIDv7） |
 | account_id | uuid |  | false |  | [iam.account](iam.account.md) | 世界を所有するアカウントのID（削除時は配下の世界も消える） |
 | name | varchar(64) |  | false |  |  | プレイヤーが付けた世界の名前（同一アカウント内で一意） |
 | version | bigint |  | false |  |  | 楽観ロック兼 insert 判定用の version |
@@ -33,6 +33,12 @@
 ```mermaid
 erDiagram
 
+"racing.jockey" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.breeding_registration" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.blood_horse" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.horse_inspection" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.covering_report" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "iam.world" }o--|| "iam.account" : "FOREIGN KEY (account_id) REFERENCES iam.account(id) ON DELETE CASCADE"
 
 "iam.world" {
@@ -40,6 +46,74 @@ erDiagram
   uuid account_id FK
   varchar_64_ name
   bigint version
+}
+"racing.jockey" {
+  uuid id
+  varchar_255_ first_name
+  varchar_255_ last_name
+  bigint version
+  uuid world_id FK
+}
+"studbook.breeding_registration" {
+  uuid id
+  varchar_255_ registration_number
+  uuid registered_horse_id FK
+  varchar_32_ breeding_role
+  varchar_32_ retirement_reason
+  date retirement_occurred_on
+  bigint version
+  uuid world_id FK
+}
+"studbook.blood_horse" {
+  uuid id
+  varchar_255_ registration_number
+  varchar_16_ sex
+  varchar_32_ coat_color
+  varchar_32_ breed_type
+  date date_of_birth
+  varchar_255_ breeder
+  uuid inspection_id FK
+  varchar_255_ name
+  varchar_16_ origin_type
+  uuid sire_id FK
+  uuid dam_id FK
+  varchar_255_ origin_country
+  date landing_date
+  bigint version
+  uuid world_id FK
+}
+"studbook.breeding_result" {
+  uuid id
+  uuid breeding_registration_id FK
+  integer breeding_year
+  uuid covering_stallion_id FK
+  date covering_date
+  varchar_255_ covering_place
+  varchar_255_ covering_certificate_number
+  varchar_32_ outcome_type
+  date outcome_foaling_date
+  bigint version
+  date report_submitted_on
+  uuid world_id FK
+}
+"studbook.horse_inspection" {
+  uuid id
+  varchar_64_ microchip_number
+  varchar_32_ parentage_type
+  varchar_16_ dna_parentage_result
+  varchar_255_ feature_hair_whorl
+  varchar_255_ feature_white_markings
+  varchar_255_ feature_nose_print
+  bigint version
+  uuid world_id FK
+}
+"studbook.covering_report" {
+  uuid id
+  uuid stallion_breeding_registration_id FK
+  integer covering_year
+  date submitted_on
+  bigint version
+  uuid world_id FK
 }
 "iam.account" {
   uuid id

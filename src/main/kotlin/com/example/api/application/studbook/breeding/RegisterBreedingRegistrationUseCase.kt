@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BlankBreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
@@ -58,7 +59,8 @@ class RegisterBreedingRegistrationUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterBreedingRegistrationCommand>
+        actor: Actor,
+        command: Command<RegisterBreedingRegistrationCommand>,
     ): Result<BreedingRegistration, RegisterBreedingRegistrationUseCaseError> = binding {
         val input = command.payload
 
@@ -71,14 +73,14 @@ class RegisterBreedingRegistrationUseCase(
 
         val horse =
             bloodHorseRepository
-                .findById(BloodHorseId(input.bloodHorseId))
+                .findById(actor.worldId, BloodHorseId(input.bloodHorseId))
                 .toResultOr {
                     RegisterBreedingRegistrationUseCaseError.HorseNotFound(input.bloodHorseId)
                 }
                 .bind()
 
         val registration = BreedingRegistration.create(registrationNumber, horse)
-        breedingRegistrationRepository.save(registration).getOrElse {
+        breedingRegistrationRepository.save(actor.worldId, registration).getOrElse {
             error("新規の繁殖登録の保存で楽観ロック競合はありえない: id=${registration.id.value}")
         }
     }

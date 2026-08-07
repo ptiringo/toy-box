@@ -16,6 +16,7 @@
 | feature_white_markings | varchar(255) |  | true |  |  | 特徴記述子: 白徴（未記録なら NULL） |
 | feature_nose_print | varchar(255) |  | true |  |  | 特徴記述子: 鼻紋（未記録なら NULL） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
+| world_id | uuid |  | false | [studbook.blood_horse](studbook.blood_horse.md) | [iam.world](iam.world.md) | この行が属する世界（セーブデータ）のID |
 
 ## Constraints
 
@@ -23,19 +24,23 @@
 | ---- | ---- | ---------- |
 | chk_horse_inspection_parentage | CHECK | CHECK (((((parentage_type)::text = 'BY_DNA'::text) AND (dna_parentage_result IS NOT NULL)) OR (((parentage_type)::text <> 'BY_DNA'::text) AND (dna_parentage_result IS NULL)))) |
 | horse_inspection_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| fk_horse_inspection_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
+| uq_horse_inspection_world_id_id | UNIQUE | UNIQUE (world_id, id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | horse_inspection_pkey | CREATE UNIQUE INDEX horse_inspection_pkey ON studbook.horse_inspection USING btree (id) |
+| uq_horse_inspection_world_id_id | CREATE UNIQUE INDEX uq_horse_inspection_world_id_id ON studbook.horse_inspection USING btree (world_id, id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (inspection_id) REFERENCES studbook.horse_inspection(id)"
+"studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id)"
+"studbook.horse_inspection" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "studbook.horse_inspection" {
   uuid id
@@ -46,6 +51,7 @@ erDiagram
   varchar_255_ feature_white_markings
   varchar_255_ feature_nose_print
   bigint version
+  uuid world_id FK
 }
 "studbook.blood_horse" {
   uuid id
@@ -62,6 +68,13 @@ erDiagram
   uuid dam_id FK
   varchar_255_ origin_country
   date landing_date
+  bigint version
+  uuid world_id FK
+}
+"iam.world" {
+  uuid id
+  uuid account_id FK
+  varchar_64_ name
   bigint version
 }
 ```

@@ -19,6 +19,7 @@ import com.example.api.application.studbook.horse.RegisterFoalCommand
 import com.example.api.application.studbook.horse.RegisterFoalUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.application.studbook.horse.RegisteredBloodHorse
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
@@ -54,10 +55,15 @@ class ReplayEngine(
     private val nameHorse: NameHorseUseCase,
     private val submitBreedingReport: SubmitBreedingReportUseCase,
 ) {
-    fun run(fixture: HorseFixture): HorseReplayOutcome =
+    /**
+     * 1 頭分のフィクスチャを繁殖ワークフローへ通す。
+     *
+     * [actor] はこのハーネスが書き込む世界（セーブデータ）を指す（#704 / ADR-0067）。ハーネス自身は認可を 扱わず、呼び出し側（テスト）が用意した世界にすべての行を書く。
+     */
+    fun run(actor: Actor, fixture: HorseFixture): HorseReplayOutcome =
         when (fixture) {
-            is CoveredSeasonFixture -> runCovered(fixture)
-            is UncoveredSeasonFixture -> runUncovered(fixture)
+            is CoveredSeasonFixture -> runCovered(actor, fixture)
+            is UncoveredSeasonFixture -> runUncovered(actor, fixture)
         }
 
     /**
@@ -67,18 +73,19 @@ class ReplayEngine(
      * と isDomestic の KDoc）。
      */
     private fun seedHorse(
+        actor: Actor,
         facts: HorseFacts,
         synth: HorseSynthesized,
         clock: Clock,
     ): Result<RegisteredBloodHorse, Any> =
         if (facts.isDomestic) {
-            registerCarriedOverHorse(Command.now(carriedOverCommand(facts, synth), clock))
+            registerCarriedOverHorse(actor, Command.now(carriedOverCommand(facts, synth), clock))
         } else {
-            registerImportedHorse(Command.now(importedCommand(facts, synth), clock))
+            registerImportedHorse(actor, Command.now(importedCommand(facts, synth), clock))
         }
 
     /** 種付を行った年の経路: seed ×2 → 繁殖登録 ×2 → 種付 → 種付成績報告 → 出生報告 → 産駒登録 → 馬名登録 → 繁殖成績報告。 */
-    private fun runCovered(fixture: CoveredSeasonFixture): HorseReplayOutcome {
+    private fun runCovered(actor: Actor, fixture: CoveredSeasonFixture): HorseReplayOutcome {
         val session = ReplaySession(fixture)
         val facts = fixture.facts
         val synth = fixture.synthesized
@@ -91,12 +98,12 @@ class ReplayEngine(
         val stallion =
             session.step(
                 ReplayStep.REGISTER_STALLION,
-                seedHorse(facts.stallion, synth.stallion, seasonClock(neutralInstant)),
+                seedHorse(actor, facts.stallion, synth.stallion, seasonClock(neutralInstant)),
             ) ?: return session.stop()
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
-                seedHorse(facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
+                seedHorse(actor, facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
             ) ?: return session.stop()
 
         // 1. 繁殖登録（雄・雌）。
@@ -104,26 +111,28 @@ class ReplayEngine(
             session.step(
                 ReplayStep.REGISTER_STALLION_BREEDING,
                 registerBreedingRegistration(
+                    actor,
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             stallion.bloodHorse.id.value,
                             synth.stallion.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
         val broodmareBreeding =
             session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
                 registerBreedingRegistration(
+                    actor,
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             broodmare.bloodHorse.id.value,
                             synth.broodmare.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -132,6 +141,7 @@ class ReplayEngine(
             session.step(
                 ReplayStep.RECORD_COVERING,
                 recordCovering(
+                    actor,
                     Command.now(
                         RecordCoveringCommand(
                             breedingRegistrationId = broodmareBreeding.id.value,
@@ -142,7 +152,7 @@ class ReplayEngine(
                             studCertificate = synth.covering.studCertificate.toInput(),
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -150,6 +160,7 @@ class ReplayEngine(
         session.step(
             ReplayStep.SUBMIT_COVERING_REPORT,
             submitCoveringReport(
+                actor,
                 Command.now(
                     SubmitCoveringReportCommand(stallionBreeding.id.value, synth.coveringYear),
                     seasonClock(
@@ -157,7 +168,7 @@ class ReplayEngine(
                             LocalDate.parse(synth.submissions.coveringReportSubmittedOn)
                         )
                     ),
-                )
+                ),
             ),
         ) ?: return session.stop()
 
@@ -165,10 +176,11 @@ class ReplayEngine(
         session.step(
             ReplayStep.REPORT_FOALING,
             reportFoaling(
+                actor,
                 Command.now(
                     ReportFoalingCommand(breedingResult.id.value, facts.foaling.toOutcome()),
                     seasonClock(neutralInstant),
-                )
+                ),
             ),
         ) ?: return session.stop()
 
@@ -181,6 +193,7 @@ class ReplayEngine(
                 session.step(
                     ReplayStep.REGISTER_FOAL,
                     registerFoal(
+                        actor,
                         Command.now(
                             RegisterFoalCommand(
                                 breedingResultId = breedingResult.id.value,
@@ -193,7 +206,7 @@ class ReplayEngine(
                                 registrationNumber = foalSynth.pedigreeRegistrationNumber,
                             ),
                             seasonClock(neutralInstant),
-                        )
+                        ),
                     ),
                 ) ?: return session.stop()
 
@@ -202,10 +215,11 @@ class ReplayEngine(
                 session.step(
                     ReplayStep.NAME_FOAL,
                     nameHorse(
+                        actor,
                         Command.now(
                             NameHorseCommand(registeredFoal.bloodHorse.id.value, foalName),
                             seasonClock(neutralInstant),
-                        )
+                        ),
                     ),
                 ) ?: return session.stop()
             }
@@ -215,6 +229,7 @@ class ReplayEngine(
         session.step(
             ReplayStep.SUBMIT_BREEDING_REPORT,
             submitBreedingReport(
+                actor,
                 Command.now(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
@@ -222,7 +237,7 @@ class ReplayEngine(
                             LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
                         )
                     ),
-                )
+                ),
             ),
         ) ?: return session.stop()
 
@@ -235,7 +250,7 @@ class ReplayEngine(
      * RecordUncovered が起こす繁殖成績は生成時点で outcome = NotCovered が確定した終端レコードなので、
      * 出生報告（ReportFoaling）は通さない。種牡馬・種付証明書・種付成績報告・産駒はそもそも存在しない。
      */
-    private fun runUncovered(fixture: UncoveredSeasonFixture): HorseReplayOutcome {
+    private fun runUncovered(actor: Actor, fixture: UncoveredSeasonFixture): HorseReplayOutcome {
         val session = ReplaySession(fixture)
         val facts = fixture.facts
         val synth = fixture.synthesized
@@ -247,7 +262,7 @@ class ReplayEngine(
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
-                seedHorse(facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
+                seedHorse(actor, facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
             ) ?: return session.stop()
 
         // 1. 繁殖登録（雌のみ）。
@@ -255,13 +270,14 @@ class ReplayEngine(
             session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
                 registerBreedingRegistration(
+                    actor,
                     Command.now(
                         RegisterBreedingRegistrationCommand(
                             broodmare.bloodHorse.id.value,
                             synth.broodmare.breedingRegistrationNumber,
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -270,13 +286,14 @@ class ReplayEngine(
             session.step(
                 ReplayStep.RECORD_UNCOVERED,
                 recordUncovered(
+                    actor,
                     Command.now(
                         RecordUncoveredCommand(
                             breedingRegistrationId = broodmareBreeding.id.value,
                             breedingYear = Year.of(synth.breedingYear),
                         ),
                         seasonClock(neutralInstant),
-                    )
+                    ),
                 ),
             ) ?: return session.stop()
 
@@ -284,6 +301,7 @@ class ReplayEngine(
         session.step(
             ReplayStep.SUBMIT_BREEDING_REPORT,
             submitBreedingReport(
+                actor,
                 Command.now(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
@@ -291,7 +309,7 @@ class ReplayEngine(
                             LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
                         )
                     ),
-                )
+                ),
             ),
         ) ?: return session.stop()
 

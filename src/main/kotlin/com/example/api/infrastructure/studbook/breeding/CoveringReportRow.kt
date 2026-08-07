@@ -15,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table
  * アノテーションはドメインに付けず本クラスに閉じ込め、ドメイン集約とは手書きマッパーで相互変換する （[JdbcCoveringReportRepository]）。
  *
  * - [id] は外部採番の UUIDv7（ドメインの `CoveringReportId` の生値）。`@Id` を付けるが DB 採番はしない。
+ * - [worldId] はこの行が属する世界（セーブデータ）のID。集約は世界を知らないため、マッパーが引数で受け取って書く。
  * - [coveringYear] は `java.time.Year` の int 値。
  * - 「種牡馬×種付年」の一意性は UNIQUE 制約でスキーマ側にも強制する（V10 参照）。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する。
@@ -22,6 +23,7 @@ import org.springframework.data.relational.core.mapping.Table
 @Table(schema = "studbook", name = "covering_report")
 data class CoveringReportRow(
     @Id @Column("id") val id: UUID,
+    @Column("world_id") val worldId: UUID,
     @Column("stallion_breeding_registration_id") val stallionBreedingRegistrationId: UUID,
     @Column("covering_year") val coveringYear: Int,
     @Column("submitted_on") val submittedOn: LocalDate,

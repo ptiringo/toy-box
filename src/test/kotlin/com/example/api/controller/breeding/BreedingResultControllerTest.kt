@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
@@ -13,8 +14,13 @@ import com.example.api.application.studbook.breeding.SubmitBreedingReportCommand
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCase
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCaseError
 import com.example.api.config.ClockConfiguration
+import com.example.api.controller.ActorArgumentResolver
 import com.example.api.domain.iam.model.account.AccountRepository
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.CoveringValidityError
@@ -31,6 +37,7 @@ import io.mockk.every
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -55,6 +62,21 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
+
+    @MockkBean private lateinit var actorArgumentResolver: ActorArgumentResolver
+
+    private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
+
+    /**
+     * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
+     * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
+     */
+    @BeforeEach
+    fun stubActor() {
+        every { actorArgumentResolver.supportsParameter(any()) } returns true
+        every { actorArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns actor
+    }
 
     private val tester = MockMvcTester.create(mockMvc)
 
@@ -86,7 +108,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `正常な入力で 201 Created と起票された繁殖成績が返ること`() {
             val saved = BreedingFixture.breedingResult()
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns Ok(saved)
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
+                Ok(saved)
 
             tester
                 .post()
@@ -102,7 +125,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `InvalidCertificateNumber で 400 と problem+json が返ること`() {
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(RecordCoveringUseCaseError.InvalidCertificateNumber)
 
             tester
@@ -120,7 +143,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `InvalidStudCertificateNumber で 400 と problem+json が返ること`() {
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(RecordCoveringUseCaseError.InvalidStudCertificateNumber)
 
             tester
@@ -139,7 +162,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `BreedingRegistrationNotFound で 422 と breedingRegistrationId 付きの problem+json が返ること`() {
             val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(RecordCoveringUseCaseError.BreedingRegistrationNotFound(id))
 
             tester
@@ -158,7 +181,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `StallionRegistrationNotFound で 422 と stallionRegistrationId 付きの problem+json が返ること`() {
             val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(RecordCoveringUseCaseError.StallionRegistrationNotFound(id))
 
             tester
@@ -176,7 +199,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `前提条件違反（NotStallion）が 422 と problem+json に変換されること`() {
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
                 )
@@ -196,7 +219,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `前提条件違反（NotBroodmare）が 422 と problem+json に変換されること`() {
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
                         RecordCoveringError.NotBroodmare
@@ -220,7 +243,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         fun `有効期間外（InvalidCovering OutsideValidPeriod）が 422 と problem+json に変換されること`() {
             val period =
                 ValidityPeriod.create(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)).unwrap()
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
                         RecordCoveringError.InvalidCovering(
@@ -249,7 +272,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         fun `有効区域外（InvalidCovering OutsideValidRegion）が 422 と problem+json に変換されること`() {
             val hokkaido = BreedingRegion.create("北海道").unwrap()
             val aomori = BreedingRegion.create("青森").unwrap()
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
                         RecordCoveringError.InvalidCovering(
@@ -274,7 +297,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `重複記録（AlreadyRecordedForYear）が 409 と繁殖年つきの problem+json に変換されること`() {
             val existing = BreedingFixture.breedingResult()
-            every { recordCovering(any<Command<RecordCoveringCommand>>()) } returns
+            every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
                         RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
@@ -312,7 +335,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `covering 無しの入力で 201 Created と種付せずの繁殖成績が返ること`() {
             val saved = BreedingFixture.uncoveredBreedingResult()
-            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns Ok(saved)
+            every { recordUncovered(any<Actor>(), any<Command<RecordUncoveredCommand>>()) } returns
+                Ok(saved)
 
             tester
                 .post()
@@ -346,7 +370,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `BreedingRegistrationNotFound で 422 と breedingRegistrationId 付きの problem+json が返ること`() {
             val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
-            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
+            every { recordUncovered(any<Actor>(), any<Command<RecordUncoveredCommand>>()) } returns
                 Err(RecordUncoveredUseCaseError.BreedingRegistrationNotFound(id))
 
             tester
@@ -364,7 +388,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `前提条件違反（NotBroodmare）が 422 と problem+json に変換されること`() {
-            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
+            every { recordUncovered(any<Actor>(), any<Command<RecordUncoveredCommand>>()) } returns
                 Err(
                     RecordUncoveredUseCaseError.PreconditionViolated(
                         RecordUncoveredError.NotBroodmare
@@ -387,7 +411,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `重複記録（AlreadyRecordedForYear）が 409 と繁殖年つきの problem+json に変換されること`() {
             val existing = BreedingFixture.uncoveredBreedingResult()
-            every { recordUncovered(any<Command<RecordUncoveredCommand>>()) } returns
+            every { recordUncovered(any<Actor>(), any<Command<RecordUncoveredCommand>>()) } returns
                 Err(
                     RecordUncoveredUseCaseError.PreconditionViolated(
                         RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id)
@@ -420,7 +444,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 BreedingFixture.breedingResult()
                     .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)))
                     .unwrap()
-            every { reportFoaling(any<Command<ReportFoalingCommand>>()) } returns Ok(reported)
+            every { reportFoaling(any<Actor>(), any<Command<ReportFoalingCommand>>()) } returns
+                Ok(reported)
 
             tester
                 .post()
@@ -452,7 +477,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `BreedingResultNotFound で 404 と breedingResultId 付きの problem+json が返ること`() {
             val id = UUID.fromString(breedingResultId)
-            every { reportFoaling(any<Command<ReportFoalingCommand>>()) } returns
+            every { reportFoaling(any<Actor>(), any<Command<ReportFoalingCommand>>()) } returns
                 Err(ReportFoalingUseCaseError.BreedingResultNotFound(id))
 
             tester
@@ -470,7 +495,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `AlreadyReported で 409 と problem+json が返ること`() {
-            every { reportFoaling(any<Command<ReportFoalingCommand>>()) } returns
+            every { reportFoaling(any<Actor>(), any<Command<ReportFoalingCommand>>()) } returns
                 Err(
                     ReportFoalingUseCaseError.AlreadyReported(
                         FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
@@ -493,7 +518,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `ConcurrentModification で 409 と problem+json が返ること`() {
             val id = UUID.fromString(breedingResultId)
-            every { reportFoaling(any<Command<ReportFoalingCommand>>()) } returns
+            every { reportFoaling(any<Actor>(), any<Command<ReportFoalingCommand>>()) } returns
                 Err(ReportFoalingUseCaseError.ConcurrentModification(id))
 
             tester
@@ -525,8 +550,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `正常な提出で 200 OK と提出日・期限超過付きの繁殖成績が返ること`() {
-            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
-                Ok(submittedResult())
+            every {
+                submitReport(any<Actor>(), any<Command<SubmitBreedingReportCommand>>())
+            } returns Ok(submittedResult())
 
             tester
                 .post()
@@ -540,8 +566,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `期限超過の提出は report_submitted_late が true で返ること`() {
-            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
-                Ok(submittedResult())
+            every {
+                submitReport(any<Actor>(), any<Command<SubmitBreedingReportCommand>>())
+            } returns Ok(submittedResult())
 
             tester
                 .post()
@@ -556,8 +583,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `BreedingResultNotFound で 404 と breeding_result_id 付きの problem+json が返ること`() {
             val id = UUID.fromString(breedingResultId)
-            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
-                Err(SubmitBreedingReportUseCaseError.BreedingResultNotFound(id))
+            every {
+                submitReport(any<Actor>(), any<Command<SubmitBreedingReportCommand>>())
+            } returns Err(SubmitBreedingReportUseCaseError.BreedingResultNotFound(id))
 
             tester
                 .post()
@@ -572,7 +600,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `分娩結果未確定で 422 と problem+json が返ること`() {
-            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+            every {
+                submitReport(any<Actor>(), any<Command<SubmitBreedingReportCommand>>())
+            } returns
                 Err(
                     SubmitBreedingReportUseCaseError.PreconditionViolated(
                         SubmitBreedingReportError.OutcomeNotRecorded
@@ -592,7 +622,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
         @Test
         fun `提出済みで 409 と既存提出日付きの problem+json が返ること`() {
-            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
+            every {
+                submitReport(any<Actor>(), any<Command<SubmitBreedingReportCommand>>())
+            } returns
                 Err(
                     SubmitBreedingReportUseCaseError.PreconditionViolated(
                         SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1))
@@ -623,8 +655,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         @Test
         fun `ConcurrentModification で 409 と problem+json が返ること`() {
             val id = UUID.fromString(breedingResultId)
-            every { submitReport(any<Command<SubmitBreedingReportCommand>>()) } returns
-                Err(SubmitBreedingReportUseCaseError.ConcurrentModification(id))
+            every {
+                submitReport(any<Actor>(), any<Command<SubmitBreedingReportCommand>>())
+            } returns Err(SubmitBreedingReportUseCaseError.ConcurrentModification(id))
 
             tester
                 .post()

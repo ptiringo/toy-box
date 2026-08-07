@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -19,8 +23,11 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class SubmitCoveringReportUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class SubmitCoveringReportUseCaseTest {
     private fun command(
         stallionBreedingRegistrationId: UUID,
         coveringYear: Int,
@@ -35,27 +42,30 @@ class SubmitCoveringReportUseCaseTest {
             val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(worldId, stallionRegistration.id) } returns
+                        stallionRegistration
                 }
             val reportRepository =
                 mockk<CoveringReportRepository> {
                     every {
                         findByStallionRegistrationIdAndCoveringYear(
+                            worldId,
                             stallionRegistration.id,
                             Year.of(2024),
                         )
                     } returns null
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = SubmitCoveringReportUseCase(registrationRepository, reportRepository)
             // UTC 15:00 = JST 翌日 0:00 → 提出日は 10/1（期限 9/30 を超過）
             val issuedAt = Instant.parse("2024-09-30T15:00:00Z")
 
-            val result = useCase(command(stallionRegistration.id.value, 2024, issuedAt)).unwrap()
+            val result =
+                useCase(actor, command(stallionRegistration.id.value, 2024, issuedAt)).unwrap()
 
             assert(result.submittedOn == LocalDate.of(2024, 10, 1))
             assert(result.submittedLate)
-            verify(exactly = 1) { reportRepository.save(any()) }
+            verify(exactly = 1) { reportRepository.save(worldId, any()) }
         }
 
         @Test
@@ -64,22 +74,26 @@ class SubmitCoveringReportUseCaseTest {
             val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(worldId, stallionRegistration.id) } returns
+                        stallionRegistration
                 }
             val reportRepository =
                 mockk<CoveringReportRepository> {
-                    every { findByStallionRegistrationIdAndCoveringYear(any(), any()) } returns null
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every {
+                        findByStallionRegistrationIdAndCoveringYear(worldId, any(), any())
+                    } returns null
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = SubmitCoveringReportUseCase(registrationRepository, reportRepository)
 
             val result =
                 useCase(
+                        actor,
                         command(
                             stallionRegistration.id.value,
                             2024,
                             Instant.parse("2024-09-01T00:00:00Z"),
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -94,18 +108,19 @@ class SubmitCoveringReportUseCaseTest {
             val unknownId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(BreedingRegistrationId(unknownId)) } returns null
+                    every { findById(worldId, BreedingRegistrationId(unknownId)) } returns null
                 }
             val reportRepository = mockk<CoveringReportRepository>()
             val useCase = SubmitCoveringReportUseCase(registrationRepository, reportRepository)
 
-            val result = useCase(command(unknownId, 2024, Instant.parse("2024-09-01T00:00:00Z")))
+            val result =
+                useCase(actor, command(unknownId, 2024, Instant.parse("2024-09-01T00:00:00Z")))
 
             assert(
                 result.getError() ==
                     SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(unknownId)
             )
-            verify(exactly = 0) { reportRepository.save(any()) }
+            verify(exactly = 0) { reportRepository.save(worldId, any()) }
         }
 
         @Test
@@ -113,21 +128,25 @@ class SubmitCoveringReportUseCaseTest {
             val broodmareRegistration = BreedingFixture.breedingRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
                 }
             val reportRepository =
                 mockk<CoveringReportRepository> {
-                    every { findByStallionRegistrationIdAndCoveringYear(any(), any()) } returns null
+                    every {
+                        findByStallionRegistrationIdAndCoveringYear(worldId, any(), any())
+                    } returns null
                 }
             val useCase = SubmitCoveringReportUseCase(registrationRepository, reportRepository)
 
             val result =
                 useCase(
+                    actor,
                     command(
                         broodmareRegistration.id.value,
                         2024,
                         Instant.parse("2024-09-01T00:00:00Z"),
-                    )
+                    ),
                 )
 
             assert(
@@ -136,7 +155,7 @@ class SubmitCoveringReportUseCaseTest {
                         SubmitCoveringReportError.NotStallion
                     )
             )
-            verify(exactly = 0) { reportRepository.save(any()) }
+            verify(exactly = 0) { reportRepository.save(worldId, any()) }
         }
 
         @Test
@@ -146,12 +165,14 @@ class SubmitCoveringReportUseCaseTest {
                 BreedingFixture.coveringReport(stallionRegistration = stallionRegistration)
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(worldId, stallionRegistration.id) } returns
+                        stallionRegistration
                 }
             val reportRepository =
                 mockk<CoveringReportRepository> {
                     every {
                         findByStallionRegistrationIdAndCoveringYear(
+                            worldId,
                             stallionRegistration.id,
                             Year.of(2024),
                         )
@@ -161,11 +182,12 @@ class SubmitCoveringReportUseCaseTest {
 
             val result =
                 useCase(
+                    actor,
                     command(
                         stallionRegistration.id.value,
                         2024,
                         Instant.parse("2024-09-01T00:00:00Z"),
-                    )
+                    ),
                 )
 
             assert(
@@ -177,7 +199,7 @@ class SubmitCoveringReportUseCaseTest {
                         )
                     )
             )
-            verify(exactly = 0) { reportRepository.save(any()) }
+            verify(exactly = 0) { reportRepository.save(worldId, any()) }
         }
     }
 }

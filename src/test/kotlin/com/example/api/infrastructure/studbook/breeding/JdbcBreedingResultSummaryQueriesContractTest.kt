@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.breeding
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.infrastructure.studbook.StudbookSeeder
@@ -35,7 +36,19 @@ class JdbcBreedingResultSummaryQueriesContractTest(
 ) : PostgresContainerSupport() {
 
     private val queries = JdbcBreedingResultSummaryQueries(jdbcClient)
-    private val seeder = StudbookSeeder(inspectionRows, horseRows, registrationRows)
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    private lateinit var seeder: StudbookSeeder
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る必要があるため、フィールド初期化ではなくここで組む。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+    }
 
     private val stallion = generateId()
     private val otherStallion = generateId()
@@ -59,6 +72,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
         registrationId: UUID = seeder.seedRegistrationRow(),
     ) =
         BreedingResultRow(
+            worldId = worldId.value,
             id = generateId(),
             breedingRegistrationId = registrationId,
             breedingYear = year,
@@ -73,6 +87,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     /** 種付せず行（covering 列は全 null、outcomeType は NOT_COVERED 固定）。 */
     private fun notCovered(year: Int, registrationId: UUID = seeder.seedRegistrationRow()) =
         BreedingResultRow(
+            worldId = worldId.value,
             id = generateId(),
             breedingRegistrationId = registrationId,
             breedingYear = year,
@@ -97,7 +112,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
         rows.save(notCovered(2024)) // 種付せず → 分母に入らない
         rows.save(covered(otherStallion, 2024, "LIVE_FOAL", LocalDate.of(2025, 3, 2))) // 別種牡馬
 
-        val summaries = queries.findByStallion(BloodHorseId(stallion))
+        val summaries = queries.findByStallion(worldId, BloodHorseId(stallion))
 
         assert(summaries.size == 1)
         val s = summaries.single()
@@ -123,13 +138,13 @@ class JdbcBreedingResultSummaryQueriesContractTest(
             )
         )
 
-        val years = queries.findByStallion(BloodHorseId(stallion)).map { it.breedingYear }
+        val years = queries.findByStallion(worldId, BloodHorseId(stallion)).map { it.breedingYear }
 
         assert(years == listOf(2023, 2024))
     }
 
     @Test
     fun `該当する種牡馬の成績が無ければ空リストを返す`() {
-        assert(queries.findByStallion(BloodHorseId(generateId())).isEmpty())
+        assert(queries.findByStallion(worldId, BloodHorseId(generateId())).isEmpty())
     }
 }

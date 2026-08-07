@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -59,13 +60,14 @@ class RecordUncoveredUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RecordUncoveredCommand>
+        actor: Actor,
+        command: Command<RecordUncoveredCommand>,
     ): Result<BreedingResult, RecordUncoveredUseCaseError> = binding {
         val input = command.payload
 
         val broodmareRegistration =
             breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.breedingRegistrationId))
+                .findById(actor.worldId, BreedingRegistrationId(input.breedingRegistrationId))
                 .toResultOr {
                     RecordUncoveredUseCaseError.BreedingRegistrationNotFound(
                         input.breedingRegistrationId
@@ -74,11 +76,16 @@ class RecordUncoveredUseCase(
                 .bind()
 
         val breedingResult =
-            recordUncovered(broodmareRegistration, input.breedingYear, breedingResultRepository)
+            recordUncovered(
+                    actor.worldId,
+                    broodmareRegistration,
+                    input.breedingYear,
+                    breedingResultRepository,
+                )
                 .mapError { RecordUncoveredUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        breedingResultRepository.save(breedingResult).getOrElse {
+        breedingResultRepository.save(actor.worldId, breedingResult).getOrElse {
             error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
         }
     }

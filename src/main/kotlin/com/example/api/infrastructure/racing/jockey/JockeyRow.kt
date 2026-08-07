@@ -14,12 +14,14 @@ import org.springframework.data.relational.core.mapping.Table
  * 層の本クラスに閉じ込め、ドメイン集約とは手書きマッパーで相互変換する。
  *
  * - [id] は外部採番の UUIDv7（ドメインの `JockeyId` の生値）。`@Id` を付けるが DB 採番はしない。
+ * - [worldId] はこの行が属する世界（セーブデータ）のID。集約は世界を知らないため、マッパーが引数で受け取って書く。
  * - [version] は楽観ロック用の `@Version` 列。null のとき Spring Data JDBC は「新規」とみなして insert する （ID が常に非 null
  *   な外部採番でも insert/update を正しく判別できる。ADR-0027 の落とし穴②③）。
  */
 @Table(schema = "racing", name = "jockey")
 data class JockeyRow(
     @Id @Column("id") val id: UUID,
+    @Column("world_id") val worldId: UUID,
     @Column("first_name") val firstName: String,
     @Column("last_name") val lastName: String,
     @Version @Column("version") val version: Long? = null,

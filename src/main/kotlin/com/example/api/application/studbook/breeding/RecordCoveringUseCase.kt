@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BlankBreedingRegion
 import com.example.api.domain.studbook.model.breeding.BlankCoveringCertificateNumber
@@ -117,7 +118,8 @@ class RecordCoveringUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RecordCoveringCommand>
+        actor: Actor,
+        command: Command<RecordCoveringCommand>,
     ): Result<BreedingResult, RecordCoveringUseCaseError> = binding {
         val input = command.payload
 
@@ -139,7 +141,7 @@ class RecordCoveringUseCase(
 
         val broodmareRegistration =
             breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.breedingRegistrationId))
+                .findById(actor.worldId, BreedingRegistrationId(input.breedingRegistrationId))
                 .toResultOr {
                     RecordCoveringUseCaseError.BreedingRegistrationNotFound(
                         input.breedingRegistrationId
@@ -149,7 +151,7 @@ class RecordCoveringUseCase(
 
         val stallionRegistration =
             breedingRegistrationRepository
-                .findById(BreedingRegistrationId(input.stallionRegistrationId))
+                .findById(actor.worldId, BreedingRegistrationId(input.stallionRegistrationId))
                 .toResultOr {
                     RecordCoveringUseCaseError.StallionRegistrationNotFound(
                         input.stallionRegistrationId
@@ -159,6 +161,7 @@ class RecordCoveringUseCase(
 
         val breedingResult =
             recordCovering(
+                    actor.worldId,
                     broodmareRegistration,
                     stallionRegistration,
                     input.coveringDate,
@@ -170,7 +173,7 @@ class RecordCoveringUseCase(
                 .mapError { RecordCoveringUseCaseError.PreconditionViolated(it) }
                 .bind()
 
-        breedingResultRepository.save(breedingResult).getOrElse {
+        breedingResultRepository.save(actor.worldId, breedingResult).getOrElse {
             error("新規の繁殖成績の保存で楽観ロック競合はありえない: id=${breedingResult.id.value}")
         }
     }

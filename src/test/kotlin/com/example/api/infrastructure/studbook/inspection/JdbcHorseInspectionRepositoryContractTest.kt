@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.inspection
 
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.domain.studbook.model.inspection.HorseInspection
@@ -10,6 +11,7 @@ import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.support.PostgresContainerSupport
 import com.github.michaelbull.result.unwrap
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
@@ -32,12 +34,23 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 class JdbcHorseInspectionRepositoryContractTest(
     private val rows: HorseInspectionSpringDataRepository
 ) : PostgresContainerSupport() {
+    // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
+    private lateinit var worldIdValue: UUID
+    private val worldId
+        get() = WorldId(worldIdValue)
+
+    /** 基底クラスの TRUNCATE（@BeforeEach）の後に世界を作る。 */
+    @BeforeEach
+    fun setUpWorld() {
+        worldIdValue = createWorld()
+    }
 
     private val repository = JdbcHorseInspectionRepository(rows)
     private val microchip = MicrochipNumber.create("392140000000001").unwrap()
 
     private fun byDnaRow(id: UUID = generateId()) =
         HorseInspectionRow(
+            worldId = worldId.value,
             id = id,
             microchipNumber = "392140000000001",
             parentageType = "BY_DNA",
@@ -62,8 +75,8 @@ class JdbcHorseInspectionRepositoryContractTest(
                 ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT),
             )
 
-        val saved = repository.save(inspection)
-        val found = repository.findById(inspection.id)
+        val saved = repository.save(worldId, inspection)
+        val found = repository.findById(worldId, inspection.id)
 
         assert(saved.id == inspection.id)
         assert(found != null)
@@ -80,8 +93,8 @@ class JdbcHorseInspectionRepositoryContractTest(
         val inspection =
             HorseInspection.create(microchip, ParentageDetermination.NotApplicable, features)
 
-        repository.save(inspection)
-        val found = repository.findById(inspection.id)
+        repository.save(worldId, inspection)
+        val found = repository.findById(worldId, inspection.id)
 
         assert(found != null)
         assert(found!!.parentage == ParentageDetermination.NotApplicable)
@@ -92,8 +105,8 @@ class JdbcHorseInspectionRepositoryContractTest(
     fun `血液型検査区分の審査は判別子ごと往復できる`() {
         val inspection = HorseInspection.create(microchip, ParentageDetermination.ByBloodType)
 
-        repository.save(inspection)
-        val found = repository.findById(inspection.id)
+        repository.save(worldId, inspection)
+        val found = repository.findById(worldId, inspection.id)
 
         assert(found != null)
         assert(found!!.id == inspection.id)
@@ -106,8 +119,8 @@ class JdbcHorseInspectionRepositoryContractTest(
         val inspection =
             HorseInspection.create(microchip, ParentageDetermination.ByOverseasInstitution)
 
-        repository.save(inspection)
-        val found = repository.findById(inspection.id)
+        repository.save(worldId, inspection)
+        val found = repository.findById(worldId, inspection.id)
 
         assert(found != null)
         assert(found!!.id == inspection.id)
@@ -117,7 +130,7 @@ class JdbcHorseInspectionRepositoryContractTest(
 
     @Test
     fun `存在しないIDのfindByIdはnullを返す`() {
-        assert(repository.findById(HorseInspectionId(generateId())) == null)
+        assert(repository.findById(worldId, HorseInspectionId(generateId())) == null)
     }
 
     @Test

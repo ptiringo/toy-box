@@ -1,6 +1,10 @@
 package com.example.api.application.studbook.breeding
 
+import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
@@ -19,8 +23,11 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class RecordUncoveredUseCaseTest {
+/** 世界スコープ（#704）のテスト用フィクスチャ。ネストしたテストクラスからも参照できるようファイル直下に置く。 */
+private val worldId = WorldId(generateId())
+private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
+class RecordUncoveredUseCaseTest {
     private fun command(payload: RecordUncoveredCommand): Command<RecordUncoveredCommand> =
         Command(payload, Instant.now())
 
@@ -31,20 +38,24 @@ class RecordUncoveredUseCaseTest {
             val broodmareRegistration = BreedingFixture.breedingRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
-                    every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
-                    every { save(any()) } answers { Ok(firstArg()) }
+                    every {
+                        findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any())
+                    } returns null
+                    every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = RecordUncoveredUseCase(registrationRepository, breedingResultRepository)
 
             val result =
                 useCase(
+                        actor,
                         command(
                             RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024))
-                        )
+                        ),
                     )
                     .unwrap()
 
@@ -52,7 +63,7 @@ class RecordUncoveredUseCaseTest {
             assert(result.breedingYear == Year.of(2024))
             assert(result.covering == null)
             assert(result.outcome == FoalingOutcome.NotCovered)
-            verify(exactly = 1) { breedingResultRepository.save(any()) }
+            verify(exactly = 1) { breedingResultRepository.save(worldId, any()) }
         }
     }
 
@@ -63,19 +74,24 @@ class RecordUncoveredUseCaseTest {
             val breedingRegistrationId = UUID.randomUUID()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(BreedingRegistrationId(breedingRegistrationId)) } returns null
+                    every {
+                        findById(worldId, BreedingRegistrationId(breedingRegistrationId))
+                    } returns null
                 }
             val breedingResultRepository = mockk<BreedingResultRepository>()
             val useCase = RecordUncoveredUseCase(registrationRepository, breedingResultRepository)
 
             val result =
-                useCase(command(RecordUncoveredCommand(breedingRegistrationId, Year.of(2024))))
+                useCase(
+                    actor,
+                    command(RecordUncoveredCommand(breedingRegistrationId, Year.of(2024))),
+                )
 
             assert(
                 result.getError() ==
                     RecordUncoveredUseCaseError.BreedingRegistrationNotFound(breedingRegistrationId)
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -83,17 +99,21 @@ class RecordUncoveredUseCaseTest {
             val stallionRegistration = BreedingFixture.stallionRegistration()
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(stallionRegistration.id) } returns stallionRegistration
+                    every { findById(worldId, stallionRegistration.id) } returns
+                        stallionRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
-                    every { findByBreedingRegistrationIdAndBreedingYear(any(), any()) } returns null
+                    every {
+                        findByBreedingRegistrationIdAndBreedingYear(worldId, any(), any())
+                    } returns null
                 }
             val useCase = RecordUncoveredUseCase(registrationRepository, breedingResultRepository)
 
             val result =
                 useCase(
-                    command(RecordUncoveredCommand(stallionRegistration.id.value, Year.of(2024)))
+                    actor,
+                    command(RecordUncoveredCommand(stallionRegistration.id.value, Year.of(2024))),
                 )
 
             assert(
@@ -102,7 +122,7 @@ class RecordUncoveredUseCaseTest {
                         RecordUncoveredError.NotBroodmare
                     )
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
 
         @Test
@@ -115,12 +135,14 @@ class RecordUncoveredUseCaseTest {
                 )
             val registrationRepository =
                 mockk<BreedingRegistrationRepository> {
-                    every { findById(broodmareRegistration.id) } returns broodmareRegistration
+                    every { findById(worldId, broodmareRegistration.id) } returns
+                        broodmareRegistration
                 }
             val breedingResultRepository =
                 mockk<BreedingResultRepository> {
                     every {
                         findByBreedingRegistrationIdAndBreedingYear(
+                            worldId,
                             broodmareRegistration.id,
                             Year.of(2024),
                         )
@@ -130,7 +152,8 @@ class RecordUncoveredUseCaseTest {
 
             val result =
                 useCase(
-                    command(RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024)))
+                    actor,
+                    command(RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024))),
                 )
 
             assert(
@@ -139,7 +162,7 @@ class RecordUncoveredUseCaseTest {
                         RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id)
                     )
             )
-            verify(exactly = 0) { breedingResultRepository.save(any()) }
+            verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
     }
 }

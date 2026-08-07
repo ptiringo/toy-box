@@ -11,9 +11,17 @@ import org.springframework.data.repository.CrudRepository
  * ドメインポートの実装は本リポジトリを委譲先に持つアダプタ [JdbcBreedingResultRepository] が担う。
  */
 interface BreedingResultSpringDataRepository : CrudRepository<BreedingResultRow, UUID> {
-    /** 同一繁殖牝馬（繁殖登録）・同一繁殖年の年次成績を検索する。 */
-    fun findByBreedingRegistrationIdAndBreedingYear(
+    /** 指定の世界の中で、同一繁殖牝馬（繁殖登録）・同一繁殖年の年次成績を検索する。 */
+    fun findByWorldIdAndBreedingRegistrationIdAndBreedingYear(
+        worldId: UUID,
         breedingRegistrationId: UUID,
         breedingYear: Int,
     ): BreedingResultRow?
+
+    /**
+     * 指定の世界の中から主キーで引く。
+     *
+     * `CrudRepository.findById` は世界を絞れないため使わない（他人の世界の行を掴めてしまう）。
+     */
+    fun findByWorldIdAndId(worldId: UUID, id: UUID): BreedingResultRow?
 }

@@ -1,5 +1,6 @@
 package com.example.api.application.studbook.horse
 
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -113,7 +114,8 @@ class RegisterFoalUseCase(
 ) {
     @Transactional
     operator fun invoke(
-        command: Command<RegisterFoalCommand>
+        actor: Actor,
+        command: Command<RegisterFoalCommand>,
     ): Result<RegisteredBloodHorse, RegisterFoalUseCaseError> = binding {
         val input = command.payload
 
@@ -130,7 +132,7 @@ class RegisterFoalUseCase(
 
         val breedingResult =
             breedingResultRepository
-                .findById(BreedingResultId(input.breedingResultId))
+                .findById(actor.worldId, BreedingResultId(input.breedingResultId))
                 .toResultOr {
                     RegisterFoalUseCaseError.BreedingResultNotFound(input.breedingResultId)
                 }
@@ -138,7 +140,7 @@ class RegisterFoalUseCase(
 
         val breedingRegistration =
             breedingRegistrationRepository
-                .findById(breedingResult.breedingRegistrationId)
+                .findById(actor.worldId, breedingResult.breedingRegistrationId)
                 .toResultOr {
                     RegisterFoalUseCaseError.BreedingRegistrationNotFound(
                         breedingResult.breedingRegistrationId.value
@@ -146,12 +148,12 @@ class RegisterFoalUseCase(
                 }
                 .bind()
 
-        val sire = resolveSire(breedingResult).bind()
+        val sire = resolveSire(actor, breedingResult).bind()
 
         val damId = breedingRegistration.registeredHorseId
         val dam =
             bloodHorseRepository
-                .findById(damId)
+                .findById(actor.worldId, damId)
                 .toResultOr { RegisterFoalUseCaseError.DamNotFound(damId.value) }
                 .bind()
 
@@ -161,9 +163,9 @@ class RegisterFoalUseCase(
                 .bind()
 
         // 審査と軽種馬の 2 集約書き込みは invoke の @Transactional 境界内で原子的に行う（#483）。
-        horseInspectionRepository.save(inspection)
+        horseInspectionRepository.save(actor.worldId, inspection)
         val saved =
-            bloodHorseRepository.save(bloodHorse).getOrElse {
+            bloodHorseRepository.save(actor.worldId, bloodHorse).getOrElse {
                 error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
             }
         RegisteredBloodHorse(saved, inspection)
@@ -209,7 +211,8 @@ class RegisterFoalUseCase(
      * で引き当てる。
      */
     private fun resolveSire(
-        breedingResult: BreedingResult
+        actor: Actor,
+        breedingResult: BreedingResult,
     ): Result<BloodHorse, RegisterFoalUseCaseError> = binding {
         val covering =
             breedingResult.covering
@@ -221,7 +224,7 @@ class RegisterFoalUseCase(
                 .bind()
         val sireId = covering.stallionId
         bloodHorseRepository
-            .findById(sireId)
+            .findById(actor.worldId, sireId)
             .toResultOr { RegisterFoalUseCaseError.SireNotFound(sireId.value) }
             .bind()
     }

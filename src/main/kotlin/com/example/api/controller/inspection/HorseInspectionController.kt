@@ -3,10 +3,12 @@ package com.example.api.controller.inspection
 import com.example.api.application.studbook.inspection.GetHorseInspectionQuery
 import com.example.api.application.studbook.inspection.GetHorseInspectionUseCase
 import com.example.api.application.studbook.inspection.RecordHorseInspectionUseCase
+import com.example.api.controller.CurrentActor
 import com.example.api.controller.inspection.problem.toProblemDetail
 import com.example.api.controller.inspection.request.RecordHorseInspectionRequest
 import com.example.api.controller.inspection.request.toCommand
 import com.example.api.controller.orThrowProblem
+import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
@@ -74,11 +76,12 @@ class HorseInspectionController(
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/api/horseInspections")
     fun record(
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "記録する審査（個体識別・親子判定）")
         @RequestBody
-        request: RecordHorseInspectionRequest
+        request: RecordHorseInspectionRequest,
     ): HorseInspectionResponse =
-        recordHorseInspection(Command.now(request.toCommand(), clock))
+        recordHorseInspection(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
@@ -116,9 +119,10 @@ class HorseInspectionController(
     )
     @GetMapping("/api/horseInspections/{id}")
     fun get(
-        @Parameter(description = "取得する審査の生 UUID") @PathVariable id: UUID
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
+        @Parameter(description = "取得する審査の生 UUID") @PathVariable id: UUID,
     ): HorseInspectionResponse =
-        getHorseInspection(GetHorseInspectionQuery(id))
+        getHorseInspection(actor, GetHorseInspectionQuery(id))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
