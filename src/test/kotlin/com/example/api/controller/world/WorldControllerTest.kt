@@ -6,6 +6,7 @@ import com.example.api.application.iam.world.DeleteWorldUseCase
 import com.example.api.application.iam.world.ListWorldsUseCase
 import com.example.api.application.iam.world.RenameWorldUseCase
 import com.example.api.application.iam.world.WorldMutationError
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.iam.world.WorldView
 import com.example.api.config.ClockConfiguration
 import com.example.api.domain.iam.model.account.AccountFixture
@@ -52,6 +53,7 @@ class WorldControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var renameWorld: RenameWorldUseCase
     @MockkBean private lateinit var deleteWorld: DeleteWorldUseCase
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
     private val subject = "world-controller-test-subject"

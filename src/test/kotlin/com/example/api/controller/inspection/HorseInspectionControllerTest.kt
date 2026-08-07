@@ -1,5 +1,6 @@
 package com.example.api.controller.inspection
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.inspection.GetHorseInspectionQuery
 import com.example.api.application.studbook.inspection.GetHorseInspectionUseCase
 import com.example.api.application.studbook.inspection.HorseInspectionNotFound
@@ -49,6 +50,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 

@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.breeding.BreedingResultSummaryView
 import com.example.api.application.studbook.breeding.ListBreedingResultSummariesQuery
 import com.example.api.application.studbook.breeding.ListBreedingResultSummariesUseCase
@@ -24,6 +25,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 

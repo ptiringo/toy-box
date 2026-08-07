@@ -1,5 +1,6 @@
 package com.example.api.controller
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationError
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
@@ -40,6 +41,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 

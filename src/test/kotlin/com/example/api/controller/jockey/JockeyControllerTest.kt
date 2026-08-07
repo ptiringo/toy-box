@@ -1,5 +1,6 @@
 package com.example.api.controller.jockey
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.racing.jockey.GetJockeyQuery
 import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyNotFound
@@ -41,6 +42,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 

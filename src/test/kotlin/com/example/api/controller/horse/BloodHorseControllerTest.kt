@@ -1,5 +1,6 @@
 package com.example.api.controller.horse
 
+import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.horse.BloodHorseDetailView
 import com.example.api.application.studbook.horse.BloodHorseNotFound
 import com.example.api.application.studbook.horse.BloodHorseView
@@ -68,6 +69,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
+    @MockkBean private lateinit var worldQueries: WorldQueries
 
     private val tester = MockMvcTester.create(mockMvc)
 
