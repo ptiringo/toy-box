@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -21,8 +22,10 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @TestMethodOrder(OrderAnnotation::class)
-class PostgresContainerSupportTest(private val jockeyRows: JockeySpringDataRepository) :
-    PostgresContainerSupport() {
+class PostgresContainerSupportTest(
+    private val jockeyRows: JockeySpringDataRepository,
+    private val jdbc: JdbcTemplate,
+) : PostgresContainerSupport() {
 
     @Test
     @Order(1)
@@ -51,5 +54,34 @@ class PostgresContainerSupportTest(private val jockeyRows: JockeySpringDataRepos
     fun `前のテストが残した行は次のテストの開始時に消えている`() {
         // 直前の `テストが書き込んだ行は…` が入れた 1 行が、基底クラスの @BeforeEach で消えている
         assert(jockeyRows.count() == 0L)
+    }
+
+    @Test
+    @Order(4)
+    fun `createWorld はアカウントと世界を 1 組作る`() {
+        val worldId = createWorld("検証用の世界")
+
+        val worlds =
+            jdbc.queryForObject(
+                "SELECT count(*) FROM iam.world WHERE id = ? AND name = ?",
+                Int::class.java,
+                worldId,
+                "検証用の世界",
+            )
+        val accounts = jdbc.queryForObject("SELECT count(*) FROM iam.account", Int::class.java)
+        assert(worlds == 1)
+        assert(accounts == 1)
+    }
+
+    @Test
+    @Order(5)
+    fun `createWorld を 2 回呼ぶと別々のアカウントの別々の世界になる`() {
+        val first = createWorld("世界A")
+        val second = createWorld("世界B")
+
+        val accounts = jdbc.queryForObject("SELECT count(*) FROM iam.account", Int::class.java)
+        assert(first != second)
+        // 世界ごとにアカウントを分けるのは、テストが「他人の世界」を組み立てられるようにするため
+        assert(accounts == 2)
     }
 }
