@@ -45,8 +45,12 @@ PR をマージした直後に 1 回走らせる。気づいた都度ではな�
 
 ## 工程 4: 実行と確認
 
-- 既存 Issue へのコメント: `gh issue comment <n> --body-file <file>`（本文が長いときは `--body` を使わない）
+**相互参照があるときは起票を先に行う**。Issue 番号は起票して初めて確定するため、既存 Issue へのコメントで
+新規 Issue を参照するなら、番号を得てからコメント本文を書く。逆順にすると存在しない番号を当て推量で書く
+ことになる（実際に踏んだ）。
+
 - 新規 Issue: **issue-ops の B に従う**（作成 → Project #4 に追加 → Priority 設定を 1 セットで行う）
+- 既存 Issue へのコメント: `gh issue comment <n> --body-file <file>`（本文が長いときは `--body` を使わない）
 - 締める前に、起票した Issue が Project #4 に乗り Priority が付いていることを確認する
 
 ## よくある失敗
