@@ -46,16 +46,28 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
 
     private companion object {
         /**
-         * 世界スコープの対象となるテーブル（`iam` スキーマと Flyway 管理テーブルを除く全テーブル）。
+         * 世界スコープの対象を絞る CTE 本体（`iam` スキーマと Flyway 管理テーブルを除く）。
          *
-         * スキーマはコンテキスト別に分かれ（ADR-0048）今後も増えるため、スキーマ名もテーブル名も ハードコードしない。
+         * スキーマはコンテキスト別に分かれ（ADR-0048）今後も増えるため、スキーマ名もテーブル名も ハードコードしない。`TARGET_TABLES` と
+         * `TABLES_WITHOUT_WORLD_ID` の両方がこの CTE を 共有することで、除外条件の出所を 1 つに保つ（片方だけ更新されて見逃しが起きるのを防ぐ）。
          */
+        val TARGET_TABLES_CTE =
+            """
+            WITH target AS (
+                SELECT schemaname, tablename
+                FROM pg_tables
+                WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'iam')
+                    AND tablename <> 'flyway_schema_history'
+            )
+            """
+                .trimIndent()
+
+        /** 世界スコープの対象となるテーブル（`iam` スキーマと Flyway 管理テーブルを除く全テーブル）。 */
         val TARGET_TABLES =
             """
+            $TARGET_TABLES_CTE
             SELECT format('%I.%I', schemaname, tablename)
-            FROM pg_tables
-            WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'iam')
-                AND tablename <> 'flyway_schema_history'
+            FROM target
             ORDER BY 1
             """
                 .trimIndent()
@@ -63,19 +75,18 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
         /** 対象テーブルのうち `world_id UUID NOT NULL` を持たないもの。 */
         val TABLES_WITHOUT_WORLD_ID =
             """
+            $TARGET_TABLES_CTE
             SELECT format('%I.%I', t.schemaname, t.tablename)
-            FROM pg_tables t
-            WHERE t.schemaname NOT IN ('pg_catalog', 'information_schema', 'iam')
-                AND t.tablename <> 'flyway_schema_history'
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM information_schema.columns c
-                    WHERE c.table_schema = t.schemaname
-                        AND c.table_name = t.tablename
-                        AND c.column_name = 'world_id'
-                        AND c.data_type = 'uuid'
-                        AND c.is_nullable = 'NO'
-                )
+            FROM target t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns c
+                WHERE c.table_schema = t.schemaname
+                    AND c.table_name = t.tablename
+                    AND c.column_name = 'world_id'
+                    AND c.data_type = 'uuid'
+                    AND c.is_nullable = 'NO'
+            )
             ORDER BY 1
             """
                 .trimIndent()
