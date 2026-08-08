@@ -46,8 +46,12 @@ paths:
 ```kotlin
 @ResponseStatus(HttpStatus.CREATED)
 @PostMapping("/api/worlds/{worldId}/jockeys")
-fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyResponse {
-    val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
+fun register(
+    @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
+    @Parameter(hidden = true) @CurrentActor actor: Actor,
+    @RequestBody request: RegisterJockeyRequest,
+): RegisterJockeyResponse {
+    val jockey = registerJockey(actor, command).mapError { it.toProblemDetail() }.orThrowProblem()
     return jockey.toResponse()
 }
 ```
