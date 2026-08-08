@@ -48,6 +48,9 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -60,7 +63,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
     private val tester = MockMvcTester.create(mockMvc)
 
-    private val uri = "/api/coveringReports"
+    private val uri = "/api/worlds/{worldId}/coveringReports"
 
     /** デシリアライズに通る正しい提出リクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
     private val validBody =
@@ -85,7 +88,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
@@ -104,7 +107,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
@@ -128,7 +131,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
@@ -153,7 +156,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.util.UUID
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -23,6 +24,9 @@ import org.springframework.web.bind.annotation.RestController
  * JAIRS 様式第2号（繁殖登録原簿〈雄〉）に対応し、ある種牡馬の (種付年) ごとの繁殖成績（種付雌馬数・受胎率・ 生産率）を List で返す。読み取り経路は書き込み集約を一切経由せず
  * [ListBreedingResultSummariesUseCase] が
  * [com.example.api.application.studbook.breeding.BreedingResultSummaryQueries] 経由でストアから直接組む。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class BreedingResultSummaryController(
@@ -57,8 +61,9 @@ class BreedingResultSummaryController(
                 )
             ],
     )
-    @GetMapping("/api/breedingResultSummaries")
+    @GetMapping("/api/worlds/{worldId}/breedingResultSummaries")
     fun list(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "集計対象の種牡馬の生 UUID") @RequestParam stallionId: UUID,
     ): List<BreedingResultSummaryResponse> =

@@ -37,10 +37,13 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 繁殖成績リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/breedingResults` に対する Create と、 個体へのカスタムメソッド
- * `:reportFoaling`（分娩結果報告）・`:submitReport`（繁殖成績報告提出） （いずれも
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/breedingResults` に対する Create と、
+ * 個体へのカスタムメソッド `:reportFoaling`（分娩結果報告）・`:submitReport`（繁殖成績報告提出） （いずれも
  * [AIP-136](https://google.aip.dev/136)）を提供する。 Create は様式第14号の年次成績2種類をリクエストの `covering` 有無で判別する単一
  * Create として受ける。 エラーレスポンスは RFC 9457 (Problem Details) 形式で返す。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class BreedingResultController(
@@ -106,8 +109,9 @@ class BreedingResultController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/breedingResults")
+    @PostMapping("/api/worlds/{worldId}/breedingResults")
     fun record(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "起票する繁殖成績の年次レコード（種付記録／種付せず）")
         @RequestBody
@@ -183,8 +187,9 @@ class BreedingResultController(
             ],
     )
     @ResponseStatus(HttpStatus.OK)
-    @PostMapping("/api/breedingResults/{breedingResultId}:reportFoaling")
+    @PostMapping("/api/worlds/{worldId}/breedingResults/{breedingResultId}:reportFoaling")
     fun reportFoaling(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "分娩結果を報告する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
         @OperationRequestBody(description = "報告する分娩結果") @RequestBody request: ReportFoalingRequest,
@@ -256,8 +261,9 @@ class BreedingResultController(
             ],
     )
     @ResponseStatus(HttpStatus.OK)
-    @PostMapping("/api/breedingResults/{breedingResultId}:submitReport")
+    @PostMapping("/api/worlds/{worldId}/breedingResults/{breedingResultId}:submitReport")
     fun submitReport(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "繁殖成績報告を提出する繁殖成績の生 UUID") @PathVariable breedingResultId: UUID,
     ): BreedingResultResponse =

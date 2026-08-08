@@ -68,6 +68,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -82,7 +85,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
     @Nested
     inner class RecordCoveringCase {
-        private val uri = "/api/breedingResults"
+        private val uri = "/api/worlds/{worldId}/breedingResults"
 
         /** デシリアライズに通る正しい種付記録リクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
         private val validBody =
@@ -113,7 +116,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -130,7 +133,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -148,7 +151,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -167,7 +170,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -186,7 +189,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -206,7 +209,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -228,7 +231,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -257,7 +260,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -283,7 +286,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -306,7 +309,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -320,7 +323,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
     @Nested
     inner class RecordUncoveredCase {
-        private val uri = "/api/breedingResults"
+        private val uri = "/api/worlds/{worldId}/breedingResults"
 
         /** covering を持たない（種付せず）正しいリクエストボディ。 */
         private val validBody =
@@ -340,7 +343,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -354,7 +357,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         fun `covering 無しなのに breeding_year が欠けると 400 と problem+json が返ること`() {
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """{ "breeding_registration_id": "11111111-1111-1111-1111-111111111111" }"""
@@ -375,7 +378,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -397,7 +400,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -420,7 +423,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -435,7 +438,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @Nested
     inner class ReportFoalingCase {
         private val breedingResultId = "33333333-3333-3333-3333-333333333333"
-        private val uri = "/api/breedingResults/$breedingResultId:reportFoaling"
+        private val uri = "/api/worlds/{worldId}/breedingResults/{breedingResultId}:reportFoaling"
         private val liveFoalBody = """{ "outcome": "LIVE_FOAL", "foaling_date": "2025-03-20" }"""
 
         @Test
@@ -449,7 +452,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(liveFoalBody)
                 .assertThat()
@@ -463,7 +466,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         fun `生産なのに分娩日が欠けていると 400 と problem+json が返ること`() {
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{ "outcome": "LIVE_FOAL" }""")
                 .assertThat()
@@ -482,7 +485,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(liveFoalBody)
                 .assertThat()
@@ -504,7 +507,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{ "outcome": "NOT_CONCEIVED" }""")
                 .assertThat()
@@ -523,7 +526,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(liveFoalBody)
                 .assertThat()
@@ -538,7 +541,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @Nested
     inner class SubmitReportCase {
         private val breedingResultId = "44444444-4444-4444-4444-444444444444"
-        private val uri = "/api/breedingResults/$breedingResultId:submitReport"
+        private val uri = "/api/worlds/{worldId}/breedingResults/{breedingResultId}:submitReport"
 
         /** 分娩結果確定済み・提出済み（2025-06-01 = 期限超過）の繁殖成績。 */
         private fun submittedResult() =
@@ -556,7 +559,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.OK)
                 .bodyJson()
@@ -572,7 +575,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.OK)
                 .bodyJson()
@@ -589,7 +592,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -611,7 +614,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -633,7 +636,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -643,7 +646,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -661,7 +664,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, breedingResultId)
                 .assertThat()
                 .hasStatus(HttpStatus.CONFLICT)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)

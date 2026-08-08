@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
 /**
- * `POST /api/breedingResults/{breedingResultId}:reportFoaling` のリクエストボディ。
+ * `POST /api/worlds/{worldId}/breedingResults/{breedingResultId}:reportFoaling` のリクエストボディ。
  *
  * 繁殖成績報告書の「分娩結果」欄に相当する。区分は HTTP 契約専用の [FoalingOutcomeDto] で受け取り（未知の値は Jackson のデシリアライズで弾かれ
  * 400）、ドメインの [FoalingOutcome] へは [toOutcome] で変換する。生産

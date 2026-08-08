@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.util.UUID
 
 /**
- * `POST /api/breedingRegistrations` のリクエストボディ。血統登録済みの個体を繁殖の用に供するための繁殖登録 Create。
+ * `POST /api/worlds/{worldId}/breedingRegistrations` のリクエストボディ。血統登録済みの個体を繁殖の用に供するための繁殖登録 Create。
  *
  * 繁殖登録する個体は登録済み軽種馬の ID で参照する。繁殖登録番号は VO で表すため素の文字列で受け取り、ユースケースで 検証する。付与されるロール（種牡馬／繁殖牝馬）は対象個体の性から
  * 定まるため入力では受け取らない。

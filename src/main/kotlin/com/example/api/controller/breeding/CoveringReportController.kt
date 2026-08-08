@@ -16,9 +16,11 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
+import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -27,10 +29,13 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 種付成績報告リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/coveringReports` に対する Create
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/coveringReports` に対する Create
  * （[AIP-133](https://google.aip.dev/133)）を提供する。牝側の繁殖成績報告（`:submitReport`）が既存リソースへの
  * 状態遷移＝カスタムメソッドであるのに対し、雄側は提出で初めてリソースが生まれるため標準の Create で表す。 エラーレスポンスは RFC 9457 (Problem Details)
  * 形式で返す。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class CoveringReportController(
@@ -83,8 +88,9 @@ class CoveringReportController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/coveringReports")
+    @PostMapping("/api/worlds/{worldId}/coveringReports")
     fun submit(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "提出する種付成績報告（種牡馬の繁殖登録ID・種付年）")
         @RequestBody

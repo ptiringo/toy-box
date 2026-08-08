@@ -46,6 +46,9 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -58,7 +61,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
     private val tester = MockMvcTester.create(mockMvc)
 
-    private val uri = "/api/breedingRegistrations"
+    private val uri = "/api/worlds/{worldId}/breedingRegistrations"
 
     /** デシリアライズに通る正しい繁殖登録リクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
     private val validBody =
@@ -82,7 +85,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
@@ -103,7 +106,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
@@ -126,7 +129,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri(uri)
+            .uri(uri, worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validBody)
             .assertThat()
