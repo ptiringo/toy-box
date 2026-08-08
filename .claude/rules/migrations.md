@@ -61,3 +61,14 @@ squawk（`require-timeout-settings`）に従い、既存テーブルを変更す
 
 Flyway のチェックサムはコメントを含むファイル全体から計算される。適用済みファイルの変更は
 `validate-on-migrate` を落とすため、修正が要るときは新しいマイグレーションを足す。
+
+## 新しいテーブルには `world_id UUID NOT NULL` が要る（#706 / ADR-0067）
+
+データは世界（セーブデータ＝テナント）ごとに閉じる。`iam` スキーマ（`account` / `world` はテナントの根）以外の
+テーブルは `world_id UUID NOT NULL` を持ち、`iam.world(id)` への FK を張ること。忘れると全プレイヤー共有の
+テーブルが黙って生まれ、例外も出ないままデータが混ざる。
+
+`WorldScopeSchemaRulesTest`（`src/test/.../infrastructure/`）が `pg_tables` から対象テーブルを動的に列挙して
+`world_id UUID NOT NULL` の有無を検査するため、**忘れると `./gradlew check` が落ちる**。テーブルの列挙は自動なので
+規約テスト側を手で更新する必要はない。世界をまたぐ参照を封じる複合 FK の張り方は V19（`V19__enforce_world_scope_constraints.sql`）
+を参照する。
