@@ -45,7 +45,7 @@ paths:
 
 ```kotlin
 @ResponseStatus(HttpStatus.CREATED)
-@PostMapping("/api/jockeys")
+@PostMapping("/api/worlds/{worldId}/jockeys")
 fun register(@RequestBody request: RegisterJockeyRequest): RegisterJockeyResponse {
     val jockey = registerJockey(command).mapError { it.toProblemDetail() }.orThrowProblem()
     return jockey.toResponse()

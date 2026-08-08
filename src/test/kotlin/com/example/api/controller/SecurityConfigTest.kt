@@ -27,9 +27,10 @@ import org.springframework.test.web.servlet.client.RestTestClient
 class SecurityConfigTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
 
     // 認証フィルタは認可判定にルートの実在を要求しない（`anyRequest.authenticated()`）ため、
-    // 未認証系の 2 件は実在しないパスのままでよい。
-    private val anyJockeyUri = "/api/jockeys/00000000-0000-0000-0000-000000000000"
+    // 未認証系の 2 件は worldId も実在しないままでよい。ただし #705 でドメイン API は
+    // /api/worlds/{worldId}/... 配下へ移ったため、形だけは実在する世界スコープ URL に揃える。
     private val missingJockeyId = "00000000-0000-0000-0000-000000000000"
+    private val anyJockeyUri = "/api/worlds/$missingJockeyId/jockeys/$missingJockeyId"
 
     @Test
     fun `トークン無しの保護エンドポイントは 401 と RFC9457 problem+json を返す`() {

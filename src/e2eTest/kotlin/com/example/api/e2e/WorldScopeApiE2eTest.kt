@@ -57,6 +57,26 @@ class WorldScopeApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
     }
 
     @Test
+    fun `世界 A で登録した馬は世界 B の URL からは by-id でも引けず 404 horse-not-found を返す`() {
+        val worldA = restTestClient.provisionAndFirstWorldId()
+        val worldB = createSecondWorldViaApi("ふたつめの世界")
+        val horseId = registerImportedHorse(worldA, "E2E-SCOPE-A-002")
+
+        // 世界 B は自分の世界なので所有確認自体は通り、その世界に馬が無いという 404 になる
+        // （world-not-found ではなく horse-not-found）。
+        restTestClient
+            .get()
+            .uri("/api/worlds/{worldId}/bloodHorses/{id}", worldB, horseId)
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+            .exchange()
+            .expectStatus()
+            .isNotFound
+            .expectBody()
+            .jsonPath("$.error_code")
+            .isEqualTo("horse-not-found")
+    }
+
+    @Test
     fun `他人の世界の URL を叩くと 404 world-not-found を返す`() {
         restTestClient.provisionAndFirstWorldId()
         val othersWorld = restTestClient.provisionAndFirstWorldId("sub-other-player")
@@ -134,28 +154,33 @@ class WorldScopeApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
         return JsonPath.read<String>(String(body!!), "$.id")
     }
 
-    /** 指定した世界に父母不明の輸入馬を 1 頭登録する（一覧に出る行を作るための最小の書き込み）。 */
-    private fun registerImportedHorse(worldId: String, registrationNumber: String) {
-        restTestClient
-            .post()
-            .uri("/api/worlds/{worldId}/bloodHorses:registerImported", worldId)
-            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(
-                mapOf(
-                    "sex" to "MALE",
-                    "coat_color" to "BAY",
-                    "breed_type" to "THOROUGHBRED",
-                    "date_of_birth" to "2015-03-20",
-                    "breeder" to "Coolmore",
-                    "microchip_number" to "392140000020001",
-                    "origin_country" to "アイルランド",
-                    "landing_date" to "2020-09-01",
-                    "registration_number" to registrationNumber,
+    /** 指定した世界に父母不明の輸入馬を 1 頭登録し、その ID を返す（一覧に出る行を作るための最小の書き込み）。 */
+    private fun registerImportedHorse(worldId: String, registrationNumber: String): String {
+        val body =
+            restTestClient
+                .post()
+                .uri("/api/worlds/{worldId}/bloodHorses:registerImported", worldId)
+                .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(
+                    mapOf(
+                        "sex" to "MALE",
+                        "coat_color" to "BAY",
+                        "breed_type" to "THOROUGHBRED",
+                        "date_of_birth" to "2015-03-20",
+                        "breeder" to "Coolmore",
+                        "microchip_number" to "392140000020001",
+                        "origin_country" to "アイルランド",
+                        "landing_date" to "2020-09-01",
+                        "registration_number" to registrationNumber,
+                    )
                 )
-            )
-            .exchange()
-            .expectStatus()
-            .isCreated
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .returnResult()
+                .responseBody
+        return JsonPath.read<String>(String(body!!), "$.id")
     }
 }

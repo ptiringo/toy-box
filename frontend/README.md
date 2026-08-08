@@ -2,6 +2,11 @@
 
 ログインしたユーザーが実 Identity Platform にログインし、保護 API `GET /api/bloodHorses` を叩いて軽種馬一覧を見る軽量 SPA（Vite + React + TypeScript）。認証・認可を「目で見て触れる」ことが主眼の MVP（#612）。
 
+> **既知の破壊: 現状のフロントは動かない。** バックエンドは `#705` で `/api/bloodHorses` を含む全ドメイン API を
+> `/api/worlds/{worldId}/...` 配下へ移した（プレイヤーごとの世界＝テナント分離。ADR-0067）。
+> `BloodHorseListPage.tsx` はまだ旧パス `/api/bloodHorses` を叩いており、必ず失敗する。フロント側の追随は
+> `#714` で扱う。
+
 ## 前提
 
 - **Node**: `mise.toml` の `node`（22 系）。リポジトリルートで `mise install` すれば入る。

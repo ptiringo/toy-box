@@ -21,6 +21,14 @@ REST API は以下のスタイルガイドに準拠する。
 - 単一リソース表現を維持したまま、**相互排他な属性集合だけ**は discriminated な入れ子オブジェクト（`oneOf` ＋判別子 `type`）にしてよい（例: 軽種馬の出自 `origin` ＝ 内国産 `DOMESTIC` / 輸入 `IMPORTED`）。リソース全体を `oneOf` に割ることは依然採らず、共通項は平置きを保つ。Jackson は `@JsonTypeInfo(use = NAME, property = "type")` ＋ `@JsonSubTypes`、springdoc は `@Schema(oneOf = […], discriminatorProperty = "type")`。経緯は [ADR-0020](../../docs/adr/0020-sealed-origin-and-discriminated-origin-subobject.md)
 - **外部公開 ID は不透明（opaque）な識別子**として扱う。クライアントは ID の構造を解釈・推測せず、受け取った値をそのまま使う（[AIP-122](https://google.aip.dev/122) の原則）。当面は ID 表現を **生 UUID 据え置き**とし、不透明 ID エンコード（base62/ULID 等）や AIP resource name（`bloodHorses/{id}`）形式の導入は実クライアント・実運用が現れた時点まで遅延する。採否・再評価トリガは [ADR-0042](../../docs/adr/0042-defer-external-id-policy-keep-raw-uuid.md)
 
+## 世界スコープ（テナント分離）
+
+プレイヤーごとの世界（セーブデータ）によるテナント分離（[ADR-0067](../../docs/adr/0067-per-player-world-tenant-isolation.md)、`#705`）に伴い、ドメインリソースの置き場所とハンドラの引数を以下のとおり固定する。
+
+- **ドメインリソースは `/api/worlds/{worldId}/` 配下に置く**（AIP-122 の親子リソース名。例: `/api/worlds/{worldId}/bloodHorses`）。世界の外に単独では置かない。
+- **ハンドラは `@Parameter(hidden = true) @CurrentActor actor: Actor` を引数に取る**。`worldId` パス変数自体は OpenAPI の path parameter を出すためだけの宣言で、値の解決と所有確認（この世界はあなたのものか）は `ActorArgumentResolver` が担う。ハンドラが独自に `worldId` を解釈・検証してはならない。
+- **据え置き（世界の外）**: `/api/hello`（動作確認用）、`/api/me:provision`（世界に入る前のブートストラップ）、`/api/worlds` 系（世界そのものの一覧・作成・改名・削除）は世界スコープの対象外。
+
 ## 命名規約（casing）
 
 URL とボディで casing を使い分ける。AIP の「URL はハードルール、ボディの JSON casing は自由」という非対称をそのまま反映したもの。経緯・却下案は [ADR-0012](../../docs/adr/0012-rest-naming-convention.md)。
@@ -82,7 +90,7 @@ VO で表す項目（番号・名前など）は素の文字列で DTO に受け
 
 | 参照の位置 | ステータス | 根拠 | 例 |
 |---|---|---|---|
-| URL パス上の操作対象が不在 | **404 Not Found** | パスで識別される対象そのものが無い | `/api/bloodHorses/{id}:registerName` の対象馬不在（`HorseNotFound`）、`BreedingResultNotFound` |
+| URL パス上の操作対象が不在 | **404 Not Found** | パスで識別される対象そのものが無い | `/api/worlds/{worldId}/bloodHorses/{id}:registerName` の対象馬不在（`HorseNotFound`）、`BreedingResultNotFound` |
 | リクエストボディ内で参照する別リソースが不在 | **422 Unprocessable Entity** | リクエストは構文的に正しく処理されたが、ボディ内参照先が無く意味的に処理できない | `SireNotFound` / `DamNotFound`（`sire_id` / `dam_id`）、`BreedingRegistrationNotFound` |
 
 - VO 検証エラー（形式不正）は入力不正として **400 Bad Request**、状態の競合（二重登録等）は **409 Conflict** とする。
