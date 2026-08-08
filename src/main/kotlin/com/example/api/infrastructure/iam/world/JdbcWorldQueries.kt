@@ -3,6 +3,7 @@ package com.example.api.infrastructure.iam.world
 import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.iam.world.WorldView
 import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.WorldId
 import java.util.UUID
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -19,4 +20,15 @@ class JdbcWorldQueries(private val jdbcClient: JdbcClient) : WorldQueries {
                 WorldView(id = rs.getObject("id", UUID::class.java), name = rs.getString("name"))
             }
             .list()
+
+    override fun existsOwnedBy(accountId: AccountId, worldId: WorldId): Boolean =
+        jdbcClient
+            .sql(
+                "SELECT EXISTS(SELECT 1 FROM iam.world " +
+                    "WHERE id = :worldId AND account_id = :accountId)"
+            )
+            .param("worldId", worldId.value)
+            .param("accountId", accountId.value)
+            .query(Boolean::class.java)
+            .single()
 }

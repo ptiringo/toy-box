@@ -7,6 +7,8 @@ import com.example.api.domain.iam.model.world.World
 import com.example.api.domain.iam.model.world.WorldName
 import com.example.api.domain.iam.model.world.WorldRepository
 import com.example.api.domain.shared.AccountId
+import com.example.api.domain.shared.WorldId
+import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
 import com.github.michaelbull.result.getOrThrow
 import org.junit.jupiter.api.Test
@@ -128,5 +130,29 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
 
         assert(views.size == 2)
         assert(views.map { it.name }.toSet() == setOf("自分の世界A", "自分の世界B"))
+    }
+
+    @Test
+    fun `所有している世界は existsOwnedBy が true になる`() {
+        val ownerId = newOwner("sub-exists-owned")
+        val saved = saveWorld(ownerId, "所有している世界")
+
+        assert(queries.existsOwnedBy(ownerId, saved.id))
+    }
+
+    @Test
+    fun `他人の世界は existsOwnedBy が false になる`() {
+        val ownerId = newOwner("sub-exists-owner")
+        val otherId = newOwner("sub-exists-other")
+        val saved = saveWorld(ownerId, "他人の世界")
+
+        assert(!queries.existsOwnedBy(otherId, saved.id))
+    }
+
+    @Test
+    fun `存在しない世界IDは existsOwnedBy が false になる`() {
+        val ownerId = newOwner("sub-exists-missing")
+
+        assert(!queries.existsOwnedBy(ownerId, WorldId(generateId())))
     }
 }
