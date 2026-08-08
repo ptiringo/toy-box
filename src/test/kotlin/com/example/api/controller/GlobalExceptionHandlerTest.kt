@@ -17,6 +17,7 @@ import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -128,6 +129,35 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
             .bodyJson()
             .extractingPath("$.type")
             .isEqualTo("urn:problem-type:account-not-provisioned")
+    }
+
+    @Test
+    fun `所有していない世界の指定で 404 と world-not-found の problem+json が返ること`() {
+        val worldId = UUID.fromString("33333333-3333-3333-3333-333333333333")
+        every { actorArgumentResolver.resolveArgument(any(), any(), any(), any()) } throws
+            WorldNotFoundException(worldId)
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .hasStatus(HttpStatus.NOT_FOUND)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("world-not-found")
+
+        tester
+            .post()
+            .uri("/api/jockeys")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .bodyJson()
+            .extractingPath("$.world_id")
+            .isEqualTo(worldId.toString())
     }
 
     @Test

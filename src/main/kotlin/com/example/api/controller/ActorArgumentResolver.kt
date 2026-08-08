@@ -5,6 +5,7 @@ import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.WorldId
+import java.util.UUID
 import org.springframework.core.MethodParameter
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
@@ -13,6 +14,14 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
+
+/**
+ * パスの `{worldId}` が指す世界が存在しないか、リクエスト元のアカウントが所有していない。
+ *
+ * 両者を区別せず同じ例外にするのは意図（ADR-0067）。403 は「存在するが、あなたのものではない」と漏らすため、 箱庭では区別する理由が無い。
+ */
+class WorldNotFoundException(val worldId: UUID) :
+    RuntimeException("worldId=$worldId の世界は存在しないか、所有していません")
 
 /**
  * 検証済み JWT の `sub` から [Actor]（アカウント ＋ 操作対象の世界）を解決してハンドラへ注入する。
