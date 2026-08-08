@@ -106,7 +106,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 - **自動ラチェット機構は持たない**（YAGNI）。手動で引き上げる。
 
 探索除外パッケージ（`build.gradle.kts` の `variant("mature")` の `excludes` が唯一の出所。ここは要約）:
-`domain.racing.model.race` / `domain.racing.service` / `domain.tennis` / `e2e`（E2E テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）/ `replay`（帰納的検証ハーネス）。
+`domain.racing.model.race` / `domain.racing.service` / `e2e`（E2E テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）/ `replay`（帰納的検証ハーネス）。
 
 - **ゲート外のソースセットを新設したら、そのパッケージを `variant("mature")` の `excludes` に加える**。Kover は main 以外のソースセットも計測対象に取り込むため、加えないとテスト基盤・ツール基盤のコードが未カバレッジのままゲート母集団に乗り、成熟ゲートを割る（`e2e` / `dbdoc` / `replay` はいずれもこの理由で除外している）。
 
@@ -146,6 +146,6 @@ CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け
 
 - `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）。なお `infrastructure.*` は `excludes` に入れておらず**既にゲート母集団内**。未テスト分は集計に乗るが現状の LINE 90% / BRANCH 80% を満たしている（割り込んだらテストを添えること）。
 - `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し。`excludes` 在籍。
-- `domain.racing.model`（`race`）・`tennis`: 探索段階のモデル。`excludes` 在籍（`sakamichi` は #367 でテストが揃いゲート対象へ昇格済み）。
+- `domain.racing.model`（`race`）: 探索段階のモデル。`excludes` 在籍（`sakamichi` は #367、`tennis` は #677 でテストが揃いゲート対象へ昇格済み）。
 
-このうち `excludes` に在籍している探索領域（`racing.model.race` / `racing.service` / `tennis`）は、テストが揃った時点で `variant("mature")` の `excludes` から外してゲート対象へ昇格させる（`infrastructure.*` は既にゲート対象なので対象外）。
+このうち `excludes` に在籍している探索領域（`racing.model.race` / `racing.service`）は、テストが揃った時点で `variant("mature")` の `excludes` から外してゲート対象へ昇格させる（`infrastructure.*` は既にゲート対象なので対象外）。
