@@ -95,6 +95,14 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // テスト JVM の CDS（Class Data Sharing）を明示的に切る。
+    // Kover の JVM agent は MANIFEST の `Boot-Class-Path` で自分自身をブートストラップクラスパスへ
+    // 追記するため、JDK 既定の CDS アーカイブ（lib/server/classes.jsa）が存在する環境では
+    // 「Sharing is only supported for boot loader classes because bootstrap classpath has been
+    // appended」という VM 警告がテスト起動のたびに出る（CI の Linux ランナーで再現。macOS の
+    // Temurin は classes.jsa を同梱しないため CDS 自体が無効でローカルには現れない）。
+    // テストで CDS の起動短縮は活用していないので、切って警告ごと消す（#383）。
+    jvmArgs("-Xshare:off")
     // maxParallelForks（テスト JVM の並列フォーク）は意図的に既定（1）のまま据え置く。
     // 計測上、単一モジュール・小規模スイートの本プロジェクトでは forks を増やすと逆に遅くなる
     // （42s→97s @ forks=4）。コンテキストキャッシュ統計の実測では distinct な ApplicationContext は
