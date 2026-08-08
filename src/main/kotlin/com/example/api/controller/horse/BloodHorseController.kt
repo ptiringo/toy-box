@@ -40,12 +40,16 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 軽種馬リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/bloodHorses` に対する List（一覧取得）と Create（内国産馬の血統登録）、
- * 個体へのカスタムメソッド `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。 父母不明の輸入馬は前提条件が
- * 大きく異なるため、コレクションへのカスタムメソッド `:registerImported`（[AIP-136](https://google.aip.dev/136)）として
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/bloodHorses` に対する List（一覧取得）と
+ * Create（内国産馬の血統登録）、 個体へのカスタムメソッド `:registerName`（馬名登録、[AIP-136](https://google.aip.dev/136)）を提供する。
+ * 父母不明の輸入馬は前提条件が 大きく異なるため、コレクションへのカスタムメソッド
+ * `:registerImported`（[AIP-136](https://google.aip.dev/136)）として
  * 登録経路を分ける。また、先行する登録原簿に血統登録済みの馬をシステム境界で取り込む移行経路として
  * `:registerCarriedOver`（[AIP-136](https://google.aip.dev/136)）を提供する。エラーレスポンスは RFC 9457 (Problem
  * Details) 形式で返す。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class BloodHorseController(
@@ -83,9 +87,10 @@ class BloodHorseController(
                 )
             ],
     )
-    @GetMapping("/api/bloodHorses")
+    @GetMapping("/api/worlds/{worldId}/bloodHorses")
     fun list(
-        @Parameter(hidden = true) @CurrentActor actor: Actor
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
     ): List<BloodHorseSummaryResponse> = listBloodHorses(actor).map { it.toSummaryResponse() }
 
     @Operation(
@@ -120,8 +125,9 @@ class BloodHorseController(
                 ),
             ],
     )
-    @GetMapping("/api/bloodHorses/{id}")
+    @GetMapping("/api/worlds/{worldId}/bloodHorses/{id}")
     fun get(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "取得する軽種馬の生 UUID") @PathVariable id: UUID,
     ): BloodHorseResponse =
@@ -173,8 +179,9 @@ class BloodHorseController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/bloodHorses")
+    @PostMapping("/api/worlds/{worldId}/bloodHorses")
     fun register(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "血統登録する軽種馬の登録申請フォーム")
         @RequestBody
@@ -218,8 +225,9 @@ class BloodHorseController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/bloodHorses:registerImported")
+    @PostMapping("/api/worlds/{worldId}/bloodHorses:registerImported")
     fun registerImported(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "血統登録する輸入馬・基礎輸入馬の登録申請フォーム")
         @RequestBody
@@ -263,8 +271,9 @@ class BloodHorseController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/bloodHorses:registerCarriedOver")
+    @PostMapping("/api/worlds/{worldId}/bloodHorses:registerCarriedOver")
     fun registerCarriedOver(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "移行取り込みで血統登録する馬の入力")
         @RequestBody
@@ -328,8 +337,9 @@ class BloodHorseController(
             ],
     )
     @ResponseStatus(HttpStatus.OK)
-    @PostMapping("/api/bloodHorses/{bloodHorseId}:registerName")
+    @PostMapping("/api/worlds/{worldId}/bloodHorses/{bloodHorseId}:registerName")
     fun registerName(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "馬名を登録する軽種馬の生 UUID") @PathVariable bloodHorseId: UUID,
         @OperationRequestBody(description = "馬名") @RequestBody request: RegisterHorseNameRequest,

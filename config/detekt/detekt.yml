@@ -29,6 +29,11 @@ style:
           "kotlin.test は使用禁止。テストには org.junit.jupiter.api.Test と
           Power Assert (kotlin.assert) を使用すること（CLAUDE.md テスト規約参照）。"
         value: "kotlin.test.*"
+  UnusedParameter:
+    active: true
+    # worldId は /api/worlds/{worldId}/... の path parameter を OpenAPI に出すための宣言。
+    # 値の解決は ActorArgumentResolver がパスから行うため、ハンドラ本体では使わない（#705）。
+    allowedNames: "ignored|expected|worldId"
 
 # toy-box プロジェクト固有のカスタムルールセット（detekt-rules モジュールで定義）。
 toy-box:

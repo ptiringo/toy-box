@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
 /**
- * `POST /api/bloodHorses:registerCarriedOver` のリクエストボディ。
+ * `POST /api/worlds/{worldId}/bloodHorses:registerCarriedOver` のリクエストボディ。
  *
  * 先行する登録原簿に血統登録済みの馬をシステム境界で取り込む移行経路の入力（JAIRS への新規登録申請では ない。#633 /
  * ADR-0069）。内国産馬（[RegisterBloodHorseRequest]）と異なり父母 ID・DNA 判定を受け取らず、
