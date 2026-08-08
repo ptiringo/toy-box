@@ -59,6 +59,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 - **作成した Issue は必ず Project（#4）に追加する**。Project に入れた Issue だけが `Priority` を持てるため、「Project へ追加 → `Priority` 設定」までを 1 セットで行う（優先度が即決でなくても Project には入れ、未定なら後から設定する）。
 - **Issue の操作は `/issue-ops` スキルに集約**。次にやる Issue を選ぶ・一覧する・新規作成する・優先度を変える手順はそこにある。とくに候補選びは、`gh project item-list` がクローズ済みも含むため priority だけで拾うと実装済みの Issue を「未対応」として提案してしまう（再発実績あり）。
+- **PR をマージして作業を締めるときは `/issue-followup` を 1 回通す**。作業を通じて分かったこと（Issue の記述と実態のズレ・先送りした暫定対処・他の Issue に効く実測）を Issue へ書き戻す工程で、書き戻さなければその知見は消える。
 
 ## ツール管理
 
