@@ -6,6 +6,7 @@ import com.example.api.domain.iam.model.world.WorldName
 import com.example.api.domain.iam.model.world.WorldRepository
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
@@ -33,8 +34,9 @@ class RenameWorldUseCaseTest {
         every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
 
         val view =
-            useCase(ownerId, Command.now(RenameWorldCommand(world.id.value, "新名"), clock))
-                .getOrThrow { AssertionError(it.toString()) }
+            useCase(ownerId, Command.now(RenameWorldCommand(world.id, "新名"), clock)).getOrThrow {
+                AssertionError(it.toString())
+            }
 
         assert(view.name == "新名")
     }
@@ -47,15 +49,14 @@ class RenameWorldUseCaseTest {
         every { worlds.findOwnedBy(ownerId, world.id) } returns null
 
         val error =
-            useCase(ownerId, Command.now(RenameWorldCommand(world.id.value, "乗っ取り"), clock))
-                .getError()
+            useCase(ownerId, Command.now(RenameWorldCommand(world.id, "乗っ取り"), clock)).getError()
 
         assert(error is WorldMutationError.NotFound)
     }
 
     @Test
     fun `存在しない世界の改名は NotFound`() {
-        val missingId = generateId()
+        val missingId = WorldId(generateId())
         every { worlds.findOwnedBy(ownerId, any()) } returns null
 
         val error =
@@ -70,7 +71,7 @@ class RenameWorldUseCaseTest {
         every { worlds.findOwnedBy(ownerId, world.id) } returns world
 
         val error =
-            useCase(ownerId, Command.now(RenameWorldCommand(world.id.value, ""), clock)).getError()
+            useCase(ownerId, Command.now(RenameWorldCommand(world.id, ""), clock)).getError()
 
         assert(error is WorldMutationError.InvalidName)
     }
@@ -82,8 +83,7 @@ class RenameWorldUseCaseTest {
         every { worlds.existsByAccountIdAndName(ownerId, WorldName("新名")) } returns true
 
         val error =
-            useCase(ownerId, Command.now(RenameWorldCommand(world.id.value, "新名"), clock))
-                .getError()
+            useCase(ownerId, Command.now(RenameWorldCommand(world.id, "新名"), clock)).getError()
 
         assert(error is WorldMutationError.Conflict)
     }
@@ -95,8 +95,9 @@ class RenameWorldUseCaseTest {
         every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
 
         val view =
-            useCase(ownerId, Command.now(RenameWorldCommand(world.id.value, "同じ名前"), clock))
-                .getOrThrow { AssertionError(it.toString()) }
+            useCase(ownerId, Command.now(RenameWorldCommand(world.id, "同じ名前"), clock)).getOrThrow {
+                AssertionError(it.toString())
+            }
 
         assert(view.name == "同じ名前")
         verify(exactly = 0) { worlds.existsByAccountIdAndName(any(), any()) }

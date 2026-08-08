@@ -13,6 +13,7 @@ import com.example.api.domain.iam.model.account.AccountFixture
 import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.iam.model.world.WorldNameValidationError
+import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -128,7 +129,8 @@ class WorldControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `他人の世界を改名しようとすると 404 の problem を返す`() {
         val worldId = generateId()
-        every { renameWorld(any(), any()) } returns Err(WorldMutationError.NotFound(worldId))
+        every { renameWorld(any(), any()) } returns
+            Err(WorldMutationError.NotFound(WorldId(worldId)))
 
         tester
             .patch()
