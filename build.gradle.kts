@@ -210,7 +210,6 @@ kover {
                         // 探索段階（レイヤーごとのテスト未整備）。成熟したらこの行を外す＝ゲート対象へ昇格。
                         "com.example.api.domain.racing.model.race",
                         "com.example.api.domain.racing.service",
-                        "com.example.api.domain.tennis",
                         // e2eTest ソースセットのクラス（E2E テスト本体）を除外。
                         // アプリケーションロジックではなくテスト基盤コードのため。
                         "com.example.api.e2e",
