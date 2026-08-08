@@ -22,6 +22,7 @@ class ToyBoxRuleSetProvider : RuleSetProvider {
             mapOf<RuleName, (Config) -> Rule>(
                 RuleName("NoThrowInDomainAndApplication") to ::NoThrowInDomainAndApplication,
                 RuleName("NoSilentMapError") to ::NoSilentMapError,
+                RuleName("WorldScopedPortSignature") to ::WorldScopedPortSignature,
             ),
         )
 

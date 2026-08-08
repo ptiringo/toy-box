@@ -49,3 +49,9 @@ toy-box:
   NoSilentMapError:
     active: true
     excludes: ["**/src/test/**", "**/src/testFixtures/**"]
+  # 永続化ポート（Repository / Queries）は第 1 引数に WorldId を取る（ADR-0067 / #706）。
+  # WorldId は value class でバイトコード上 UUID へ unbox されるため ArchUnit では判定できず、
+  # ソースを見る detekt に置いている。iam（テナントの根）はルール側のコンテキスト判定で対象外。
+  WorldScopedPortSignature:
+    active: true
+    excludes: ["**/src/test/**", "**/src/testFixtures/**"]
