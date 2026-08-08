@@ -142,6 +142,24 @@ class WorldScopedPortSignatureTest {
     }
 
     @Test
+    fun `アノテーションなしで名前だけ Repository で終わる domain の interface も検出すること`() {
+        // @Repository の付け忘れが世界スコープ契約から静かに抜けないよう、命名でも対象を拾う（#706 レビュー指摘）。
+        val findings =
+            rule.lint(
+                """
+                package com.example.api.domain.tennis.model.match
+
+                interface MatchRepository {
+                    fun findById(id: MatchId): Match?
+                }
+                """
+                    .trimIndent()
+            )
+
+        assert(findings.size == 1)
+    }
+
+    @Test
     fun `jMolecules Repository を持たない domain の interface は対象外とすること`() {
         val findings =
             rule.lint(

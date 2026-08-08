@@ -18,7 +18,13 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
  * `application.<context>..` の `invoke` を対象とし、`<context> == iam` は対象外。世界を作る操作にはまだ世界が 無く、スコープは
  * `AccountId` で表す（`CreateWorldUseCase.invoke(accountId, command)`）。
  *
- * 既知の限界: ソースのテキストで判定するため `typealias` による迂回は検出できない（レビュー担保）。
+ * 既知の限界:
+ * - ソースのテキストで判定するため `typealias` による迂回は検出できない（レビュー担保）。
+ * - 対象集合は関数名が `invoke` であることのみに依存する（[WorldScopedPortSignature] の `〜Repository` / `〜Queries`
+ *   選定と同様）。この命名規約自体を機械強制する仕組みは無いため、規約から外れた宣言は静かに 対象外になる。規約の遵守自体はレビューで担保する。
+ * - 関数名 `invoke` だけで対象を絞り、宣言の形（companion object の `invoke` ファクトリ・ローカル関数）では 絞っていない。現状 `application`
+ *   配下に false positive は 0 件だが、将来 `application` 配下へ `companion object { operator fun invoke(...) }`
+ *   を書くとこのルールに掛かる。失敗は loud なので気づける ため、宣言形での絞り込みは実装しない（オーバーエンジニアリング）。
  */
 class ActorScopedUseCase(config: Config) :
     Rule(

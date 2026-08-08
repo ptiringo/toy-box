@@ -19,12 +19,21 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
  * `java.util.UUID` へ unbox される（`findByFullName-YSxo9OY(UUID, String, String)`）。 `BloodHorseId` 等の
  * ID 値クラスも同じく `UUID` に落ちるため、ArchUnit からは両者を区別できず 空振りする。ソースを見る detekt なら宣言上の型で判定できる。
  *
- * 対象は `domain.<context>.model..` の jMolecules `@Repository` 付き interface と、
- * `application.<context>..` の `〜Queries` interface。`<context> == iam` は対象外 （`Account` / `World`
- * はテナントの根であり世界に属さない）。 `infrastructure` の Spring Data リポジトリ（Spring の同名 `@Repository`
- * が付く）はパッケージ判定で外れる。
+ * 対象は `domain.<context>.model..` の jMolecules `@Repository` 付き interface、または名前が `〜Repository` で終わる
+ * interface（アノテーション付け忘れの取りこぼしを防ぐ #706 レビュー指摘）。加えて `application.<context>..` の `〜Queries`
+ * interface。`<context> == iam` は対象外 （`Account` / `World` はテナントの根であり世界に属さない）。 `infrastructure` の
+ * Spring Data リポジトリ（Spring の同名 `@Repository` が付く）はパッケージ判定で外れる。
  *
- * 既知の限界: ソースのテキストで判定するため `typealias W = WorldId` のような細工は素通りする（レビュー担保）。
+ * 既知の限界:
+ * - ソースのテキストで判定するため `typealias W = WorldId` のような細工は素通りする（レビュー担保）。
+ * - 対象集合は `@Repository` / `〜Repository`（domain）・`〜Queries` / `invoke`（application、
+ *   [ActorScopedUseCase] も同様）という命名・アノテーション規約に依存する。この規約自体を機械強制する 仕組みは無いため、規約から外れた宣言（例: `〜Store`
+ *   という名前で `@Repository` も付けない interface）は 静かに対象外になる。規約の遵守自体はレビューで担保する。
+ * - `visitNamedFunction` のみを見るため、プロパティは対象外。Queries interface に `val allHorses:
+ *   List<BloodHorseView>` のような引数の無い読み取りプロパティを生やすと検出されない。
+ * - `WorldId?`（nullable）は適合と見なさない（型テキストの完全一致判定のため）。これは意図的な設計で、 nullable
+ *   な世界スコープは設計上不要という前提に立ち、`trimEnd('?')` で黙認する方向へは倒さない。 誤って `WorldId?` にした場合は違反として報告されるため気づける（loud
+ *   な失敗）。
  */
 class WorldScopedPortSignature(config: Config) :
     Rule(
@@ -58,7 +67,9 @@ class WorldScopedPortSignature(config: Config) :
         return when (layer) {
             "domain" ->
                 packageSegmentAfterLayer(packageName, 1) == "model" &&
-                    declaration.annotationEntries.any { it.shortName?.asString() == "Repository" }
+                    (declaration.annotationEntries.any {
+                        it.shortName?.asString() == "Repository"
+                    } || declaration.name?.endsWith("Repository") == true)
             "application" -> declaration.name?.endsWith("Queries") == true
             else -> false
         }

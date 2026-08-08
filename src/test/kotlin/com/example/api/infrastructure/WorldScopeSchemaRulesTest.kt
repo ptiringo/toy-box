@@ -19,6 +19,9 @@ import org.springframework.jdbc.core.JdbcTemplate
  *
  * 列の存在だけでなく `NOT NULL` まで見る。列を足して制約を忘れると（V18 の途中段階で止まると）、 行がどの世界にも属さないまま入れてしまうため。複合 FK の有無や
  * `world_id` を書き換える UPDATE の 拒否（#727）は対象外。
+ *
+ * `pg_tables` は通常テーブルとパーティションテーブルのみを列挙し、view / materialized view / foreign table は含まない。読み取りモデル（軽量
+ * CQRS の Read Model）をマテビューで実装した場合、そのマテビューは このゲートの対象外になり静かに素通りする（レビュー担保）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
@@ -39,6 +42,8 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
     fun `検査対象のテーブルを列挙できている`() {
         // 列挙条件を誤ると「対象なし＝違反なし」で静かに通る。空振りをここで落とす
         // （PostgresContainerSupport.truncateAllTables が同じ理由で件数を検査しているのと同じ思想）。
+        // `isNotEmpty()` という閾値は、列挙条件のバグで対象が「全滅」する事態の検知に限る意図であり、
+        // 一部のテーブルだけが取りこぼされるケースまでは検出できない。
         val targets = jdbc.queryForList(TARGET_TABLES, String::class.java)
 
         assert(targets.isNotEmpty())

@@ -69,6 +69,7 @@ Flyway のチェックサムはコメントを含むファイル全体から計�
 テーブルが黙って生まれ、例外も出ないままデータが混ざる。
 
 `WorldScopeSchemaRulesTest`（`src/test/.../infrastructure/`）が `pg_tables` から対象テーブルを動的に列挙して
-`world_id UUID NOT NULL` の有無を検査するため、**忘れると `./gradlew check` が落ちる**。テーブルの列挙は自動なので
-規約テスト側を手で更新する必要はない。世界をまたぐ参照を封じる複合 FK の張り方は V19（`V19__enforce_world_scope_constraints.sql`）
-を参照する。
+`world_id UUID NOT NULL` の有無を検査するため、**列と NOT NULL を忘れると `./gradlew check` が落ちる**。テーブルの列挙は自動なので
+規約テスト側を手で更新する必要はない。**ただし `iam.world(id)` への FK の有無は検査しておらず、忘れても `check` は落ちない**
+（FK を検査しないためレビュー担保。#727）。世界をまたぐ参照を封じているのはこの FK であるため、張り忘れないこと。
+複合 FK の張り方は V19（`V19__enforce_world_scope_constraints.sql`）を参照する。
