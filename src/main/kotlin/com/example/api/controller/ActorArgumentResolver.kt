@@ -82,7 +82,9 @@ class ActorArgumentResolver(
      * パステンプレートの `{worldId}` を取り出す。
      *
      * 取れないのは `@CurrentActor` を世界の下に無いエンドポイントで使ったということで、配線ミス。404 に化けさせると 原因が隠れるため落とす。UUID
-     * として不正な値はハンドラ引数 `@PathVariable worldId: UUID` の型変換が 400 で弾くので、ここには届かない。
+     * として不正な値は、Spring がハンドラ引数を宣言順に解決し `@PathVariable worldId: UUID` が `@CurrentActor`
+     * より先に宣言されている間は、その型変換が 400 で弾くためここには届かない。この宣言順が崩れると `UUID.fromString` がここで例外を投げ、funnel は 500
+     * として描画する。
      */
     private fun pathWorldId(webRequest: NativeWebRequest): UUID {
         @Suppress("UNCHECKED_CAST")
