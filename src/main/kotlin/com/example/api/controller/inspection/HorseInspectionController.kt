@@ -32,9 +32,12 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 審査リソースの HTTP アダプター（#484）。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/horseInspections` に対する Create（審査の記録）と
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/horseInspections` に対する Create（審査の記録）と
  * Get（審査の参照）を提供する。血統登録の内部で審査を生成する既存経路（`RegisterInStudBookUseCase`）は そのままに、審査を単独で記録・参照できる対外 API
  * 経路を足す。エラーレスポンスは RFC 9457 (Problem Details) 形式で返す。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class HorseInspectionController(
@@ -74,8 +77,9 @@ class HorseInspectionController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/horseInspections")
+    @PostMapping("/api/worlds/{worldId}/horseInspections")
     fun record(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "記録する審査（個体識別・親子判定）")
         @RequestBody
@@ -117,8 +121,9 @@ class HorseInspectionController(
                 ),
             ],
     )
-    @GetMapping("/api/horseInspections/{id}")
+    @GetMapping("/api/worlds/{worldId}/horseInspections/{id}")
     fun get(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "取得する審査の生 UUID") @PathVariable id: UUID,
     ): HorseInspectionResponse =

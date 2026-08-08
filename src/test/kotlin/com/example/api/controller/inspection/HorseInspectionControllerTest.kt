@@ -61,6 +61,9 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -83,7 +86,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
     @Nested
     inner class RecordCase {
-        private val uri = "/api/horseInspections"
+        private val uri = "/api/worlds/{worldId}/horseInspections"
 
         /** DTO を実アプリと同じ [jsonMapper] でシリアライズし、契約とテストの二重管理を避ける。 */
         private val validBody =
@@ -108,7 +111,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -131,7 +134,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -157,7 +160,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -187,7 +190,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -202,7 +205,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
         fun `未知の parentage type は Jackson デシリアライズで弾かれ 400 が返ること`() {
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -234,7 +237,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
 
             tester
                 .get()
-                .uri("/api/horseInspections/$id")
+                .uri("/api/worlds/{worldId}/horseInspections/{id}", worldId, id)
                 .assertThat()
                 .hasStatus(HttpStatus.OK)
                 .bodyJson()
@@ -248,7 +251,11 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
             every { getHorseInspection(any<Actor>(), GetHorseInspectionQuery(id)) } returns
                 Err(HorseInspectionNotFound(id))
 
-            val result = tester.get().uri("/api/horseInspections/$id").exchange()
+            val result =
+                tester
+                    .get()
+                    .uri("/api/worlds/{worldId}/horseInspections/{id}", worldId, id)
+                    .exchange()
 
             assertThat(result)
                 .hasStatus(HttpStatus.NOT_FOUND)

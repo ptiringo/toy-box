@@ -31,20 +31,15 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class HorseInspectionApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
 
+    private lateinit var worldId: String
+
     /**
-     * ドメイン API は `Actor`（アカウント ＋ 世界）を要求するため、各テストの前にブートストラップする（#704）。 `:provision`
-     * は冪等で、アカウントと「はじまりの世界」を作る。基底クラスの TRUNCATE（@BeforeEach）は JUnit がスーパークラス側を先に走らせるため、truncate →
-     * provision の順になる。
+     * ドメイン API は `/api/worlds/{worldId}/...` に居るため、各テストの前にアカウントと世界を用意して そのIDを控える（#705）。基底クラスの
+     * TRUNCATE（@BeforeEach）は JUnit がスーパークラス側を先に走らせるため、 truncate → provision の順になる。
      */
     @BeforeEach
-    fun provisionAccount() {
-        restTestClient
-            .post()
-            .uri("/api/me:provision")
-            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
-            .exchange()
-            .expectStatus()
-            .is2xxSuccessful
+    fun provisionWorld() {
+        worldId = restTestClient.provisionAndFirstWorldId()
     }
 
     @Test
@@ -52,7 +47,7 @@ class HorseInspectionApiE2eTest(val restTestClient: RestTestClient) : PostgresCo
         val missingId = "00000000-0000-0000-0000-000000000000"
         restTestClient
             .get()
-            .uri("/api/horseInspections/{id}", missingId)
+            .uri("/api/worlds/{worldId}/horseInspections/{id}", worldId, missingId)
             .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()
@@ -74,7 +69,7 @@ class HorseInspectionApiE2eTest(val restTestClient: RestTestClient) : PostgresCo
         val createdBody =
             restTestClient
                 .post()
-                .uri("/api/horseInspections")
+                .uri("/api/worlds/{worldId}/horseInspections", worldId)
                 .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(
@@ -100,7 +95,7 @@ class HorseInspectionApiE2eTest(val restTestClient: RestTestClient) : PostgresCo
         // 照会（実 DB から別リクエストで読み戻す）。write→read の往復を本物の結線で検証する。
         restTestClient
             .get()
-            .uri("/api/horseInspections/{id}", inspectionId)
+            .uri("/api/worlds/{worldId}/horseInspections/{id}", worldId, inspectionId)
             .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()

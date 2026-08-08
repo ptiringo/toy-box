@@ -53,6 +53,9 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -76,7 +79,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
             val response =
                 tester
                     .post()
-                    .uri("/api/jockeys")
+                    .uri("/api/worlds/{worldId}/jockeys", worldId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"first_name":"武","last_name":"豊"}""")
                     .assertThat()
@@ -99,7 +102,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/jockeys")
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"first_name":"","last_name":"豊"}""")
                 .assertThat()
@@ -117,7 +120,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/jockeys")
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"first_name":"武","last_name":""}""")
                 .assertThat()
@@ -136,7 +139,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .post()
-                .uri("/api/jockeys")
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"first_name":"武","last_name":"豊"}""")
                 .assertThat()
@@ -157,7 +160,12 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 Ok(JockeyView(id = id, firstName = "武", lastName = "豊"))
 
             val response =
-                tester.get().uri("/api/jockeys/{id}", id).assertThat().hasStatusOk().bodyJson()
+                tester
+                    .get()
+                    .uri("/api/worlds/{worldId}/jockeys/{id}", worldId, id)
+                    .assertThat()
+                    .hasStatusOk()
+                    .bodyJson()
 
             // 読み取り経路（Get）も書き込み経路と同一のリソース表現を返す（ADR-0008）
             response.extractingPath("$.id").isEqualTo(id.toString())
@@ -172,7 +180,7 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
 
             tester
                 .get()
-                .uri("/api/jockeys/{id}", id)
+                .uri("/api/worlds/{worldId}/jockeys/{id}", worldId, id)
                 .assertThat()
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)

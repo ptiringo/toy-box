@@ -52,6 +52,9 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -70,7 +73,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
         // フレームワーク標準例外由来でも funnel で error_code 規約が付与される。
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武"}""")
             .assertThat()
@@ -90,7 +93,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -110,7 +113,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -122,7 +125,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -139,7 +142,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -151,7 +154,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -167,7 +170,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()

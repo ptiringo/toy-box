@@ -7,7 +7,7 @@ import com.example.api.controller.inspection.toDomain
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
- * `POST /api/horseInspections` のリクエストボディ。
+ * `POST /api/worlds/{worldId}/horseInspections` のリクエストボディ。
  *
  * 審査の記録申請に相当する。親子判定は判別子 `type` 付きの [ParentageDeterminationDto] で受け、未知の 判別子は Jackson のデシリアライズで弾かれ
  * `GlobalExceptionHandler` が 400 を返す。マイクロチップ番号は VO で表す項目のため素の文字列で受け取り、ユースケースで検証する（ADR-0026）。
