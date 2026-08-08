@@ -74,6 +74,9 @@ gh issue list --state open --limit 300 --json number -q '.[].number' | wc -l   #
 **CLAUDE.md のルール: 作成した Issue は必ず Project #4 に追加し、Priority を設定する**（未定でも Project には入れる）。
 作成だけで止めない。手順:
 
+> 作業の締め（PR マージ後）に「何を起票し何を既存 Issue へコメントするか」を棚卸しする工程は
+> `/issue-followup` にある。起票すると決まった後の操作手順がこの節。
+
 ```bash
 # 1) 作成
 gh issue create --title "<title>" --body "<body>"   # 返ってくる issue URL を控える
