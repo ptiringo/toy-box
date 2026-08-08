@@ -15,6 +15,7 @@ import com.example.api.controller.world.request.CreateWorldRequest
 import com.example.api.controller.world.request.RenameWorldRequest
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.WorldId
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -192,7 +193,7 @@ class WorldController(
         @Parameter(description = "改名対象の世界の生 UUID") @PathVariable worldId: UUID,
         @OperationRequestBody(description = "世界の新しい名前") @RequestBody request: RenameWorldRequest,
     ): WorldResponse {
-        val command = Command.now(RenameWorldCommand(worldId, request.name), clock)
+        val command = Command.now(RenameWorldCommand(WorldId(worldId), request.name), clock)
         return renameWorld(accountId, command)
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
@@ -226,7 +227,7 @@ class WorldController(
         @Parameter(hidden = true) @CurrentAccount accountId: AccountId,
         @Parameter(description = "削除対象の世界の生 UUID") @PathVariable worldId: UUID,
     ) {
-        val command = Command.now(DeleteWorldCommand(worldId), clock)
+        val command = Command.now(DeleteWorldCommand(WorldId(worldId)), clock)
         deleteWorld(accountId, command).mapError { it.toProblemDetail() }.orThrowProblem()
     }
 }

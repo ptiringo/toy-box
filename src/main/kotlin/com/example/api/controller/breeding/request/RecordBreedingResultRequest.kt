@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
 /**
- * `POST /api/breedingResults` のリクエストボディ。繁殖成績の年次レコードを起こす Create。
+ * `POST /api/worlds/{worldId}/breedingResults` のリクエストボディ。繁殖成績の年次レコードを起こす Create。
  *
  * 様式第14号の年次成績は「種付した年」と「種付しなかった年（種付せず）」の2種類があり、ドメインの `covering` が nullable であることに合わせ、本リクエストは
  * [covering] の有無で両者を判別する単一の Create とする（[ADR-0008] の 単一リソース表現に整合）。

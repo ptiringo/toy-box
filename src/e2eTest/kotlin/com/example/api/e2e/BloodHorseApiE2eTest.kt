@@ -33,20 +33,15 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
 
+    private lateinit var worldId: String
+
     /**
-     * ドメイン API は `Actor`（アカウント ＋ 世界）を要求するため、各テストの前にブートストラップする（#704）。 `:provision`
-     * は冪等で、アカウントと「はじまりの世界」を作る。基底クラスの TRUNCATE（@BeforeEach）は JUnit がスーパークラス側を先に走らせるため、truncate →
-     * provision の順になる。
+     * ドメイン API は `/api/worlds/{worldId}/...` に居るため、各テストの前にアカウントと世界を用意して そのIDを控える（#705）。基底クラスの
+     * TRUNCATE（@BeforeEach）は JUnit がスーパークラス側を先に走らせるため、 truncate → provision の順になる。
      */
     @BeforeEach
-    fun provisionAccount() {
-        restTestClient
-            .post()
-            .uri("/api/me:provision")
-            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
-            .exchange()
-            .expectStatus()
-            .is2xxSuccessful
+    fun provisionWorld() {
+        worldId = restTestClient.provisionAndFirstWorldId()
     }
 
     @Test
@@ -54,7 +49,7 @@ class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
         val missingId = "00000000-0000-0000-0000-000000000000"
         restTestClient
             .get()
-            .uri("/api/bloodHorses/{id}", missingId)
+            .uri("/api/worlds/{worldId}/bloodHorses/{id}", worldId, missingId)
             .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()
@@ -80,7 +75,7 @@ class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
         val createdBody =
             restTestClient
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(
@@ -110,7 +105,7 @@ class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
         // 照会（実 DB から別リクエストで読み戻す）。一覧のサマリではなく完全表現が返ることまで見る。
         restTestClient
             .get()
-            .uri("/api/bloodHorses/{id}", foalId)
+            .uri("/api/worlds/{worldId}/bloodHorses/{id}", worldId, foalId)
             .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()
@@ -143,7 +138,7 @@ class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
         val body =
             restTestClient
                 .post()
-                .uri("/api/bloodHorses:registerImported")
+                .uri("/api/worlds/{worldId}/bloodHorses:registerImported", worldId)
                 .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(

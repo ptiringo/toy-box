@@ -17,6 +17,7 @@ import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -51,6 +52,9 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -69,7 +73,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
         // フレームワーク標準例外由来でも funnel で error_code 規約が付与される。
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武"}""")
             .assertThat()
@@ -89,7 +93,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -109,7 +113,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -121,7 +125,7 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()
@@ -131,13 +135,42 @@ class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `所有していない世界の指定で 404 と world-not-found の problem+json が返ること`() {
+        val worldId = UUID.fromString("33333333-3333-3333-3333-333333333333")
+        every { actorArgumentResolver.resolveArgument(any(), any(), any(), any()) } throws
+            WorldNotFoundException(worldId)
+
+        tester
+            .post()
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .hasStatus(HttpStatus.NOT_FOUND)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("world-not-found")
+
+        tester
+            .post()
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"first_name":"武","last_name":"豊"}""")
+            .assertThat()
+            .bodyJson()
+            .extractingPath("$.world_id")
+            .isEqualTo(worldId.toString())
+    }
+
+    @Test
     fun `想定外の例外発生時に 500 と problem+json が返ること`() {
         every { registerJockey(any<Actor>(), any<Command<RegisterJockeyCommand>>()) } throws
             RuntimeException("予期しない障害")
 
         tester
             .post()
-            .uri("/api/jockeys")
+            .uri("/api/worlds/{worldId}/jockeys", worldId)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"first_name":"武","last_name":"豊"}""")
             .assertThat()

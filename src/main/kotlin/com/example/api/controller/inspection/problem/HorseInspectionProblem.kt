@@ -29,8 +29,9 @@ fun InvalidMicrochipNumber.toProblemDetail(): ProblemDetail =
 /**
  * [HorseInspectionNotFound]（照会対象の審査不在）を 404 Not Found の [ProblemDetail] に変換する。
  *
- * URL パス（`/api/horseInspections/{id}`）で識別される操作対象そのものが無いため 404 とする（api-design.md 「リソース不在のステータス（404
- * vs 422）」）。馬名登録のボディ内参照先不在（422 `inspection-not-found`）とは 発生箇所も意味も異なるため、`errorCode` を分ける。
+ * URL パス（`/api/worlds/{worldId}/horseInspections/{id}`）で識別される操作対象そのものが無いため 404 とする（api-design.md
+ * 「リソース不在のステータス（404 vs 422）」）。馬名登録のボディ内参照先不在（422 `inspection-not-found`）とは
+ * 発生箇所も意味も異なるため、`errorCode` を分ける。
  */
 fun HorseInspectionNotFound.toProblemDetail(): ProblemDetail =
     problem(

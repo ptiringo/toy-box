@@ -3,7 +3,7 @@ package com.example.api.controller.jockey.request
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
- * `POST /api/jockeys` のリクエストボディ。
+ * `POST /api/worlds/{worldId}/jockeys` のリクエストボディ。
  *
  * @property firstName 名
  * @property lastName 姓

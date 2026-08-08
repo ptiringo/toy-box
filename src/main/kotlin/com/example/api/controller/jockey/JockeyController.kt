@@ -32,8 +32,11 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * ジョッキーリソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/jockeys` に対する Create を提供する。 エラーレスポンスは RFC 9457 (Problem
- * Details) 形式で返す。
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/jockeys` に対する Create を提供する。 エラーレスポンスは RFC
+ * 9457 (Problem Details) 形式で返す。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class JockeyController(
@@ -84,8 +87,9 @@ class JockeyController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/jockeys")
+    @PostMapping("/api/worlds/{worldId}/jockeys")
     fun register(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "登録するジョッキーの氏名")
         @RequestBody
@@ -128,8 +132,9 @@ class JockeyController(
                 ),
             ],
     )
-    @GetMapping("/api/jockeys/{id}")
+    @GetMapping("/api/worlds/{worldId}/jockeys/{id}")
     fun get(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @Parameter(description = "取得するジョッキーの生 UUID") @PathVariable id: UUID,
     ): JockeyResponse {

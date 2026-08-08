@@ -3,6 +3,7 @@ package com.example.api.controller
 import com.example.api.support.PostgresContainerSupport
 import com.example.api.support.TestJwt
 import com.example.api.support.TestJwtDecoderConfiguration
+import com.jayway.jsonpath.JsonPath
 import org.junit.jupiter.api.Test
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
@@ -25,7 +26,11 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class SecurityConfigTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
 
-    private val anyJockeyUri = "/api/jockeys/00000000-0000-0000-0000-000000000000"
+    // 認証フィルタは認可判定にルートの実在を要求しない（`anyRequest.authenticated()`）ため、
+    // 未認証系の 2 件は worldId も実在しないままでよい。ただし #705 でドメイン API は
+    // /api/worlds/{worldId}/... 配下へ移ったため、形だけは実在する世界スコープ URL に揃える。
+    private val missingJockeyId = "00000000-0000-0000-0000-000000000000"
+    private val anyJockeyUri = "/api/worlds/$missingJockeyId/jockeys/$missingJockeyId"
 
     @Test
     fun `トークン無しの保護エンドポイントは 401 と RFC9457 problem+json を返す`() {
@@ -79,11 +84,26 @@ class SecurityConfigTest(val restTestClient: RestTestClient) : PostgresContainer
             .expectStatus()
             .is2xxSuccessful
 
+        // ドメイン API（jockeys 含む）は #705 で /api/worlds/{worldId}/... 配下へ移ったため、
+        // :provision が作った「はじまりの世界」の ID を先に引いてパスに載せる。
+        val worldsBody =
+            restTestClient
+                .get()
+                .uri("/api/worlds")
+                .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .returnResult()
+                .responseBody
+        val worldId = JsonPath.read<String>(String(worldsBody!!), "$[0].id")
+
         // 401（認証で弾かれた）ではなく 404（アプリのユースケースが応答した）であることが、
         // フィルタチェーンを通過した唯一の観測可能な証拠になる。
         restTestClient
             .get()
-            .uri(anyJockeyUri)
+            .uri("/api/worlds/{worldId}/jockeys/{id}", worldId, missingJockeyId)
             .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
             .exchange()
             .expectStatus()

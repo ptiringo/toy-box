@@ -27,7 +27,7 @@ class DeleteWorldUseCaseTest {
         val world = WorldFixture.world(accountId = ownerId, version = 1L)
         every { worlds.findOwnedBy(ownerId, world.id) } returns world
 
-        useCase(ownerId, Command.now(DeleteWorldCommand(world.id.value), clock)).getOrThrow {
+        useCase(ownerId, Command.now(DeleteWorldCommand(world.id), clock)).getOrThrow {
             AssertionError(it.toString())
         }
 
@@ -39,8 +39,7 @@ class DeleteWorldUseCaseTest {
         val world = WorldFixture.world(accountId = AccountId(generateId()), version = 1L)
         every { worlds.findOwnedBy(ownerId, world.id) } returns null
 
-        val error =
-            useCase(ownerId, Command.now(DeleteWorldCommand(world.id.value), clock)).getError()
+        val error = useCase(ownerId, Command.now(DeleteWorldCommand(world.id), clock)).getError()
 
         assert(error is WorldMutationError.NotFound)
         verify(exactly = 0) { worlds.deleteById(any()) }

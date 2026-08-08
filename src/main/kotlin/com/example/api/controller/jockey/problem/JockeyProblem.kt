@@ -32,7 +32,8 @@ fun JockeyRegistrationError.toProblemDetail(): ProblemDetail =
 /**
  * [JockeyNotFound]（照会対象のジョッキー不在）を 404 Not Found の [ProblemDetail] に変換する。
  *
- * URL パス（`/api/jockeys/{id}`）で識別される操作対象そのものが無いため 404 とする（api-design.md 「リソース不在のステータス（404 vs 422）」）。
+ * URL パス（`/api/worlds/{worldId}/jockeys/{id}`）で識別される操作対象そのものが無いため 404 とする（api-design.md
+ * 「リソース不在のステータス（404 vs 422）」）。
  */
 fun JockeyNotFound.toProblemDetail(): ProblemDetail =
     problem(

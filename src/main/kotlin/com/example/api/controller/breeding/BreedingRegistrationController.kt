@@ -16,9 +16,11 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody as OperationRequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
+import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -27,9 +29,12 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 繁殖登録リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/breedingRegistrations` に対する Create（繁殖登録の成立）を 提供する。繁殖登録は
- * 種付記録・種付せず・分娩報告・供用停止といった繁殖の書き込み経路の起点であり、この Create が その起点を開通させる。 エラーレスポンスは RFC 9457 (Problem
- * Details) 形式で返す。
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/breedingRegistrations` に対する Create（繁殖登録の成立）
+ * を提供する。繁殖登録は 種付記録・種付せず・分娩報告・供用停止といった繁殖の書き込み経路の起点であり、この Create が その起点を開通させる。 エラーレスポンスは RFC 9457
+ * (Problem Details) 形式で返す。
+ *
+ * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
+ * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
  */
 @RestController
 class BreedingRegistrationController(
@@ -82,8 +87,9 @@ class BreedingRegistrationController(
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/breedingRegistrations")
+    @PostMapping("/api/worlds/{worldId}/breedingRegistrations")
     fun register(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
         @OperationRequestBody(description = "成立させる繁殖登録（対象個体・繁殖登録番号）")
         @RequestBody

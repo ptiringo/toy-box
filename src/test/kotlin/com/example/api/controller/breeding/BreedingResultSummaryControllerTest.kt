@@ -37,6 +37,9 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -51,6 +54,8 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
     private val stallionId = UUID.fromString("11111111-1111-1111-1111-111111111111")
 
+    private val uri = "/api/worlds/{worldId}/breedingResultSummaries?stallionId={stallionId}"
+
     @Test
     fun `種牡馬IDの集計一覧が200で件数と率つきの配列で返ること`() {
         // BreedingResultSummaryView.of(stallionId, 2024, 6, 4, 1) → 受胎率 4/6=66.7%
@@ -61,7 +66,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
         val body =
             tester
                 .get()
-                .uri("/api/breedingResultSummaries?stallionId=$stallionId")
+                .uri(uri, worldId, stallionId)
                 .assertThat()
                 .hasStatus(HttpStatus.OK)
                 .bodyJson()
@@ -79,7 +84,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
         tester
             .get()
-            .uri("/api/breedingResultSummaries?stallionId=$stallionId")
+            .uri(uri, worldId, stallionId)
             .assertThat()
             .hasStatusOk()
             .bodyJson()
@@ -95,7 +100,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
 
         tester
             .get()
-            .uri("/api/breedingResultSummaries?stallionId=$stallionId")
+            .uri(uri, worldId, stallionId)
             .assertThat()
             .hasStatusOk()
             .bodyJson()
@@ -108,7 +113,7 @@ class BreedingResultSummaryControllerTest(val mockMvc: MockMvc) {
     fun `stallionId が欠けると400が返ること`() {
         tester
             .get()
-            .uri("/api/breedingResultSummaries")
+            .uri("/api/worlds/{worldId}/breedingResultSummaries", worldId)
             .assertThat()
             .hasStatus(HttpStatus.BAD_REQUEST)
     }

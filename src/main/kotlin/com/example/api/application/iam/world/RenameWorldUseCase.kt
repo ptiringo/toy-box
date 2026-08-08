@@ -5,23 +5,23 @@ import com.example.api.domain.iam.model.world.WorldRepository
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.domain.shared.WorldId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
-import java.util.UUID
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
  * 世界改名の入力コマンド。
  *
- * @property worldId 改名対象の世界の生 UUID
+ * @property worldId 改名対象の世界のID
  * @property name 新しい名前
  */
-data class RenameWorldCommand(val worldId: UUID, val name: String)
+data class RenameWorldCommand(val worldId: WorldId, val name: String)
 
 /**
  * 自分の世界の名前を変えるユースケース。
@@ -39,7 +39,7 @@ class RenameWorldUseCase(private val worlds: WorldRepository) {
         command: Command<RenameWorldCommand>,
     ): Result<WorldView, WorldMutationError> =
         worlds
-            .findOwnedBy(accountId, command.payload.worldId)
+            .findOwnedByOrNotFound(accountId, command.payload.worldId)
             .andThen { world ->
                 world
                     .rename(command.payload.name)

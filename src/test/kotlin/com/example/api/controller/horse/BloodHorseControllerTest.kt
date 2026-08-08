@@ -81,6 +81,9 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
     private val actor = Actor(accountId = AccountId(generateId()), worldId = WorldId(generateId()))
 
+    /** パスに載せる世界のID。resolver はモックのため値は解決に使われない。 */
+    private val worldId = actor.worldId.value
+
     /**
      * `WebMvcConfig` は `WebMvcConfigurer` なので `ActorArgumentResolver` は全スライスに載る。slice は認証フィルタを
      * 無効化しているため実解決は走らせず、固定の [actor] を返すよう差し替える（#704）。
@@ -134,7 +137,13 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     )
                 )
 
-            val body = tester.get().uri("/api/bloodHorses").assertThat().hasStatusOk().bodyJson()
+            val body =
+                tester
+                    .get()
+                    .uri("/api/worlds/{worldId}/bloodHorses", worldId)
+                    .assertThat()
+                    .hasStatusOk()
+                    .bodyJson()
 
             body.extractingPath("$[0].id").isEqualTo(id.toString())
             body.extractingPath("$[0].registration_number").isEqualTo("REG-001")
@@ -152,7 +161,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .get()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .assertThat()
                 .hasStatusOk()
                 .bodyJson()
@@ -177,7 +186,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -198,7 +207,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -218,7 +227,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -242,7 +251,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -262,7 +271,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -286,7 +295,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -310,7 +319,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -334,7 +343,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -358,7 +367,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -382,7 +391,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri("/api/bloodHorses")
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -397,7 +406,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @Nested
     inner class RegisterNameCase {
         private val bloodHorseId = "33333333-3333-3333-3333-333333333333"
-        private val uri = "/api/bloodHorses/$bloodHorseId:registerName"
+        private val uri = "/api/worlds/{worldId}/bloodHorses/{bloodHorseId}:registerName"
         private val body = """{ "name": "オグリキャップ" }"""
 
         @Test
@@ -412,7 +421,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, bloodHorseId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .assertThat()
@@ -429,7 +438,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, bloodHorseId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .assertThat()
@@ -448,7 +457,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, bloodHorseId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .assertThat()
@@ -466,7 +475,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, bloodHorseId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .assertThat()
@@ -484,7 +493,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, bloodHorseId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .assertThat()
@@ -503,7 +512,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId, bloodHorseId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .assertThat()
@@ -523,7 +532,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             val result =
                 tester
                     .post()
-                    .uri(uri)
+                    .uri(uri, worldId, bloodHorseId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body)
                     .exchange()
@@ -543,7 +552,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
     @Nested
     inner class RegisterImportedCase {
-        private val uri = "/api/bloodHorses:registerImported"
+        private val uri = "/api/worlds/{worldId}/bloodHorses:registerImported"
 
         /** 父母 ID・DNA を持たず、原産国・揚陸日を持つ輸入馬のリクエストボディ。実アプリと同じ [jsonMapper] で DTO をシリアライズして組み立てる。 */
         private val validBody =
@@ -574,7 +583,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -592,7 +601,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -606,7 +615,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
     @Nested
     inner class RegisterCarriedOverCase {
-        private val uri = "/api/bloodHorses:registerCarriedOver"
+        private val uri = "/api/worlds/{worldId}/bloodHorses:registerCarriedOver"
 
         /** 父母 ID・DNA・原産国・揚陸日のいずれも持たない移行取り込みのリクエストボディ。 */
         private val validBody =
@@ -638,7 +647,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -659,7 +668,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -681,7 +690,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -703,7 +712,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
 
             tester
                 .post()
-                .uri(uri)
+                .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validBody)
                 .assertThat()
@@ -738,7 +747,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 )
             every { getBloodHorse(any<Actor>(), GetBloodHorseQuery(id)) } returns Ok(view)
 
-            val result = tester.get().uri("/api/bloodHorses/$id").exchange()
+            val result =
+                tester.get().uri("/api/worlds/{worldId}/bloodHorses/{id}", worldId, id).exchange()
 
             assertThat(result).hasStatus(HttpStatus.OK)
             assertThat(result).bodyJson().extractingPath("$.id").isEqualTo(id.toString())
@@ -764,7 +774,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             every { getBloodHorse(any<Actor>(), GetBloodHorseQuery(id)) } returns
                 Err(BloodHorseNotFound(id))
 
-            val result = tester.get().uri("/api/bloodHorses/$id").exchange()
+            val result =
+                tester.get().uri("/api/worlds/{worldId}/bloodHorses/{id}", worldId, id).exchange()
 
             assertThat(result)
                 .hasStatus(HttpStatus.NOT_FOUND)

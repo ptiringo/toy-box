@@ -31,7 +31,7 @@ fun WorldMutationError.toProblemDetail(): ProblemDetail =
                     title = "World not found",
                     detail = "指定された世界は存在しません。",
                 )
-                .apply { setProperty("world_id", worldId) }
+                .apply { setProperty("world_id", worldId.value) }
         is WorldMutationError.InvalidName -> cause.toProblemDetail()
         is WorldMutationError.Conflict ->
             problem(

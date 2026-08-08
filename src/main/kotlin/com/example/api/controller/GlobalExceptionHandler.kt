@@ -58,6 +58,23 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         )
 
     /**
+     * パスの `{worldId}` が他人の世界、または存在しない世界を指していた。
+     *
+     * 両者を区別せず 404 に潰す。エラーコードは `PATCH` / `DELETE /api/worlds/{worldId}` の
+     * [com.example.api.application.iam.world.WorldMutationError.NotFound] と揃える（同じ意味の失敗に 2
+     * つのコードを与えない）。
+     */
+    @ExceptionHandler(WorldNotFoundException::class)
+    fun handleWorldNotFound(ex: WorldNotFoundException): ProblemDetail =
+        problem(
+                status = HttpStatus.NOT_FOUND,
+                code = "world-not-found",
+                title = "World not found",
+                detail = "指定された世界は存在しません。",
+            )
+            .apply { setProperty("world_id", ex.worldId) }
+
+    /**
      * 基底クラスが組み立てた標準例外の応答に、本プロジェクトの RFC 9457 規約（`type` / `errorCode`）を付与する。
      *
      * [ConventionalProblemDetail] 型の ProblemDetail（業務エラー由来）は規約済みとみなして触らない。
