@@ -23,6 +23,7 @@ class ToyBoxRuleSetProvider : RuleSetProvider {
                 RuleName("NoThrowInDomainAndApplication") to ::NoThrowInDomainAndApplication,
                 RuleName("NoSilentMapError") to ::NoSilentMapError,
                 RuleName("WorldScopedPortSignature") to ::WorldScopedPortSignature,
+                RuleName("ActorScopedUseCase") to ::ActorScopedUseCase,
             ),
         )
 

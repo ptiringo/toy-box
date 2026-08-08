@@ -55,3 +55,8 @@ toy-box:
   WorldScopedPortSignature:
     active: true
     excludes: ["**/src/test/**", "**/src/testFixtures/**"]
+  # application 層の invoke は第 1 引数に Actor を取る（ADR-0067 / #706）。読み取りも対象。
+  # iam（世界を作る操作。まだ世界が無く AccountId でスコープする）はルール側のコンテキスト判定で対象外。
+  ActorScopedUseCase:
+    active: true
+    excludes: ["**/src/test/**", "**/src/testFixtures/**"]
