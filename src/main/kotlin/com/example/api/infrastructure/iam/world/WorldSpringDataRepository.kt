@@ -13,4 +13,7 @@ interface WorldSpringDataRepository : CrudRepository<WorldRow, UUID> {
 
     /** 同一アカウント内に同名の世界が既にあるかを判定する。 */
     fun existsByAccountIdAndName(accountId: UUID, name: String): Boolean
+
+    /** 同一アカウント内の同名の世界を引く（UNIQUE (account_id, name) により高々 1 行）。 */
+    fun findByAccountIdAndName(accountId: UUID, name: String): WorldRow?
 }

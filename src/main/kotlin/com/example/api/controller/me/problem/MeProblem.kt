@@ -10,6 +10,8 @@ import org.springframework.http.ProblemDetail
  *
  * [ProvisionMeError.InvalidSubject] と [ProvisionMeError.InvalidDefaultWorldName] は、トークン検証を
  * 通っていれば／定数を正しく設定していれば起きない防御的分岐。クライアントに直せることが無いので 500 とし、 400 系で「あなたの入力が悪い」と誤って伝えない。
+ *
+ * 競合（409）のバリアントは持たない。並行するセットアップは DB の UNIQUE を裁定者にして吸収され、 呼び出し側に競合として見えないため（#713）。
  */
 fun ProvisionMeError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -26,14 +28,5 @@ fun ProvisionMeError.toProblemDetail(): ProblemDetail =
                 code = "invalid-default-world-name",
                 title = "Invalid default world name",
                 detail = "既定の世界名がサーバ側の不変条件を満たしていません。",
-            )
-        // 実際に同時リクエストが競合すると多くは DB の UNIQUE 制約違反（500）になり、このバリアントには
-        // 到達しないことが多い（既知の限界。詳細は ProvisionMeError.Conflict の KDoc）。
-        is ProvisionMeError.Conflict ->
-            problem(
-                status = HttpStatus.CONFLICT,
-                code = "provisioning-conflict",
-                title = "Provisioning conflict",
-                detail = "初回セットアップが別のリクエストと競合しました。やり直してください。",
             )
     }

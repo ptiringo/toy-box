@@ -31,10 +31,11 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
             .getOrThrow { AssertionError(it.toString()) }
             .id
 
+    private fun newWorld(ownerId: AccountId, name: String): World =
+        World.create(ownerId, name).getOrThrow { AssertionError(it.toString()) }
+
     private fun saveWorld(ownerId: AccountId, name: String): World =
-        worlds
-            .save(World.create(ownerId, name).getOrThrow { AssertionError(it.toString()) })
-            .getOrThrow { AssertionError(it.toString()) }
+        worlds.save(newWorld(ownerId, name)).getOrThrow { AssertionError(it.toString()) }
 
     @Test
     fun `所有付き lookup で自分の世界を ID で引き当てられる`() {
@@ -116,6 +117,43 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
         val thrown = runCatching { worlds.save(duplicate) }.exceptionOrNull()
 
         assert(thrown is DuplicateKeyException)
+    }
+
+    @Test
+    fun `同名の世界を saveIfAbsent で二重に保存しても増えず先着が返る`() {
+        val ownerId = newOwner("sub-world-if-absent")
+
+        // ID は World.create() が採番するため、2 回目は先着とは別の ID を持つ集約を渡している。
+        // 返るのが先着の ID なら「insert せず既存を読み直した」ことの証拠になる。
+        val first = worlds.saveIfAbsent(newWorld(ownerId, "はじまりの世界"))
+        val second = worlds.saveIfAbsent(newWorld(ownerId, "はじまりの世界"))
+
+        assert(second.id == first.id)
+        assert(second.version == first.version)
+        assert(queries.findAllByAccountId(ownerId).size == 1)
+    }
+
+    @Test
+    fun `別名の世界なら saveIfAbsent はそのまま保存する`() {
+        val ownerId = newOwner("sub-world-if-absent-distinct")
+
+        worlds.saveIfAbsent(newWorld(ownerId, "1つ目"))
+        worlds.saveIfAbsent(newWorld(ownerId, "2つ目"))
+
+        assert(queries.findAllByAccountId(ownerId).size == 2)
+    }
+
+    @Test
+    fun `saveIfAbsent の初回保存は save と同じ version を採番する`() {
+        // saveIfAbsent は upsert のため Spring Data JDBC を通さず INSERT 文を手書きする。
+        // 初期 version が save（Spring Data JDBC 採番）とずれると、以後の楽観ロック更新の
+        // 前提が経路によって食い違うため、ここで縛る。
+        val ownerId = newOwner("sub-world-if-absent-version")
+        val bySave = saveWorld(ownerId, "save で作った世界")
+
+        val byIfAbsent = worlds.saveIfAbsent(newWorld(ownerId, "saveIfAbsent で作った世界"))
+
+        assert(byIfAbsent.version == bySave.version)
     }
 
     @Test

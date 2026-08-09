@@ -136,6 +136,20 @@ Issue #703（IAM: アカウントと世界）で、フロントエンドをシ�
   `.claude/rules/architecture.md` の「ArchUnit で Kotlin の呼び出しを縛るときの空振り」に記載されて
   いる value class のメソッド名マングリングと同根の事情であり、value class を Spring MVC のような
   フレームワークへ渡す箇所全般で再発しうる。
+- **追補（#713 で解消）**: 上記の「`:provision` は冪等に作る」は、当初は**逐次実行に限った冪等**
+  だった。実装は事前照会（`findBySubjectId` / `existsByAccountId`）→ insert の 2 手で、そのあいだに
+  別リクエストが同じ subject を insert すると UNIQUE 制約違反（`uq_account_subject_id` /
+  `uq_world_account_id_name`）が未捕捉のまま伝播して 500 になっていた。サインイン直後にフロント
+  エンドが必ず 1 回叩く経路であり、StrictMode の二重発火・複数タブ・リロードで現実に踏む。
+  `DuplicateKeyException` を捕まえて読み直す素直な対処は、PostgreSQL が UNIQUE 違反の時点で
+  トランザクションを abort 済みのため同一トランザクション内では成立せず、別トランザクション境界の
+  手当てを要した。#713 では**そもそも UNIQUE 違反を例外にしない**方針を採り、`INSERT ... ON CONFLICT
+  DO NOTHING` ＋読み直しの専用ポート（`AccountRepository.saveIfAbsent` /
+  `WorldRepository.saveIfAbsent`）へ寄せた。DB の UNIQUE を唯一の裁定者にすることで TOCTOU が結果に
+  影響しなくなり、`:provision` は並行実行下でも冪等になった（事前照会は 2 回目以降の書き込みを避ける
+  高速経路として残るだけで、正しさはこれに依存しない）。なお**利用者が名前を指定する世界の作成・改名
+  は対象外**で、同名衝突を 409 として見せる必要があるため事前照会と `save` を使い続ける（そちらの
+  TOCTOU は未解消のまま）。
 - **次段階（本 ADR のスコープ外）**: 既存ドメイン（studbook / racing / sakamichi / tennis 全コンテキ
   スト）への `world_id` 列の追加・複合 FK の導入、既存 API の `/api/worlds/{worldId}/...` への移設は
   Issue #704 / #705 / #706 で扱う。本 ADR は「テナント分離の設計判断」を確定させるものであり、
