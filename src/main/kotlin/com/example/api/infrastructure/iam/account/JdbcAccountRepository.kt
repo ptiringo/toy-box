@@ -41,17 +41,20 @@ class JdbcAccountRepository(
      * 回増えるが、この口を通るのは初回ログインだけで割に合う。
      */
     override fun saveIfAbsent(account: Account): Account {
+        val subjectId = account.subjectId
         jdbcClient
-            .sql(INSERT_IF_ABSENT)
+            .sql(
+                "INSERT INTO iam.account (id, subject_id, version) " +
+                    "VALUES (:id, :subjectId, :version) " +
+                    "ON CONFLICT (subject_id) DO NOTHING"
+            )
             .param("id", account.id.value)
-            .param("subjectId", account.subjectId.value)
+            .param("subjectId", subjectId.value)
             .param("version", INITIAL_VERSION)
             .update()
         // insert したなら自分の行、衝突したなら先着の行。DO NOTHING は先行トランザクションの
         // 確定を待ってから効くため、この時点で行は必ず存在する（READ COMMITTED 前提）。
-        return checkNotNull(findBySubjectId(account.subjectId)) {
-            "saveIfAbsent の直後にアカウントを引けなかった: ${account.subjectId.value}"
-        }
+        return checkNotNull(findBySubjectId(subjectId)) { "insert 直後に引けない: ${subjectId.value}" }
     }
 
     private fun AccountRow.toDomain(): Account =
@@ -65,13 +68,5 @@ class JdbcAccountRepository(
          * 食い違うため、契約テスト（`saveIfAbsent の初回保存は save と同じ version を採番する`）で縛っている。
          */
         const val INITIAL_VERSION = 0L
-
-        val INSERT_IF_ABSENT =
-            """
-            INSERT INTO iam.account (id, subject_id, version)
-            VALUES (:id, :subjectId, :version)
-            ON CONFLICT (subject_id) DO NOTHING
-            """
-                .trimIndent()
     }
 }

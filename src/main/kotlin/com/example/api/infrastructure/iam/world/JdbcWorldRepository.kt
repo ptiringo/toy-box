@@ -37,19 +37,25 @@ class JdbcWorldRepository(
      * を避ける（詳細はそちらの KDoc）。
      */
     override fun saveIfAbsent(world: World): World {
+        val accountId = world.accountId
+        val name = world.name
         jdbcClient
-            .sql(INSERT_IF_ABSENT)
+            .sql(
+                "INSERT INTO iam.world (id, account_id, name, version) " +
+                    "VALUES (:id, :accountId, :name, :version) " +
+                    "ON CONFLICT (account_id, name) DO NOTHING"
+            )
             .param("id", world.id.value)
-            .param("accountId", world.accountId.value)
-            .param("name", world.name.value)
+            .param("accountId", accountId.value)
+            .param("name", name.value)
             .param("version", INITIAL_VERSION)
             .update()
-        return checkNotNull(
-            rows.findByAccountIdAndName(world.accountId.value, world.name.value)?.toDomain()
-        ) {
-            "saveIfAbsent の直後に世界を引けなかった: ${world.accountId.value} / ${world.name.value}"
-        }
+        return checkNotNull(findByName(accountId, name)) { "insert 直後に引けない: ${name.value}" }
     }
+
+    /** 同一アカウント内の同名の世界を引く（[saveIfAbsent] が衝突後に先着を読み直すための口）。 */
+    private fun findByName(accountId: AccountId, name: WorldName): World? =
+        rows.findByAccountIdAndName(accountId.value, name.value)?.toDomain()
 
     override fun deleteById(id: WorldId) = rows.deleteById(id.value)
 
@@ -67,13 +73,5 @@ class JdbcWorldRepository(
     private companion object {
         /** Spring Data JDBC が insert 時に採番する初期 version と揃える（契約テストで縛っている）。 */
         const val INITIAL_VERSION = 0L
-
-        val INSERT_IF_ABSENT =
-            """
-            INSERT INTO iam.world (id, account_id, name, version)
-            VALUES (:id, :accountId, :name, :version)
-            ON CONFLICT (account_id, name) DO NOTHING
-            """
-                .trimIndent()
     }
 }
