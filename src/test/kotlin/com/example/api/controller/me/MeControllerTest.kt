@@ -8,9 +8,6 @@ import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.iam.model.world.World
 import com.example.api.domain.iam.model.world.WorldRepository
-import com.example.api.domain.shared.UpdateConflict
-import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getOrThrow
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -73,9 +70,9 @@ class MeControllerTest(val mockMvc: MockMvc) {
     fun `初回セットアップに成功すると 200 と account_id を返す`() {
         val subject = "me-controller-test-new-subject"
         every { accounts.findBySubjectId(SubjectId(subject)) } returns null
-        every { accounts.save(any()) } answers { Ok(firstArg<Account>()) }
+        every { accounts.saveIfAbsent(any()) } answers { firstArg<Account>() }
         every { worlds.existsByAccountId(any()) } returns false
-        every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
+        every { worlds.saveIfAbsent(any()) } answers { firstArg<World>() }
 
         val created = Account.create(subject).getOrThrow { AssertionError(it.toString()) }
 
@@ -95,21 +92,21 @@ class MeControllerTest(val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `並行するセットアップと競合すると 409 の problem を返す`() {
-        val subject = "me-controller-test-conflict-subject"
-        every { accounts.findBySubjectId(SubjectId(subject)) } returns null
-        every { accounts.save(any()) } returns Err(UpdateConflict)
+    fun `既にセットアップ済みでも 200 と account_id を返す`() {
+        val subject = "me-controller-test-existing-subject"
+        val existing = Account.create(subject).getOrThrow { AssertionError(it.toString()) }
+        every { accounts.findBySubjectId(SubjectId(subject)) } returns existing
+        every { worlds.existsByAccountId(existing.id) } returns true
 
         tester
             .post()
             .uri("/api/me:provision")
             .principal(jwtWithSubject(subject))
             .assertThat()
-            .hasStatus(HttpStatus.CONFLICT)
-            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .hasStatusOk()
             .bodyJson()
-            .extractingPath("$.error_code")
-            .isEqualTo("provisioning-conflict")
+            .extractingPath("$.account_id")
+            .isEqualTo(existing.id.value.toString())
     }
 
     @Test

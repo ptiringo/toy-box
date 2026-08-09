@@ -10,11 +10,15 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 
 /** ドメインポート [WorldRepository] の唯一の実装。Spring Data JDBC で永続化する（ADR-0027 / ADR-0030）。 */
 @Repository
-class JdbcWorldRepository(private val rows: WorldSpringDataRepository) : WorldRepository {
+class JdbcWorldRepository(
+    private val rows: WorldSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+) : WorldRepository {
 
     override fun findOwnedBy(accountId: AccountId, id: WorldId): World? =
         rows.findByIdAndAccountId(id.value, accountId.value)?.toDomain()
@@ -25,6 +29,27 @@ class JdbcWorldRepository(private val rows: WorldSpringDataRepository) : WorldRe
         } catch (_: OptimisticLockingFailureException) {
             Err(UpdateConflict)
         }
+
+    /**
+     * `ON CONFLICT DO NOTHING` で insert し、結果によらず DB の現状を読み直して返す。
+     *
+     * 設計意図は `JdbcAccountRepository.saveIfAbsent` と同じで、UNIQUE 違反を例外にせず PostgreSQL の トランザクション abort
+     * を避ける（詳細はそちらの KDoc）。
+     */
+    override fun saveIfAbsent(world: World): World {
+        jdbcClient
+            .sql(INSERT_IF_ABSENT)
+            .param("id", world.id.value)
+            .param("accountId", world.accountId.value)
+            .param("name", world.name.value)
+            .param("version", INITIAL_VERSION)
+            .update()
+        return checkNotNull(
+            rows.findByAccountIdAndName(world.accountId.value, world.name.value)?.toDomain()
+        ) {
+            "saveIfAbsent の直後に世界を引けなかった: ${world.accountId.value} / ${world.name.value}"
+        }
+    }
 
     override fun deleteById(id: WorldId) = rows.deleteById(id.value)
 
@@ -38,4 +63,17 @@ class JdbcWorldRepository(private val rows: WorldSpringDataRepository) : WorldRe
         World.reconstitute(WorldId(id), AccountId(accountId), WorldName(name), version)
 
     private fun World.toRow(): WorldRow = WorldRow(id.value, accountId.value, name.value, version)
+
+    private companion object {
+        /** Spring Data JDBC が insert 時に採番する初期 version と揃える（契約テストで縛っている）。 */
+        const val INITIAL_VERSION = 0L
+
+        val INSERT_IF_ABSENT =
+            """
+            INSERT INTO iam.world (id, account_id, name, version)
+            VALUES (:id, :accountId, :name, :version)
+            ON CONFLICT (account_id, name) DO NOTHING
+            """
+                .trimIndent()
+    }
 }

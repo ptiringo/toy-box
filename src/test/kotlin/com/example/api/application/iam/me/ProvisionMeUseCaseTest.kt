@@ -7,7 +7,6 @@ import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.iam.model.world.World
 import com.example.api.domain.iam.model.world.WorldRepository
 import com.example.api.domain.shared.Command
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.getOrThrow
 import io.mockk.every
@@ -31,15 +30,30 @@ class ProvisionMeUseCaseTest {
     fun `未登録の subject ならアカウントと最初の世界を作る`() {
         val savedAccounts = mutableListOf<Account>()
         every { accounts.findBySubjectId(SubjectId("sub-new")) } returns null
-        every { accounts.save(capture(savedAccounts)) } answers { Ok(firstArg<Account>()) }
+        every { accounts.saveIfAbsent(capture(savedAccounts)) } answers { firstArg<Account>() }
         every { worlds.existsByAccountId(any()) } returns false
-        every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
+        every { worlds.saveIfAbsent(any()) } answers { firstArg<World>() }
 
         val accountId = useCase(command("sub-new")).getOrThrow { AssertionError(it.toString()) }
 
-        verify(exactly = 1) { accounts.save(any()) }
-        verify(exactly = 1) { worlds.save(any()) }
+        verify(exactly = 1) { accounts.saveIfAbsent(any()) }
+        verify(exactly = 1) { worlds.saveIfAbsent(any()) }
         assert(accountId == savedAccounts.single().id)
+    }
+
+    @Test
+    fun `並行して先着に負けたら先着のアカウントIDを返す`() {
+        // saveIfAbsent は衝突時に「渡した集約」ではなく「先着の行」を返す。ユースケースが返すのは
+        // 自分が作った ID ではなく DB が裁定した ID であることを縛る。
+        val winner = AccountFixture.account(subjectId = "sub-raced", version = 0L)
+        every { accounts.findBySubjectId(SubjectId("sub-raced")) } returns null
+        every { accounts.saveIfAbsent(any()) } returns winner
+        every { worlds.existsByAccountId(winner.id) } returns false
+        every { worlds.saveIfAbsent(any()) } answers { firstArg<World>() }
+
+        val accountId = useCase(command("sub-raced")).getOrThrow { AssertionError(it.toString()) }
+
+        assert(accountId == winner.id)
     }
 
     @Test
@@ -52,7 +66,7 @@ class ProvisionMeUseCaseTest {
             useCase(command("sub-existing")).getOrThrow { AssertionError(it.toString()) }
 
         assert(accountId == existing.id)
-        verify(exactly = 0) { accounts.save(any()) }
+        verify(exactly = 0) { accounts.saveIfAbsent(any()) }
     }
 
     @Test
@@ -63,7 +77,7 @@ class ProvisionMeUseCaseTest {
 
         useCase(command("sub-has-world")).getOrThrow { AssertionError(it.toString()) }
 
-        verify(exactly = 0) { worlds.save(any()) }
+        verify(exactly = 0) { worlds.saveIfAbsent(any()) }
     }
 
     @Test
@@ -71,11 +85,11 @@ class ProvisionMeUseCaseTest {
         val existing = AccountFixture.account(subjectId = "sub-lost-worlds", version = 1L)
         every { accounts.findBySubjectId(SubjectId("sub-lost-worlds")) } returns existing
         every { worlds.existsByAccountId(existing.id) } returns false
-        every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
+        every { worlds.saveIfAbsent(any()) } answers { firstArg<World>() }
 
         useCase(command("sub-lost-worlds")).getOrThrow { AssertionError(it.toString()) }
 
-        verify(exactly = 1) { worlds.save(any()) }
+        verify(exactly = 1) { worlds.saveIfAbsent(any()) }
     }
 
     @Test
