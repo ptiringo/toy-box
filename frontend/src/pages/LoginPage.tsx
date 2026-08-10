@@ -16,7 +16,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      navigate("/bloodHorses", { replace: true });
+      navigate("/worlds", { replace: true });
     } catch {
       setError("サインインできませんでした。メールアドレスとパスワードを確認してください。");
       setSubmitting(false);
