@@ -2,8 +2,12 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "../api/client";
 
+// getToken はモジュールスコープの安定した参照にする。実物の AuthContext（useMemo）と同じく、
+// レンダーのたびに新しい関数を返さない — そうしないと reload の依存配列（[getToken]）が
+// 呼び出しごとに変わったと誤検知し、useEffect が再フェッチを連鎖させてしまう。
+const getToken = async () => "t";
 vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ getToken: async () => "t" }),
+  useAuth: () => ({ getToken }),
 }));
 
 vi.mock("../api/worlds", () => ({

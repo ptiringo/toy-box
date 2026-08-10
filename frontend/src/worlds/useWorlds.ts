@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "../api/client";
 import { type World, createWorld, deleteWorld, listWorlds, renameWorld } from "../api/worlds";
 import { useAuth } from "../auth/AuthContext";
@@ -27,25 +27,16 @@ export function useWorlds(): UseWorlds {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // getToken は ref 越しに参照する。AuthContext の実装は認証状態が変わらない限り安定した参照を返すが、
-  // それを useCallback/useEffect の依存に直接入れると「毎回新しい関数を返す」呼び出し元（テストダブル等）
-  // まで暗黙に安定を仮定してしまい、マウント時 useEffect が再フェッチを連鎖させかねない。ref にすれば
-  // reload/mutate 系の参照が安定し、常に最新の getToken を使いつつ再フェッチはマウント時の 1 回に保てる。
-  const getTokenRef = useRef(getToken);
-  useEffect(() => {
-    getTokenRef.current = getToken;
-  }, [getToken]);
-
   const reload = useCallback(async () => {
     try {
-      setWorlds(await listWorlds(getTokenRef.current));
+      setWorlds(await listWorlds(getToken));
       setError(null);
     } catch (e) {
       setError(errorMessage(e, "世界の一覧を取得できませんでした。"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     void reload();
@@ -67,24 +58,20 @@ export function useWorlds(): UseWorlds {
   );
 
   const create = useCallback(
-    (name: string) =>
-      mutate(() => createWorld(getTokenRef.current, name), "世界を作成できませんでした。"),
-    [mutate],
+    (name: string) => mutate(() => createWorld(getToken, name), "世界を作成できませんでした。"),
+    [mutate, getToken],
   );
 
   const rename = useCallback(
     (worldId: string, name: string) =>
-      mutate(
-        () => renameWorld(getTokenRef.current, worldId, name),
-        "世界の名前を変更できませんでした。",
-      ),
-    [mutate],
+      mutate(() => renameWorld(getToken, worldId, name), "世界の名前を変更できませんでした。"),
+    [mutate, getToken],
   );
 
   const remove = useCallback(
     (worldId: string) =>
-      mutate(() => deleteWorld(getTokenRef.current, worldId), "世界を削除できませんでした。"),
-    [mutate],
+      mutate(() => deleteWorld(getToken, worldId), "世界を削除できませんでした。"),
+    [mutate, getToken],
   );
 
   return { worlds, loading, error, create, rename, remove };
