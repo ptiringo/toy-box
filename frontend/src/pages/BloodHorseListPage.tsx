@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { ApiError, apiGet } from "../api/client";
+import { Link, useParams } from "react-router-dom";
+import { ApiError, apiGet, errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { breedLabels, coatColors, coatLabels, label, sexLabels } from "../labels";
+import { useWorlds } from "../worlds/useWorlds";
 
 // バックの BloodHorseSummaryResponse（snake_case）に対応する行の型。
 type BloodHorseSummary = {
@@ -16,7 +18,12 @@ type BloodHorseSummary = {
 };
 
 export function BloodHorseListPage() {
+  const { worldId } = useParams<{ worldId: string }>();
   const { getToken, signOutUser } = useAuth();
+  // 世界名は表示専用。取得に失敗しても名前を出さないだけで、アクセス可否の判断はしない
+  // （それは API の 404 world-not-found が担う）。
+  const { worlds } = useWorlds();
+  const worldName = worlds.find((w) => w.id === worldId)?.name ?? null;
   const [rows, setRows] = useState<BloodHorseSummary[]>([]);
   const [status, setStatus] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +32,10 @@ export function BloodHorseListPage() {
     let active = true;
     (async () => {
       try {
-        const data = await apiGet<BloodHorseSummary[]>("/api/bloodHorses", getToken);
+        const data = await apiGet<BloodHorseSummary[]>(
+          `/api/worlds/${worldId}/bloodHorses`,
+          getToken,
+        );
         if (active) {
           setRows(data);
           setStatus(200);
@@ -36,23 +46,25 @@ export function BloodHorseListPage() {
         if (!active) return;
         if (e instanceof ApiError) {
           setStatus(e.status);
-          setError(e.message);
-        } else {
-          setError("原簿を読み込めませんでした。");
         }
+        setError(errorMessage(e, "原簿を読み込めませんでした。"));
       }
     })();
     return () => {
       active = false;
     };
-  }, [getToken]);
+  }, [getToken, worldId]);
 
   return (
     <div className="ledger">
       <header className="ledger__head">
         <h1 className="ledger__title">軽種馬登録原簿</h1>
+        {worldName !== null && <span className="ledger__world">{worldName}</span>}
         <span className="ledger__count">{rows.length} 頭</span>
         <div className="ledger__spacer" />
+        <Link className="btn-ghost" to="/worlds">
+          世界一覧へ
+        </Link>
         {/* 認証を目で見るためのステータス可視化（直近レスポンス） */}
         <span className="status" data-ok={status === 200} title="直近レスポンス">
           {status ?? "—"}
