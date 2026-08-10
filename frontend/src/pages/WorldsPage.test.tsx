@@ -118,4 +118,13 @@ describe("WorldsPage", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("同じ名前の世界が既にあります。");
     });
   });
+
+  it("一覧の取得に失敗したら空状態を出さずエラーだけ出す", () => {
+    stubWorlds({ worlds: [], error: "世界の一覧を取得できませんでした。" });
+
+    renderPage();
+
+    expect(screen.queryByText("世界がありません")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("世界の一覧を取得できませんでした。");
+  });
 });

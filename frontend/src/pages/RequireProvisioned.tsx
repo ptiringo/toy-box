@@ -12,7 +12,7 @@ const FALLBACK = "セットアップに失敗しました。時間をおいて�
  * 認証ガード（RequireAuth）と分けているのは、RequireAuth を「認証状態を見るだけ」に保つため。
  */
 export function RequireProvisioned() {
-  const { user, getToken } = useAuth();
+  const { user, getToken, signOutUser } = useAuth();
   const uid = user?.uid ?? null;
   const [state, setState] = useState<"pending" | "ready" | "error">("pending");
   const [message, setMessage] = useState("");
@@ -43,6 +43,9 @@ export function RequireProvisioned() {
         </p>
         <button className="btn" type="button" onClick={() => void run()}>
           再試行
+        </button>
+        <button className="btn-ghost" type="button" onClick={() => signOutUser()}>
+          ログアウト
         </button>
       </div>
     );

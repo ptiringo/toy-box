@@ -56,7 +56,7 @@ export function WorldsPage() {
 
       {loading ? (
         <div className="loading">読み込み中…</div>
-      ) : worlds.length === 0 ? (
+      ) : worlds.length === 0 && !error ? (
         <section className="empty">
           <p className="empty__mark">世界がありません</p>
           <p className="empty__lede">最初の世界を作ると、その中で軽種馬の登録を始められます。</p>

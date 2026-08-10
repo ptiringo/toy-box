@@ -4,8 +4,13 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "../api/client";
 
+// getToken / signOutUser はモジュールスコープの安定した参照にする。実物の AuthContext（useMemo）と
+// 同じく、レンダーのたびに新しい関数を返すと RequireProvisioned の run（useCallback の依存に
+// getToken を含む）の参照が毎回変わり、useEffect が無限に再フェッチする事故が過去にあった。
+const getToken = async () => "t";
+const signOutUser = vi.fn();
 vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ user: { uid: "u1" }, getToken: async () => "t" }),
+  useAuth: () => ({ user: { uid: "u1" }, getToken, signOutUser }),
 }));
 
 vi.mock("../api/me", () => ({ provisionMe: vi.fn() }));
@@ -67,5 +72,21 @@ describe("RequireProvisioned", () => {
     await waitFor(() => {
       expect(screen.getByText("protected")).toBeInTheDocument();
     });
+  });
+
+  it("セットアップに失敗したらログアウトできる", async () => {
+    provisionMock.mockRejectedValueOnce(
+      new ApiError(401, { error_code: "account-not-provisioned" }),
+    );
+
+    renderGuard();
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "ログアウト" }));
+
+    expect(signOutUser).toHaveBeenCalled();
   });
 });

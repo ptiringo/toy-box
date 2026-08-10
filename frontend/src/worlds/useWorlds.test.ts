@@ -17,12 +17,13 @@ vi.mock("../api/worlds", () => ({
   deleteWorld: vi.fn(),
 }));
 
-import { createWorld, deleteWorld, listWorlds } from "../api/worlds";
+import { createWorld, deleteWorld, listWorlds, renameWorld } from "../api/worlds";
 import { useWorlds } from "./useWorlds";
 
 const listMock = vi.mocked(listWorlds);
 const createMock = vi.mocked(createWorld);
 const deleteMock = vi.mocked(deleteWorld);
+const renameMock = vi.mocked(renameWorld);
 
 describe("useWorlds", () => {
   it("マウント時に一覧を読み込む", async () => {
@@ -74,6 +75,27 @@ describe("useWorlds", () => {
     expect(created).toBe(false);
     expect(result.current.error).toBe("同じ名前の世界が既にあります。");
     expect(listMock).not.toHaveBeenCalled();
+  });
+
+  it("改名が成功したら一覧を引き直す", async () => {
+    listMock
+      .mockResolvedValueOnce([{ id: "w1", name: "はじまりの世界" }])
+      .mockResolvedValueOnce([{ id: "w1", name: "改名後" }]);
+    renameMock.mockResolvedValue({ id: "w1", name: "改名後" });
+
+    const { result } = renderHook(() => useWorlds());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    let renamed = false;
+    await act(async () => {
+      renamed = await result.current.rename("w1", "改名後");
+    });
+
+    expect(renamed).toBe(true);
+    expect(renameMock).toHaveBeenCalledWith(expect.any(Function), "w1", "改名後");
+    expect(result.current.worlds).toEqual([{ id: "w1", name: "改名後" }]);
   });
 
   it("削除が成功したら一覧を引き直す", async () => {
