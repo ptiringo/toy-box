@@ -29,7 +29,7 @@ fun JockeyRegistrationError.toProblemDetail(): ProblemDetail =
                 .apply { setProperty("existing_id", existingId.value) }
         is JockeyRegistrationError.IdempotencyKeyReused ->
             problem(
-                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
                 code = "idempotency-key-reused",
                 title = "Idempotency key reused",
                 detail = "同じ Idempotency-Key が別の内容のリクエストで再利用されました。",

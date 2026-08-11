@@ -3,6 +3,7 @@ package com.example.api.application.racing.jockey
 import com.example.api.application.shared.idempotency.IdempotencyRecord
 import com.example.api.application.shared.idempotency.IdempotencyStore
 import com.example.api.domain.racing.model.jockey.Jockey
+import com.example.api.domain.racing.model.jockey.JockeyId
 import com.example.api.domain.racing.model.jockey.JockeyRepository
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.AccountId
@@ -133,6 +134,23 @@ class JockeyRegistrationUseCaseTest {
 
             assert(jockey.id == recorded.id)
             verify(exactly = 0) { repository.save(worldId, any()) }
+        }
+
+        @Test
+        fun `記録済みだが集約が見つからない場合は再登録する`() {
+            val missingResourceId = generateId()
+            every { store.claim(worldId, "key-missing", "fp") } returns
+                IdempotencyRecord(requestFingerprint = "fp", resourceId = missingResourceId)
+            every { repository.findById(worldId, JockeyId(missingResourceId)) } returns null
+            every { repository.findByFullName(worldId, "武", "豊") } returns null
+            every { repository.save(worldId, any()) } answers { secondArg() }
+            every { store.recordResource(worldId, "key-missing", any()) } returns Unit
+
+            val jockey =
+                useCase(actor, command("武", "豊", Idempotency("key-missing", "fp"))).unwrap()
+
+            verify(exactly = 1) { repository.save(worldId, any()) }
+            verify(exactly = 1) { store.recordResource(worldId, "key-missing", jockey.id.value) }
         }
 
         @Test
