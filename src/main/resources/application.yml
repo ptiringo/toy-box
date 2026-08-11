@@ -25,6 +25,9 @@ spring:
   ai:
     mcp:
       server:
+        # MCP は開発者自身のローカル探索ツールであり、既定（本番 Cloud Run・CI・テスト）では口ごと開かない
+        # （#712）。有効化は application-local.yml が担う。ツール Bean 側も @Profile("local") で二重に絞る。
+        enabled: false
         name: toy-box-mcp
         version: 0.1.0
         # WebMVC の Streamable HTTP トランスポート。SSE/STATELESS も選べるが現行 MCP の標準は STREAMABLE。

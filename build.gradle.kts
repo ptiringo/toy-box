@@ -358,6 +358,15 @@ tasks.register<JavaExec>("checkDbDoc") {
     args("check")
 }
 
+// ローカル開発の bootRun は local プロファイルで起動し、MCP アダプタ（#712）を有効にする。
+// generateOpenApiDocs が使う forked bootRun は openApi{} の customBootRun が別途構成するが、
+// 実測の結果ここで設定した systemProperty はデフォルトで forked bootRun へ波及することを確認済み
+// （springdoc-openapi-gradle-plugin が customBootRun 側未指定時に bootRun の systemProperties を
+// そのまま引き継ぐため）。openApi{} の customBootRun 側で明示的に打ち消している。
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    systemProperty("spring.profiles.active", "local")
+}
+
 // --- OpenAPI 仕様の書き出しと lint（#327） ---
 // generateOpenApiDocs はアプリを forked bootRun でバックグラウンド起動し、/v3/api-docs を
 // build/openapi.json へ書き出す（出力先・ファイル名はプラグインのデフォルト）。datasource は
@@ -375,6 +384,11 @@ openApi {
         // spring-boot-docker-compose がそこを探して見つからず起動失敗する。プロジェクトルートを指定して
         // ローカル bootRun と同じく compose.yaml を発見できるようにする。
         workingDir.set(layout.projectDirectory)
+        // bootRun の spring.profiles.active=local（#712）は、springdoc-openapi-gradle-plugin の実装上
+        // customBootRun.systemProperties が「空」だと bootRun.systemProperties へフォールバックするため、
+        // systemProperties.set(emptyMap()) では打ち消せない（実測済み）。空文字で明示的に上書きし、
+        // forked bootRun（OpenAPI 生成専用）を既定プロファイルのまま保つ。
+        systemProperties.set(mapOf("spring.profiles.active" to ""))
     }
 }
 
