@@ -17,4 +17,7 @@ interface JockeySpringDataRepository : CrudRepository<JockeyRow, UUID> {
         firstName: String,
         lastName: String,
     ): JockeyRow?
+
+    /** 指定の世界の中から ID で検索する。 */
+    fun findByIdAndWorldId(id: UUID, worldId: UUID): JockeyRow?
 }

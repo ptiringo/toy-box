@@ -37,7 +37,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
  */
 @WebMvcTest(JockeyController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(ClockConfiguration::class)
+@Import(ClockConfiguration::class, RequestFingerprint::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class GlobalExceptionHandlerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase

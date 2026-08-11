@@ -44,6 +44,36 @@ class JockeyApiE2eTest(val restTestClient: RestTestClient) : PostgresContainerSu
         worldId = restTestClient.provisionAndFirstWorldId()
     }
 
+    /** 冪等キー付きで 1 件登録し、返ってきたジョッキーIDを取り出す。 */
+    private fun registerTakeWithKey(idempotencyKey: String): String {
+        val body =
+            restTestClient
+                .post()
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
+                .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+                .header("Idempotency-Key", idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("first_name" to "Yutaka", "last_name" to "Take"))
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .returnResult()
+                .responseBody
+        return JsonPath.read<String>(String(body!!), "$.id")
+    }
+
+    @Test
+    fun `同じ Idempotency-Key の再送は同じジョッキーを返す（二重登録されない）`() {
+        val key = "e2e-idempotency-key"
+
+        val first = registerTakeWithKey(key)
+        val second = registerTakeWithKey(key)
+
+        // 同じ ID が返る = 2 回目は再生であって新規作成ではない。
+        assert(first == second)
+    }
+
     @Test
     fun `存在しない ID の照会は 404 と RFC9457 problem+json を返す`() {
         val missingId = "00000000-0000-0000-0000-000000000000"

@@ -21,6 +21,18 @@ REST API は以下のスタイルガイドに準拠する。
 - 単一リソース表現を維持したまま、**相互排他な属性集合だけ**は discriminated な入れ子オブジェクト（`oneOf` ＋判別子 `type`）にしてよい（例: 軽種馬の出自 `origin` ＝ 内国産 `DOMESTIC` / 輸入 `IMPORTED`）。リソース全体を `oneOf` に割ることは依然採らず、共通項は平置きを保つ。Jackson は `@JsonTypeInfo(use = NAME, property = "type")` ＋ `@JsonSubTypes`、springdoc は `@Schema(oneOf = […], discriminatorProperty = "type")`。経緯は [ADR-0020](../../docs/adr/0020-sealed-origin-and-discriminated-origin-subobject.md)
 - **外部公開 ID は不透明（opaque）な識別子**として扱う。クライアントは ID の構造を解釈・推測せず、受け取った値をそのまま使う（[AIP-122](https://google.aip.dev/122) の原則）。当面は ID 表現を **生 UUID 据え置き**とし、不透明 ID エンコード（base62/ULID 等）や AIP resource name（`bloodHorses/{id}`）形式の導入は実クライアント・実運用が現れた時点まで遅延する。採否・再評価トリガは [ADR-0042](../../docs/adr/0042-defer-external-id-policy-keep-raw-uuid.md)
 
+## 冪等キー（再送安全性）
+
+再送安全性は **`Idempotency-Key` リクエストヘッダ**で受ける（[ADR-0072](../../docs/adr/0072-idempotency-key-header-trial.md)）。
+AIP-155 の `request_id`（ボディフィールド）は採らない。冪等キーは「同じ HTTP リクエストの再送」を識別する
+転送レイヤの関心であって、リソースの表現ではないため。
+
+- ヘッダは**任意**。付いていなければ従来どおり処理する。
+- 同じキー・同じ内容の再送は初回と同じ結果を返す。同じキー・異なる内容は 422 `idempotency-key-reused`。
+- 拠り所の IETF draft は **Expired**（RFC 化されていない）。デファクトとして採っている。
+- 記録は**ユースケースのトランザクション内**で行う（ADR-0051）。外すと「キーはあるがリソースが無い」状態が生じる。
+- **現状の適用は `POST /api/worlds/{worldId}/jockeys` の 1 本だけ**（試作）。横展開は別 Issue。
+
 ## 世界スコープ（テナント分離）
 
 プレイヤーごとの世界（セーブデータ）によるテナント分離（[ADR-0067](../../docs/adr/0067-per-player-world-tenant-isolation.md)、`#705`）に伴い、ドメインリソースの置き場所とハンドラの引数を以下のとおり固定する。

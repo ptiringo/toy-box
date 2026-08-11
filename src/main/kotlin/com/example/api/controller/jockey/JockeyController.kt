@@ -5,11 +5,13 @@ import com.example.api.application.racing.jockey.GetJockeyUseCase
 import com.example.api.application.racing.jockey.JockeyRegistrationUseCase
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.controller.CurrentActor
+import com.example.api.controller.RequestFingerprint
 import com.example.api.controller.jockey.problem.toProblemDetail
 import com.example.api.controller.jockey.request.RegisterJockeyRequest
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Idempotency
 import com.github.michaelbull.result.mapError
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -43,6 +46,7 @@ class JockeyController(
     private val registerJockey: JockeyRegistrationUseCase,
     private val getJockey: GetJockeyUseCase,
     private val clock: Clock,
+    private val requestFingerprint: RequestFingerprint,
 ) {
     @Operation(
         operationId = "registerJockey",
@@ -64,7 +68,7 @@ class JockeyController(
                 ),
                 ApiResponse(
                     responseCode = "400",
-                    description = "氏名がブランク",
+                    description = "氏名がブランク、または Idempotency-Key の形式が不正（空文字列 / 255 文字超）",
                     content =
                         [
                             Content(
@@ -84,6 +88,17 @@ class JockeyController(
                             )
                         ],
                 ),
+                ApiResponse(
+                    responseCode = "422",
+                    description = "同じ Idempotency-Key が別内容のリクエストで再利用された",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
             ],
     )
     @ResponseStatus(HttpStatus.CREATED)
@@ -91,11 +106,24 @@ class JockeyController(
     fun register(
         @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
         @Parameter(hidden = true) @CurrentActor actor: Actor,
+        @Parameter(description = "再送を識別する冪等キー（同じキー・同じ内容の再送は初回と同じ結果を返す）")
+        @RequestHeader(name = "Idempotency-Key", required = false)
+        idempotencyKey: String?,
         @OperationRequestBody(description = "登録するジョッキーの氏名")
         @RequestBody
         request: RegisterJockeyRequest,
     ): JockeyResponse {
-        val command = Command.now(RegisterJockeyCommand(request.firstName, request.lastName), clock)
+        val idempotency: Idempotency? = idempotencyKey?.let { key ->
+            Idempotency.create(key, requestFingerprint.of(request))
+                .mapError { error -> error.toProblemDetail() }
+                .orThrowProblem()
+        }
+        val command =
+            Command.now(
+                RegisterJockeyCommand(request.firstName, request.lastName),
+                clock,
+                idempotency,
+            )
         val jockey =
             registerJockey(actor, command).mapError { it.toProblemDetail() }.orThrowProblem()
         return jockey.toResponse()

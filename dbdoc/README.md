@@ -12,6 +12,7 @@
 | [studbook.covering_report](studbook.covering_report.md) | 6 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
 | [iam.account](iam.account.md) | 3 | この API の利用者アカウント（IdP の subject に世界を結びつける） | BASE TABLE |
 | [iam.world](iam.world.md) | 4 | プレイヤーごとの世界（セーブデータ）。全ドメインのデータはいずれかの世界に属する | BASE TABLE |
+| [shared.idempotency_record](shared.idempotency_record.md) | 5 | 再送を識別する冪等キーの記録（Idempotency-Key ヘッダ） | BASE TABLE |
 
 ## Relations
 
@@ -32,6 +33,7 @@ erDiagram
 "studbook.covering_report" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "studbook.covering_report" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, stallion_breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
 "iam.world" }o--|| "iam.account" : "FOREIGN KEY (account_id) REFERENCES iam.account(id) ON DELETE CASCADE"
+"shared.idempotency_record" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "racing.jockey" {
   uuid id
@@ -111,6 +113,13 @@ erDiagram
   uuid account_id FK
   varchar_64_ name
   bigint version
+}
+"shared.idempotency_record" {
+  uuid world_id FK
+  varchar_255_ idempotency_key
+  varchar_64_ request_fingerprint
+  uuid resource_id
+  timestamp_with_time_zone created_at
 }
 ```
 

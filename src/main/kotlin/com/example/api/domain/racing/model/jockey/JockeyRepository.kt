@@ -15,6 +15,14 @@ interface JockeyRepository {
     /** 指定の世界の中から同姓同名のジョッキーを検索する。その世界に無ければ null。 */
     fun findByFullName(worldId: WorldId, firstName: String, lastName: String): Jockey?
 
+    /**
+     * 指定の世界の中からジョッキーを ID で引く。その世界に無ければ null。
+     *
+     * 書き込みユースケースが**自分が作った集約を読み直す**ための口（冪等キーによる再送の再生。ADR-0072）。
+     * 読み取り経路（`JockeyQueries`）とは別物で、ADR-0031 が戒める「read 用途で write ポートに finder を 生やす」には当たらない。
+     */
+    fun findById(worldId: WorldId, id: JockeyId): Jockey?
+
     /** ジョッキーを指定の世界に永続化する */
     fun save(worldId: WorldId, jockey: Jockey): Jockey
 }
