@@ -25,6 +25,6 @@ CREATE TABLE shared.idempotency_record (
 COMMENT ON TABLE shared.idempotency_record IS '再送を識別する冪等キーの記録（Idempotency-Key ヘッダ）';
 COMMENT ON COLUMN shared.idempotency_record.world_id IS 'キーが属する世界のID（世界の削除で連鎖削除される）';
 COMMENT ON COLUMN shared.idempotency_record.idempotency_key IS 'クライアントが付けた冪等キー';
-COMMENT ON COLUMN shared.idempotency_record.request_fingerprint IS 'リクエスト本文の SHA-256（hex）';
+COMMENT ON COLUMN shared.idempotency_record.request_fingerprint IS 'リクエスト DTO の SHA-256（hex）';
 COMMENT ON COLUMN shared.idempotency_record.resource_id IS '成功時に作られたリソースのID（未成功なら NULL）';
 COMMENT ON COLUMN shared.idempotency_record.created_at IS 'キーを確保した時刻';

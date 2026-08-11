@@ -17,6 +17,7 @@ import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Idempotency
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
@@ -229,6 +230,40 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .hasStatus(HttpStatus.CREATED)
 
             assert(commands.single().idempotency == null)
+        }
+
+        @Test
+        fun `空文字列の Idempotency-Key で 400 と problem+json が返ること`() {
+            tester
+                .post()
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", "")
+                .content("""{"first_name":"武","last_name":"豊"}""")
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("idempotency-key-blank")
+        }
+
+        @Test
+        fun `最大長を超える Idempotency-Key で 400 と problem+json が返ること`() {
+            val tooLong = "k".repeat(Idempotency.MAX_KEY_LENGTH + 1)
+
+            tester
+                .post()
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", tooLong)
+                .content("""{"first_name":"武","last_name":"豊"}""")
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("idempotency-key-too-long")
         }
 
         @Test

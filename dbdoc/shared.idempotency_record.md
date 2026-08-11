@@ -10,7 +10,7 @@
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
 | world_id | uuid |  | false |  | [iam.world](iam.world.md) | キーが属する世界のID（世界の削除で連鎖削除される） |
 | idempotency_key | varchar(255) |  | false |  |  | クライアントが付けた冪等キー |
-| request_fingerprint | varchar(64) |  | false |  |  | リクエスト本文の SHA-256（hex） |
+| request_fingerprint | varchar(64) |  | false |  |  | リクエスト DTO の SHA-256（hex） |
 | resource_id | uuid |  | true |  |  | 成功時に作られたリソースのID（未成功なら NULL） |
 | created_at | timestamp with time zone |  | false |  |  | キーを確保した時刻 |
 

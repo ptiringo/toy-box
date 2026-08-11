@@ -68,7 +68,7 @@ class JockeyController(
                 ),
                 ApiResponse(
                     responseCode = "400",
-                    description = "氏名がブランク",
+                    description = "氏名がブランク、または Idempotency-Key の形式が不正（空文字列 / 255 文字超）",
                     content =
                         [
                             Content(
@@ -113,11 +113,16 @@ class JockeyController(
         @RequestBody
         request: RegisterJockeyRequest,
     ): JockeyResponse {
+        val idempotency: Idempotency? = idempotencyKey?.let { key ->
+            Idempotency.create(key, requestFingerprint.of(request))
+                .mapError { error -> error.toProblemDetail() }
+                .orThrowProblem()
+        }
         val command =
             Command.now(
                 RegisterJockeyCommand(request.firstName, request.lastName),
                 clock,
-                idempotencyKey?.let { Idempotency(it, requestFingerprint.of(request)) },
+                idempotency,
             )
         val jockey =
             registerJockey(actor, command).mapError { it.toProblemDetail() }.orThrowProblem()

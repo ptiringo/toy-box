@@ -33,6 +33,10 @@ class JockeyRegistrationUseCaseTest {
     ): Command<RegisterJockeyCommand> =
         Command(RegisterJockeyCommand(firstName, lastName), Instant.now(), idempotency)
 
+    /** 冪等キー生成の定型（`Idempotency.create` の `Result` を剥がす）をテスト全体で共通化する。 */
+    private fun idempotency(key: String, fingerprint: String): Idempotency =
+        Idempotency.create(key, fingerprint).unwrap()
+
     @Nested
     inner class SuccessCase {
         @Test
@@ -118,7 +122,7 @@ class JockeyRegistrationUseCaseTest {
             every { repository.save(worldId, any()) } answers { secondArg() }
             every { store.recordResource(worldId, "key-first", any()) } returns Unit
 
-            val jockey = useCase(actor, command("武", "豊", Idempotency("key-first", "fp"))).unwrap()
+            val jockey = useCase(actor, command("武", "豊", idempotency("key-first", "fp"))).unwrap()
 
             verify(exactly = 1) { store.recordResource(worldId, "key-first", jockey.id.value) }
         }
@@ -130,7 +134,7 @@ class JockeyRegistrationUseCaseTest {
                 IdempotencyRecord(requestFingerprint = "fp", resourceId = recorded.id.value)
             every { repository.findById(worldId, recorded.id) } returns recorded
 
-            val jockey = useCase(actor, command("武", "豊", Idempotency("key-replay", "fp"))).unwrap()
+            val jockey = useCase(actor, command("武", "豊", idempotency("key-replay", "fp"))).unwrap()
 
             assert(jockey.id == recorded.id)
             verify(exactly = 0) { repository.save(worldId, any()) }
@@ -147,7 +151,7 @@ class JockeyRegistrationUseCaseTest {
             every { store.recordResource(worldId, "key-missing", any()) } returns Unit
 
             val jockey =
-                useCase(actor, command("武", "豊", Idempotency("key-missing", "fp"))).unwrap()
+                useCase(actor, command("武", "豊", idempotency("key-missing", "fp"))).unwrap()
 
             verify(exactly = 1) { repository.save(worldId, any()) }
             verify(exactly = 1) { store.recordResource(worldId, "key-missing", jockey.id.value) }
@@ -158,7 +162,7 @@ class JockeyRegistrationUseCaseTest {
             every { store.claim(worldId, "key-reused", "fp-new") } returns
                 IdempotencyRecord(requestFingerprint = "fp-original", resourceId = null)
 
-            val result = useCase(actor, command("武", "豊", Idempotency("key-reused", "fp-new")))
+            val result = useCase(actor, command("武", "豊", idempotency("key-reused", "fp-new")))
 
             assert(result.getError() == JockeyRegistrationError.IdempotencyKeyReused)
             verify(exactly = 0) { repository.save(worldId, any()) }

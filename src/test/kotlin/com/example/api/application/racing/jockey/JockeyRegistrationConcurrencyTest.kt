@@ -9,6 +9,7 @@ import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
 import com.github.michaelbull.result.getOrThrow
+import com.github.michaelbull.result.unwrap
 import java.time.Clock
 import java.util.concurrent.Callable
 import java.util.concurrent.CyclicBarrier
@@ -46,6 +47,7 @@ class JockeyRegistrationConcurrencyTest : PostgresContainerSupport() {
     }
 
     private fun registerConcurrently(key: String): List<JockeyId> {
+        val idempotency = Idempotency.create(key, FINGERPRINT).unwrap()
         val barrier = CyclicBarrier(THREADS)
         val executor = Executors.newFixedThreadPool(THREADS)
         return try {
@@ -58,7 +60,7 @@ class JockeyRegistrationConcurrencyTest : PostgresContainerSupport() {
                             Command.now(
                                 RegisterJockeyCommand("Yutaka", "Take"),
                                 Clock.systemUTC(),
-                                Idempotency(key, FINGERPRINT),
+                                idempotency,
                             ),
                         )
                     }
