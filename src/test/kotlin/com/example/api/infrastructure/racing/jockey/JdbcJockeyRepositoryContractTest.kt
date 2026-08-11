@@ -89,4 +89,22 @@ class JdbcJockeyRepositoryContractTest(private val rows: JockeySpringDataReposit
     fun `存在しない名前のfindByFullNameはnullを返す`() {
         assert(repository.findByFullName(worldId, "該当", "無し") == null)
     }
+
+    @Test
+    fun `保存したジョッキーをIDで引き当てられる`() {
+        val saved = repository.save(worldId, Jockey.create("武", "豊").unwrap())
+
+        val found = repository.findById(worldId, saved.id)
+
+        assert(found == saved)
+        assert(found!!.firstName == "武")
+    }
+
+    @Test
+    fun `他人の世界のジョッキーはIDで引けない`() {
+        val othersWorldId = WorldId(createWorld("他人の世界"))
+        val saved = repository.save(worldId, Jockey.create("幸", "福永").unwrap())
+
+        assert(repository.findById(othersWorldId, saved.id) == null)
+    }
 }

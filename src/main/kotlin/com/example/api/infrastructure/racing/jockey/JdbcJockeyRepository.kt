@@ -22,6 +22,9 @@ class JdbcJockeyRepository(private val rows: JockeySpringDataRepository) : Jocke
     override fun findByFullName(worldId: WorldId, firstName: String, lastName: String): Jockey? =
         rows.findByWorldIdAndFirstNameAndLastName(worldId.value, firstName, lastName)?.toDomain()
 
+    override fun findById(worldId: WorldId, id: JockeyId): Jockey? =
+        rows.findByIdAndWorldId(id.value, worldId.value)?.toDomain()
+
     override fun save(worldId: WorldId, jockey: Jockey): Jockey =
         rows.save(jockey.toRow(worldId)).toDomain()
 
