@@ -3,7 +3,7 @@ package com.example.api.mcp
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * MCP アダプタの設定（`local` プロファイル限定。#712 / ADR-0035 / ADR-0072）。
+ * MCP アダプタの設定（`local` プロファイル限定。#712 / ADR-0035 / ADR-0073）。
  *
  * MCP には HTTP のリクエストも JWT も無いため、REST が JWT の `sub` から解決している「誰が操作しているか」を ここで与える。値は
  * `application-local.yml` が `MCP_SUBJECT_ID` 環境変数から受け取る（個人の subject を リポジトリに書かないため）。

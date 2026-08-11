@@ -8,7 +8,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false | [racing.jockey](racing.jockey.md) [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) [studbook.horse_inspection](studbook.horse_inspection.md) [studbook.covering_report](studbook.covering_report.md) |  | 世界ID（外部採番の UUIDv7） |
+| id | uuid |  | false | [racing.jockey](racing.jockey.md) [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) [studbook.horse_inspection](studbook.horse_inspection.md) [studbook.covering_report](studbook.covering_report.md) [shared.idempotency_record](shared.idempotency_record.md) |  | 世界ID（外部採番の UUIDv7） |
 | account_id | uuid |  | false |  | [iam.account](iam.account.md) | 世界を所有するアカウントのID（削除時は配下の世界も消える） |
 | name | varchar(64) |  | false |  |  | プレイヤーが付けた世界の名前（同一アカウント内で一意） |
 | version | bigint |  | false |  |  | 楽観ロック兼 insert 判定用の version |
@@ -39,6 +39,7 @@ erDiagram
 "studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "studbook.horse_inspection" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "studbook.covering_report" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"shared.idempotency_record" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "iam.world" }o--|| "iam.account" : "FOREIGN KEY (account_id) REFERENCES iam.account(id) ON DELETE CASCADE"
 
 "iam.world" {
@@ -114,6 +115,13 @@ erDiagram
   date submitted_on
   bigint version
   uuid world_id FK
+}
+"shared.idempotency_record" {
+  uuid world_id FK
+  varchar_255_ idempotency_key
+  varchar_64_ request_fingerprint
+  uuid resource_id
+  timestamp_with_time_zone created_at
 }
 "iam.account" {
   uuid id

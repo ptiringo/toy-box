@@ -86,9 +86,10 @@ internal val readsEntityVersionOfAnotherClass =
 /**
  * 境界づけられたコンテキスト（studbook / racing / sakamichi / tennis 等）へのスライス割り当て。
  *
- * application / domain / infrastructure 各層の直下のパッケージ名をコンテキスト名とみなす。 domain
- * 直下の共有カーネル（`shared`、[com.example.api.domain.shared.Command] 等）、controller、
- * ルートパッケージはコンテキストに属さないため対象外とする。
+ * application / domain / infrastructure 各層の直下のパッケージ名をコンテキスト名とみなす。 **3 層いずれについても `shared`
+ * は共有カーネルとして扱いコンテキストに属さない**（`domain.shared` の [com.example.api.domain.shared.Command]
+ * に加え、ドメイン概念でない横断的なポート・実装＝`application.shared` / `infrastructure.shared` も含む。ADR-0072）。 controller
+ * とルートパッケージも対象外とする。
  */
 internal object BoundedContextAssignment : SliceAssignment {
     private val contextPackage =

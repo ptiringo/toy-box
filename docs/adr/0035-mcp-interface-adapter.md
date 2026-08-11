@@ -54,7 +54,7 @@ MCP エンドポイントに認証は当面設定しない（ローカル探索�
 
 ## 追補（2026-08-11）: 認証とテナント分離の決着、Kover 記述の訂正
 
-本 ADR が follow-up としていた「MCP の認証」は、[ADR-0072](0072-mcp-adapter-local-only-world-scoped.md)
+本 ADR が follow-up としていた「MCP の認証」は、[ADR-0073](0073-mcp-adapter-local-only-world-scoped.md)
 で「開発者自身のローカル探索ツールとして `local` プロファイル限定にする」形で決着した（#712）。
 `accountId` を設定で固定し `worldId` をツール引数で受けることで、認証の無いまま世界スコープ
 （[ADR-0067](0067-per-player-world-tenant-isolation.md)）の内側に収まる。あわせて本 ADR の「本番は
@@ -65,4 +65,4 @@ MCP エンドポイントに認証は当面設定しない（ローカル探索�
 `variant("mature")` の includes に追加する」という記述は、Kover 設定が **includes 方式だった時代**のもの。
 現在は excludes 反転方式（探索段階のパッケージだけを列挙し、残り全部をゲート対象とする。
 [ADR-0040](0040-coverage-gate-operation-model.md)）に変わっており、`com.example.api.mcp` は excludes に
-列挙されていないため**既にゲート母集団に入る**。ADR-0072 の方針に従い、excludes へ追加せずカバレッジを満たす。
+列挙されていないため**既にゲート母集団に入る**。ADR-0073 の方針に従い、excludes へ追加せずカバレッジを満たす。

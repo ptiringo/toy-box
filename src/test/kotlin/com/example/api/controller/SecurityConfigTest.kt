@@ -115,7 +115,7 @@ class SecurityConfigTest(val restTestClient: RestTestClient) : PostgresContainer
 
     @Test
     fun `既定プロファイルでは MCP エンドポイントは permitAll ではなく 401 になる`() {
-        // MCP の permitAll（PUBLIC_ENDPOINTS + MCP_ENDPOINTS）は local プロファイル限定（#712 / ADR-0072）。
+        // MCP の permitAll（PUBLIC_ENDPOINTS + MCP_ENDPOINTS）は local プロファイル限定（#712 / ADR-0073）。
         // 既定プロファイルではエンドポイント自体が存在しない（spring.ai.mcp.server.enabled: false）ため、
         // permitAll に戻すと 404 に変わり判別できる。フィルタチェーンで弾かれた 401 が期待値。
         restTestClient.post().uri("/mcp").exchange().expectStatus().isUnauthorized
