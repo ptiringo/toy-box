@@ -1,11 +1,14 @@
 package com.example.api.application.racing.jockey
 
+import com.example.api.application.shared.idempotency.IdempotencyRecord
+import com.example.api.application.shared.idempotency.IdempotencyStore
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyRepository
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.shared.Idempotency
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.getError
@@ -22,8 +25,12 @@ private val worldId = WorldId(generateId())
 private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId)
 
 class JockeyRegistrationUseCaseTest {
-    private fun command(firstName: String, lastName: String): Command<RegisterJockeyCommand> =
-        Command(RegisterJockeyCommand(firstName, lastName), Instant.now())
+    private fun command(
+        firstName: String,
+        lastName: String,
+        idempotency: Idempotency? = null,
+    ): Command<RegisterJockeyCommand> =
+        Command(RegisterJockeyCommand(firstName, lastName), Instant.now(), idempotency)
 
     @Nested
     inner class SuccessCase {
@@ -32,7 +39,7 @@ class JockeyRegistrationUseCaseTest {
             val repository = mockk<JockeyRepository>()
             every { repository.findByFullName(worldId, "武", "豊") } returns null
             every { repository.save(worldId, any()) } answers { secondArg() }
-            val useCase = JockeyRegistrationUseCase(repository)
+            val useCase = JockeyRegistrationUseCase(repository, mockk<IdempotencyStore>())
 
             val jockey = useCase(actor, command("武", "豊")).unwrap()
 
@@ -47,7 +54,7 @@ class JockeyRegistrationUseCaseTest {
         @Test
         fun `名がブランクのとき InvalidJockey(BlankFirstName) を返し永続化されない`() {
             val repository = mockk<JockeyRepository>()
-            val useCase = JockeyRegistrationUseCase(repository)
+            val useCase = JockeyRegistrationUseCase(repository, mockk<IdempotencyStore>())
 
             val result = useCase(actor, command("", "豊"))
 
@@ -61,7 +68,7 @@ class JockeyRegistrationUseCaseTest {
         @Test
         fun `姓がブランクのとき InvalidJockey(BlankLastName) を返し永続化されない`() {
             val repository = mockk<JockeyRepository>()
-            val useCase = JockeyRegistrationUseCase(repository)
+            val useCase = JockeyRegistrationUseCase(repository, mockk<IdempotencyStore>())
 
             val result = useCase(actor, command("武", ""))
 
@@ -77,11 +84,65 @@ class JockeyRegistrationUseCaseTest {
             val existing = Jockey.create("武", "豊").unwrap()
             val repository = mockk<JockeyRepository>()
             every { repository.findByFullName(worldId, "武", "豊") } returns existing
-            val useCase = JockeyRegistrationUseCase(repository)
+            val useCase = JockeyRegistrationUseCase(repository, mockk<IdempotencyStore>())
 
             val result = useCase(actor, command("武", "豊"))
 
             assert(result.getError() == JockeyRegistrationError.DuplicateJockey(existing.id))
+            verify(exactly = 0) { repository.save(worldId, any()) }
+        }
+    }
+
+    @Nested
+    inner class IdempotencyCase {
+        private val repository = mockk<JockeyRepository>()
+        private val store = mockk<IdempotencyStore>()
+        private val useCase = JockeyRegistrationUseCase(repository, store)
+
+        @Test
+        fun `冪等キーが無ければ記録を触らない`() {
+            every { repository.findByFullName(worldId, "武", "豊") } returns null
+            every { repository.save(worldId, any()) } answers { secondArg() }
+
+            useCase(actor, command("武", "豊")).unwrap()
+
+            verify(exactly = 0) { store.claim(any(), any(), any()) }
+        }
+
+        @Test
+        fun `冪等キー付きの初回は実処理を行い結果を記録する`() {
+            every { store.claim(worldId, "key-first", "fp") } returns
+                IdempotencyRecord(requestFingerprint = "fp", resourceId = null)
+            every { repository.findByFullName(worldId, "武", "豊") } returns null
+            every { repository.save(worldId, any()) } answers { secondArg() }
+            every { store.recordResource(worldId, "key-first", any()) } returns Unit
+
+            val jockey = useCase(actor, command("武", "豊", Idempotency("key-first", "fp"))).unwrap()
+
+            verify(exactly = 1) { store.recordResource(worldId, "key-first", jockey.id.value) }
+        }
+
+        @Test
+        fun `記録済みの再送は実処理をせず記録済みの集約を返す`() {
+            val recorded = Jockey.create("武", "豊").unwrap()
+            every { store.claim(worldId, "key-replay", "fp") } returns
+                IdempotencyRecord(requestFingerprint = "fp", resourceId = recorded.id.value)
+            every { repository.findById(worldId, recorded.id) } returns recorded
+
+            val jockey = useCase(actor, command("武", "豊", Idempotency("key-replay", "fp"))).unwrap()
+
+            assert(jockey.id == recorded.id)
+            verify(exactly = 0) { repository.save(worldId, any()) }
+        }
+
+        @Test
+        fun `同じキーを別内容で使うと IdempotencyKeyReused を返す`() {
+            every { store.claim(worldId, "key-reused", "fp-new") } returns
+                IdempotencyRecord(requestFingerprint = "fp-original", resourceId = null)
+
+            val result = useCase(actor, command("武", "豊", Idempotency("key-reused", "fp-new")))
+
+            assert(result.getError() == JockeyRegistrationError.IdempotencyKeyReused)
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
     }
