@@ -68,3 +68,11 @@ full-replace で書き込まれるため、Console で手動追加したドメ�
   フロントの `frontend/.env.local` に入れる。Terraform 取得（`google-beta` + `google_firebase_web_app`
   + `data.google_firebase_web_app_config`）は GCP プロジェクトの Firebase 化を伴うため段階 B として分けた。
 - **テストユーザー**は Terraform にリソースが無いため Console / gcloud で手動作成する。
+
+## 追補（2026-08-11）: `/mcp/**` の permitAll は `local` プロファイル限定へ
+
+本 ADR は「MCP エンドポイントは `permitAll` のまま残る。MCP クライアントへの認証の載せ方は別途決める」
+としていたが、[ADR-0072](0072-mcp-adapter-local-only-world-scoped.md)（#712）で MCP を開発者自身の
+ローカル探索ツールと位置づけ、`/mcp/**` の permitAll を **`local` プロファイルのときだけ**適用するよう
+変更した。既定プロファイル（本番 Cloud Run・CI・テスト）では `spring.ai.mcp.server.enabled: false` により
+エンドポイント自体が存在しない。
