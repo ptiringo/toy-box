@@ -359,12 +359,14 @@ tasks.register<JavaExec>("checkDbDoc") {
 }
 
 // ローカル開発の bootRun は local プロファイルで起動し、MCP アダプタ（#712）を有効にする。
-// generateOpenApiDocs が使う forked bootRun は openApi{} の customBootRun が別途構成するが、
-// 実測の結果ここで設定した systemProperty はデフォルトで forked bootRun へ波及することを確認済み
-// （springdoc-openapi-gradle-plugin が customBootRun 側未指定時に bootRun の systemProperties を
-// そのまま引き継ぐため）。openApi{} の customBootRun 側で明示的に打ち消している。
+// systemProperty ではなく args で渡すのは、openApi{} の customBootRun（下記）が args を
+// 明示的に非空で構成しており（--server.port=8090）、springdoc-openapi-gradle-plugin は
+// customBootRun 側の args が非空ならそちらで完全に置き換える実装のため、forked bootRun
+// （OpenAPI 生成専用）へこの --spring.profiles.active=local が波及しない（実測済み。詳細は
+// customBootRun 側のコメントを参照）。systemProperty で渡すと customBootRun.systemProperties が
+// 未指定のときに bootRun.systemProperties へフォールバックする実装のため波及してしまう。
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    systemProperty("spring.profiles.active", "local")
+    args("--spring.profiles.active=local")
 }
 
 // --- OpenAPI 仕様の書き出しと lint（#327） ---
@@ -379,16 +381,14 @@ openApi {
     // デフォルト 30 秒から延長する。
     waitTimeInSeconds.set(120)
     customBootRun {
+        // args を非空で構成すること自体が、bootRun 側の args（--spring.profiles.active=local）を
+        // forked bootRun へ波及させない打ち消しになっている（springdoc-openapi-gradle-plugin は
+        // customBootRun.args が非空ならそちらで完全に置き換える実装のため。実測済み）。
         args.set(listOf("--server.port=8090"))
         // forked プロセスの既定 workingDir（build/tmp/forkedSpringBootRun）には compose.yaml が無く、
         // spring-boot-docker-compose がそこを探して見つからず起動失敗する。プロジェクトルートを指定して
         // ローカル bootRun と同じく compose.yaml を発見できるようにする。
         workingDir.set(layout.projectDirectory)
-        // bootRun の spring.profiles.active=local（#712）は、springdoc-openapi-gradle-plugin の実装上
-        // customBootRun.systemProperties が「空」だと bootRun.systemProperties へフォールバックするため、
-        // systemProperties.set(emptyMap()) では打ち消せない（実測済み）。空文字で明示的に上書きし、
-        // forked bootRun（OpenAPI 生成専用）を既定プロファイルのまま保つ。
-        systemProperties.set(mapOf("spring.profiles.active" to ""))
     }
 }
 

@@ -3,16 +3,23 @@ package com.example.api.mcp
 import com.example.api.mcp.iam.world.WorldMcpTools
 import com.example.api.mcp.racing.jockey.JockeyMcpTools
 import com.example.api.support.PostgresContainerSupport
+import io.modelcontextprotocol.server.McpSyncServer
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 
 /**
- * 既定プロファイルでは MCP ツールが 1 つも生えないことの検証（#712）。
+ * 既定プロファイルでは MCP が 1 つも生えないことの検証（#712）。
  *
- * 「MCP は開発者自身のローカル探索ツールであり、本番・CI では口ごと開かない」が本設計の要であるため、 意図の表明（設定コメント）で終わらせず機械で押さえる。`@Autowired`
- * の失敗（コンテキスト起動エラー）に 頼らず Bean 名の集合を直接見るのは、「起動が壊れないこと」も同時に確かめたいため。
+ * 「MCP は開発者自身のローカル探索ツールであり、本番・CI では口ごと開かない」が本設計の要であるため、 意図の表明（設定コメント）で終わらせず機械で押さえる。守りは 2
+ * 枚あり、片方だけでは片方が誤って 有効化されても気付けないため、両方を別々に検証する:
+ * - `@Profile("local")`（Task 1〜3。ツール Bean 自体を生やさない）: [JockeyMcpTools] / [WorldMcpTools] /
+ *   [McpActorFactory] が対象
+ * - `spring.ai.mcp.server.enabled: false`（本タスク。MCP サーバー本体・HTTP エンドポイントを落とす）: `McpSyncServer`（Spring
+ *   AI の MCP server オートコンフィグが登録するサーバー本体の Bean）が対象
+ *
+ * `@Autowired` の失敗（コンテキスト起動エラー）に頼らず Bean 名の集合を直接見るのは、 「起動が壊れないこと」も同時に確かめたいため。
  *
  * `@SpringBootTest` は [com.example.api.ApiApplicationTests] と同一構成にしてコンテキストキャッシュを共有する
  * （プロファイルもプロパティも足さない）。
@@ -35,5 +42,12 @@ class McpDisabledByDefaultTest : PostgresContainerSupport() {
         val factories = context.getBeanNamesForType(McpActorFactory::class.java)
 
         assert(factories.isEmpty())
+    }
+
+    @Test
+    fun `既定プロファイルではMCPサーバー本体のBeanも登録されない`() {
+        val mcpServers = context.getBeanNamesForType(McpSyncServer::class.java)
+
+        assert(mcpServers.isEmpty())
     }
 }
