@@ -38,7 +38,7 @@ paths:
 - **ドメインサービスはドメインモデルにのみ依存でき、その逆（モデル→サービス）は禁止**
 - アダプター同士（`controller` ⇔ `infrastructure` ⇔ `mcp`）の参照は禁止
 - `@RestController` は `controller`、`@Service` は `application`、Spring の `@Repository`（ポート実装）は `infrastructure` に置く
-- `@McpTool` を持つ Spring Bean は `mcp` に置く（application 層に直付けしない）。ArchUnit は `ArchSupport.kt` の `adapter("mcp", MCP)` で `mcp` を adapter リングとして強制する（[ADR-0035](../../docs/adr/0035-mcp-interface-adapter.md)）
+- `@McpTool` を持つ Spring Bean は `mcp` に置く（application 層に直付けしない）。ArchUnit は `ArchSupport.kt` の `adapter("mcp", MCP)` で `mcp` を adapter リングとして強制する（[ADR-0035](../../docs/adr/0035-mcp-interface-adapter.md)）。MCP アダプタは **`local` プロファイル限定**で、`Actor` は JWT ではなく設定の `toy-box.mcp.subject-id` とツール引数の `worldId` から `McpActorFactory` が組む（[ADR-0073](../../docs/adr/0073-mcp-adapter-local-only-world-scoped.md)）。**MCP ツールは `accountId` を引数に取らない**。`Actor` は必ず `McpActorFactory` 経由で得ること（ツール引数から受け取ってよいのは `worldId` まで）。`accountId` を呼び出し側が指定できるようにすると、認証の無い MCP で他人の世界を読めてしまう。ユースケースの `Actor` 第 1 引数（detekt `ActorScopedUseCase`）やポートの `WorldId` 第 1 引数（detekt `WorldScopedPortSignature`）と同種の不変条件だが、こちらに対応する機械強制はまだ無く、**現状はレビューで担保する**（後述「機械強制しない規約（レビューで担保）」と同じ位置づけ。ArchUnit / detekt ルールの追加は別 Issue 送り）
 - **書き込みユースケース（`Command` を受ける `invoke`）には `@Transactional` を付与しトランザクション境界とする**（複数集約書き込みの失敗時原子性。ArchUnit `commandHandlingInvokesAreTransactional` で強制、読み取り系は対象外。[ADR-0051](../../docs/adr/0051-transactional-use-case-boundary.md)）。実行機構（`TransactionTemplate` 等）への依存は引き続き禁止
 
 ### ドメインモデルとドメインサービスの分け方

@@ -358,6 +358,21 @@ tasks.register<JavaExec>("checkDbDoc") {
     args("check")
 }
 
+// ローカル開発の bootRun は local プロファイルで起動し、MCP アダプタ（#712）を有効にする。
+// systemProperty ではなく args で渡すのは、openApi{} の customBootRun（下記）が args を
+// 明示的に非空で構成しており（--server.port=8090）、springdoc-openapi-gradle-plugin は
+// customBootRun 側の args が非空ならそちらで完全に置き換える実装のため、forked bootRun
+// （OpenAPI 生成専用）へこの --spring.profiles.active=local が波及しない（実測済み）。
+// systemProperty で渡すと customBootRun.systemProperties が未指定のときに
+// bootRun.systemProperties へフォールバックする実装のため波及してしまう。
+// args はコマンドラインプロパティ源として SPRING_PROFILES_ACTIVE 環境変数より優先されるため、
+// 環境変数では上書きできない。置き換えたいときは
+// `./gradlew bootRun --args='--spring.profiles.active=xxx'` を使う
+// （Gradle の JavaExec の --args は設定済み args を丸ごと置き換える）。
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    args("--spring.profiles.active=local")
+}
+
 // --- OpenAPI 仕様の書き出しと lint（#327） ---
 // generateOpenApiDocs はアプリを forked bootRun でバックグラウンド起動し、/v3/api-docs を
 // build/openapi.json へ書き出す（出力先・ファイル名はプラグインのデフォルト）。datasource は
@@ -370,6 +385,11 @@ openApi {
     // デフォルト 30 秒から延長する。
     waitTimeInSeconds.set(120)
     customBootRun {
+        // args を非空で構成すること自体が、bootRun 側の args（--spring.profiles.active=local）を
+        // forked bootRun へ波及させない打ち消しになっている（打ち消しの仕組みの詳細は上の bootRun 側の
+        // コメントを参照）。**ここを空にしてはいけない**: systemProperties へ移したり空にしたりすると、
+        // local プロファイルが forked bootRun（OpenAPI 生成専用）へ静かに波及し、生成される openapi.json が
+        // ローカル限定の状態（MCP 有効等）を反映してしまう。
         args.set(listOf("--server.port=8090"))
         // forked プロセスの既定 workingDir（build/tmp/forkedSpringBootRun）には compose.yaml が無く、
         // spring-boot-docker-compose がそこを探して見つからず起動失敗する。プロジェクトルートを指定して

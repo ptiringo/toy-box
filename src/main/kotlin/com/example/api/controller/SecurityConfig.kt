@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -38,13 +40,14 @@ class SecurityConfig {
     fun securityFilterChain(
         http: HttpSecurity,
         problemEntryPoint: AuthenticationEntryPoint,
+        environment: Environment,
     ): SecurityFilterChain {
         http {
             // Bearer トークンによるステートレス認証。セッション（Cookie）を発行しないため CSRF 対策は不要。
             csrf { disable() }
             sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
-                PUBLIC_ENDPOINTS.forEach { authorize(it, permitAll) }
+                publicEndpoints(environment).forEach { authorize(it, permitAll) }
                 authorize(anyRequest, authenticated)
             }
             oauth2ResourceServer {
@@ -75,7 +78,6 @@ class SecurityConfig {
          * - actuator の health: Cloud Run のヘルスチェックがトークンを持てない
          * - OpenAPI ドキュメントと Swagger UI: `generateOpenApiDocs` が forked bootRun 経由で取得するため、 認証を掛けると
          *   OpenAPI lint の CI ゲート（`lintOpenApiDocs`）が壊れる
-         * - MCP エンドポイント: MCP クライアントにトークンを載せる術がまだない（ADR-0035 の adapter に認証を 載せる設計は未決）
          */
         private val PUBLIC_ENDPOINTS =
             listOf(
@@ -84,7 +86,21 @@ class SecurityConfig {
                 "/v3/api-docs/**",
                 "/swagger-ui.html",
                 "/swagger-ui/**",
-                "/mcp/**",
             )
+
+        /**
+         * MCP エンドポイント。MCP クライアントにトークンを載せる術がまだないため permitAll だが、 **`local`
+         * プロファイルのときだけ**公開する（#712）。既定プロファイルでは `spring.ai.mcp.server.enabled: false`
+         * によりエンドポイント自体が存在しないため、ここで足さないことは 実質的には意図の表明にあたる。
+         */
+        private const val MCP_ENDPOINTS = "/mcp/**"
+
+        /** 実行中のプロファイルに応じた permitAll 対象。 */
+        private fun publicEndpoints(environment: Environment): List<String> =
+            if (environment.acceptsProfiles(Profiles.of("local"))) {
+                PUBLIC_ENDPOINTS + MCP_ENDPOINTS
+            } else {
+                PUBLIC_ENDPOINTS
+            }
     }
 }

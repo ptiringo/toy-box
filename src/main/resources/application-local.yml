@@ -1,0 +1,16 @@
+# ローカル開発（bootRun）専用のプロファイル（#712 / ADR-0035 / ADR-0073）。
+# MCP アダプタは開発者自身の探索ツールとして、このプロファイルのときだけ有効になる。
+# 本番（Cloud Run）は deploy.yml がプロファイルを指定しないため既定＝MCP off のまま。
+spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+
+toy-box:
+  mcp:
+    # Identity Platform が発行する ID トークンの sub。MCP には JWT が無いため、REST が JWT から解決している
+    # 「誰が操作しているか」をここで与える（ADR-0067 の Actor のうち accountId 側）。
+    # 個人の subject をリポジトリに書かないよう、値は環境変数から受け取る。未設定のままツールを呼ぶと
+    # McpActorFactory が設定ミスとして落とす（fail-loud）。
+    subject-id: ${MCP_SUBJECT_ID:}
