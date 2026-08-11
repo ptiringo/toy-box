@@ -1,11 +1,8 @@
 # toy-box フロントエンド（軽種馬シミュレータ）
 
-ログインしたユーザーが実 Identity Platform にログインし、保護 API `GET /api/bloodHorses` を叩いて軽種馬一覧を見る軽量 SPA（Vite + React + TypeScript）。認証・認可を「目で見て触れる」ことが主眼の MVP（#612）。
-
-> **既知の破壊: 現状のフロントは動かない。** バックエンドは `#705` で `/api/bloodHorses` を含む全ドメイン API を
-> `/api/worlds/{worldId}/...` 配下へ移した（プレイヤーごとの世界＝テナント分離。ADR-0067）。
-> `BloodHorseListPage.tsx` はまだ旧パス `/api/bloodHorses` を叩いており、必ず失敗する。フロント側の追随は
-> `#714` で扱う。
+ログインしたユーザーが実 Identity Platform にログインし、自分の世界（セーブデータ）を選んで保護 API
+`GET /api/worlds/{worldId}/bloodHorses` を叩き、軽種馬一覧を見る軽量 SPA（Vite + React + TypeScript）。
+認証・テナント分離（ADR-0067）を「目で見て触れる」ことが主眼の MVP（#612 / #714）。
 
 ## 前提
 
@@ -51,7 +48,10 @@ Vite dev server が `/api/*` を `http://localhost:8080`（バックエンド）
    ```bash
    GCP_PROJECT_ID=<実テナントの projectId> ./gradlew bootRun   # :8080
    ```
-3. ブラウザで `http://localhost:5173` を開く → 未ログインなら `/login` へ。テストユーザーでログイン → `/bloodHorses` に遷移し一覧が表示される。画面右上に直近レスポンスのステータス（未ログイン `401` → ログイン後 `200`）が出る。
+3. ブラウザで `http://localhost:5173` を開く → 未ログインなら `/login` へ。テストユーザーでログインすると
+   初回セットアップ（`POST /api/me:provision`）が走り、`/worlds` に「はじまりの世界」が 1 つ見える。
+   世界を選ぶと `/worlds/{worldId}/bloodHorses` に遷移し、その世界の一覧が表示される。画面右上に
+   直近レスポンスのステータス（未ログイン `401` → ログイン後 `200`）が出る。
 
 ## スクリプト
 
@@ -70,14 +70,15 @@ CI（`.github/workflows/frontend.yml`）と lefthook の pre-commit が `fronten
 ```
 frontend/src/
 ├── auth/       # Firebase 初期化（firebase.ts）と認証 Context（AuthContext.tsx）
-├── api/        # fetch ラッパ（Bearer 付与・RFC 9457 problem+json 解釈・401 判定）
-├── pages/      # LoginPage / BloodHorseListPage / RequireAuth（認証ガード）
-├── App.tsx     # React Router（/login, /bloodHorses〈要認証〉）
+├── api/        # fetch ラッパ（Bearer 付与・RFC 9457 problem+json 解釈）/ 世界 API / :provision
+├── worlds/     # 世界一覧の state と変更操作（useWorlds.ts）
+├── pages/      # LoginPage / WorldsPage / BloodHorseListPage / RequireAuth / RequireProvisioned
+├── App.tsx     # React Router（/login, /worlds, /worlds/:worldId/bloodHorses〈要認証＋セットアップ済み〉）
 └── main.tsx    # エントリ
 ```
 
 ## 現状の割り切り（MVP）
 
 - **ローカルのみ**（Cloud Run デプロイ・イングレス公開/BFF・本番 CORS はスコープ外）。
-- 認証確認 + 馬一覧のみ。書き込み画面・認可 403 体験（#606 / #607）は後続。
+- 認証確認・世界の CRUD・馬一覧の閲覧のみ。**書き込み画面（血統登録など）は後続**。
 - 一覧の性・毛色・品種は現状 wire の英語定数名（`FEMALE` / `BAY` / `THOROUGHBRED`）を素で表示する（日本語ラベル化は follow-up）。
