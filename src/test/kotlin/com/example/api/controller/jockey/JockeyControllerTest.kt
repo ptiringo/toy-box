@@ -10,6 +10,7 @@ import com.example.api.application.racing.jockey.JockeyView
 import com.example.api.application.racing.jockey.RegisterJockeyCommand
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.ActorArgumentResolver
+import com.example.api.controller.RequestFingerprint
 import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.racing.model.jockey.Jockey
 import com.example.api.domain.racing.model.jockey.JockeyValidationError
@@ -38,7 +39,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 
 @WebMvcTest(JockeyController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(ClockConfiguration::class)
+@Import(ClockConfiguration::class, RequestFingerprint::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JockeyControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var registerJockey: JockeyRegistrationUseCase
@@ -187,6 +188,66 @@ class JockeyControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.jockey_id")
                 .isEqualTo(id.toString())
+        }
+    }
+
+    @Nested
+    inner class IdempotencyCase {
+        @Test
+        fun `Idempotency-Key を付けるとユースケースへ冪等キーが渡ること`() {
+            val commands = mutableListOf<Command<RegisterJockeyCommand>>()
+            every { registerJockey(any<Actor>(), capture(commands)) } returns
+                Ok(Jockey.create("武", "豊").unwrap())
+
+            tester
+                .post()
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", "key-from-client")
+                .content("""{"first_name":"武","last_name":"豊"}""")
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+
+            val idempotency = commands.single().idempotency
+            assert(idempotency?.key == "key-from-client")
+            // 指紋の値そのものは実装詳細。SHA-256 の hex 長だけ縛る。
+            assert(idempotency?.requestFingerprint?.length == 64)
+        }
+
+        @Test
+        fun `Idempotency-Key を付けなければ冪等キーは渡らないこと`() {
+            val commands = mutableListOf<Command<RegisterJockeyCommand>>()
+            every { registerJockey(any<Actor>(), capture(commands)) } returns
+                Ok(Jockey.create("武", "豊").unwrap())
+
+            tester
+                .post()
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"first_name":"武","last_name":"豊"}""")
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+
+            assert(commands.single().idempotency == null)
+        }
+
+        @Test
+        fun `IdempotencyKeyReused で 422 と problem+json が返ること`() {
+            every { registerJockey(any<Actor>(), any<Command<RegisterJockeyCommand>>()) } returns
+                Err(JockeyRegistrationError.IdempotencyKeyReused)
+
+            tester
+                .post()
+                .uri("/api/worlds/{worldId}/jockeys", worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", "key-reused")
+                .content("""{"first_name":"武","last_name":"豊"}""")
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("idempotency-key-reused")
         }
     }
 }
