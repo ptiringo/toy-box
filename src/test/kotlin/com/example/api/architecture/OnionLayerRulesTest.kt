@@ -34,7 +34,7 @@ class OnionLayerRulesTest {
      * オニオンアーキテクチャの依存方向に従うこと。
      *
      * 内側から domainModel（共有カーネル + 各コンテキストの model）← domainService ← applicationService ←
-     * adapter（controller / infrastructure）。ドメインサービスはモデルにのみ依存でき、その逆は禁止。 アダプター同士の参照も禁止される。
+     * adapter（controller / infrastructure / mcp）。ドメインサービスはモデルにのみ依存でき、その逆は禁止。 アダプター同士の参照も禁止される。
      */
     @ArchTest
     val onionLayers =

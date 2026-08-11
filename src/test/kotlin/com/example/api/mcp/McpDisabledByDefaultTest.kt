@@ -50,4 +50,14 @@ class McpDisabledByDefaultTest : PostgresContainerSupport() {
 
         assert(mcpServers.isEmpty())
     }
+
+    @Test
+    fun `既定プロファイルでは公開MCPツールが1つも無い`() {
+        // McpServerWiringTest の「list_worlds / get_jockey が公開ツール名に含まれる」と対称の検証。
+        // ツール Bean（JockeyMcpTools 等）自体が @Profile("local") で生えない（上のテスト）だけでなく、
+        // Spring AI が走査して組み立てる公開ツール一覧も空であることを確認する。
+        val toolNames = McpServerWiringTest.toolSpecificationNames(context)
+
+        assert(toolNames.isEmpty())
+    }
 }
