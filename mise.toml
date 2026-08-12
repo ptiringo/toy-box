@@ -30,27 +30,28 @@ zizmor = "1.26.1"
 # 直接指す。バージョン更新は version フィールド 1 箇所のみ（URL は {{version}} テンプレート）、整合性は
 # mise.lock（lockfile=true）が SHA256 で担保する。
 [tools."http:tfctl"]
-version = "0.3.0"
+version = "0.4.0"
 bin = "tfctl"
 
 # checksum は公式 SHA256SUMS（releases.hashicorp.com/tfctl/<version>/tfctl_<version>_SHA256SUMS）の値を固定する。
 # http バックエンドは aqua/ubi と異なり mise.lock に per-platform SHA を埋めないため、ここで明示して整合性を担保する。
-# バージョン更新時は version と 4 つの checksum を SHA256SUMS から更新すること。
+# バージョン更新時は version と 4 つの checksum を SHA256SUMS から更新すること。mise.lock 側は
+# `mise install` しても自ホスト分しか書き換わらないため、6 エントリ（linux の -musl 派生を含む）を手で揃える。
 [tools."http:tfctl".platforms.macos-x64]
 url = "https://releases.hashicorp.com/tfctl/{{version}}/tfctl_{{version}}_darwin_amd64.zip"
-checksum = "sha256:a12de01e640cb9dea6080b7e8a2cdb74c5efe466f3ff6ba19c520c03d383dac9"
+checksum = "sha256:19786ebddb3cbd922402d21577e85842385910a666e62b1f9b0de46520c527d7"
 
 [tools."http:tfctl".platforms.macos-arm64]
 url = "https://releases.hashicorp.com/tfctl/{{version}}/tfctl_{{version}}_darwin_arm64.zip"
-checksum = "sha256:045a5d7ebf2913006213b485353acf7c832bbf28e1cf3a6a34313dd761d4f535"
+checksum = "sha256:e53f2b965eec2435d5543ff4b6ff799b4beac0e0c233a3a355158abe4c524632"
 
 [tools."http:tfctl".platforms.linux-x64]
 url = "https://releases.hashicorp.com/tfctl/{{version}}/tfctl_{{version}}_linux_amd64.zip"
-checksum = "sha256:5526b438bb66c5bc872f55c4bbb7325bb3e9d162ddd392eed3d60f407598cf62"
+checksum = "sha256:055d365cf165708dd304747f27a7242c51ce61a0bf680bd83fd3abe7cbcaa356"
 
 [tools."http:tfctl".platforms.linux-arm64]
 url = "https://releases.hashicorp.com/tfctl/{{version}}/tfctl_{{version}}_linux_arm64.zip"
-checksum = "sha256:1060b2903cd8f9cb0af5c878cf89790e0f588b735b6715d2eeadd52c5a71f8c5"
+checksum = "sha256:5f2caf7900b8f43dd72f390b992bafceab4ae85bbc58b60325bb1888ef9a0e53"
 
 # kotlin-lsp: JetBrains 公式 Kotlin Language Server。Claude Code の `kotlin-lsp@claude-plugins-official`
 # プラグイン（.claude/settings.json で有効化）が要求するバイナリで、PATH 上の `kotlin-lsp --stdio` を起動する。
