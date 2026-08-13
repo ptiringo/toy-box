@@ -7,14 +7,8 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionRepositor
 import com.example.api.domain.studbook.model.inspection.IdentificationFeatures
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
-import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.getOrThrow
+import com.example.api.infrastructure.shared.orThrow
 import org.springframework.stereotype.Repository
-
-/** 検証済みで保存された VO 値を復元時に取り出すヘルパー（DB 由来の trusted データ。Err は復元データ破損）。 */
-private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
-    IllegalStateException("永続化された値の復元に失敗しました: $it")
-}
 
 /**
  * ドメインポート [HorseInspectionRepository] の唯一の実装。Spring Data JDBC で永続化する（ADR-0027 / ADR-0030）。

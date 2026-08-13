@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding.problem
 
+import com.example.api.application.studbook.breeding.BreedingRegistrationNotFound
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
 import com.example.api.controller.problem
 import org.springframework.http.HttpStatus
@@ -36,3 +37,21 @@ fun RegisterBreedingRegistrationUseCaseError.toProblemDetail(): ProblemDetail =
                 )
                 .apply { setProperty("blood_horse_id", bloodHorseId) }
     }
+
+/**
+ * [BreedingRegistrationNotFound]（照会対象の繁殖登録不在）を 404 Not Found の [ProblemDetail] に変換する。
+ *
+ * URL パス上の操作対象が不在のケースなので 404（api-design.md「リソース不在のステータス（404 vs 422）」）。
+ *
+ * `breeding-registration-not-found` は種付記録・種付せず記録のボディ内参照先不在（422）で既に使われている。 同一 type が 404 と 422
+ * の両方を持つと場合分けを濁すため流用せず、パス上の対象を指す `registration-not-found` を割り当てる（軽種馬が 422 = `blood-horse-not-found`
+ * / 404 = `horse-not-found` と非対称なのと同じ考え方で、 ボディ参照は限定語・パス対象は一般語を使う）。
+ */
+fun BreedingRegistrationNotFound.toProblemDetail(): ProblemDetail =
+    problem(
+            status = HttpStatus.NOT_FOUND,
+            code = "registration-not-found",
+            title = "Breeding registration not found",
+            detail = "指定された ID の繁殖登録は存在しません。",
+        )
+        .apply { setProperty("breeding_registration_id", id) }

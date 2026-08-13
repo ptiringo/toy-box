@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding.problem
 
+import com.example.api.application.studbook.breeding.BreedingResultNotFound
 import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
@@ -253,6 +254,23 @@ fun SubmitBreedingReportUseCaseError.toProblemDetail(): ProblemDetail =
                 )
                 .apply { setProperty("breeding_result_id", breedingResultId) }
     }
+
+/**
+ * [BreedingResultNotFound]（照会対象の繁殖成績不在）を 404 Not Found の [ProblemDetail] に変換する。
+ *
+ * URL パス上の操作対象が不在のケースなので 404（api-design.md「リソース不在のステータス（404 vs 422）」）。
+ * 分娩結果報告・繁殖成績報告提出のパス対象不在（`ReportFoalingUseCaseError.BreedingResultNotFound` /
+ * `SubmitBreedingReportUseCaseError.BreedingResultNotFound`）と意味もステータスも同じであるため `errorCode` を
+ * 共用し、detail だけ照会用の文言にする（クライアントから見た分類軸を 1 つに保つ。軽種馬の `horse-not-found` と同じ考え方）。
+ */
+fun BreedingResultNotFound.toProblemDetail(): ProblemDetail =
+    problem(
+            status = HttpStatus.NOT_FOUND,
+            code = "breeding-result-not-found",
+            title = "Breeding result not found",
+            detail = "指定された ID の繁殖成績は存在しません。",
+        )
+        .apply { setProperty("breeding_result_id", id) }
 
 private fun SubmitBreedingReportError.toProblemDetail(): ProblemDetail =
     when (this) {

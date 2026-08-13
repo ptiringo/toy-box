@@ -1,5 +1,7 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.studbook.breeding.GetBreedingResultQuery
+import com.example.api.application.studbook.breeding.GetBreedingResultUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
@@ -28,6 +30,7 @@ import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -51,8 +54,53 @@ class BreedingResultController(
     private val recordUncovered: RecordUncoveredUseCase,
     private val reportFoaling: ReportFoalingUseCase,
     private val submitReport: SubmitBreedingReportUseCase,
+    private val getBreedingResult: GetBreedingResultUseCase,
     private val clock: Clock,
 ) {
+    @Operation(
+        operationId = "getBreedingResult",
+        summary = "繁殖成績を ID で取得する",
+        description =
+            "指定された ID の繁殖成績を、種付・分娩結果・繁殖成績報告の提出を含むリソース表現で返す。" +
+                "存在しない場合は RFC 9457 形式の problem+json を 404 で返す。",
+        tags = ["BreedingResult"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "繁殖成績リソースの表現",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BreedingResultResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "指定 ID の繁殖成績が存在しない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @GetMapping("/api/worlds/{worldId}/breedingResults/{id}")
+    fun get(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
+        @Parameter(description = "取得する繁殖成績の生 UUID") @PathVariable id: UUID,
+    ): BreedingResultResponse =
+        getBreedingResult(actor, GetBreedingResultQuery(id))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
+
     @Operation(
         operationId = "recordBreedingResult",
         summary = "繁殖成績の年次レコードを起こす（種付記録／種付せず）",

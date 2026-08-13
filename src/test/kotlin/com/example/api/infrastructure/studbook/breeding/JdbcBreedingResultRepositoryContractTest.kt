@@ -169,13 +169,30 @@ class JdbcBreedingResultRepositoryContractTest(
 
     @Test
     fun `産駒なし区分を報告した成績は区分が往復し分娩日を持たない`() {
-        val reported = seededBreedingResult().recordFoaling(FoalingOutcome.NotConceived).unwrap()
+        // 区分はそれぞれ別の判別子文字列へ写るため、全区分を 1 件ずつ往復させて写しの取り違えを防ぐ
+        // （種付せず NOT_COVERED だけは種付を伴わない別経路なので下の専用ケースで見る）。
+        val outcomes =
+            listOf(
+                FoalingOutcome.NotConceived,
+                FoalingOutcome.Abortion,
+                FoalingOutcome.TwinAbortion,
+                FoalingOutcome.Stillbirth,
+                FoalingOutcome.TwinStillbirth,
+                FoalingOutcome.NeonatalDeath,
+                FoalingOutcome.TwinNeonatalDeath,
+            )
 
-        repository.save(worldId, reported).unwrap()
-        val found = repository.findById(worldId, reported.id)
+        outcomes.forEach { outcome ->
+            val reported = seededBreedingResult().recordFoaling(outcome).unwrap()
 
-        assert(found != null)
-        assert(found!!.outcome == FoalingOutcome.NotConceived)
+            repository.save(worldId, reported).unwrap()
+            val found = repository.findById(worldId, reported.id)
+
+            assert(found != null)
+            assert(found!!.outcome == outcome)
+            // 分娩日を持つのは生産（LiveFoal）だけ。産駒なし区分は分娩日を伴わない。
+            assert(found.outcome !is FoalingOutcome.LiveFoal)
+        }
     }
 
     @Test

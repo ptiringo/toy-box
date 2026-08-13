@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.studbook.breeding.BreedingRegistrationDetailView
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRetirement
 import io.swagger.v3.oas.annotations.media.Schema
@@ -51,3 +52,18 @@ fun BreedingRegistration.toResponse(): BreedingRegistrationResponse =
 /** [BreedingRetirement] を供用停止の表現へ変換する。 */
 fun BreedingRetirement.toResponse(): BreedingRetirementResponse =
     BreedingRetirementResponse(reason = reason.toApi(), occurredOn = occurredOn)
+
+/**
+ * 読み取りモデル [BreedingRegistrationDetailView] を繁殖登録リソースの表現へ変換する（読み取り経路。Get の成功レスポンス）。
+ *
+ * 書き込み経路の [BreedingRegistration] 版と同じ [BreedingRegistrationResponse] を組む。全操作で単一のリソース表現を
+ * 共用する方針（ADR-0008）に従い、Get 専用の DTO は作らない。
+ */
+fun BreedingRegistrationDetailView.toResponse(): BreedingRegistrationResponse =
+    BreedingRegistrationResponse(
+        id = id,
+        registrationNumber = registrationNumber,
+        registeredHorseId = registeredHorseId,
+        role = role.toApi(),
+        retirement = retirement?.toResponse(),
+    )

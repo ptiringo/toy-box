@@ -1,6 +1,10 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.iam.world.WorldQueries
+import com.example.api.application.studbook.breeding.BreedingResultDetailView
+import com.example.api.application.studbook.breeding.BreedingResultNotFound
+import com.example.api.application.studbook.breeding.GetBreedingResultQuery
+import com.example.api.application.studbook.breeding.GetBreedingResultUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
@@ -59,6 +63,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var recordUncovered: RecordUncoveredUseCase
     @MockkBean private lateinit var reportFoaling: ReportFoalingUseCase
     @MockkBean private lateinit var submitReport: SubmitBreedingReportUseCase
+    @MockkBean private lateinit var getBreedingResult: GetBreedingResultUseCase
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
@@ -671,6 +676,83 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("concurrent-modification")
+        }
+    }
+
+    @Nested
+    inner class GetCase {
+        private val uri = "/api/worlds/{worldId}/breedingResults/{id}"
+        private val id = UUID.fromString("44444444-4444-4444-4444-444444444444")
+
+        @Test
+        fun `存在する ID の照会で 200 と繁殖成績リソースが返ること`() {
+            every { getBreedingResult(any<Actor>(), GetBreedingResultQuery(id)) } returns
+                Ok(
+                    BreedingResultDetailView(
+                        id = id,
+                        breedingRegistrationId = generateId(),
+                        breedingYear = 2024,
+                        stallionId = generateId(),
+                        coveringDate = LocalDate.of(2024, 4, 1),
+                        coveringPlace = "北海道",
+                        certificateNumber = "C-2024-0001",
+                        outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
+                        // 繁殖年 2024 の期限は 2025-05-31。その翌日の提出は期限超過として応答に表れる。
+                        reportSubmittedOn = LocalDate.of(2025, 6, 1),
+                    )
+                )
+
+            tester
+                .get()
+                .uri(uri, worldId, id)
+                .assertThat()
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.outcome.kind")
+                .isEqualTo("LIVE_FOAL")
+        }
+
+        @Test
+        fun `導出値の期限超過フラグが応答に載ること`() {
+            every { getBreedingResult(any<Actor>(), GetBreedingResultQuery(id)) } returns
+                Ok(
+                    BreedingResultDetailView(
+                        id = id,
+                        breedingRegistrationId = generateId(),
+                        breedingYear = 2024,
+                        stallionId = generateId(),
+                        coveringDate = LocalDate.of(2024, 4, 1),
+                        coveringPlace = "北海道",
+                        certificateNumber = "C-2024-0001",
+                        outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
+                        reportSubmittedOn = LocalDate.of(2025, 6, 1),
+                    )
+                )
+
+            tester
+                .get()
+                .uri(uri, worldId, id)
+                .assertThat()
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.report_submitted_late")
+                .isEqualTo(true)
+        }
+
+        @Test
+        fun `照会対象が不在なら 404 と problem+json が返ること`() {
+            every { getBreedingResult(any<Actor>(), GetBreedingResultQuery(id)) } returns
+                Err(BreedingResultNotFound(id))
+
+            tester
+                .get()
+                .uri(uri, worldId, id)
+                .assertThat()
+                .hasStatus(HttpStatus.NOT_FOUND)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("breeding-result-not-found")
         }
     }
 }

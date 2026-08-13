@@ -11,22 +11,12 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.LandingDate
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
-import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.getOrThrow
+import com.example.api.infrastructure.shared.orThrow
 import java.sql.ResultSet
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
-
-/**
- * 検証済みで保存された VO 値を復元時に取り出すヘルパー。`create` が `Result` を返す VO を、DB 由来の trusted データとして失敗しない前提で取り出す（Err
- * は復元データ破損を示す `IllegalStateException`）。[JdbcBloodHorseRepository] のファイルスコープ private
- * 拡張と同じ内容だが、Kotlin のトップレベル `private` はファイル外から import できないため個別に持つ。
- */
-private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
-    IllegalStateException("永続化された値の復元に失敗しました: $it")
-}
 
 /**
  * 読み取りポート [BloodHorseQueries] の実装（軽量 CQRS / L2 の Query 側。ADR-0031）。
@@ -107,21 +97,35 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
      * 判別子 `origin_type` と各バリアント列から sealed [Origin] を復元する。
      *
      * 列は判別子に応じて一方のバリアントにしか現れない（CHECK 制約 `chk_blood_horse_origin` がスキーマ側でも 強制している）。判別子と実データの不整合は DB
-     * の破損であり業務エラーではないため、infrastructure 層の 例外として送出する（error-handling.md）。
+     * の破損であり業務エラーではないため、infrastructure 層の 例外として送出する（error-handling.md）。CHECK
+     * 制約をすり抜けた壊れ行に当たったときに「どの馬のどの列が 欠落か」を残すため、バリアント固有列は書き込み側（[JdbcBloodHorseRepository]）と対称に
+     * 診断メッセージつきの `checkNotNull` で受ける（素の NPE にしない）。
      */
-    private fun ResultSet.toOrigin(): Origin =
-        when (val originType = getString("origin_type")) {
-            "DOMESTIC" ->
+    private fun ResultSet.toOrigin(): Origin {
+        val id = getObject("id", UUID::class.java)
+        return when (val originType = getString("origin_type")) {
+            OriginType.DOMESTIC -> {
+                // 列は先に取り出す。checkNotNull の呼び出しごと 1 行に収め、診断メッセージのラムダが
+                // 単独行に折られない形にしている（壊れ行でしか通らない行を独立させると常に未カバーになるため）。
+                val sire = getObject("sire_id", UUID::class.java)
+                val dam = getObject("dam_id", UUID::class.java)
                 Origin.Domestic(
-                    sireId = BloodHorseId(getObject("sire_id", UUID::class.java)),
-                    damId = BloodHorseId(getObject("dam_id", UUID::class.java)),
+                    sireId = BloodHorseId(checkNotNull(sire) { "内国産の父IDが欠落: id=$id" }),
+                    damId = BloodHorseId(checkNotNull(dam) { "内国産の母IDが欠落: id=$id" }),
                 )
-            "IMPORTED" ->
+            }
+            OriginType.IMPORTED -> {
+                val country = getString("origin_country")
+                val landing = getObject("landing_date", LocalDate::class.java)
                 Origin.Imported(
-                    originCountry = OriginCountry.create(getString("origin_country")).orThrow(),
-                    landingDate = LandingDate(getObject("landing_date", LocalDate::class.java)),
+                    originCountry =
+                        OriginCountry.create(checkNotNull(country) { "輸入の原産国が欠落: id=$id" })
+                            .orThrow(),
+                    landingDate = LandingDate(checkNotNull(landing) { "輸入の揚陸日が欠落: id=$id" }),
                 )
-            "CARRIED_OVER" -> Origin.CarriedOver
-            else -> error("未知の origin_type です: $originType")
+            }
+            OriginType.CARRIED_OVER -> Origin.CarriedOver
+            else -> error("未知の origin_type です: $originType (id=$id)")
         }
+    }
 }

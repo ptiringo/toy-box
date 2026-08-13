@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.studbook.breeding.CoveringReportDetailView
 import com.example.api.domain.studbook.model.breeding.CoveringReport
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
@@ -32,6 +33,21 @@ fun CoveringReport.toResponse(): CoveringReportResponse =
         id = id.value,
         stallionBreedingRegistrationId = stallionRegistrationId.value,
         coveringYear = coveringYear.value,
+        submittedOn = submittedOn,
+        submittedLate = submittedLate,
+    )
+
+/**
+ * 読み取りモデル [CoveringReportDetailView] を種付成績報告リソースの表現へ変換する（読み取り経路。Get の成功レスポンス）。
+ *
+ * 書き込み経路の [CoveringReport] 版と同じ [CoveringReportResponse] を組む。全操作で単一のリソース表現を共用する 方針（ADR-0008）に従い、Get
+ * 専用の DTO は作らない。期限超過フラグは View 側の導出値をそのまま載せる。
+ */
+fun CoveringReportDetailView.toResponse(): CoveringReportResponse =
+    CoveringReportResponse(
+        id = id,
+        stallionBreedingRegistrationId = stallionBreedingRegistrationId,
+        coveringYear = coveringYear,
         submittedOn = submittedOn,
         submittedLate = submittedLate,
     )

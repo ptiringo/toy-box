@@ -1,6 +1,10 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.iam.world.WorldQueries
+import com.example.api.application.studbook.breeding.CoveringReportDetailView
+import com.example.api.application.studbook.breeding.CoveringReportNotFound
+import com.example.api.application.studbook.breeding.GetCoveringReportQuery
+import com.example.api.application.studbook.breeding.GetCoveringReportUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
@@ -39,6 +43,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class CoveringReportControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var submitCoveringReport: SubmitCoveringReportUseCase
+    @MockkBean private lateinit var getCoveringReport: GetCoveringReportUseCase
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
@@ -165,5 +170,46 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
             .bodyJson()
             .extractingPath("$.error_code")
             .isEqualTo("covering-report-already-submitted-for-year")
+    }
+
+    @Test
+    fun `存在する ID の照会で 200 と種付成績報告リソースが返ること`() {
+        val id = UUID.fromString("55555555-5555-5555-5555-555555555555")
+        every { getCoveringReport(any<Actor>(), GetCoveringReportQuery(id)) } returns
+            Ok(
+                CoveringReportDetailView(
+                    id = id,
+                    stallionBreedingRegistrationId = generateId(),
+                    coveringYear = 2024,
+                    // 種付年 2024 の期限は当年 9/30。その翌日の提出は期限超過として応答に表れる。
+                    submittedOn = LocalDate.of(2024, 10, 1),
+                )
+            )
+
+        tester
+            .get()
+            .uri("$uri/{id}", worldId, id)
+            .assertThat()
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.submitted_late")
+            .isEqualTo(true)
+    }
+
+    @Test
+    fun `照会対象が不在なら 404 と problem+json が返ること`() {
+        val id = UUID.fromString("55555555-5555-5555-5555-555555555555")
+        every { getCoveringReport(any<Actor>(), GetCoveringReportQuery(id)) } returns
+            Err(CoveringReportNotFound(id))
+
+        tester
+            .get()
+            .uri("$uri/{id}", worldId, id)
+            .assertThat()
+            .hasStatus(HttpStatus.NOT_FOUND)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("covering-report-not-found")
     }
 }
