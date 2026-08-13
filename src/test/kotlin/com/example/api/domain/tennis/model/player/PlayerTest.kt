@@ -30,7 +30,7 @@ class PlayerTest {
 
         val error = Player.create(name, country, Handedness.LEFT, dateOfBirth, before).getError()
 
-        assert(error == TurnedProBeforeBirth(dateOfBirth.value, before.value))
+        assert(error == TurnedProBeforeBirth(dateOfBirth, before))
     }
 
     @Test
@@ -39,7 +39,7 @@ class PlayerTest {
 
         val error = Player.create(name, country, Handedness.RIGHT, dateOfBirth, sameDay).getError()
 
-        assert(error == TurnedProBeforeBirth(dateOfBirth.value, sameDay.value))
+        assert(error == TurnedProBeforeBirth(dateOfBirth, sameDay))
     }
 
     @Test
