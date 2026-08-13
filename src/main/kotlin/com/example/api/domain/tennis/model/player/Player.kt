@@ -5,7 +5,6 @@ import com.example.api.domain.shared.generateId
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import java.time.LocalDate
 import java.util.UUID
 import org.jmolecules.ddd.annotation.AggregateRoot
 import org.jmolecules.ddd.annotation.Identity
@@ -24,7 +23,7 @@ import org.jmolecules.ddd.annotation.ValueObject
  * @property dateOfBirth 生年月日
  * @property turnedProOn プロ転向日
  */
-data class TurnedProBeforeBirth(val dateOfBirth: LocalDate, val turnedProOn: LocalDate)
+data class TurnedProBeforeBirth(val dateOfBirth: DateOfBirth, val turnedProOn: TurnedProDate)
 
 /**
  * プロテニス選手を表す集約ルート。
@@ -86,7 +85,7 @@ private constructor(
                     )
                 )
             } else {
-                Err(TurnedProBeforeBirth(dateOfBirth.value, turnedProOn.value))
+                Err(TurnedProBeforeBirth(dateOfBirth, turnedProOn))
             }
     }
 }
