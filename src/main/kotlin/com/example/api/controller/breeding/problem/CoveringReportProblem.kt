@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding.problem
 
+import com.example.api.application.studbook.breeding.CoveringReportNotFound
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.studbook.model.breeding.SubmitCoveringReportError
@@ -27,6 +28,21 @@ fun SubmitCoveringReportUseCaseError.toProblemDetail(): ProblemDetail =
                 }
         is SubmitCoveringReportUseCaseError.PreconditionViolated -> cause.toProblemDetail()
     }
+
+/**
+ * [CoveringReportNotFound]（照会対象の種付成績報告不在）を 404 Not Found の [ProblemDetail] に変換する。
+ *
+ * URL パス上の操作対象が不在のケースなので 404（api-design.md「リソース不在のステータス（404 vs 422）」）。
+ * 提出（Create）側は種牡馬の繁殖登録という別リソースの不在を 422 で描くため、この `errorCode` と衝突しない。
+ */
+fun CoveringReportNotFound.toProblemDetail(): ProblemDetail =
+    problem(
+            status = HttpStatus.NOT_FOUND,
+            code = "covering-report-not-found",
+            title = "Covering report not found",
+            detail = "指定された ID の種付成績報告は存在しません。",
+        )
+        .apply { setProperty("covering_report_id", id) }
 
 private fun SubmitCoveringReportError.toProblemDetail(): ProblemDetail =
     when (this) {

@@ -1,5 +1,6 @@
 package com.example.api.controller.breeding
 
+import com.example.api.application.studbook.breeding.BreedingResultDetailView
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
@@ -49,6 +50,26 @@ fun BreedingResult.toResponse(): BreedingResultResponse =
         coveringDate = covering?.coveringDate,
         coveringPlace = covering?.coveringPlace?.value,
         certificateNumber = covering?.certificateNumber?.value,
+        outcome = outcome?.toResponse(),
+        reportSubmittedOn = reportSubmittedOn,
+        reportSubmittedLate = reportSubmittedLate,
+    )
+
+/**
+ * 読み取りモデル [BreedingResultDetailView] を繁殖成績リソースの表現へ変換する（読み取り経路。Get の成功レスポンス）。
+ *
+ * 書き込み経路の [BreedingResult] 版と同じ [BreedingResultResponse] を組む。全操作で単一のリソース表現を共用する 方針（ADR-0008）に従い、Get
+ * 専用の DTO は作らない。期限超過フラグは View 側の導出値をそのまま載せる。
+ */
+fun BreedingResultDetailView.toResponse(): BreedingResultResponse =
+    BreedingResultResponse(
+        id = id,
+        breedingRegistrationId = breedingRegistrationId,
+        breedingYear = breedingYear,
+        stallionId = stallionId,
+        coveringDate = coveringDate,
+        coveringPlace = coveringPlace,
+        certificateNumber = certificateNumber,
         outcome = outcome?.toResponse(),
         reportSubmittedOn = reportSubmittedOn,
         reportSubmittedLate = reportSubmittedLate,
