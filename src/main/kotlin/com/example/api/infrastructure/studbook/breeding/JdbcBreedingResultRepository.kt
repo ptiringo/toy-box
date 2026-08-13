@@ -11,22 +11,14 @@ import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.infrastructure.shared.orThrow
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.getOrThrow
 import java.time.LocalDate
 import java.time.Year
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Repository
-
-/**
- * 検証済みで保存された VO 値を復元時に取り出すヘルパー。`create` が `Result` を返す VO を、DB 由来の trusted データとして失敗しない前提で取り出す（Err
- * は復元データ破損を示す `IllegalStateException`）。
- */
-private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
-    IllegalStateException("永続化された値の復元に失敗しました: $it")
-}
 
 /**
  * ドメインポート [BreedingResultRepository] の唯一の実装。Spring Data JDBC で永続化する（ADR-0027 / ADR-0030）。
@@ -99,16 +91,16 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
     private fun BreedingResultRow.toOutcome(): FoalingOutcome? =
         when (outcomeType) {
             null -> null
-            OUTCOME_LIVE_FOAL ->
+            OutcomeType.LIVE_FOAL ->
                 FoalingOutcome.LiveFoal(checkNotNull(outcomeFoalingDate) { "生産の分娩日が欠落: id=$id" })
-            OUTCOME_NOT_CONCEIVED -> FoalingOutcome.NotConceived
-            OUTCOME_ABORTION -> FoalingOutcome.Abortion
-            OUTCOME_TWIN_ABORTION -> FoalingOutcome.TwinAbortion
-            OUTCOME_STILLBIRTH -> FoalingOutcome.Stillbirth
-            OUTCOME_TWIN_STILLBIRTH -> FoalingOutcome.TwinStillbirth
-            OUTCOME_NEONATAL_DEATH -> FoalingOutcome.NeonatalDeath
-            OUTCOME_TWIN_NEONATAL_DEATH -> FoalingOutcome.TwinNeonatalDeath
-            OUTCOME_NOT_COVERED -> FoalingOutcome.NotCovered
+            OutcomeType.NOT_CONCEIVED -> FoalingOutcome.NotConceived
+            OutcomeType.ABORTION -> FoalingOutcome.Abortion
+            OutcomeType.TWIN_ABORTION -> FoalingOutcome.TwinAbortion
+            OutcomeType.STILLBIRTH -> FoalingOutcome.Stillbirth
+            OutcomeType.TWIN_STILLBIRTH -> FoalingOutcome.TwinStillbirth
+            OutcomeType.NEONATAL_DEATH -> FoalingOutcome.NeonatalDeath
+            OutcomeType.TWIN_NEONATAL_DEATH -> FoalingOutcome.TwinNeonatalDeath
+            OutcomeType.NOT_COVERED -> FoalingOutcome.NotCovered
             else -> error("未知の outcome_type です: $outcomeType (id=$id)")
         }
 
@@ -140,26 +132,14 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
     private fun FoalingOutcome?.toTypeAndDate(): Pair<String?, LocalDate?> =
         when (this) {
             null -> null to null
-            is FoalingOutcome.LiveFoal -> OUTCOME_LIVE_FOAL to foalingDate
-            FoalingOutcome.NotConceived -> OUTCOME_NOT_CONCEIVED to null
-            FoalingOutcome.Abortion -> OUTCOME_ABORTION to null
-            FoalingOutcome.TwinAbortion -> OUTCOME_TWIN_ABORTION to null
-            FoalingOutcome.Stillbirth -> OUTCOME_STILLBIRTH to null
-            FoalingOutcome.TwinStillbirth -> OUTCOME_TWIN_STILLBIRTH to null
-            FoalingOutcome.NeonatalDeath -> OUTCOME_NEONATAL_DEATH to null
-            FoalingOutcome.TwinNeonatalDeath -> OUTCOME_TWIN_NEONATAL_DEATH to null
-            FoalingOutcome.NotCovered -> OUTCOME_NOT_COVERED to null
+            is FoalingOutcome.LiveFoal -> OutcomeType.LIVE_FOAL to foalingDate
+            FoalingOutcome.NotConceived -> OutcomeType.NOT_CONCEIVED to null
+            FoalingOutcome.Abortion -> OutcomeType.ABORTION to null
+            FoalingOutcome.TwinAbortion -> OutcomeType.TWIN_ABORTION to null
+            FoalingOutcome.Stillbirth -> OutcomeType.STILLBIRTH to null
+            FoalingOutcome.TwinStillbirth -> OutcomeType.TWIN_STILLBIRTH to null
+            FoalingOutcome.NeonatalDeath -> OutcomeType.NEONATAL_DEATH to null
+            FoalingOutcome.TwinNeonatalDeath -> OutcomeType.TWIN_NEONATAL_DEATH to null
+            FoalingOutcome.NotCovered -> OutcomeType.NOT_COVERED to null
         }
-
-    private companion object {
-        const val OUTCOME_LIVE_FOAL = "LIVE_FOAL"
-        const val OUTCOME_NOT_CONCEIVED = "NOT_CONCEIVED"
-        const val OUTCOME_ABORTION = "ABORTION"
-        const val OUTCOME_TWIN_ABORTION = "TWIN_ABORTION"
-        const val OUTCOME_STILLBIRTH = "STILLBIRTH"
-        const val OUTCOME_TWIN_STILLBIRTH = "TWIN_STILLBIRTH"
-        const val OUTCOME_NEONATAL_DEATH = "NEONATAL_DEATH"
-        const val OUTCOME_TWIN_NEONATAL_DEATH = "TWIN_NEONATAL_DEATH"
-        const val OUTCOME_NOT_COVERED = "NOT_COVERED"
-    }
 }

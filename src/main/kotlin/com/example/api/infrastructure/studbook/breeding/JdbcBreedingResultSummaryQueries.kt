@@ -24,6 +24,9 @@ import org.springframework.stereotype.Repository
  *
  * 受胎率・生産率は SQL で割らず [BreedingResultSummaryView.of] が件数から算出する（DB の除算・丸めに依存させず、BigDecimal の HALF_UP
  * で決定的に丸めるため）。 `GROUP BY` 後の行は種付雌馬数が常に 1 以上のため 0 除算は起きない。
+ *
+ * SQL 中の分娩結果の判別子は [OutcomeType] のコンパイル時定数を埋め込む（外部入力ではないため動的 SQL ではない）。
+ * 生リテラルで書くと、判別子のリネームが書き込み側だけ直って集計側に残り、無言で件数が狂うため。
  */
 @Repository
 class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
@@ -42,10 +45,12 @@ class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
                     COUNT(*) AS mares_covered,
                     COUNT(*) FILTER (
                         WHERE outcome_type IS NOT NULL
-                        AND outcome_type <> 'NOT_CONCEIVED'
-                        AND outcome_type <> 'NOT_COVERED'
+                        AND outcome_type <> '${OutcomeType.NOT_CONCEIVED}'
+                        AND outcome_type <> '${OutcomeType.NOT_COVERED}'
                     ) AS conceived,
-                    COUNT(*) FILTER (WHERE outcome_type = 'LIVE_FOAL') AS live_foals
+                    COUNT(*) FILTER (
+                        WHERE outcome_type = '${OutcomeType.LIVE_FOAL}'
+                    ) AS live_foals
                 FROM studbook.breeding_result
                 WHERE covering_stallion_id = :stallionId AND world_id = :worldId
                 GROUP BY covering_stallion_id, breeding_year

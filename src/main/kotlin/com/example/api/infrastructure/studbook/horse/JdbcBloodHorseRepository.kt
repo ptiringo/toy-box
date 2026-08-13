@@ -16,20 +16,12 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
+import com.example.api.infrastructure.shared.orThrow
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.getOrThrow
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Repository
-
-/**
- * 検証済みで保存された VO 値を復元時に取り出すヘルパー。`create` が `Result` を返す VO を、DB 由来の trusted データとして失敗しない前提で取り出す（Err
- * は復元データ破損を示す `IllegalStateException`）。
- */
-private fun <V, E> Result<V, E>.orThrow(): V = getOrThrow {
-    IllegalStateException("永続化された値の復元に失敗しました: $it")
-}
 
 /**
  * ドメインポート [BloodHorseRepository] の唯一の実装。Spring Data JDBC で永続化する（ADR-0027 / ADR-0030）。
@@ -102,19 +94,19 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
     /** 判別子と各バリアント列から sealed [Origin] を復元する。 */
     private fun BloodHorseRow.toOrigin(): Origin =
         when (originType) {
-            ORIGIN_DOMESTIC ->
+            OriginType.DOMESTIC ->
                 Origin.Domestic(
                     sireId = BloodHorseId(checkNotNull(sireId) { "内国産の父IDが欠落: id=$id" }),
                     damId = BloodHorseId(checkNotNull(damId) { "内国産の母IDが欠落: id=$id" }),
                 )
-            ORIGIN_IMPORTED ->
+            OriginType.IMPORTED ->
                 Origin.Imported(
                     originCountry =
                         OriginCountry.create(checkNotNull(originCountry) { "輸入の原産国が欠落: id=$id" })
                             .orThrow(),
                     landingDate = LandingDate(checkNotNull(landingDate) { "輸入の揚陸日が欠落: id=$id" }),
                 )
-            ORIGIN_CARRIED_OVER -> Origin.CarriedOver
+            OriginType.CARRIED_OVER -> Origin.CarriedOver
             else -> error("未知の origin_type です: $originType (id=$id)")
         }
 
@@ -143,23 +135,17 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
         return when (val o = origin) {
             is Origin.Domestic ->
                 base.copy(
-                    originType = ORIGIN_DOMESTIC,
+                    originType = OriginType.DOMESTIC,
                     sireId = o.sireId.value,
                     damId = o.damId.value,
                 )
             is Origin.Imported ->
                 base.copy(
-                    originType = ORIGIN_IMPORTED,
+                    originType = OriginType.IMPORTED,
                     originCountry = o.originCountry.name,
                     landingDate = o.landingDate.value,
                 )
-            Origin.CarriedOver -> base.copy(originType = ORIGIN_CARRIED_OVER)
+            Origin.CarriedOver -> base.copy(originType = OriginType.CARRIED_OVER)
         }
-    }
-
-    private companion object {
-        const val ORIGIN_DOMESTIC = "DOMESTIC"
-        const val ORIGIN_IMPORTED = "IMPORTED"
-        const val ORIGIN_CARRIED_OVER = "CARRIED_OVER"
     }
 }
