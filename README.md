@@ -35,8 +35,7 @@ Kotlin + Spring Boot で複数のドメインモデル（競馬・エンター�
 ツールバージョンは [mise](https://mise.jdx.dev/) で管理しています。mise を導入のうえ、以下で一式（JDK 25 ほか）をセットアップします。
 
 ```bash
-mise install        # mise.toml 記載のツールを導入
-lefthook install    # Git フックを有効化
+mise bootstrap      # mise.toml 記載のツールを導入し、続けて Git フック（lefthook）を有効化
 ```
 
 mise を活性化済みのシェル（または Claude Code セッション）では Gradle を直接実行できます。詳細は CLAUDE.md「ツール管理」を参照。
