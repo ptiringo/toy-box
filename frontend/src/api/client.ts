@@ -1,4 +1,4 @@
-import { type ProblemDetail, isProblemContentType, problemMessage } from "./problem";
+import { isProblemContentType, type ProblemDetail, problemMessage } from "./problem";
 
 /** ID トークンを取り出す関数。未ログインなら null を返す（AuthContext.getToken）。 */
 export type GetToken = () => Promise<string | null>;
