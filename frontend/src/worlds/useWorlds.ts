@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "../api/client";
-import { type World, createWorld, deleteWorld, listWorlds, renameWorld } from "../api/worlds";
+import { createWorld, deleteWorld, listWorlds, renameWorld, type World } from "../api/worlds";
 import { useAuth } from "../auth/AuthContext";
 
 type UseWorlds = {

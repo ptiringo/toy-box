@@ -1,4 +1,4 @@
-import { type GetToken, apiPost } from "./client";
+import { apiPost, type GetToken } from "./client";
 
 /** バックの MeResponse（accountId は wire 上 snake_case）。 */
 export type Me = {

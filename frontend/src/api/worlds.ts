@@ -1,4 +1,4 @@
-import { type GetToken, apiDelete, apiGet, apiPatch, apiPost } from "./client";
+import { apiDelete, apiGet, apiPatch, apiPost, type GetToken } from "./client";
 
 /** バックの WorldResponse（controller/world/WorldResponse.kt）に対応する世界（セーブデータ）。 */
 export type World = {
