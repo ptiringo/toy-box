@@ -100,9 +100,9 @@ class BreedingResultTest {
     @Test
     fun `NotCovered を分娩結果として報告しようとすると拒否されること`() {
         val result = BreedingFixture.breedingResult()
+        val notCovered = FoalingOutcome.NotCovered
 
-        val error =
-            runCatching { result.recordFoaling(FoalingOutcome.NotCovered) }.exceptionOrNull()
+        val error = runCatching { result.recordFoaling(notCovered) }.exceptionOrNull()
 
         assert(error is IllegalArgumentException)
     }
