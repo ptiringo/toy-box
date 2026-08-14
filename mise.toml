@@ -23,6 +23,14 @@ uv = "0.11.24"
 vacuum = "0.29.9"
 zizmor = "1.26.1"
 
+# `mise bootstrap` の最終段で実行される特別扱いのタスク（mise が名前 `bootstrap` で拾う）。
+# ツール導入（[tools]）と git フック設定を 1 アクションに束ね、onboarding を `mise bootstrap` 一本に
+# 揃える（従来の `mise install` + `lefthook install` の二段手順を廃止。#396）。
+# lefthook install は冪等なので、既にフック設定済みの環境で再実行しても安全。
+[tasks.bootstrap]
+description = "git フック（lefthook）を設定する"
+run = "lefthook install"
+
 # tfctl: HCP Terraform / TFE 管理 CLI（run / variable / workspace 操作）。採否は ADR-0034 参照。
 # mise registry の短名 `tfctl` は別物（flux-iac/tofu-controller の tfctl）と衝突し、aqua-registry にも
 # 未登録・GitHub Releases にバイナリ資産なし（HashiCorp は releases.hashicorp.com で配布）のため、
