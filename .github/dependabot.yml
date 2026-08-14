@@ -3,6 +3,14 @@ version: 2
 # - minor / patch の低リスク更新はエコシステムごとに 1 グループへ束ね、PR ノイズを削減する。
 # - major 更新はグループから外し個別 PR に残す（破壊的変更をまとめてレビューを難しくしない）。
 # - 例外的に高リスク・手作業を伴う依存（Spring Boot / Kotlin プラグイン）は個別・専用グループに分離する。
+#
+# cooldown 方針（#716）:
+# - リリース直後の欠陥版を掴むリスクと、短命なパッチの往復 PR を減らすため、全 4 エコシステムに揃えて置く。
+#   cooldown は version update 専用で security update には効かないため、延ばしても脆弱性修正は遅れない。
+# - 未設定でも version update には既定 3 日の cooldown がかかる。ここでの上乗せは major / minor のみで、
+#   patch は semver-patch-days を書かず既定 3 日のままにする（小さな修正まで待たせない）。
+# - semver-major-days / semver-minor-days は SemVer 対応マネージャ限定で、gradle と npm でしか使えない。
+#   github-actions / terraform は粒度を指定できないため default-days で一律に置く（minor 相当の 7 日）。
 updates:
   # Enable updates for Gradle dependencies
   - package-ecosystem: "gradle"
@@ -11,6 +19,10 @@ updates:
       interval: "weekly"
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
+    # major は破壊的変更と初期パッチが出やすいので長め、minor は中間、patch は既定 3 日（方針は先頭コメント）。
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 7
     groups:
       # Kotlin コンパイラ版と歩調を揃える必要がある依存を 1 グループに束ね、一般グループ
       # （gradle-minor-patch）を軽く緑に保つ。以下は常に同一 PR で足並みを揃える:
@@ -49,6 +61,9 @@ updates:
       interval: "weekly"
     # Keep PRs manageable by limiting the number of open PRs
     open-pull-requests-limit: 5
+    # github-actions は SemVer 粒度の cooldown 非対応（バンプ種別を区別できない）。一律 7 日で置く。
+    cooldown:
+      default-days: 7
     groups:
       # codeql-action の init / analyze / upload-sarif はバージョン完全一致が必須。
       # 分割更新すると "Loaded a configuration file for version X, but running version Y" で
@@ -71,6 +86,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # gradle と同じ粒度。react-router 7.18.0 の直後に 7.18.1 / 7.18.2 が出た実例（#693）が動機。
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 7
     groups:
       # React 本体と型定義はバージョン系列を揃える必要がある（react 19 に上げて @types/react が
       # 18 のままだと型エラーになる）。react / react-dom / それぞれの @types を major も含め
@@ -96,6 +115,9 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # terraform も SemVer 粒度の cooldown 非対応。github-actions と揃えて一律 7 日で置く。
+    cooldown:
+      default-days: 7
     groups:
       # /infra は実質 hashicorp/google 単一プロバイダ。minor / patch を集約、major は個別 PR に残る。
       terraform:
