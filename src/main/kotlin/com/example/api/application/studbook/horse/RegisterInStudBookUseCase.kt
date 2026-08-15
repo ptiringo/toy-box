@@ -21,6 +21,7 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionRepositor
 import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
+import com.example.api.domain.studbook.service.horse.ensurePedigreeRegistrationNumberAvailable
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -67,6 +68,10 @@ sealed interface RegisterInStudBookUseCaseError {
     /** 血統登録番号がブランク。 */
     data object InvalidRegistrationNumber : RegisterInStudBookUseCaseError
 
+    /** 血統登録番号が既にこの世界の他の軽種馬に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterInStudBookUseCaseError
+
     /** マイクロチップ番号が 15 桁の数字でない。 */
     data object InvalidMicrochipNumber : RegisterInStudBookUseCaseError
 
@@ -95,6 +100,9 @@ sealed interface RegisterInStudBookUseCaseError {
  * で前提条件（父=雄・母=雌・DNA 親子整合・品種整合・毛色整合）を検証してから、誕生した [BloodHorse] を 永続化する。Controller
  * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
  *
+ * 血統登録番号の一意性は既存レコード集合への問い合わせを要する集合制約で、集約の構築時不変条件では完結しない ため、ドメインサービス
+ * [ensurePedigreeRegistrationNumberAvailable] が引き当てる（ADR-0022）。
+ *
  * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterInStudBookUseCaseError]
  */
 @Service
@@ -109,12 +117,7 @@ class RegisterInStudBookUseCase(
     ): Result<RegisteredBloodHorse, RegisterInStudBookUseCaseError> = binding {
         val input = command.payload
 
-        val registrationNumber =
-            PedigreeRegistrationNumber.create(input.registrationNumber)
-                .mapError { _: BlankPedigreeRegistrationNumber ->
-                    RegisterInStudBookUseCaseError.InvalidRegistrationNumber
-                }
-                .bind()
+        val registrationNumber = availableRegistrationNumber(actor, input.registrationNumber).bind()
         val microchipNumber =
             MicrochipNumber.create(input.microchipNumber)
                 .mapError { _: InvalidMicrochipNumber ->
@@ -168,5 +171,28 @@ class RegisterInStudBookUseCase(
                 error("新規の軽種馬の保存で楽観ロック競合はありえない: id=${bloodHorse.id.value}")
             }
         RegisteredBloodHorse(saved, inspection)
+    }
+
+    /** 血統登録番号を VO 検証し、原簿の中で未使用であること（集合制約）まで確かめて返す。 */
+    private fun availableRegistrationNumber(
+        actor: Actor,
+        rawRegistrationNumber: String,
+    ): Result<PedigreeRegistrationNumber, RegisterInStudBookUseCaseError> = binding {
+        val registrationNumber =
+            PedigreeRegistrationNumber.create(rawRegistrationNumber)
+                .mapError { _: BlankPedigreeRegistrationNumber ->
+                    RegisterInStudBookUseCaseError.InvalidRegistrationNumber
+                }
+                .bind()
+        ensurePedigreeRegistrationNumberAvailable(
+                actor.worldId,
+                registrationNumber,
+                bloodHorseRepository,
+            )
+            .mapError {
+                RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken(it.number.value)
+            }
+            .bind()
+        registrationNumber
     }
 }

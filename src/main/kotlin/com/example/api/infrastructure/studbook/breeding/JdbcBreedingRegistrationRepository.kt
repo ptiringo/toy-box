@@ -47,6 +47,11 @@ class JdbcBreedingRegistrationRepository(
             Err(UpdateConflict)
         }
 
+    override fun existsByRegistrationNumber(
+        worldId: WorldId,
+        number: BreedingRegistrationNumber,
+    ): Boolean = rows.existsByWorldIdAndRegistrationNumber(worldId.value, number.value)
+
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
      *

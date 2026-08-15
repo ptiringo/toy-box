@@ -26,6 +26,7 @@
 | fk_breeding_registration_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
 | fk_breeding_registration_registered_horse | FOREIGN KEY | FOREIGN KEY (world_id, registered_horse_id) REFERENCES studbook.blood_horse(world_id, id) |
 | uq_breeding_registration_world_id_id | UNIQUE | UNIQUE (world_id, id) |
+| uq_breeding_registration_registration_number | UNIQUE | UNIQUE (world_id, registration_number) |
 
 ## Indexes
 
@@ -34,6 +35,7 @@
 | breeding_registration_pkey | CREATE UNIQUE INDEX breeding_registration_pkey ON studbook.breeding_registration USING btree (id) |
 | uq_breeding_registration_world_id_id | CREATE UNIQUE INDEX uq_breeding_registration_world_id_id ON studbook.breeding_registration USING btree (world_id, id) |
 | ix_breeding_registration_registered_horse_id | CREATE INDEX ix_breeding_registration_registered_horse_id ON studbook.breeding_registration USING btree (world_id, registered_horse_id) |
+| uq_breeding_registration_registration_number | CREATE UNIQUE INDEX uq_breeding_registration_registration_number ON studbook.breeding_registration USING btree (world_id, registration_number) |
 
 ## Relations
 

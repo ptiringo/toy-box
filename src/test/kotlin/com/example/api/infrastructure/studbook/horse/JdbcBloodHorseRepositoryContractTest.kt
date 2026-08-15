@@ -46,6 +46,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 10. 並行削除された集約への save が UpdateConflict を返すこと
  * 11. 馬名の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  * 12. 出自 CarriedOver の往復と CHECK 強制（バリアント固有列の混入を拒否）
+ * 13. 血統登録番号の一意性が世界の中で引き当て・UNIQUE 強制されること（世界をまたぐと衝突しないこと）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -88,15 +89,30 @@ class JdbcBloodHorseRepositoryContractTest(
 
     /** 内国産の父母を持つ命名済みの軽種馬を組み立てる（前提条件を満たす父=雄・母=雌・品種/ DNA 整合）。父母・仔馬自身の審査行は seed 済み。 */
     private fun namedDomesticFoal(): BloodHorse {
-        val sire = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
-        val dam = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        // 血統登録番号は世界の中で一意（V22 / #652）で、本ヘルパーは同じ世界で繰り返し呼ばれるため、
+        // 父・母・仔の番号は呼び出しごとに一意な値を振る。
+        val sire =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(
+                    sex = Sex.MALE,
+                    registrationNumber = "SIRE-${generateId()}",
+                )
+            )
+        val dam =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(
+                    sex = Sex.FEMALE,
+                    registrationNumber = "DAM-${generateId()}",
+                )
+            )
         val foal =
             BloodHorse.create(
                     sire = sire,
                     dam = dam,
                     entry = BloodHorseFixture.studBookEntry(sex = Sex.MALE),
                     inspection = BloodHorseFixture.inspection(),
-                    registrationNumber = PedigreeRegistrationNumber.create("2023109999").unwrap(),
+                    registrationNumber =
+                        PedigreeRegistrationNumber.create("FOAL-${generateId()}").unwrap(),
                 )
                 .unwrap()
         seeder.seedInspectionFor(foal)
@@ -310,5 +326,76 @@ class JdbcBloodHorseRepositoryContractTest(
             )
 
         assert(conflicted.getError() == UpdateConflict)
+    }
+
+    @Test
+    fun `既に採番済みの血統登録番号は existsByRegistrationNumber が true を返す`() {
+        val horse = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        seeder.seedInspectionFor(horse)
+        repository.save(worldId, horse).unwrap()
+
+        assert(
+            repository.existsByRegistrationNumber(
+                worldId,
+                PedigreeRegistrationNumber.create("2023104567").unwrap(),
+            )
+        )
+    }
+
+    @Test
+    fun `未使用の血統登録番号は existsByRegistrationNumber が false を返す`() {
+        val horse = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        seeder.seedInspectionFor(horse)
+        repository.save(worldId, horse).unwrap()
+
+        assert(
+            !repository.existsByRegistrationNumber(
+                worldId,
+                PedigreeRegistrationNumber.create("9999999999").unwrap(),
+            )
+        )
+    }
+
+    @Test
+    fun `他の世界で採番済みの血統登録番号は existsByRegistrationNumber が false を返す`() {
+        val horse = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        seeder.seedInspectionFor(horse)
+        repository.save(worldId, horse).unwrap()
+
+        assert(
+            !repository.existsByRegistrationNumber(
+                WorldId(createWorld()),
+                PedigreeRegistrationNumber.create("2023104567").unwrap(),
+            )
+        )
+    }
+
+    @Test
+    fun `同一世界での同一血統登録番号の二重insertはUNIQUE制約で拒否される`() {
+        // ドメインサービス ensurePedigreeRegistrationNumberAvailable の検証をすり抜ける
+        // read-then-insert 並行競合（#532）の backstop。
+        val first = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        seeder.seedInspectionFor(first)
+        repository.save(worldId, first).unwrap()
+
+        val duplicate = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        seeder.seedInspectionFor(duplicate)
+
+        assertThrows<DataIntegrityViolationException> { repository.save(worldId, duplicate) }
+    }
+
+    @Test
+    fun `別の世界でなら同一の血統登録番号を採番できる`() {
+        // 一意性は世界（セーブデータ）の中に閉じる。プレイヤーをまたいで番号が早い者勝ちにならないこと。
+        val first = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        seeder.seedInspectionFor(first)
+        repository.save(worldId, first).unwrap()
+
+        val otherWorldId = WorldId(createWorld())
+        val otherSeeder = StudbookSeeder(otherWorldId, inspectionRows, rows, registrationRows)
+        val sameNumber = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
+        otherSeeder.seedInspectionFor(sameNumber)
+
+        assert(repository.save(otherWorldId, sameNumber).unwrap().id == sameNumber.id)
     }
 }

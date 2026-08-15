@@ -71,15 +71,33 @@ class JdbcBreedingResultRepositoryContractTest(
         seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
     }
 
-    /** 親（繁殖牝馬の登録と種牡馬）を seed 済みの、分娩結果未報告の成績を組む。 */
+    /**
+     * 親（繁殖牝馬の登録と種牡馬）を seed 済みの、分娩結果未報告の成績を組む。
+     *
+     * 血統登録番号・繁殖登録番号は世界の中で一意（V22 / #652）で、本ヘルパーは同じ世界で繰り返し呼ばれる ため、番号は呼び出しごとに一意な値を振る。
+     */
     private fun seededBreedingResult(): BreedingResult {
         val broodmareRegistration =
             BreedingFixture.breedingRegistration(
-                broodmare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+                broodmare =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.FEMALE,
+                            registrationNumber = "MARE-${generateId()}",
+                        )
+                    ),
+                registrationNumber = "B-MARE-${generateId()}",
             )
         val stallionRegistration =
             BreedingFixture.stallionRegistration(
-                stallion = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.MALE))
+                stallion =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.MALE,
+                            registrationNumber = "SIRE-${generateId()}",
+                        )
+                    ),
+                registrationNumber = "B-SIRE-${generateId()}",
             )
         seeder.seedRegistration(broodmareRegistration)
         seeder.seedRegistration(stallionRegistration)
@@ -89,11 +107,18 @@ class JdbcBreedingResultRepositoryContractTest(
         )
     }
 
-    /** 親（繁殖牝馬の登録）を seed 済みの、種付せず成績を組む。 */
+    /** 親（繁殖牝馬の登録）を seed 済みの、種付せず成績を組む。番号を一意にする理由は [seededBreedingResult] と同じ。 */
     private fun seededUncoveredResult(): BreedingResult {
         val broodmareRegistration =
             BreedingFixture.breedingRegistration(
-                broodmare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+                broodmare =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.FEMALE,
+                            registrationNumber = "MARE-${generateId()}",
+                        )
+                    ),
+                registrationNumber = "B-MARE-${generateId()}",
             )
         seeder.seedRegistration(broodmareRegistration)
         return BreedingFixture.uncoveredBreedingResult(

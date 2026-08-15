@@ -37,6 +37,7 @@
 | uq_blood_horse_world_id_id | UNIQUE | UNIQUE (world_id, id) |
 | fk_blood_horse_inspection | FOREIGN KEY | FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id) |
 | uq_blood_horse_name | UNIQUE | UNIQUE (world_id, name) |
+| uq_blood_horse_registration_number | UNIQUE | UNIQUE (world_id, registration_number) |
 
 ## Indexes
 
@@ -48,6 +49,7 @@
 | ix_blood_horse_sire_id | CREATE INDEX ix_blood_horse_sire_id ON studbook.blood_horse USING btree (world_id, sire_id) |
 | ix_blood_horse_dam_id | CREATE INDEX ix_blood_horse_dam_id ON studbook.blood_horse USING btree (world_id, dam_id) |
 | uq_blood_horse_name | CREATE UNIQUE INDEX uq_blood_horse_name ON studbook.blood_horse USING btree (world_id, name) |
+| uq_blood_horse_registration_number | CREATE UNIQUE INDEX uq_blood_horse_registration_number ON studbook.blood_horse USING btree (world_id, registration_number) |
 
 ## Relations
 

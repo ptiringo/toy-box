@@ -23,6 +23,7 @@ import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
+import com.example.api.domain.studbook.service.horse.ensurePedigreeRegistrationNumberAvailable
 import com.example.api.domain.studbook.service.horse.registerFoal
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
@@ -69,6 +70,10 @@ sealed interface RegisterFoalUseCaseError {
     /** 血統登録番号がブランク。 */
     data object InvalidRegistrationNumber : RegisterFoalUseCaseError
 
+    /** 血統登録番号が既にこの世界の他の軽種馬に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterFoalUseCaseError
+
     /** マイクロチップ番号が 15 桁の数字でない。 */
     data object InvalidMicrochipNumber : RegisterFoalUseCaseError
 
@@ -103,6 +108,9 @@ sealed interface RegisterFoalUseCaseError {
  * で前提条件（分娩結果が生産であること、および委譲先 registerInStudBook の父=雄・母=雌・DNA 親子整合・品種整合・毛色整合）を検証してから、誕生した
  * [BloodHorse] を永続化する。 Controller 層は本クラスのみに依存し、ポートやドメインサービスは知らない。
  *
+ * 血統登録番号の一意性は、原簿を共有する以上どの登録経路でも等しく成り立つ必要があるため、他の登録経路と同じ ドメインサービス
+ * [ensurePedigreeRegistrationNumberAvailable] で引き当てる（ADR-0022）。
+ *
  * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterFoalUseCaseError]
  */
 @Service
@@ -125,6 +133,13 @@ class RegisterFoalUseCase(
                     RegisterFoalUseCaseError.InvalidRegistrationNumber
                 }
                 .bind()
+        ensurePedigreeRegistrationNumberAvailable(
+                actor.worldId,
+                registrationNumber,
+                bloodHorseRepository,
+            )
+            .mapError { RegisterFoalUseCaseError.RegistrationNumberAlreadyTaken(it.number.value) }
+            .bind()
         // 審査をメモリ内で組み立てる。前提条件検証（registerFoal）を通った後にのみ永続化し、
         // 業務ルール違反での却下時に孤児レコードが残るのを防ぐ。
         val inspection = buildInspection(input).bind()

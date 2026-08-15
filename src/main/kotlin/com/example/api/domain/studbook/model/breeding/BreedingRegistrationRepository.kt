@@ -28,4 +28,12 @@ interface BreedingRegistrationRepository {
         worldId: WorldId,
         breedingRegistration: BreedingRegistration,
     ): Result<BreedingRegistration, UpdateConflict>
+
+    /**
+     * 指定の世界の中で、その繁殖登録番号が既に他の繁殖登録に採番されているかを判定する（繁殖登録番号の一意性照合用）。
+     *
+     * 繁殖登録原簿と血統登録原簿は別の採番空間のため（登録規程 第3〜5条）、本ポートが見るのは繁殖登録番号だけで、 血統登録番号は
+     * [com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository] が受け持つ。
+     */
+    fun existsByRegistrationNumber(worldId: WorldId, number: BreedingRegistrationNumber): Boolean
 }

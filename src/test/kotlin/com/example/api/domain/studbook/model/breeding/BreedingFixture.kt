@@ -17,21 +17,27 @@ private val DEFAULT_REGION = BreedingRegion.create("北海道").unwrap()
  * は種牡馬のロールを持つ登録を組む。[BreedingResult.create] は両登録のロールを自己検証するため、 適切な登録を渡して `unwrap` で成功を取り出す。
  */
 object BreedingFixture {
-    /** ロールが繁殖牝馬の [BreedingRegistration] を生成する。繁殖牝馬は必要に応じて上書きする。 */
+    /**
+     * ロールが繁殖牝馬の [BreedingRegistration] を生成する。繁殖牝馬は必要に応じて上書きする。
+     *
+     * 繁殖登録番号は世界の中で一意（V22 / #652）なので、同じ世界へ複数の登録を永続化するテストは [registrationNumber] を明示して衝突を避ける。
+     */
     fun breedingRegistration(
-        broodmare: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        broodmare: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE),
+        registrationNumber: String = "B-2024-0001",
     ): BreedingRegistration =
         BreedingRegistration.create(
-            registrationNumber = BreedingRegistrationNumber.create("B-2024-0001").unwrap(),
+            registrationNumber = BreedingRegistrationNumber.create(registrationNumber).unwrap(),
             horse = broodmare,
         )
 
-    /** ロールが種牡馬の [BreedingRegistration] を生成する。種牡馬は必要に応じて上書きする。 */
+    /** ロールが種牡馬の [BreedingRegistration] を生成する。種牡馬・番号は必要に応じて上書きする。 */
     fun stallionRegistration(
-        stallion: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+        stallion: BloodHorse = BloodHorseFixture.bloodHorse(sex = Sex.MALE),
+        registrationNumber: String = "B-2024-0002",
     ): BreedingRegistration =
         BreedingRegistration.create(
-            registrationNumber = BreedingRegistrationNumber.create("B-2024-0002").unwrap(),
+            registrationNumber = BreedingRegistrationNumber.create(registrationNumber).unwrap(),
             horse = stallion,
         )
 

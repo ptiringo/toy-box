@@ -128,6 +128,34 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `RegistrationNumberAlreadyTaken で 409 と繁殖登録固有の errorCode が返ること`() {
+        // 繁殖登録原簿は血統登録原簿と別の採番空間なので、血統側とは別の errorCode を割り当てる。
+        every {
+            registerBreedingRegistration(
+                any<Actor>(),
+                any<Command<RegisterBreedingRegistrationCommand>>(),
+            )
+        } returns
+            Err(
+                RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
+                    "B-2024-0001"
+                )
+            )
+
+        tester
+            .post()
+            .uri(uri, worldId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validBody)
+            .assertThat()
+            .hasStatus(HttpStatus.CONFLICT)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.registration_number")
+            .isEqualTo("B-2024-0001")
+    }
+
+    @Test
     fun `存在する ID の照会で 200 と繁殖登録リソースが返ること`() {
         val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
         val horseId = UUID.fromString("33333333-3333-3333-3333-333333333333")

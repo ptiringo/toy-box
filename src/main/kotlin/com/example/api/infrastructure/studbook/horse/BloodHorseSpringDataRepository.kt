@@ -14,6 +14,9 @@ interface BloodHorseSpringDataRepository : CrudRepository<BloodHorseRow, UUID> {
     /** 指定の世界の中で、馬名（`blood_horse.name`）が一致する行が存在するか。馬名の一意性照合に用いる。 */
     fun existsByWorldIdAndName(worldId: UUID, name: String): Boolean
 
+    /** 指定の世界の中で、血統登録番号（`blood_horse.registration_number`）が一致する行が存在するか。登録番号の一意性照合に用いる。 */
+    fun existsByWorldIdAndRegistrationNumber(worldId: UUID, registrationNumber: String): Boolean
+
     /**
      * 指定の世界の中から主キーで引く。
      *

@@ -51,7 +51,7 @@ class JdbcBreedingRegistrationQueriesContractTest(
 
     @Test
     fun `供用中の繁殖登録を ID で引き列を詰めて返す`() {
-        val id = seeder.seedRegistrationRow(role = "BROODMARE")
+        val id = seeder.seedRegistrationRow(role = "BROODMARE", registrationNumber = "B-0001")
 
         val view = queries.findById(worldId, BreedingRegistrationId(id))
 

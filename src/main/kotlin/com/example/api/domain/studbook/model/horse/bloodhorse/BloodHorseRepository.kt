@@ -35,4 +35,12 @@ interface BloodHorseRepository {
 
     /** 指定の世界の中で、その馬名が既に他の軽種馬に付与されているかを判定する（馬名の一意性照合用）。 */
     fun existsByName(worldId: WorldId, name: HorseName): Boolean
+
+    /**
+     * 指定の世界の中で、その血統登録番号が既に他の軽種馬に採番されているかを判定する（血統登録番号の一意性照合用）。
+     *
+     * 血統登録原簿と繁殖登録原簿は別の採番空間のため（登録規程 第3〜5条）、本ポートが見るのは血統登録番号だけで、 繁殖登録番号は
+     * [com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository] が受け持つ。
+     */
+    fun existsByRegistrationNumber(worldId: WorldId, number: PedigreeRegistrationNumber): Boolean
 }

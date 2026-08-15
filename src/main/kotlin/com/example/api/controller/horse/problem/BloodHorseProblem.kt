@@ -18,6 +18,22 @@ import org.springframework.http.ProblemDetail
  */
 
 /**
+ * 血統登録番号の重複（409 Conflict）を描画する。
+ *
+ * 血統登録原簿は 1 つで、内国産・輸入・生産産駒・移行取り込みのどの経路から採番しても衝突の意味は同じ。 クライアントから見た分類軸を 1 つに保つため、経路ごとに `type` を割らず単一の
+ * `errorCode` を共用する （馬名の重複 `horse-name-already-taken` と同じ考え方）。繁殖登録番号は別の採番空間のため別 `errorCode`
+ * （`breeding-registration-number-already-taken`）を割り当てる。
+ */
+private fun registrationNumberAlreadyTaken(registrationNumber: String): ProblemDetail =
+    problem(
+            status = HttpStatus.CONFLICT,
+            code = "registration-number-already-taken",
+            title = "Registration number already taken",
+            detail = "申請された血統登録番号は既に他の軽種馬に採番されています。",
+        )
+        .apply { setProperty("registration_number", registrationNumber) }
+
+/**
  * [NameHorseUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
  *
  * - 馬名の不変条件違反は入力不正として 400 Bad Request
@@ -82,6 +98,7 @@ fun NameHorseUseCaseError.toProblemDetail(): ProblemDetail =
  * [RegisterInStudBookUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に変換する。
  *
  * - VO 検証エラーは入力不正として 400 Bad Request
+ * - 申請された血統登録番号が既に他の軽種馬で採番済みは、原簿の既存登録番号と衝突するため 409 Conflict
  * - 父母の不在（ボディ内 sire_id / dam_id の参照先不在）・ドメイン前提条件違反は、整った入力だが意味的に 処理できないため 422 Unprocessable
  *   Entity（判断基準は ADR-0018 / ADR-0021、api-design.md「404 vs 422」）
  */
@@ -94,6 +111,8 @@ fun RegisterInStudBookUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Invalid registration number",
                 detail = "registration_number は空であってはいけません。",
             )
+        is RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken ->
+            registrationNumberAlreadyTaken(registrationNumber)
         RegisterInStudBookUseCaseError.InvalidMicrochipNumber ->
             problem(
                 status = HttpStatus.BAD_REQUEST,
@@ -177,7 +196,8 @@ private fun RegisterInStudBookError.toProblemDetail(): ProblemDetail =
  * [RegisterImportedHorseUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail] に
  * 変換する。
  *
- * 輸入馬登録は父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）のみで、すべて 400 Bad Request とする。
+ * 輸入馬登録は父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）＝ 400 Bad Request が主。ただし
+ * 申請された血統登録番号が既に採番済みの場合のみ、原簿の既存登録番号と衝突するため 409 Conflict とする。
  */
 fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -188,6 +208,8 @@ fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Invalid registration number",
                 detail = "registration_number は空であってはいけません。",
             )
+        is RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken ->
+            registrationNumberAlreadyTaken(registrationNumber)
         RegisterImportedHorseUseCaseError.InvalidMicrochipNumber ->
             problem(
                 status = HttpStatus.BAD_REQUEST,
@@ -215,7 +237,8 @@ fun RegisterImportedHorseUseCaseError.toProblemDetail(): ProblemDetail =
  * [RegisterCarriedOverHorseUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail]
  * に変換する。
  *
- * 移行取り込みは父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）のみで、すべて 400 Bad Request とする。
+ * 移行取り込みは父母の引き当てを行わないため、失敗は VO 検証エラー（入力不正）＝ 400 Bad Request が主。ただし
+ * 引き継いだ血統登録番号が取り込み先の原簿で既に採番済みの場合のみ、409 Conflict とする。
  */
 fun RegisterCarriedOverHorseUseCaseError.toProblemDetail(): ProblemDetail =
     when (this) {
@@ -226,6 +249,8 @@ fun RegisterCarriedOverHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Invalid registration number",
                 detail = "registration_number は空であってはいけません。",
             )
+        is RegisterCarriedOverHorseUseCaseError.RegistrationNumberAlreadyTaken ->
+            registrationNumberAlreadyTaken(registrationNumber)
         RegisterCarriedOverHorseUseCaseError.InvalidMicrochipNumber ->
             problem(
                 status = HttpStatus.BAD_REQUEST,

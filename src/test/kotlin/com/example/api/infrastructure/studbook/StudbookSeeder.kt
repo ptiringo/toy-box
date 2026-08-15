@@ -57,11 +57,15 @@ class StudbookSeeder(
         return id
     }
 
-    /** 任意 ID の馬行（輸入馬の最小構成）を審査行ごと作り ID を返す（生 Row の sire/dam・種牡馬用）。 */
+    /**
+     * 任意 ID の馬行（輸入馬の最小構成）を審査行ごと作り ID を返す（生 Row の sire/dam・種牡馬用）。
+     *
+     * 登録番号の既定値は ID から導いて衝突しないようにする。同じ世界に複数の馬を seed するテストが多く、 固定値だと血統登録番号の UNIQUE（V22）に当たるため。
+     */
     fun seedHorseRow(
         id: UUID = generateId(),
         sex: String = "MALE",
-        registrationNumber: String = "2020900001",
+        registrationNumber: String = "SEED-$id",
     ): UUID {
         horseRows.save(
             BloodHorseRow(
@@ -82,13 +86,21 @@ class StudbookSeeder(
         return id
     }
 
-    /** 任意 ID の繁殖登録行を対象馬・審査行ごと作り ID を返す（生 Row の breeding_registration_id 用）。 */
-    fun seedRegistrationRow(id: UUID = generateId(), role: String = "BROODMARE"): UUID {
+    /**
+     * 任意 ID の繁殖登録行を対象馬・審査行ごと作り ID を返す（生 Row の breeding_registration_id 用）。
+     *
+     * 登録番号の既定値は ID から導いて衝突しないようにする（[seedHorseRow] と同じ理由。UNIQUE は V22）。
+     */
+    fun seedRegistrationRow(
+        id: UUID = generateId(),
+        role: String = "BROODMARE",
+        registrationNumber: String = "SEED-REG-$id",
+    ): UUID {
         registrationRows.save(
             BreedingRegistrationRow(
                 worldId = worldId.value,
                 id = id,
-                registrationNumber = "B-0001",
+                registrationNumber = registrationNumber,
                 registeredHorseId =
                     seedHorseRow(sex = if (role == "STALLION") "MALE" else "FEMALE"),
                 breedingRole = role,
