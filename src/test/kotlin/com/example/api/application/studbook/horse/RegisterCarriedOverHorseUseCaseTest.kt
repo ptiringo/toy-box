@@ -54,6 +54,7 @@ class RegisterCarriedOverHorseUseCaseTest {
         fun `正しい入力のとき移行取り込みの馬が登録され永続化される`() {
             val repository =
                 mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
                     every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
@@ -74,7 +75,10 @@ class RegisterCarriedOverHorseUseCaseTest {
     inner class FailureCase {
         @Test
         fun `血統登録番号がブランクのとき InvalidRegistrationNumber を返し永続化されない`() {
-            val repository = mockk<BloodHorseRepository>()
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
+                }
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
             val result = useCase(actor, command(validPayload().copy(registrationNumber = "")))
@@ -87,7 +91,10 @@ class RegisterCarriedOverHorseUseCaseTest {
 
         @Test
         fun `マイクロチップ番号が不正なとき InvalidMicrochipNumber を返し永続化されない`() {
-            val repository = mockk<BloodHorseRepository>()
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
+                }
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
             val result = useCase(actor, command(validPayload().copy(microchipNumber = "123")))
@@ -97,8 +104,28 @@ class RegisterCarriedOverHorseUseCaseTest {
         }
 
         @Test
+        fun `引き継いだ血統登録番号が取り込み先で採番済みのとき RegistrationNumberAlreadyTaken を返す`() {
+            // 先行原簿で交付済みの番号を引き継ぐ経路でも、取り込み先の原簿の中では一意でなければならない。
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns true
+                }
+            val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
+
+            val result = useCase(actor, command(validPayload()))
+
+            val expected =
+                RegisterCarriedOverHorseUseCaseError.RegistrationNumberAlreadyTaken("2002100501")
+            assert(result.getError() == expected)
+            verify(exactly = 0) { repository.save(worldId, any()) }
+        }
+
+        @Test
         fun `生産者名がブランクのとき BlankBreeder を返し永続化されない`() {
-            val repository = mockk<BloodHorseRepository>()
+            val repository =
+                mockk<BloodHorseRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
+                }
             val useCase = RegisterCarriedOverHorseUseCase(repository, inspectionRepository())
 
             val result = useCase(actor, command(validPayload().copy(breeder = " ")))

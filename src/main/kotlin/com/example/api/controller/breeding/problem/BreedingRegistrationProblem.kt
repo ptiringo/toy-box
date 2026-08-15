@@ -16,6 +16,8 @@ import org.springframework.http.ProblemDetail
  * [RegisterBreedingRegistrationUseCaseError] を RFC 9457 の [ProblemDetail] に変換する。
  *
  * - 繁殖登録番号の VO 検証エラーは入力不正として 400 Bad Request
+ * - 申請された繁殖登録番号が既に他の繁殖登録に採番済みは、原簿の既存登録番号と衝突するため 409 Conflict。 血統登録番号とは別の採番空間のため、血統側
+ *   （`registration-number-already-taken`）とは別の `errorCode` を割り当てる
  * - リクエストボディで参照する軽種馬の不在は、整った入力だが意味的に処理できないため 422 Unprocessable Entity
  *   （api-design.md「リソース不在のステータス（404 vs 422）」: ボディ内参照先の不在は 422）
  */
@@ -28,6 +30,14 @@ fun RegisterBreedingRegistrationUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Invalid breeding registration number",
                 detail = "registration_number は空であってはいけません。",
             )
+        is RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "breeding-registration-number-already-taken",
+                    title = "Breeding registration number already taken",
+                    detail = "申請された繁殖登録番号は既に他の繁殖登録に採番されています。",
+                )
+                .apply { setProperty("registration_number", registrationNumber) }
         is RegisterBreedingRegistrationUseCaseError.HorseNotFound ->
             problem(
                     status = HttpStatus.UNPROCESSABLE_CONTENT,

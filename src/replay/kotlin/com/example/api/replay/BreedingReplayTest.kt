@@ -116,7 +116,15 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
     @Test
     fun `全フィクスチャを流して突合レポートを書き出す`() {
         // 停止は「発見」なので失敗にしない。観測をレポートへ落とすことがこのテストの目的。
-        val outcomes = FixtureLoader.loadAll().map { engine.run(actor, it) }
+        // フィクスチャごとに別の世界へ流す。同じ個体を複数のフィクスチャが含む（01/04 のウインドインハーヘア、
+        // 03/06 のテスコパール）ため、1 つの世界に流すと登録番号の一意性（#652）で 2 頭目が弾かれ、
+        // 「モデルが実在の事実に耐えられなかった」ように見える停止が観測に混ざる。世界を分ければ、
+        // フィクスチャ 1 件＝1 頭のシーズンを独立に再生するという意味づけどおりになる。
+        val outcomes =
+            FixtureLoader.loadAll().map { fixture ->
+                worldIdValue = createWorld()
+                engine.run(actor, fixture)
+            }
 
         assert(outcomes.isNotEmpty())
         val report = ReconciliationReport.render(outcomes)

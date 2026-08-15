@@ -8,6 +8,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationNumber
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
+import com.example.api.domain.studbook.service.breeding.ensureBreedingRegistrationNumberAvailable
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -36,6 +37,10 @@ sealed interface RegisterBreedingRegistrationUseCaseError {
     /** 繁殖登録番号がブランク。 */
     data object InvalidRegistrationNumber : RegisterBreedingRegistrationUseCaseError
 
+    /** 繁殖登録番号が既にこの世界の他の繁殖登録に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterBreedingRegistrationUseCaseError
+
     /** 繁殖登録の対象として指定された軽種馬が存在しない。 */
     data class HorseNotFound(val bloodHorseId: UUID) : RegisterBreedingRegistrationUseCaseError
 }
@@ -49,6 +54,9 @@ sealed interface RegisterBreedingRegistrationUseCaseError {
  *
  * 繁殖登録は種付記録・種付せず・分娩報告・供用停止といった繁殖の書き込み経路の起点であり、本ユースケースが その起点（`save` 経路）を開通させる。付与されるロールは対象個体の性から
  * [BreedingRegistration.create] が定める。 制度上の前提条件（馬名登録済み・競走馬登録抹消済み 等）は対応する集約が未モデル化のため現時点では検証しない。
+ *
+ * 繁殖登録番号の一意性は既存レコード集合への問い合わせを要する集合制約で、集約の構築時不変条件では完結しない ため、ドメインサービス
+ * [ensureBreedingRegistrationNumberAvailable] が引き当てる。血統登録番号とは別の採番空間であり、 照合先も繁殖登録原簿に限る（ADR-0022）。
  *
  * @return 成立した [BreedingRegistration]、または業務ルール違反を表す [RegisterBreedingRegistrationUseCaseError]
  */
@@ -70,6 +78,17 @@ class RegisterBreedingRegistrationUseCase(
                     RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber
                 }
                 .bind()
+        ensureBreedingRegistrationNumberAvailable(
+                actor.worldId,
+                registrationNumber,
+                breedingRegistrationRepository,
+            )
+            .mapError {
+                RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
+                    it.number.value
+                )
+            }
+            .bind()
 
         val horse =
             bloodHorseRepository

@@ -62,11 +62,12 @@ object BloodHorseFixture {
         sex: Sex = Sex.MALE,
         coatColor: CoatColor = CoatColor.BAY,
         breedType: BreedType = BreedType.THOROUGHBRED,
+        registrationNumber: String = "2023104567",
     ): BloodHorse =
         BloodHorse.createImported(
             entry = importedHorseEntry(sex = sex, coatColor = coatColor, breedType = breedType),
             inspection = inspection(parentage = ParentageDetermination.NotApplicable),
-            registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
+            registrationNumber = PedigreeRegistrationNumber.create(registrationNumber).unwrap(),
         )
 
     /** 既定値を持つ [ImportedHorseEntry]（輸入馬）を生成する。必要な属性のみ上書きする。 */

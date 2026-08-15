@@ -88,6 +88,7 @@ class RegisterFoalUseCaseTest {
             }
         val bloodHorseRepository =
             mockk<BloodHorseRepository> {
+                every { existsByRegistrationNumber(worldId, any()) } returns false
                 every { findById(worldId, sire.id) } returns sire
                 every { findById(worldId, dam.id) } returns dam
                 every { save(worldId, any()) } answers { Ok(secondArg()) }
@@ -132,6 +133,24 @@ class RegisterFoalUseCaseTest {
                 w.useCase()(actor, command(w.breedingResult.id.value, registrationNumber = ""))
 
             assert(result.getError() == RegisterFoalUseCaseError.InvalidRegistrationNumber)
+            verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
+        }
+
+        @Test
+        fun `血統登録番号が既に採番済みだと RegistrationNumberAlreadyTaken を返す`() {
+            val w = Wiring()
+            every { w.bloodHorseRepository.existsByRegistrationNumber(worldId, any()) } returns true
+
+            val result =
+                w.useCase()(
+                    actor,
+                    command(w.breedingResult.id.value, registrationNumber = "2024104567"),
+                )
+
+            assert(
+                result.getError() ==
+                    RegisterFoalUseCaseError.RegistrationNumberAlreadyTaken("2024104567")
+            )
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
         }
 

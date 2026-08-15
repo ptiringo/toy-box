@@ -13,6 +13,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseReposito
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
+import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.infrastructure.studbook.StudbookSeeder
@@ -100,8 +101,11 @@ class RegisterHorseTransactionRollbackTest(
 
     @Test
     fun `内国産血統登録で軽種馬の保存がインフラ障害で失敗すると先行する審査の保存もロールバックされる`() {
-        val sireFixture = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
-        val damFixture = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        // 血統登録番号は世界の中で一意（V22）なので、父・母・仔で別々の番号を振る
+        val sireFixture =
+            BloodHorseFixture.bloodHorse(sex = Sex.MALE, registrationNumber = "2018101111")
+        val damFixture =
+            BloodHorseFixture.bloodHorse(sex = Sex.FEMALE, registrationNumber = "2018102222")
         seeder.seedInspectionFor(sireFixture)
         seeder.seedInspectionFor(damFixture)
         val sire = failingRepository.save(worldId, sireFixture).unwrap()
@@ -174,4 +178,9 @@ class FailingBloodHorseRepository(private val delegate: BloodHorseRepository) :
 
     override fun existsByName(worldId: WorldId, name: HorseName): Boolean =
         delegate.existsByName(worldId, name)
+
+    override fun existsByRegistrationNumber(
+        worldId: WorldId,
+        number: PedigreeRegistrationNumber,
+    ): Boolean = delegate.existsByRegistrationNumber(worldId, number)
 }

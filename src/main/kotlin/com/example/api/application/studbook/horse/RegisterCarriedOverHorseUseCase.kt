@@ -18,6 +18,7 @@ import com.example.api.domain.studbook.model.inspection.HorseInspectionRepositor
 import com.example.api.domain.studbook.model.inspection.InvalidMicrochipNumber
 import com.example.api.domain.studbook.model.inspection.MicrochipNumber
 import com.example.api.domain.studbook.model.inspection.ParentageDetermination
+import com.example.api.domain.studbook.service.horse.ensurePedigreeRegistrationNumberAvailable
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -56,6 +57,10 @@ sealed interface RegisterCarriedOverHorseUseCaseError {
     /** 血統登録番号がブランク。 */
     data object InvalidRegistrationNumber : RegisterCarriedOverHorseUseCaseError
 
+    /** 血統登録番号が既にこの世界の他の軽種馬に採番済み。 */
+    data class RegistrationNumberAlreadyTaken(val registrationNumber: String) :
+        RegisterCarriedOverHorseUseCaseError
+
     /** マイクロチップ番号が 15 桁の数字でない。 */
     data object InvalidMicrochipNumber : RegisterCarriedOverHorseUseCaseError
 
@@ -70,6 +75,9 @@ sealed interface RegisterCarriedOverHorseUseCaseError {
  * を生成して永続化する。父母・血統は先行原簿に記録済みで当システムに存在しない
  * ため、父母の引き当て・前提条件検証は行わず、親子判定も実施しない（[ParentageDetermination.NotApplicable]）。 Controller
  * 層は本クラスのみに依存し、ドメインの生成経路の詳細は知らない。
+ *
+ * 番号を先行原簿から引き継ぐ経路であっても、取り込み先の原簿の中では一意でなければならないため、他の登録経路と 同じドメインサービス
+ * [ensurePedigreeRegistrationNumberAvailable] で引き当てる（ADR-0022）。
  *
  * @return 登録された [RegisteredBloodHorse]、または業務ルール違反を表す [RegisterCarriedOverHorseUseCaseError]
  */
@@ -91,6 +99,16 @@ class RegisterCarriedOverHorseUseCase(
                     RegisterCarriedOverHorseUseCaseError.InvalidRegistrationNumber
                 }
                 .bind()
+        // 先行原簿で交付済みの番号を引き継ぐ経路でも、この世界の原簿の中では一意でなければならない。
+        ensurePedigreeRegistrationNumberAvailable(
+                actor.worldId,
+                registrationNumber,
+                bloodHorseRepository,
+            )
+            .mapError {
+                RegisterCarriedOverHorseUseCaseError.RegistrationNumberAlreadyTaken(it.number.value)
+            }
+            .bind()
         val microchipNumber =
             MicrochipNumber.create(input.microchipNumber)
                 .mapError { _: InvalidMicrochipNumber ->

@@ -18,4 +18,7 @@ interface BreedingRegistrationSpringDataRepository : CrudRepository<BreedingRegi
      * を伴うこの口を通す。
      */
     fun findByWorldIdAndId(worldId: UUID, id: UUID): BreedingRegistrationRow?
+
+    /** 指定の世界の中で、繁殖登録番号（`breeding_registration.registration_number`）が一致する行が存在するか。 登録番号の一意性照合に用いる。 */
+    fun existsByWorldIdAndRegistrationNumber(worldId: UUID, registrationNumber: String): Boolean
 }

@@ -44,6 +44,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 7. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 8. 供用停止の共在不変条件が CHECK 制約でスキーマ側にも強制されること
  * 9. 並行削除された集約への save が UpdateConflict を返すこと
+ * 10. 繁殖登録番号の一意性が世界の中で引き当て・UNIQUE 強制されること（世界をまたぐと衝突しないこと）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -242,5 +243,71 @@ class JdbcBreedingRegistrationRepositoryContractTest(
             row(retirementReason = RetirementReason.DEATH.name, retirementOccurredOn = null)
 
         assertThrows<DataIntegrityViolationException> { rows.save(inconsistent) }
+    }
+
+    @Test
+    fun `既に採番済みの繁殖登録番号は existsByRegistrationNumber が true を返す`() {
+        val number = BreedingRegistrationNumber.create("B-2024-0001").unwrap()
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository.save(worldId, BreedingRegistration.create(number, mare)).unwrap()
+
+        assert(repository.existsByRegistrationNumber(worldId, number))
+    }
+
+    @Test
+    fun `未使用の繁殖登録番号は existsByRegistrationNumber が false を返す`() {
+        val number = BreedingRegistrationNumber.create("B-2024-0001").unwrap()
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository.save(worldId, BreedingRegistration.create(number, mare)).unwrap()
+
+        assert(
+            !repository.existsByRegistrationNumber(
+                worldId,
+                BreedingRegistrationNumber.create("B-9999-9999").unwrap(),
+            )
+        )
+    }
+
+    @Test
+    fun `他の世界で採番済みの繁殖登録番号は existsByRegistrationNumber が false を返す`() {
+        val number = BreedingRegistrationNumber.create("B-2024-0001").unwrap()
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository.save(worldId, BreedingRegistration.create(number, mare)).unwrap()
+
+        assert(!repository.existsByRegistrationNumber(WorldId(createWorld()), number))
+    }
+
+    @Test
+    fun `同一世界での同一繁殖登録番号の二重insertはUNIQUE制約で拒否される`() {
+        // ドメインサービス ensureBreedingRegistrationNumberAvailable の検証をすり抜ける
+        // read-then-insert 並行競合（#532）の backstop。
+        val number = BreedingRegistrationNumber.create("B-2024-0001").unwrap()
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository.save(worldId, BreedingRegistration.create(number, mare)).unwrap()
+
+        // 別個体・同じ繁殖登録番号
+        val other =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(sex = Sex.MALE, registrationNumber = "2018101111")
+            )
+
+        assertThrows<DataIntegrityViolationException> {
+            repository.save(worldId, BreedingRegistration.create(number, other))
+        }
+    }
+
+    @Test
+    fun `別の世界でなら同一の繁殖登録番号を採番できる`() {
+        // 一意性は世界（セーブデータ）の中に閉じる。プレイヤーをまたいで番号が早い者勝ちにならないこと。
+        val number = BreedingRegistrationNumber.create("B-2024-0001").unwrap()
+        val mare = seeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        repository.save(worldId, BreedingRegistration.create(number, mare)).unwrap()
+
+        val otherWorldId = WorldId(createWorld())
+        val otherSeeder = StudbookSeeder(otherWorldId, inspectionRows, horseRows, rows)
+        val otherMare = otherSeeder.seedHorse(BloodHorseFixture.bloodHorse(sex = Sex.FEMALE))
+        val registration = BreedingRegistration.create(number, otherMare)
+
+        assert(repository.save(otherWorldId, registration).unwrap().id == registration.id)
     }
 }

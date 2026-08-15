@@ -219,6 +219,26 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         }
 
         @Test
+        fun `RegistrationNumberAlreadyTaken で 409 と registration_number 付きの problem+json が返ること`() {
+            every {
+                registerInStudBook(any<Actor>(), any<Command<RegisterInStudBookCommand>>())
+            } returns
+                Err(RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken("2023104567"))
+
+            tester
+                .post()
+                .uri("/api/worlds/{worldId}/bloodHorses", worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.registration_number")
+                .isEqualTo("2023104567")
+        }
+
+        @Test
         fun `SireNotFound で 422 と sireId 付きの problem+json が返ること`() {
             val sireId = UUID.fromString("11111111-1111-1111-1111-111111111111")
             every {
@@ -594,6 +614,27 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         }
 
         @Test
+        fun `RegistrationNumberAlreadyTaken で 409 と血統登録側と同じ errorCode が返ること`() {
+            // 原簿は 1 つなので、登録経路が違っても衝突の意味は同じ＝ errorCode を共用する。
+            every {
+                registerImportedHorse(any<Actor>(), any<Command<RegisterImportedHorseCommand>>())
+            } returns
+                Err(RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken("2020900001"))
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("registration-number-already-taken")
+        }
+
+        @Test
         fun `BlankOriginCountry で 400 と problem+json が返ること`() {
             every {
                 registerImportedHorse(any<Actor>(), any<Command<RegisterImportedHorseCommand>>())
@@ -655,6 +696,34 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .bodyJson()
                 .extractingPath("$.origin.type")
                 .isEqualTo("CARRIED_OVER")
+        }
+
+        @Test
+        fun `RegistrationNumberAlreadyTaken で 409 と血統登録側と同じ errorCode が返ること`() {
+            // 先行原簿から番号を引き継ぐ経路でも、取り込み先で衝突すれば意味は同じ＝ errorCode を共用する。
+            every {
+                registerCarriedOverHorse(
+                    any<Actor>(),
+                    any<Command<RegisterCarriedOverHorseCommand>>(),
+                )
+            } returns
+                Err(
+                    RegisterCarriedOverHorseUseCaseError.RegistrationNumberAlreadyTaken(
+                        "2002100501"
+                    )
+                )
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("registration-number-already-taken")
         }
 
         @Test

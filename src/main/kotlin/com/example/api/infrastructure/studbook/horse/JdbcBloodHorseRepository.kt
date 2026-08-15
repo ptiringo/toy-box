@@ -70,6 +70,11 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
     override fun existsByName(worldId: WorldId, name: HorseName): Boolean =
         rows.existsByWorldIdAndName(worldId.value, name.value)
 
+    override fun existsByRegistrationNumber(
+        worldId: WorldId,
+        number: PedigreeRegistrationNumber,
+    ): Boolean = rows.existsByWorldIdAndRegistrationNumber(worldId.value, number.value)
+
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
      *

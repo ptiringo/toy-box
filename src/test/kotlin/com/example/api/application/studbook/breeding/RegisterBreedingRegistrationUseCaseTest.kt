@@ -40,6 +40,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 mockk<BloodHorseRepository> { every { findById(worldId, mare.id) } returns mare }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
                     every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase =
@@ -71,6 +72,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 }
             val breedingRegistrationRepository =
                 mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
                     every { save(worldId, any()) } answers { Ok(secondArg()) }
                 }
             val useCase =
@@ -116,13 +118,44 @@ class RegisterBreedingRegistrationUseCaseTest {
         }
 
         @Test
+        fun `繁殖登録番号が既に採番済みのとき RegistrationNumberAlreadyTaken を返し永続化されない`() {
+            val mare = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+            val bloodHorseRepository = mockk<BloodHorseRepository>()
+            val breedingRegistrationRepository =
+                mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns true
+                }
+            val useCase =
+                RegisterBreedingRegistrationUseCase(
+                    bloodHorseRepository,
+                    breedingRegistrationRepository,
+                )
+
+            val result =
+                useCase(
+                    actor,
+                    command(RegisterBreedingRegistrationCommand(mare.id.value, "B-2024-0001")),
+                )
+
+            val expected =
+                RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
+                    "B-2024-0001"
+                )
+            assert(result.getError() == expected)
+            verify(exactly = 0) { breedingRegistrationRepository.save(worldId, any()) }
+        }
+
+        @Test
         fun `対象の軽種馬が存在しないとき HorseNotFound を返し永続化されない`() {
             val bloodHorseId = UUID.randomUUID()
             val bloodHorseRepository =
                 mockk<BloodHorseRepository> {
                     every { findById(worldId, BloodHorseId(bloodHorseId)) } returns null
                 }
-            val breedingRegistrationRepository = mockk<BreedingRegistrationRepository>()
+            val breedingRegistrationRepository =
+                mockk<BreedingRegistrationRepository> {
+                    every { existsByRegistrationNumber(worldId, any()) } returns false
+                }
             val useCase =
                 RegisterBreedingRegistrationUseCase(
                     bloodHorseRepository,
