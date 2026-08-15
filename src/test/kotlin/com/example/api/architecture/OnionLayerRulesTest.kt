@@ -46,7 +46,14 @@ class OnionLayerRulesTest {
             .adapter("persistence", INFRASTRUCTURE)
             .adapter("mcp", MCP)
 
-    /** domain 層はフレームワークに依存しないこと。 */
+    /**
+     * domain 層はフレームワークに依存しないこと。
+     *
+     * Jackson は **2 系と 3 系でルートパッケージが割れている**ため両方を列挙する。本プロジェクトが使う Jackson 3 の core / databind は
+     * `tools.jackson..`（`ObjectMapper` 等）だが、アノテーション（`@JsonTypeInfo` 等）は 3 系でも
+     * `com.fasterxml.jackson.annotation` に据え置かれており、実際に controller の DTO が import している。
+     * 片方だけの列挙では取りこぼす（#754）。
+     */
     @ArchTest
     val domainIsFrameworkFree =
         noClasses()
@@ -54,7 +61,12 @@ class OnionLayerRulesTest {
             .resideInAPackage(DOMAIN)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage("org.springframework..", "jakarta..", "com.fasterxml.jackson..")
+            .resideInAnyPackage(
+                "org.springframework..",
+                "jakarta..",
+                "com.fasterxml.jackson..",
+                "tools.jackson..",
+            )
 
     /**
      * ドメインサービス（`domain.*.service`）は Kotlin のトップレベル関数で書くこと。
