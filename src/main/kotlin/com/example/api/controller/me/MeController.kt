@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.time.Clock
 import org.springframework.http.MediaType
-import org.springframework.http.ProblemDetail
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
@@ -43,18 +42,7 @@ class MeController(private val provisionMe: ProvisionMeUseCase, private val cloc
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                             )
                         ],
-                ),
-                ApiResponse(
-                    responseCode = "409",
-                    description = "並行する同一 subject のセットアップと競合した",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = ProblemDetail::class),
-                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
-                        ],
-                ),
+                )
             ],
     )
     @PostMapping("/api/me:provision")
