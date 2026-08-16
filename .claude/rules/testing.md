@@ -130,6 +130,21 @@ mise exec -- diff-cover build/reports/kover/reportMature.xml \
 
 `--src-roots src/main/kotlin` は必須（省略するとソースパスを解決できずレポートが空になる）。
 
+**診断メッセージのラムダを単独行に折らない**（ktfmt × diff-cover）。`checkNotNull(x) { "診断メッセージ" }` のように正常系では通らない分岐へメッセージのラムダを添えるとき、ktfmt が行長の都合でラムダ本体を単独行へ折ると、**壊れたデータでしか実行されない行が独立した行として計上され、常に未カバーになる**。列は先にローカル変数へ取り出し、`checkNotNull` の呼び出しごと 1 行に収めること（先例: `JdbcBloodHorseQueries.toOrigin()`）。
+
+```kotlin
+// 悪い例: ラムダ本体が単独行に折られ、その行が常に未カバーになる
+sireId = BloodHorseId(checkNotNull(getObject("sire_id", UUID::class.java)) {
+    "内国産の父IDが欠落: id=$id"
+})
+
+// 良い例: 列を先に取り出し、checkNotNull の呼び出しごと 1 行に収める
+val sire = getObject("sire_id", UUID::class.java)
+sireId = BloodHorseId(checkNotNull(sire) { "内国産の父IDが欠落: id=$id" })
+```
+
+[#687](https://github.com/ptiringo/toy-box/issues/687) では読み取り経路（`JdbcBloodHorseQueries` / `JdbcBreedingRegistrationQueries` / `JdbcBreedingResultQueries`）の NULL 診断がこの形で折られ、差分カバレッジが **89%** まで落ちて `--fail-under 90` を割った。1 行に収め直して **98%** へ回復している。同じ診断を持つ書き込み側（`JdbcBloodHorseRepository`）が 100% だったのは、たまたま 1 行に収まっていたからで設計の差ではない。**同じコードでも整形結果でゲートの通過可否が変わる**のが要点。
+
 ### 実行
 
 ```bash
