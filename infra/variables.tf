@@ -20,3 +20,8 @@ variable "prisma_project_name" {
   type        = string
   sensitive   = true
 }
+
+variable "billing_account_id" {
+  description = "Cloud Billing アカウント ID（HCP workspace 変数で供給。公開リポジトリに直書きしない）"
+  type        = string
+}
