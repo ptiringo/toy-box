@@ -8,6 +8,8 @@ paths:
 
 Claude Code から Google Cloud（project `ptiringo-toy-box`）を扱うときの安全な既定。auto mode（bypassPermissions / acceptEdits）でも副作用ある操作が無確認で走らないようにする。決定経緯は [ADR-0036](../../docs/adr/0036-gcp-operation-guardrails.md)。
 
+プロジェクト ID は**秘匿対象にしない**（利用者の ID トークンとログイン画面が既に配っており隠す効果が無い）。逆に請求先アカウント ID のような未開示の識別子は書かず、変数名で参照する（[ADR-0075](../../docs/adr/0075-gcp-project-id-not-a-secret.md)）。
+
 ## 2 層のガードレール
 
 役割は**非対称**: **permissions＝強制**（アイデンティティ非依存で無確認変更を止める）、**viewer SA＝安全な既定＋多層防御**（owner は IAM でハード強制できない）。
