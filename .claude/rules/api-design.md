@@ -105,6 +105,14 @@ VO で表す項目（番号・名前など）は素の文字列で DTO に受け
 | URL パス上の操作対象が不在 | **404 Not Found** | パスで識別される対象そのものが無い | `/api/worlds/{worldId}/bloodHorses/{id}:registerName` の対象馬不在（`HorseNotFound`）、`BreedingResultNotFound` |
 | リクエストボディ内で参照する別リソースが不在 | **422 Unprocessable Entity** | リクエストは構文的に正しく処理されたが、ボディ内参照先が無く意味的に処理できない | `SireNotFound` / `DamNotFound`（`sire_id` / `dam_id`）、`BreedingRegistrationNotFound` |
 
+- **`error_code`（= `type` の URN 末尾）は 404 と 422 で共用しない**。同じリソースの不在でも、パス上の対象不在（404）とボディ内参照先不在（422）には別の値を割り当てる。同一 type が両方のステータスを持つと、クライアント側の場合分けが濁るため。命名の型は **ボディ参照は限定語・パス対象は一般語**。
+
+  | リソース | 404（パス上の対象不在） | 422（ボディ内参照先不在） |
+  |---|---|---|
+  | 軽種馬 | `horse-not-found` | `blood-horse-not-found` |
+  | 繁殖登録 | `registration-not-found` | `breeding-registration-not-found` |
+
+- **逆に、ステータスも意味も同じ不在は発生箇所ごとに割らず共用する**（照会の対象不在と馬名登録のパス対象不在はどちらも `horse-not-found` で、`detail` だけ変える）。クライアントから見た分類軸を 1 つに保つのが狙いで、割る基準は「発生箇所が違うか」ではなく「ステータスと意味が違うか」。
 - VO 検証エラー（形式不正）は入力不正として **400 Bad Request**、状態の競合（二重登録等）は **409 Conflict** とする。
 - なお [AIP-193](https://google.aip.dev/193) は参照先/親の不在に `NOT_FOUND`（404）を must とし、その error code 体系に 422 は存在しない。本プロジェクトはエラーのステータス選択を AIP の管轄外とし、RFC 9457 側で 422 を採る（リソース設計は AIP / エラー描画は RFC 9457 の二系統使い分け）。詳細は ADR-0021。
 - 経緯は [ADR-0018](../../docs/adr/0018-uncovered-via-discriminated-single-create.md)（基準の確立）と [ADR-0021](../../docs/adr/0021-parent-not-found-unprocessable-entity.md)（父母不在への適用・AIP との対比）を参照。
