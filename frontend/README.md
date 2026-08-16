@@ -65,6 +65,12 @@ Vite dev server が `/api/*` を `http://localhost:8080`（バックエンド）
 
 CI（`.github/workflows/frontend.yml`）と lefthook の pre-commit が `frontend/**` の変更時に lint/build/test を回す。
 
+> **`biome.json` の `$schema` はバージョン付き URL に戻さない**（#788）。`https://biomejs.dev/schemas/<version>/schema.json`
+> を直書きすると、Dependabot が `@biomejs/biome` を上げるたびに版がずれて `npm run lint` が info を 1 件出す
+> （パッチ版を落とした `2.5/schema.json` 等では回避できず、Biome は完全一致を要求する）。`node_modules` 内の
+> スキーマを相対パスで指す形（Biome 公式ドキュメントの第一候補）ならインストール済みの実体を指すので常に一致する。
+> なお設定が本体と非互換になったときは、この info ではなく `biome check` 自体がエラー（exit 1）で落ちる。
+
 ## 構成
 
 ```
