@@ -83,3 +83,4 @@
 | [0071](0071-pre-push-docker-fail-fast-guard.md) | pre-push の Docker 依存は fail fast ガードで扱い、テストの切り分けは行わない | Accepted |
 | [0072](0072-idempotency-key-header-trial.md) | Idempotency-Key ヘッダを 1 エンドポイントで試作する | Accepted |
 | [0073](0073-mcp-adapter-local-only-world-scoped.md) | MCP アダプタを local プロファイル限定の世界スコープ探索ツールとして再導入する | Accepted |
+| [0074](0074-billing-guardrails-spend-cap-and-budget-alert.md) | 課金ガードレールを Cloud Run spend cap（手設定）と budget alert（Terraform）の二段構えにする | Accepted |
