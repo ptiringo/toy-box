@@ -7,6 +7,7 @@ import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.map
 import java.util.UUID
 import org.springframework.ai.mcp.annotation.McpTool
+import org.springframework.ai.mcp.annotation.McpToolParam
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
@@ -29,7 +30,11 @@ class JockeyMcpTools(
 ) {
 
     @McpTool(name = "get_jockey", description = "世界IDとジョッキーIDで登録済みジョッキーを照会する")
-    fun getJockey(worldId: String, jockeyId: String): JockeyMcpResult {
+    fun getJockey(
+        @McpToolParam(description = "照会対象の世界（セーブデータ）のID。list_worlds が返す id をそのまま渡す")
+        worldId: String,
+        @McpToolParam(description = "照会するジョッキーのID（ジョッキー登録時に払い出されるUUID）") jockeyId: String,
+    ): JockeyMcpResult {
         val actor = actors.actorFor(worldId)
         val id = UUID.fromString(jockeyId)
         return getJockeyUseCase(actor, GetJockeyQuery(id))

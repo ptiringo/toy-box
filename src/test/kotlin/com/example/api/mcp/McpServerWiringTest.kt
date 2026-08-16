@@ -74,30 +74,60 @@ class McpServerWiringTest : PostgresContainerSupport() {
         assert(toolNames.contains("get_jockey"))
     }
 
+    @Test
+    fun `公開する全MCPツールの引数に説明が付いている`() {
+        // 引数の説明はツールを増やすたびに書き忘れうるうえ、抜けても配線は壊れない（スキーマが
+        // 引数名と型だけになり、LLM が「何を入れればよいか」を推測する劣化として静かに出る）。
+        // アノテーションの有無ではなく、実際に MCP クライアントへ届く入力スキーマ側で確認する（#758）。
+        val undocumented = undocumentedToolParameters(context)
+
+        assert(undocumented.isEmpty())
+    }
+
     companion object {
         /**
-         * Spring AI が公開する `List<McpServerFeatures.SyncToolSpecification>` Bean からツール名の集合を取り出す。
+         * Spring AI が公開する `List<McpServerFeatures.SyncToolSpecification>` Bean を取り出す。
          * ジェネリクスを保った検索のため `getBeanNamesForType` ではなく [ResolvableType] を使った
-         * [ApplicationContext.getBeanProvider] を使う （bean 名は Spring AI の内部実装詳細のため依存しない）。
+         * [ApplicationContext.getBeanProvider] を使う（bean 名は Spring AI の内部実装詳細のため依存しない）。
          *
          * 同一型の Bean が 2 つ存在する（`@McpTool` 走査由来の `toolSpecs` と、`ToolCallback` 由来の `syncTools`。
          * 本プロジェクトは `@McpTool` のみを使うため後者は常に空リストだが、実配線では
          * [io.modelcontextprotocol.server.McpSyncServer] が両方を合算して使う実装のため、テストも `ifAvailable`（単一 Bean
          * 前提）ではなく全 Bean を合算する）。
          */
-        fun toolSpecificationNames(context: ApplicationContext): Set<String> {
+        fun toolSpecifications(
+            context: ApplicationContext
+        ): List<McpServerFeatures.SyncToolSpecification> {
             val toolSpecsType =
                 ResolvableType.forClassWithGenerics(
                     List::class.java,
                     McpServerFeatures.SyncToolSpecification::class.java,
                 )
-            val toolSpecs =
-                context
-                    .getBeanProvider<List<McpServerFeatures.SyncToolSpecification>>(toolSpecsType)
-                    .orderedStream()
-                    .toList()
-                    .flatten()
-            return toolSpecs.map { it.tool().name() }.toSet()
+            return context
+                .getBeanProvider<List<McpServerFeatures.SyncToolSpecification>>(toolSpecsType)
+                .orderedStream()
+                .toList()
+                .flatten()
         }
+
+        /** [toolSpecifications] が公開するツール名の集合。 */
+        fun toolSpecificationNames(context: ApplicationContext): Set<String> =
+            toolSpecifications(context).map { it.tool().name() }.toSet()
+
+        /**
+         * 公開ツールの入力スキーマを走査し、説明の無い引数を `<ツール名>.<引数名>` の形で拾う。 引数を持たないツール（`list_worlds`）は `properties`
+         * が空なので自然に対象外になる。
+         */
+        fun undocumentedToolParameters(context: ApplicationContext): List<String> =
+            toolSpecifications(context).flatMap { spec ->
+                val properties =
+                    spec.tool().inputSchema()["properties"] as? Map<*, *> ?: emptyMap<Any, Any>()
+                properties
+                    .filterValues { schema ->
+                        ((schema as? Map<*, *>)?.get("description") as? String).isNullOrBlank()
+                    }
+                    .keys
+                    .map { name -> "${spec.tool().name()}.$name" }
+            }
     }
 }
