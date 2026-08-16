@@ -6,7 +6,7 @@
 
 ## Context（背景・課題）
 
-toy-box は sandbox プロジェクト（`ptiringo-toy-box`、番号 `570581970285`）だが、課金は実費で発生する。`.github/workflows/deploy.yml` の Cloud Run 設定（`--min-instances=0 --max-instances=3 --memory=1Gi --cpu=1`）が 1 か月張り付いた場合の理論上限は約 ¥30,000/月にのぼる。一方で `infra/` には課金の見張りが一切無く、暴走（誤ったループ・想定外の高頻度リクエスト・設定ミスによるインスタンス張り付き）を検知・抑止する仕組みが無かった。
+toy-box は sandbox プロジェクト（`ptiringo-toy-box`）だが、課金は実費で発生する。`.github/workflows/deploy.yml` の Cloud Run 設定（`--min-instances=0 --max-instances=3 --memory=1Gi --cpu=1`）が 1 か月張り付いた場合の理論上限は約 ¥30,000/月にのぼる。一方で `infra/` には課金の見張りが一切無く、暴走（誤ったループ・想定外の高頻度リクエスト・設定ミスによるインスタンス張り付き）を検知・抑止する仕組みが無かった。
 
 2026年7月、Cloud Billing に Spend Cap Budgets（Public Preview）が入り、Cloud Run が対象サービスに含まれた。到達すると課金対象の利用そのものを自動停止できる（budget alert の「知らせるだけ」を超えて「止める」ことができる）。
 
@@ -17,7 +17,7 @@ toy-box は sandbox プロジェクト（`ptiringo-toy-box`、番号 `5705819702
 課金ガードレールを二段構えにする。
 
 1. **Cloud Run spend cap ¥1,000/月**（Console 手設定）。到達すると課金対象の利用が自動停止し、Cloud Run は 5xx を返す。復旧は手動解除のみ。
-2. **プロジェクト全体の budget alert ¥3,000/月**（`infra/modules/billing/`、`google_billing_budget`）。閾値は 50% / 90% / 100%（実績）と 100%（予測）の 4 本。通知先は明示せず、`all_updates_rule` を書かないことで請求先アカウント管理者宛の既定メールに委ねる。
+2. **プロジェクト全体の budget alert ¥3,000/月**（`infra/modules/billing/`、`google_billing_budget`）。閾値は 50% / 90% / 100%（実績）と 100%（予測）の 4 本。通知先は明示せず、`all_updates_rule` を書かないことで請求先アカウント管理者宛の既定メールに委ねる。通知先を明示しない（＝`all_updates_rule` を書かない）と、請求先アカウントの Billing Account Administrator / User ロール保持者にメールが届く。本プロジェクトの所有者は請求先アカウントの IAM で `roles/billing.admin` を持つため条件を満たす。今回付与した `roles/billing.costsManager` は既定受信者の対象ロールではないので、これだけでは通知を担保しない。
 
 ### spend cap を Terraform 外に置く理由
 
@@ -25,11 +25,13 @@ toy-box は sandbox プロジェクト（`ptiringo-toy-box`、番号 `5705819702
 
 ### 請求 IAM 付与が手作業になる理由
 
-鶏卵問題。請求先アカウント（`013C2D-F8F574-F19A62`、通貨 JPY）の IAM を Terraform で書くには、実行アイデンティティ `tfc-service-account@ptiringo-toy-box.iam.gserviceaccount.com`（WIF 経由）自身に請求 IAM の管理権限が要るが、その付与こそが最初にやりたいことだった。最初の 1 回は組織管理者が手で `roles/billing.costsManager` を付与し、あわせて HCP Terraform workspace 変数 `billing_account_id` を登録した（`billingbudgets.googleapis.com` も本作業まで未有効だった）。
+鶏卵問題。請求先アカウント（通貨 JPY。ID の出所は HCP workspace 変数 `billing_account_id`）の IAM を Terraform で書くには、実行アイデンティティ `tfc-service-account@ptiringo-toy-box.iam.gserviceaccount.com`（WIF 経由）自身に請求 IAM の管理権限が要るが、その付与こそが最初にやりたいことだった。最初の 1 回は組織管理者が手で `roles/billing.costsManager` を付与し、あわせて HCP Terraform workspace 変数 `billing_account_id` を登録した（`billingbudgets.googleapis.com` も本作業まで未有効だった）。
 
 ### 金額の根拠
 
 理論上限 ¥30,000/月に対し、Cloud Run の spend cap はその 1/30 の ¥1,000。scale-to-zero とリクエスト課金の平常時利用（数百円未満想定）には十分な余裕がある一方、張り付き事故が起きても数日で自動停止する。全体 budget alert の ¥3,000/月は Cloud Run 以外の課金要素を含めた見張り水準として設定した。
+
+閾値の役割は実績（50% / 90%）と予測（100%）で分かれる。予算 ¥3,000 の 50% は ¥1,500 だが、Cloud Run が支配的なコスト要因である以上、Cloud Run 暴走シナリオでは総額が ¥1,500 に届く前に spend cap（¥1,000）が先に切れてしまい、実績ベースの 50% / 90% はこのシナリオでは発火しない。したがって実績閾値が実質的に見張るのは、spend cap の対象外である Artifact Registry 等の緩やかな増加である。Cloud Run 暴走の予兆は、cap 到達前でも早期に踏み抜きうる `FORECASTED_SPEND` 100% が担う。
 
 ### spend cap が守らない範囲
 

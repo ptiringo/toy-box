@@ -25,7 +25,9 @@ resource "google_billing_budget" "project_total" {
     }
   }
 
-  # 50% / 90% で予兆を掴む
+  # 50% / 90%（実績）。Cloud Run は spend cap（¥1,000・ADR-0074）が先に切れるため、
+  # Cloud Run 暴走時はここに届く前に利用停止する。実質的にここが見張るのは
+  # spend cap 対象外のサービス（Artifact Registry 等）の緩やかな増加。
   threshold_rules {
     threshold_percent = 0.5
   }
@@ -39,7 +41,8 @@ resource "google_billing_budget" "project_total" {
     threshold_percent = 1.0
   }
 
-  # 「今月このままだと超える」を月末を待たずに知る
+  # 「今月このままだと超える」を月末を待たずに知る。
+  # Cloud Run 暴走の予兆はこちら（予測）が担う（実績閾値は spend cap に先を越される）。
   threshold_rules {
     threshold_percent = 1.0
     spend_basis       = "FORECASTED_SPEND"
