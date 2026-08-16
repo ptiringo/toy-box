@@ -18,7 +18,7 @@ toy-box は sandbox プロジェクト（`ptiringo-toy-box`）だが、課金は
 
 課金ガードレールを二段構えにする。
 
-1. **Cloud Run spend cap ¥1,000/月**（Console 手設定）。到達すると課金対象の利用が自動停止し、Cloud Run は 5xx を返す。復旧は手動解除のみ。
+1. **Cloud Run spend cap ¥1,000/月**（Console 手設定。予算名 `ptiringo-toy-box利用額上限`、対象はプロジェクト `ptiringo-toy-box` の Cloud Run のみ、期間は月別）。到達すると課金対象の利用が自動停止し、Cloud Run は 5xx を返す。復旧は手動解除のみ。**適用は即時ではないため ¥1,000 は厳密な hard limit ではなく、すり抜けた超過分は課金される**（Console の注記）。
 2. **プロジェクト全体の budget alert ¥3,000/月**（`infra/modules/billing/`、`google_billing_budget`）。閾値は 50% / 90% / 100%（実績）と 100%（予測）の 4 本。通知先は明示せず、`all_updates_rule` を書かないことで請求先アカウント管理者宛の既定メールに委ねる。通知先を明示しない（＝`all_updates_rule` を書かない）と、請求先アカウントの Billing Account Administrator / User ロール保持者にメールが届く。本プロジェクトの所有者は請求先アカウントの IAM で `roles/billing.admin` を持つため条件を満たす。今回付与した `roles/billing.costsManager` は既定受信者の対象ロールではないので、これだけでは通知を担保しない。
 
 ### spend cap を Terraform 外に置く理由
@@ -34,6 +34,8 @@ toy-box は sandbox プロジェクト（`ptiringo-toy-box`）だが、課金は
 理論上限 ¥30,000/月に対し、Cloud Run の spend cap はその 1/30 の ¥1,000。scale-to-zero とリクエスト課金の平常時利用（数百円未満想定）には十分な余裕がある一方、張り付き事故が起きても数日で自動停止する。全体 budget alert の ¥3,000/月は Cloud Run 以外の課金要素を含めた見張り水準として設定した。
 
 閾値の役割は実績（50% / 90%）と予測（100%）で分かれる。予算 ¥3,000 の 50% は ¥1,500 だが、Cloud Run が支配的なコスト要因である以上、Cloud Run 暴走シナリオでは総額が ¥1,500 に届く前に spend cap（¥1,000）が先に切れてしまい、実績ベースの 50% / 90% はこのシナリオでは発火しない。したがって実績閾値が実質的に見張るのは、spend cap の対象外である Artifact Registry 等の緩やかな増加である。Cloud Run 暴走の予兆は、cap 到達前でも早期に踏み抜きうる `FORECASTED_SPEND` 100% が担う。
+
+加えて、**spend cap 自身が実績ベースの通知を持つ**（Console で 50% / 80% / 100% ＝ ¥500 / ¥800 / ¥1,000 が既定で設定され、通知先は「課金管理者とユーザー」と「プロジェクトオーナー」の両方）。したがって Cloud Run 固有の実績警報は cap 側が担い、全体 budget alert の実績閾値が cap 対象外サービス向けであるという上記の分担は変わらないまま、Cloud Run の予兆は「cap の 50% / 80% 通知（実績）」と「全体予算の予測 100%」の二経路で確保される。
 
 ### 既存の手設定 budget（¥500）との役割分担
 
