@@ -66,8 +66,9 @@ class EmulatorJwtDecoder(issuer: String, audience: String) : JwtDecoder {
         // exp / iat を Instant に、aud を List<String> に写す。NimbusJwtDecoder が使うのと同じ既定コンバータ。
         val claims = CLAIM_SET_CONVERTER.convert(parsed.jwtClaimsSet.toJSONObject())
         // Jwt.Builder#build() は「exp が iat より後」を自前で検証し、破ると IllegalArgumentException を投げる
-        // （JwtException ではない）。期限切れトークン（exp < iat になり得る）を validator まで到達させて
-        // JwtValidationException に揃えるため、ここで BadJwtException（JwtException のサブ型）へ変換する。
+        // （JwtException ではない）。ここで拾うのは exp < iat という構造的に壊れたトークン（正規の Emulator
+        // トークンでは起こり得ない）を JwtException 系へ寄せて拒否するための防御。正常な形（iat < exp）の
+        // 期限切れトークンはこの分岐を通らず build() を通過し、validator（JwtTimestampValidator）が拒否する。
         return runCatching {
             Jwt.withTokenValue(token)
                 .headers { it.putAll(parsed.header.toJSONObject()) }
@@ -102,18 +103,23 @@ class EmulatorJwtDecoderConfiguration {
 
 /** テストから Emulator と同じ形の未署名トークンを組み立てる。 */
 object EmulatorJwt {
+    /**
+     * @param issuedAt 既定は現在時刻。「exp < iat」の構造的に壊れたトークンを組み立てたいときだけ、 `expiresAt` より後の値を明示的に渡す（正規の
+     *   Emulator トークンでは iat < exp が常に成り立つ）。
+     */
     fun unsignedToken(
         subject: String,
         issuer: String,
         audience: String,
         expiresAt: Instant,
+        issuedAt: Instant = Instant.now(),
     ): String {
         val claims =
             JWTClaimsSet.Builder()
                 .subject(subject)
                 .issuer(issuer)
                 .audience(audience)
-                .issueTime(Date.from(Instant.now()))
+                .issueTime(Date.from(issuedAt))
                 .expirationTime(Date.from(expiresAt))
                 .build()
         return PlainJWT(PlainHeader(), claims).serialize()
