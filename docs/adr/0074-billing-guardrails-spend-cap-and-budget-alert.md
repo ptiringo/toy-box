@@ -6,7 +6,9 @@
 
 ## Context（背景・課題）
 
-toy-box は sandbox プロジェクト（`ptiringo-toy-box`）だが、課金は実費で発生する。`.github/workflows/deploy.yml` の Cloud Run 設定（`--min-instances=0 --max-instances=3 --memory=1Gi --cpu=1`）が 1 か月張り付いた場合の理論上限は約 ¥30,000/月にのぼる。一方で `infra/` には課金の見張りが一切無く、暴走（誤ったループ・想定外の高頻度リクエスト・設定ミスによるインスタンス張り付き）を検知・抑止する仕組みが無かった。
+toy-box は sandbox プロジェクト（`ptiringo-toy-box`）だが、課金は実費で発生する。`.github/workflows/deploy.yml` の Cloud Run 設定（`--min-instances=0 --max-instances=3 --memory=1Gi --cpu=1`）が 1 か月張り付いた場合の理論上限は約 ¥30,000/月にのぼる。一方で `infra/` には課金の見張りが一切無く、暴走（誤ったループ・想定外の高頻度リクエスト・設定ミスによるインスタンス張り付き）を**止める**仕組みは無かった。
+
+なお、**検知**については手設定の budget alert `意図せぬ高額請求検知`（月 ¥500、請求先アカウント全体、閾値 50% / 90% / 100% の実績のみ）が既に存在した。これは本作業の apply 後に `gcloud billing budgets list` で実在を確認して初めて判明したもので、着手時点の想定（「課金の見張りが無い」）は `infra/` に限れば正しかったが、実態としては ¥500 の早期警報が動いていた。
 
 2026年7月、Cloud Billing に Spend Cap Budgets（Public Preview）が入り、Cloud Run が対象サービスに含まれた。到達すると課金対象の利用そのものを自動停止できる（budget alert の「知らせるだけ」を超えて「止める」ことができる）。
 
@@ -33,6 +35,15 @@ toy-box は sandbox プロジェクト（`ptiringo-toy-box`）だが、課金は
 
 閾値の役割は実績（50% / 90%）と予測（100%）で分かれる。予算 ¥3,000 の 50% は ¥1,500 だが、Cloud Run が支配的なコスト要因である以上、Cloud Run 暴走シナリオでは総額が ¥1,500 に届く前に spend cap（¥1,000）が先に切れてしまい、実績ベースの 50% / 90% はこのシナリオでは発火しない。したがって実績閾値が実質的に見張るのは、spend cap の対象外である Artifact Registry 等の緩やかな増加である。Cloud Run 暴走の予兆は、cap 到達前でも早期に踏み抜きうる `FORECASTED_SPEND` 100% が担う。
 
+### 既存の手設定 budget（¥500）との役割分担
+
+Context に書いた `意図せぬ高額請求検知`（月 ¥500、請求先アカウント全体）は**削除せず残す**。金額が本 ADR の ¥3,000 より 6 倍厳しいため、**早期警報としては常にこちらが先に鳴る**。本 ADR で追加した ¥3,000 の budget が上乗せするのは次の 2 点に限られる。
+
+- **予測ベース（`FORECASTED_SPEND`）の閾値**。既存の ¥500 は実績閾値しか持たないため、「今月このままだと超える」を月末前に掴めない。
+- **プロジェクトスコープ**。既存は請求先アカウント全体が対象で、プロジェクト単位の切り分けができない。
+
+つまり ¥500 = 早期警報（手設定・請求先アカウント全体・実績のみ）、¥3,000 = 予測とプロジェクト単位の見張り（Terraform 管理）という分担になる。両者は競合しない。ただし**課金の見張りの出所が 2 つに分かれた**状態であり、既存 budget を Terraform に import して一本化するかは別途判断する。
+
 ### spend cap が守らない範囲
 
 spend cap は Cloud Run のみが対象。Artifact Registry（イメージ蓄積による単調増加）・Secret Manager・Identity Platform は対象外で、ここは全体 budget alert が検知する（停止はしない）。Prisma Postgres は Prisma 側の請求であり GCP 課金の管轄外（[ADR-0044](0044-adopt-prisma-postgres-for-production-db.md)）。
@@ -43,3 +54,5 @@ spend cap は Cloud Run のみが対象。Artifact Registry（イメージ蓄積
 - 手設定が 2 つ（Cloud Run spend cap・請求先アカウントへの IAM 付与）リポジトリの外に残る。[ADR-0068](0068-manual-infra-apply-with-notification.md) と同型の逸脱であり、本 ADR が唯一の記録になる。
 - spend cap は Public Preview のため、仕様変更や GA 化のタイミングで再確認が要る。provider が enforcement に対応した時点で `infra/` への統合を検討する。
 - spend cap 到達時は Cloud Run が 5xx を返す（可用性より課金停止を優先する設計）。本番相当の可用性を求める段階になったら、金額と「止める/知らせるのみ」の方針を見直す。
+- 課金の見張りの出所が Terraform（¥3,000）と手設定（¥500）の 2 つに分かれた。役割は分担できているが、片方が Terraform の外にある以上、変更が state に反映されず気づかれない経路が残る。一本化するなら既存 budget を `infra/` へ import する。
+- budget の実在確認には `gcloud billing budgets list --billing-account=<id> --billing-project=ptiringo-toy-box` が要る。`--billing-project`（クォータプロジェクト）を省くと、ADC が gcloud 共有プロジェクトを見に行き `SERVICE_DISABLED` で失敗する。
