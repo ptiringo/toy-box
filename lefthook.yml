@@ -15,14 +15,17 @@ pre-commit:
       tags: format
 
     # ktfmt によるフォーマットチェック
+    # glob の `{,**/}` はルート直下と入れ子の両方に一致させるため（dprint と同じ理由。`**/*.{kt,kts}`
+    # だとルート直下の build.gradle.kts / settings.gradle.kts が漏れ、ビルド構成だけを触った
+    # コミットで ktfmt / detekt が 1 度も走らない。#800）。
     ktfmt-check:
-      glob: "**/*.{kt,kts}"
+      glob: "{,**/}*.{kt,kts}"
       run: mise exec -- ./gradlew ktfmtCheck --daemon
       tags: format
 
     # detekt による静的解析
     detekt:
-      glob: "**/*.{kt,kts}"
+      glob: "{,**/}*.{kt,kts}"
       run: mise exec -- ./gradlew detekt --daemon
       tags: lint
 
@@ -30,9 +33,11 @@ pre-commit:
     # root を frontend に切ると、実行ディレクトリだけでなく {staged_files} も frontend/ からの
     # 相対パスへ書き換わる（cd するだけだと絶対パス化されない root 相対の staged_files が二重に
     # frontend/ を含んで解決できなくなる。実測で確認済み）。
+    # glob の `{,**/}` は dprint と同じ理由。`frontend/**/*` だと frontend/ 直下の
+    # vite.config.ts / biome.json / package.json が検査対象から漏れる（#800）。
     biome-frontend:
       root: "frontend/"
-      glob: "frontend/**/*.{ts,tsx,json}"
+      glob: "frontend/{,**/}*.{ts,tsx,json}"
       run: npx biome check {staged_files}
       tags: lint
 
@@ -50,14 +55,18 @@ pre-commit:
 
     # ShellCheck によるシェルスクリプトの lint
     shellcheck:
-      glob: "**/*.sh"
+      glob: "{,**/}*.sh"
       run: mise exec -- shellcheck {staged_files}
       tags: lint
 
     # Terraform フォーマットチェック
+    # `-recursive` は CI（.github/workflows/terraform-check.yml）と揃えるため。付けないと
+    # infra/ 直下しか見ず、infra/modules/** の整形崩れがローカルを素通りして CI で初めて落ちる（#793）。
+    # なお glob の `infra/*.tf` は module 配下にも一致する（lefthook の `*` は `/` をまたぐ。
+    # 一方 `**/` は 1 階層以上を要求する ＝ dprint / biome-frontend の `{,**/}` が要る理由。実測で確認済み）。
     terraform-fmt-check:
       glob: "infra/*.tf"
-      run: terraform fmt -check infra/
+      run: terraform fmt -check -recursive infra/
       tags: format
 
     # Terraform バリデーション
@@ -95,13 +104,13 @@ pre-commit:
 
     # sqlfluff による SQL の書式・スタイルチェック
     sqlfluff:
-      glob: "**/*.sql"
+      glob: "{,**/}*.sql"
       run: mise exec -- sqlfluff lint {staged_files}
       tags: format
 
     # squawk によるマイグレーション安全性チェック
     squawk:
-      glob: "**/*.sql"
+      glob: "{,**/}*.sql"
       run: mise exec -- squawk {staged_files}
       tags: lint
 
@@ -129,7 +138,7 @@ pre-push:
     # priority で full-test より先に走らせる（lefthook の既定はコマンド名の辞書順）。
     docker-available:
       priority: 1
-      glob: "**/*.{kt,kts,java}"
+      glob: "{,**/}*.{kt,kts,java}"
       run: scripts/check-docker-available.sh
       tags: test
 
@@ -150,7 +159,7 @@ pre-push:
     # スコープ分離）が実装されたら、性能を犠牲にしない形へ置き換えられる。
     full-test:
       priority: 2
-      glob: "**/*.{kt,kts,java}"
+      glob: "{,**/}*.{kt,kts,java}"
       run: mise exec -- ./gradlew test $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
       tags: test
 
