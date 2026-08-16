@@ -17,16 +17,16 @@ sealed interface TracklistError {
     /**
      * トラック番号が重複している。
      *
-     * @property values 重複しているトラック番号の値の集合
+     * @property values 重複しているトラック番号の集合
      */
-    data class DuplicateNumber(val values: Set<Int>) : TracklistError
+    data class DuplicateNumber(val values: Set<TrackNumber>) : TracklistError
 
     /**
      * トラック番号の集合が 1..n（n = 曲数）と一致しない（1 始まりでない・欠番がある等）。
      *
-     * @property values 実際に与えられたトラック番号の値の集合
+     * @property values 実際に与えられたトラック番号の集合
      */
-    data class NonContiguousNumbers(val values: Set<Int>) : TracklistError
+    data class NonContiguousNumbers(val values: Set<TrackNumber>) : TracklistError
 }
 
 /**
@@ -48,13 +48,13 @@ data class Tracklist private constructor(val tracks: List<Track>) {
          * @return 検証済みの [Tracklist]、または不変条件違反を表す [TracklistError]
          */
         fun create(tracks: List<Track>): Result<Tracklist, TracklistError> {
-            val duplicates = tracks.groupBy { it.number.value }.filterValues { it.size > 1 }.keys
-            val actualNumbers = tracks.map { it.number.value }.toSet()
-            val expectedNumbers = (1..tracks.size).toSet()
+            val duplicates = tracks.groupBy { it.number }.filterValues { it.size > 1 }.keys
+            val actualNumbers = tracks.map { it.number }.toSet()
+            val expectedValues = (1..tracks.size).toSet()
             return when {
                 tracks.isEmpty() -> Err(TracklistError.Empty)
                 duplicates.isNotEmpty() -> Err(TracklistError.DuplicateNumber(duplicates))
-                actualNumbers != expectedNumbers ->
+                actualNumbers.map { it.value }.toSet() != expectedValues ->
                     Err(TracklistError.NonContiguousNumbers(actualNumbers))
                 else -> Ok(Tracklist(tracks.sortedBy { it.number.value }))
             }
