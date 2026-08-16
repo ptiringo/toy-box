@@ -28,6 +28,7 @@ paths:
 - 共通親 `interface`（`DomainError` 等）は **当面導入しない**。Controller 境界で横串のハンドリングが重複し始めた段階で初めて切り出す
 - エラーバリアントの `Throwable` 保持は、外部 API / ファイル I/O など **例外起因のバリアントだけ** に持たせる。共通 interface に `cause: Throwable?` を強制しない
 - ドメインオブジェクトの不変条件違反（例: 名前のブランク）は、そのドメインオブジェクトの `companion object.create()` ファクトリで `Result<T, ValidationError>` を返して表現する。application 層は受けたエラーを必要に応じて自分のエラー型に wrap する
+- **エラーバリアントが抱える値は、対応する値オブジェクトが既にあるなら生値ではなく VO をそのまま保持する**（例: `HorseAlreadyNamed(val currentName: HorseName)` / `TurnedProBeforeBirth(val dateOfBirth: DateOfBirth, val turnedProOn: TurnedProDate)`）。生値でよいのは **その値がまだ VO になっていないとき**に限り、典型は 2 つ。(1) VO 生成ファクトリが検証している入力そのもの（例: `InvalidCountryCode(val raw: String)` / `InvalidValidityPeriod(val start: LocalDate, val end: LocalDate)`）、(2) 対応する VO が存在しない値（例: `AlreadyGraduated(val graduatedOn: LocalDate)`）。**判定基準は「その値が VO になっているか」であって「`create` の入力検証か」ではない**。ファクトリが検証済みの VO を受け取る場合（例: `Tracklist.create(tracks: List<Track>)`）は入力が既に VO なので、`.value` で剥がさず VO のまま載せる
 - **単一エラー型を固定のエラーへ写す `mapError` は、変換元の型をラムダパラメータで明示する**（例: `mapError { _: BlankHorseName -> InvalidName }`）。パラメータを参照しないラムダは、変換元エラー型が sealed interface へ昇格（バリアント追加）されてもコンパイルが通り、新バリアントが既存の誤った errorCode・メッセージへ無音で変換される。型明示をトリップワイヤにして、昇格（型の付け替え）時に全変換箇所をコンパイルエラーで浮かび上がらせる。変換元が**既に sealed** の場合は型明示ではなく、cause を保持する wrap（`PreconditionViolated(it)`）または網羅 `when` で写す（バリアント追加を型検査で検知できる形を保つ）
 
 > **機械強制**: 変換元エラーを参照も型明示もしない `mapError` ラムダは detekt カスタムルール `NoSilentMapError`（`:detekt-rules` モジュール）が検出してビルドを失敗させる。ラムダパラメータの参照（wrap・網羅 `when`）または型明示（`_: 変換元エラー型 ->`）があれば検出されない。テストコードは detekt 設定の `excludes` で対象外。
