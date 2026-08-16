@@ -1,6 +1,7 @@
 resource "google_project_service" "project" {
   for_each = toset([
     "artifactregistry",
+    "billingbudgets",
     "iam",
     "iamcredentials",
     "identitytoolkit",
@@ -57,6 +58,18 @@ module "identity_platform" {
   source = "./modules/identity-platform"
 
   project_id = "ptiringo-toy-box"
+
+  depends_on = [google_project_service.project]
+}
+
+# 課金の見張り（プロジェクト全体の月次予算アラート）。#700 / ADR-0074。
+# 止めるのは Cloud Run の spend cap（Console 手設定）で、ここは検知のみ。
+# billingbudgets API 有効化に依存させ、初回 apply の順序レースを避ける。
+module "billing" {
+  source = "./modules/billing"
+
+  billing_account_id = var.billing_account_id
+  monthly_amount_jpy = "3000"
 
   depends_on = [google_project_service.project]
 }
