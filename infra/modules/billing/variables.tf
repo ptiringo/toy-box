@@ -3,11 +3,6 @@ variable "billing_account_id" {
   type        = string
 }
 
-variable "project_id" {
-  description = "予算の対象とする GCP プロジェクト ID"
-  type        = string
-}
-
 variable "monthly_amount_jpy" {
   description = "プロジェクト全体の月次予算額（円）。この額に対する割合で閾値アラートが飛ぶ"
   type        = string

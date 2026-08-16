@@ -69,7 +69,6 @@ module "billing" {
   source = "./modules/billing"
 
   billing_account_id = var.billing_account_id
-  project_id         = "ptiringo-toy-box"
   monthly_amount_jpy = "3000"
 
   depends_on = [google_project_service.project]

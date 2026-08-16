@@ -1,8 +1,6 @@
 # 予算の対象プロジェクト。budget_filter は projects/<project_number> 形式を要求するため、
-# ID から番号を引く（番号をハードコードしない）。
-data "google_project" "target" {
-  project_id = var.project_id
-}
+# provider に設定された project を対象に番号を引く（番号をハードコードしない）。
+data "google_project" "target" {}
 
 # プロジェクト全体の月次予算アラート。
 # 到達しても課金は止まらない（検知のみ）。止めるのは Cloud Run の spend cap（Console 手設定・ADR-0074）。
