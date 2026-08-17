@@ -5,8 +5,10 @@ const BASE_URL = "http://127.0.0.1:5173";
 /**
  * ブラウザ E2E（#725）。ログイン → 世界作成 → 馬一覧までを実ブラウザで通す。
  *
- * 3 プロセスを webServer が起動する。PostgreSQL は bootTestRun の起動に伴って
- * spring-boot-docker-compose が compose.yaml から立てるため、ここでは面倒を見ない。
+ * 3 プロセスを webServer が起動する。PostgreSQL も webServer（bootTestRun のコマンド）の
+ * docker compose up -d --wait でこの config が立てる。bootTestRun では
+ * spring-boot-docker-compose の自動配線が効かないため（理由は当該コメント参照）。
+ * 立てた DB は Playwright の終了時に落ちないので、CI では明示的な teardown が要る。
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -16,6 +18,9 @@ export default defineConfig({
   // CI では取りこぼしを見逃さないよう .only を失敗にする。
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // 既定の 5 秒だと、サインイン → :provision → JVM の初回リクエスト → 描画 を待つアサーションが
+  // CI ランナー（ローカルより数倍遅い）で溢れうる。retries: 0 なので溢れた時点で赤になる。
+  expect: { timeout: 15_000 },
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : [["list"]],
   use: {
     baseURL: BASE_URL,

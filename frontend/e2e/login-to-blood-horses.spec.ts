@@ -35,5 +35,5 @@ test("ログインから馬一覧までを通しで辿れる", async ({ page }) 
 
   // 直近レスポンスが 200 ＝ Emulator の ID トークンがバックの検証を通り、世界スコープの
   // API まで到達した、ということ。ここが 401 なら projectId の不一致を疑う。
-  await expect(page.locator(".status")).toHaveText("200");
+  await expect(page.getByTitle("直近レスポンス")).toHaveText("200");
 });

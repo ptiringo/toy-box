@@ -14,7 +14,9 @@ services:
     # docker compose up -d --wait が「接続を受け付けられる」ことまで待てるようにする。
     # healthcheck が無いと --wait はコンテナの起動だけで返り、Flyway が接続失敗で落ちうる（#725）。
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U toybox -d toybox"]
+      # -h を省くと unix socket に問い合わせてしまい、initdb 中に立つ listen_addresses='' の
+      # 一時サーバにも成功を返す。Flyway / Spring が使うのは TCP なので TCP で確かめる。
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U toybox -d toybox"]
       interval: 2s
       timeout: 3s
       retries: 15
