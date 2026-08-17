@@ -17,9 +17,11 @@ export default defineConfig({
   fullyParallel: false,
   // CI では取りこぼしを見逃さないよう .only を失敗にする。
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  // ローカルは 0（本物の不安定さを隠さない）。CI は共有ランナーの CPU 枯渇で落ちることがあるため 1 回だけ
+  // 許す（Task 5 で実測した flake は expect のポーリングが 15 秒設定に対し 27.85 秒かかる形で現れた）。
+  retries: process.env.CI ? 1 : 0,
   // 既定の 5 秒だと、サインイン → :provision → JVM の初回リクエスト → 描画 を待つアサーションが
-  // CI ランナー（ローカルより数倍遅い）で溢れうる。retries: 0 なので溢れた時点で赤になる。
+  // CI ランナー（ローカルより数倍遅い）で溢れうる。
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : [["list"]],
   use: {
