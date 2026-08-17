@@ -5,7 +5,7 @@ description: Use when starting or running the toy-box frontend (frontend/ の Vi
 
 # フロント（Vite+React SPA）をローカル起動・駆動する
 
-`frontend/` の軽量 SPA（#612。Firebase Auth でログイン → `GET /api/bloodHorses` で馬一覧）を起動して動作確認するレシピ。人間向けの詳細は `frontend/README.md` が出所。ここは「起動して駆動する」ときの要点。
+`frontend/` の軽量 SPA（#612。Firebase Auth でログイン → `GET /api/worlds/{worldId}/bloodHorses` で馬一覧）を起動して動作確認するレシピ。人間向けの詳細は `frontend/README.md` が出所。ここは「起動して駆動する」ときの要点。
 
 ## 起動（UI を出すだけ）
 
