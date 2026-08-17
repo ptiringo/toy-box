@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 type UseWorlds = {
   worlds: World[];
   loading: boolean;
+  busy: boolean;
   error: string | null;
   create: (name: string) => Promise<boolean>;
   rename: (worldId: string, name: string) => Promise<boolean>;
@@ -20,11 +21,15 @@ type UseWorlds = {
  *
  * 変更操作は例外を投げず、失敗を error の文言と戻り値 false で表す。呼び出し側は成否だけを見て
  * 入力欄や編集モードを閉じるか決める（失敗したのに入力を捨てるとユーザーが打ち直しになる）。
+ *
+ * 変更操作が進行中かは busy で表す。呼び出し側はこれで操作を無効化して連打を防ぐ（連打すると
+ * 2 本目が 409 の赤帯を出し、世界は 1 つできているのに失敗したように見える）。
  */
 export function useWorlds(): UseWorlds {
   const { getToken } = useAuth();
   const [worlds, setWorlds] = useState<World[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -44,15 +49,20 @@ export function useWorlds(): UseWorlds {
 
   const mutate = useCallback(
     async (operation: () => Promise<unknown>, fallback: string): Promise<boolean> => {
+      // 一覧を引き直して画面が API に追いつくまでを 1 つの操作とみなし、その間 busy を立てる。
+      setBusy(true);
       try {
         await operation();
+        setError(null);
+        // reload は取得の失敗を自分で error に載せて投げないので、下の catch には operation の失敗だけが来る。
+        await reload();
+        return true;
       } catch (e) {
         setError(errorMessage(e, fallback));
         return false;
+      } finally {
+        setBusy(false);
       }
-      setError(null);
-      await reload();
-      return true;
     },
     [reload],
   );
@@ -74,5 +84,5 @@ export function useWorlds(): UseWorlds {
     [mutate, getToken],
   );
 
-  return { worlds, loading, error, create, rename, remove };
+  return { worlds, loading, busy, error, create, rename, remove };
 }

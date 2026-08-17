@@ -116,6 +116,82 @@ describe("useWorlds", () => {
     expect(result.current.worlds).toEqual([]);
   });
 
+  it("変更操作の実行中は busy が立ち、終わったら下りる", async () => {
+    listMock.mockResolvedValue([]);
+    let finishCreate: ((world: { id: string; name: string }) => void) | undefined;
+    createMock.mockReturnValue(
+      new Promise((resolve) => {
+        finishCreate = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useWorlds());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.busy).toBe(false);
+
+    let creating: Promise<boolean> | undefined;
+    act(() => {
+      creating = result.current.create("2周目");
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(true);
+    });
+
+    await act(async () => {
+      finishCreate?.({ id: "w2", name: "2周目" });
+      await creating;
+    });
+    expect(result.current.busy).toBe(false);
+  });
+
+  // 変更が通っても一覧を引き直すまで画面は古いままなので、その間も操作を止めておきたい。
+  it("変更後の一覧の引き直しが終わるまで busy は下りない", async () => {
+    let finishReload: ((worlds: { id: string; name: string }[]) => void) | undefined;
+    listMock.mockResolvedValueOnce([]).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishReload = resolve;
+      }),
+    );
+    createMock.mockResolvedValue({ id: "w2", name: "2周目" });
+
+    const { result } = renderHook(() => useWorlds());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    let creating: Promise<boolean> | undefined;
+    act(() => {
+      creating = result.current.create("2周目");
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(true);
+    });
+
+    await act(async () => {
+      finishReload?.([{ id: "w2", name: "2周目" }]);
+      await creating;
+    });
+    expect(result.current.busy).toBe(false);
+  });
+
+  it("変更操作が失敗しても busy は下りる", async () => {
+    listMock.mockResolvedValue([]);
+    createMock.mockRejectedValue(new ApiError(500));
+
+    const { result } = renderHook(() => useWorlds());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.create("2周目");
+    });
+
+    expect(result.current.busy).toBe(false);
+  });
+
   it("一覧の取得に失敗したら error に文言が入る", async () => {
     listMock.mockRejectedValue(new ApiError(500));
 

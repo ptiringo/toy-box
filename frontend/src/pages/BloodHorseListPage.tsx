@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { ApiError, apiGet, errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { breedLabels, coatColors, coatLabels, label, sexLabels } from "../labels";
@@ -18,7 +18,9 @@ type BloodHorseSummary = {
 };
 
 export function BloodHorseListPage() {
-  const { worldId } = useParams<{ worldId: string }>();
+  // 型引数で string に狭めない。react-router が返すのは string | undefined で、
+  // 現在のルート定義（/worlds/:worldId/bloodHorses の 1 経路のみ）に依存した嘘になるため。
+  const { worldId } = useParams();
   const { getToken, signOutUser } = useAuth();
   // 世界名は表示専用。取得に失敗しても名前を出さないだけで、アクセス可否の判断はしない
   // （それは API の 404 world-not-found が担う）。
@@ -29,6 +31,9 @@ export function BloodHorseListPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (worldId === undefined) {
+      return;
+    }
     let active = true;
     (async () => {
       try {
@@ -54,6 +59,11 @@ export function BloodHorseListPage() {
       active = false;
     };
   }, [getToken, worldId]);
+
+  // どの世界を見るか決まらないので原簿は描けない。世界一覧へ戻して選び直させる。
+  if (worldId === undefined) {
+    return <Navigate to="/worlds" replace />;
+  }
 
   return (
     <div className="ledger">

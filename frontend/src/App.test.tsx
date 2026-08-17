@@ -20,6 +20,7 @@ vi.mock("./worlds/useWorlds", () => ({
   useWorlds: () => ({
     worlds: [{ id: "w1", name: "はじまりの世界" }],
     loading: false,
+    busy: false,
     error: null,
     create: vi.fn(),
     rename: vi.fn(),
