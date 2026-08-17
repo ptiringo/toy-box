@@ -72,3 +72,5 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env.local
 frontend/coverage/
+# Firebase Auth Emulator（npm run emulator）が起動のたびに吐くログ（#725）
+frontend/firebase-debug.log
