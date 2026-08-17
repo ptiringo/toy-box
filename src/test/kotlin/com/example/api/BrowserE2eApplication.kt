@@ -16,6 +16,22 @@ import org.springframework.boot.with
  * `docker compose up -d` で PostgreSQL を手動起動し、 `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD`
  * を環境変数で供給する（本番 Cloud Run と同じ経路。 `application.yml` 参照）。`local` プロファイルは使わない（MCP アダプタを開いてしまい、
  * `MCP_SUBJECT_ID` の供給が要るため）。
+ *
+ * **`GCP_PROJECT_ID=toy-box-e2e` の指定も必須。** `application.yml` の issuer-uri / audiences
+ * （[EmulatorJwtDecoderConfiguration] が `@Value` で引く 2 プロパティ）はこの環境変数から
+ * `${GCP_PROJECT_ID:gcp-project-id-not-injected}` として組み立てられる。未指定だと issuer / audience が一致せず fail
+ * closed で全トークンが 401 になるため、Emulator の `--project` とフロントの `VITE_FIREBASE_PROJECT_ID` を `toy-box-e2e`
+ * に揃えること。
+ *
+ * 起動レシピ（すべて `bootTestRun` の直前に必要）:
+ * ```
+ * docker compose up -d
+ * GCP_PROJECT_ID=toy-box-e2e \
+ * SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/toybox \
+ * SPRING_DATASOURCE_USERNAME=toybox \
+ * SPRING_DATASOURCE_PASSWORD=toybox \
+ * ./gradlew bootTestRun
+ * ```
  */
 fun main(args: Array<String>) {
     fromApplication<ApiApplication>().with(EmulatorJwtDecoderConfiguration::class).run(*args)
