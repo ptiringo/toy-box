@@ -7,11 +7,6 @@ description: Use when starting or running the toy-box frontend (frontend/ の Vi
 
 `frontend/` の軽量 SPA（#612。Firebase Auth でログイン → `GET /api/bloodHorses` で馬一覧）を起動して動作確認するレシピ。人間向けの詳細は `frontend/README.md` が出所。ここは「起動して駆動する」ときの要点。
 
-> **既知の破壊（`#705`）**: バックエンドは `/api/bloodHorses` を含む全ドメイン API を
-> `/api/worlds/{worldId}/...` 配下へ移した（ADR-0067）。フロントはまだ旧パスを叩いており一覧取得は必ず失敗する
-> （401 → ログイン後は 200 ではなく 404/経路不一致になる）。追随は `#714`。起動・駆動自体はできるので、
-> このスキルの手順はそのまま使ってよい。
-
 ## 起動（UI を出すだけ）
 
 ```bash
@@ -51,6 +46,18 @@ dev server は `npm run dev` をバックグラウンド起動し、`curl --retr
 3. **実 Identity Platform テナント**: email/password サインインを有効化しテストユーザーを作成、その Web config を `.env.local` に。**`projectId` はバックの `GCP_PROJECT_ID` と一致させる**（issuer を揃えないとトークンが 401 になる）。
 
 `localhost:5173` → ログイン → 一覧、で右上のステータスが未ログイン `401` → ログイン後 `200` に変わる（これが PR の手動 E2E）。
+
+### 自動化された通し（#725）
+
+上の手動手順とは別に、**ログイン → 世界作成 → 馬一覧を実ブラウザで通す E2E が自動化されている**。
+
+```bash
+cd frontend && npm run test:e2e     # Docker が要る
+```
+
+Playwright が Auth Emulator・`bootTestRun`・`vite preview` の 3 つを自分で起動するので、実 Identity Platform
+テナントも `.env.local` も要らない（`.env.e2e` がリポジトリに入っている）。手動手順が要るのは、実テナントでの
+署名検証まで含めて確かめたいときだけ。
 
 ## Common Mistakes
 
