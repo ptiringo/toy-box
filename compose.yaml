@@ -11,3 +11,10 @@ services:
       POSTGRES_PASSWORD: toybox
     ports:
       - "5432:5432"
+    # docker compose up -d --wait が「接続を受け付けられる」ことまで待てるようにする。
+    # healthcheck が無いと --wait はコンテナの起動だけで返り、Flyway が接続失敗で落ちうる（#725）。
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toybox -d toybox"]
+      interval: 2s
+      timeout: 3s
+      retries: 15

@@ -17,6 +17,8 @@ export default defineConfig({
   },
   // ブラウザ E2E（#725）は dev server ではなく本番ビルド成果物を配信して検証するため、
   // preview にも dev と同じ proxy を置く。
+  // 既定では IPv6 の [::1] だけに bind するため、127.0.0.1 で待つ側（Playwright の webServer）とは
+  // --host 127.0.0.1 を明示して揃える（#725）。
   preview: {
     port: 5173,
     proxy: apiProxy,
