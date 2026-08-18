@@ -65,11 +65,10 @@ export default defineConfig({
     {
       // dev server ではなく本番ビルド成果物を配信する（退行を検出したいのはビルド後の姿）。
       //
-      // --host 127.0.0.1 は必須。既定の vite preview は IPv6 の [::1] だけに bind し、
-      // IPv4 の 127.0.0.1 へ到達できない（Task 4 で実測）。BASE_URL を 127.0.0.1 で書いている以上、
-      // bind 先を明示しないと webServer の readiness 判定が永久に失敗する。
-      command:
-        "npm run build -- --mode e2e && npm run preview -- --port 5173 --strictPort --host 127.0.0.1",
+      // bind 先（127.0.0.1）は vite.config.ts の preview.host が出所。既定の vite preview は IPv6 の
+      // [::1] だけに bind し、BASE_URL が指す IPv4 の 127.0.0.1 へ到達できない（Task 4 で実測）ため
+      // 明示が要るが、設定を 2 箇所に割らないようここでは --host を渡さない。
+      command: "npm run build -- --mode e2e && npm run preview -- --port 5173 --strictPort",
       url: BASE_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,

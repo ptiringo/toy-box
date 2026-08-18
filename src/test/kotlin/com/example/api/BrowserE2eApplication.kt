@@ -13,9 +13,9 @@ import org.springframework.boot.with
  *
  * DataSource は自動配線されない。`spring-boot-docker-compose` は `developmentOnly` 依存であり test classpath
  * には載らないため（#451）、`bootTestRun`（test runtime classpath で起動する）では `compose.yaml` の自動検出が効かない。起動前に
- * `docker compose up -d` で PostgreSQL を手動起動し、 `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD`
- * を環境変数で供給する（本番 Cloud Run と同じ経路。 `application.yml` 参照）。`local` プロファイルは使わない（MCP アダプタを開いてしまい、
- * `MCP_SUBJECT_ID` の供給が要るため）。
+ * `docker compose up -d --wait` で PostgreSQL を手動起動し、 `SPRING_DATASOURCE_URL` / `_USERNAME` /
+ * `_PASSWORD` を環境変数で供給する（本番 Cloud Run と同じ経路。 `application.yml` 参照）。`local` プロファイルは使わない（MCP
+ * アダプタを開いてしまい、 `MCP_SUBJECT_ID` の供給が要るため）。
  *
  * **`GCP_PROJECT_ID=toy-box-e2e` の指定も必須。** `application.yml` の issuer-uri / audiences
  * （[EmulatorJwtDecoderConfiguration] が `@Value` で引く 2 プロパティ）はこの環境変数から
@@ -23,9 +23,10 @@ import org.springframework.boot.with
  * closed で全トークンが 401 になるため、Emulator の `--project` とフロントの `VITE_FIREBASE_PROJECT_ID` を `toy-box-e2e`
  * に揃えること。
  *
- * 起動レシピ（すべて `bootTestRun` の直前に必要）:
+ * 起動レシピ（すべて `bootTestRun` の直前に必要）。`--wait` は必須で、これが無いとコンテナの起動だけで返り、Flyway が接続失敗で落ちうる
+ * （`compose.yaml` の healthcheck はこの `--wait` を機能させるために置いてある）:
  * ```
- * docker compose up -d
+ * docker compose up -d --wait
  * GCP_PROJECT_ID=toy-box-e2e \
  * SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/toybox \
  * SPRING_DATASOURCE_USERNAME=toybox \

@@ -19,8 +19,10 @@ test("ログインから馬一覧までを通しで辿れる", async ({ page }) 
   await page.getByRole("button", { name: "サインイン" }).click();
 
   // RequireProvisioned が POST /api/me:provision を通すと世界一覧が描かれる。
-  // :provision は「はじまりの世界」を 1 つ作るため、この時点で一覧は空ではない。
   await expect(page.getByRole("heading", { name: "世界一覧" })).toBeVisible();
+  // :provision は「はじまりの世界」を 1 つ作る。見出しは世界が 0 件でも描かれるため、
+  // 初期世界そのものをアサートしないと :provision の成否がこのテストの射程から外れる。
+  await expect(page.getByRole("button", { name: "はじまりの世界" })).toBeVisible();
 
   // 2 つ目の世界を作る。
   await page.getByLabel("新しい世界の名前").fill("E2E の世界");

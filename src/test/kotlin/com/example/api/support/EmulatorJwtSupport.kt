@@ -1,5 +1,6 @@
 package com.example.api.support
 
+import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.PlainHeader
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.PlainJWT
@@ -122,6 +123,8 @@ object EmulatorJwt {
                 .issueTime(Date.from(issuedAt))
                 .expirationTime(Date.from(expiresAt))
                 .build()
-        return PlainJWT(PlainHeader(), claims).serialize()
+        // 実 Emulator のヘッダは `{"alg":"none","typ":"JWT"}`（Task 1 で実測）。`typ` を省くと
+        // JwtTypeValidator が typ 欠落を許すぶん、実物より緩い形を検証することになるので実形に揃える。
+        return PlainJWT(PlainHeader.Builder().type(JOSEObjectType.JWT).build(), claims).serialize()
     }
 }
