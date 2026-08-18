@@ -11,13 +11,18 @@
 #
 # worktree では 2 が必ず外れる。lefthook が見る `<git-dir>` は `.git/worktrees/<name>` で、
 # `refs/remotes/origin/HEAD` はそこではなく共有の git-common-dir にあるためである。すると 3 へ
-# 落ち、`git branch --remotes` はアルファベット順なので当リポジトリでは origin より前に並ぶ
-# `infra/HEAD -> infra/main`（別リポジトリ toy-box-infra）が拾われる。無関係な履歴との差分に
+# 落ちるが、`git branch --remotes` はアルファベット順に並ぶので、**origin より前に来る名前の
+# リモートが 1 つでもあると、そちらの `HEAD -> ...` が先に一致する**。無関係な履歴との差分に
 # なるため事実上ほぼ全ファイルが「push 対象」と見なされ、glob が素通りする。
 #
 # その結果 `.md` だけの push でも Kotlin 向けのゲート（docker-available / full-test）が起動し、
 # Docker を落としているとドキュメントだけの push が塞がれる。upstream を設定していない間ずっと
 # 起きる（初回 push に限らない。切り分けの実測は #804）。
+#
+# 実際に踏んだのは archive 済みの `infra` リモート（toy-box-infra）で、これは #804 の調査後に
+# 削除した。よって現状の 3 は `origin/HEAD -> origin/main` を拾う。それでもこのスクリプトを
+# 残すのは、fork や backup など origin より前に並ぶリモートを足すと再発するうえ、症状が
+# 「テストが余計に走る」だけで無音だからである（2 の欠落は worktree である限り直らない）。
 #
 # そこで比較対象を lefthook 任せにせず、ここで明示する。
 #
