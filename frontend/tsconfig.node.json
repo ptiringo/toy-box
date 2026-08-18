@@ -1,11 +1,17 @@
 {
   "compilerOptions": {
     "composite": true,
+    // 参照される側のプロジェクトは emit を止められない（TS6310）。目的は型検査だけなので、
+    // 出力（.js / .d.ts / .tsbuildinfo）はまとめて gitignore 済みの node_modules 配下へ捨てる。
+    "outDir": "./node_modules/.tmp/tsconfig.node",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "strict": true
   },
-  "include": ["vite.config.ts"]
+  // vite.config.ts と同じ「node 側で動く TypeScript」として、Playwright の設定と E2E も検査対象に入れる
+  // （#725。ここに載せないと `tsc -b` はもちろん Biome も Playwright も型を見ないため、無検査で残る）。
+  "include": ["vite.config.ts", "playwright.config.ts", "e2e"]
 }

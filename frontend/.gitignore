@@ -1,0 +1,10 @@
+# Playwright（npm run test:e2e）の生成物
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Firebase Emulator Suite（npm run emulator）の生成物
+/firebase-debug.log
+/ui-debug.log
+/.firebase/

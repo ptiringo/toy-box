@@ -76,6 +76,47 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 
 全層を実配線したまま HTTP 越しに叩く E2E は素の Spring ネイティブ（`RestTestClient`）で書く（`src/e2eTest`、決定は [ADR-0056](../../docs/adr/0056-drop-karate-native-resttestclient-e2e.md)。Karate は [ADR-0039](../../docs/adr/0039-e2e-api-tests-with-karate.md) で採用したが用途に対し過大なため撤退）。`@SpringBootTest(RANDOM_PORT)` + `@AutoConfigureRestTestClient` + Testcontainers PostgreSQL でアプリを起動し、`RestTestClient` でシナリオを流す（`HealthEndpointTest` と同型）。遅く探索的なため **ArchUnit / Kover / `check` / pre-push のいずれの対象にもしない**（独立ソースセット `e2eTest` + タスク `e2eTest`）。CI は独立ワークフロー `e2e-tests.yml` で回す。ローカルは必要時に `./gradlew e2eTest`。網羅はここで広げず内側リングで担保する（ピラミッドの底を厚く）。
 
+## ブラウザ E2E（frontend・ゲート外）
+
+`frontend/` の画面は vitest + jsdom（コンポーネント単位）に加えて、実ブラウザでの通しを 1 本だけ持つ
+（`frontend/e2e/`、Playwright。#725。決定は [ADR-0076](../../docs/adr/0076-browser-e2e-playwright-auth-emulator-boottestrun.md)）。
+API E2E と同じく **`check` / pre-push のゲート外**で、CI は独立ワークフロー `browser-e2e.yml` が回す。
+ローカルは `cd frontend && npm run test:e2e`（Docker が要る）。人間向けの手順は `frontend/README.md` が出所。
+
+- **守るのは「配線が繋がっていること」**（認証・ガード・ルーティング・API パス・世界スコープ）。分岐や
+  エラー表示は jsdom 側で担保し、シナリオはハッピーパス 1 本に絞る。
+- **認証は Firebase Auth Emulator を使う**。Emulator が出す ID トークンは未署名なので、`src/test` の
+  `EmulatorJwtDecoder` が署名検証だけを省いて受理する（issuer / audience / 有効期限は本番と同じ validator を掛ける）。
+- **バックエンドは `bootRun` ではなく `./gradlew bootTestRun`** で起動する。test runtime classpath を使うため、
+  本番成果物（`src/main`）に署名検証を迂回するコードを一切入れずに済む。**`EmulatorJwtDecoder` を `src/main` へ
+  移してはならない。**
+- **射程外**: JWKS による署名検証、実 Identity Platform テナントとの疎通、WorldsPage の改名・削除、
+  エラー分岐。「ブラウザ E2E が緑 ＝ 認証が安全」とは読まないこと。
+
+### この基盤を触るときに踏む地雷（実測済み）
+
+- **`bootTestRun` では `compose.yaml` の自動配線が効かない**。`spring-boot-docker-compose` は
+  `developmentOnly` 依存（`build.gradle.kts` / #451）で **test runtime classpath に載らない**ため。
+  DB は `docker compose up -d --wait` で先に立て、`SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` を
+  env で明示供給する（本番 Cloud Run と同じ注入経路）。`bootRun` の感覚で「勝手に立つ」と思うと嵌まる。
+- **`GCP_PROJECT_ID=toy-box-e2e` を渡し忘れると全トークンが 401 になる**。`application.yml` の issuer / audience
+  は `${GCP_PROJECT_ID:...}` で既定値が実在しない値になっており（fail closed）、フロントの
+  `VITE_FIREBASE_PROJECT_ID` / Emulator の `--project` と **3 箇所で一致**していないと通らない。
+- **`vite preview` は既定で IPv6 `[::1]` にしか bind しない**。`127.0.0.1` を明示しないと
+  `http://127.0.0.1:5173` で待つ側から到達できない。出所は `vite.config.ts` の `preview.host` 1 箇所で、
+  起動コマンド側の `--host` と二重に持たせない。
+- **`e2e/` と `playwright.config.ts` は `tsconfig.node.json` の `include` が型検査の入口**。`tsc` は
+  プロジェクト参照を辿らないため、`npm run build` は `tsc -b` で両プロジェクトを検査する。node 側の
+  ファイルを足したら `include` にも足すこと（Biome も Playwright も型は見ないので、漏れると無検査で残る）。
+- **ローカルで `npm run dev` が 5173 に居座っていると、`reuseExistingServer` がそれを再利用する**。
+  `--mode e2e` でないビルド（＝実 Identity Platform を向いた `.env.local`）が使われ、
+  **画面は正常に見えるのに `.status` だけ 401** という最も分かりにくい形で落ちる。9099 / 8080 も同様。
+- **停止に `pkill -f bootTestRun` は効かない**（Java プロセスのコマンドラインにその文字列が無い）。
+  `lsof -iTCP:8080 -sTCP:LISTEN -P` で PID を引いて落とす。
+- **CI の `retries` は 1、ローカルは 0**（`process.env.CI ? 1 : 0`）。共有ランナーの CPU 枯渇で
+  Playwright のポーリングがタイムアウト設定を大きく超過して落ちることがあるため。ローカルで 0 なのは
+  本物の不安定さを隠さないため。
+
 ## replay（帰納的検証ハーネス・ゲート外）
 
 規程 PDF との照合＝演繹的検証を補うため、**実在馬の公開記録を繁殖ワークフローへ逆算入力して一周駆動し、不変条件で弾かれた実在インスタンスを収集する**帰納的検証を置く（studbook。専用ソースセット `src/replay`、`./gradlew replay` で `build/reports/replay/reconciliation.md` を生成）。探索的な駆動がゲートを揺らさないよう **`check` / Kover / ArchUnit のいずれの対象にもしない**。

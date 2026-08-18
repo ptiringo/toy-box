@@ -7,7 +7,8 @@
 ## 前提
 
 - **Node**: `mise.toml` の `node`（22 系）。リポジトリルートで `mise install` すれば入る。
-- **実 Identity Platform テナント**: ログインは Firebase Auth JS SDK 経由で実テナントに対して行う（エミュレータは使わない）。email/password サインインを有効化し、テストユーザーを1人作っておく。
+- **実 Identity Platform テナント**: 手で触って確認するときのログインは Firebase Auth JS SDK 経由で実テナントに対して行う。email/password サインインを有効化し、テストユーザーを1人作っておく。
+  自動のブラウザ E2E（`npm run test:e2e`）だけは Firebase Auth Emulator を使うので実テナントも `.env.local` も要らない（後述）。
 
 ## セットアップ
 
@@ -53,17 +54,47 @@ Vite dev server が `/api/*` を `http://localhost:8080`（バックエンド）
    世界を選ぶと `/worlds/{worldId}/bloodHorses` に遷移し、その世界の一覧が表示される。画面右上に
    直近レスポンスのステータス（未ログイン `401` → ログイン後 `200`）が出る。
 
+### 自動のブラウザ E2E（`npm run test:e2e`）
+
+上の手動手順と同じ通し（ログイン → 初回セットアップ → 世界の作成 → 馬一覧）は Playwright で自動化してある（#725）。
+
+```bash
+cd frontend
+npm run test:e2e     # Docker が要る
+```
+
+Playwright の `webServer` が 3 つのプロセス（Firebase Auth Emulator :9099 / `./gradlew bootTestRun` :8080 /
+`vite preview` :5173）と PostgreSQL（`docker compose up -d --wait`）を自分で起動するため、**実 Identity Platform
+テナントも `.env.local` も要らない**。ログインは Auth Emulator に対して行い、Emulator が発行する未署名 ID トークンは
+`src/test` に置いたテスト専用の `JwtDecoder` が受理する（`bootTestRun` は test runtime classpath でアプリを起動するので、
+**本番成果物には一切手が入っていない**）。省くのは署名検証だけで、issuer / audience / 有効期限は本番と同じ検証を掛ける。
+
+Emulator 向けの Firebase 設定は `frontend/.env.e2e`（**コミット済み**）が持つ。`vite build --mode e2e` がこれを読み、
+`VITE_FIREBASE_AUTH_EMULATOR_HOST` があるときだけ `connectAuthEmulator` が走る。`apiKey` は Emulator が検証しないダミーで、
+`VITE_FIREBASE_PROJECT_ID` は Emulator の `--project` とバックエンドの `GCP_PROJECT_ID`（いずれも `toy-box-e2e`）に揃えてある。
+**3 箇所のどれかがずれると全リクエストが 401 になる。**
+
+すでに `npm run dev` などが :5173 / :9099 / :8080 に居座っていると `reuseExistingServer` がそれを再利用してしまい、
+実テナント向けのビルドが使われて `401` だけが直らない、という分かりにくい落ち方をする。先に止めてから回すこと。
+射程・射程外と既知の地雷は `.claude/rules/testing.md` の「ブラウザ E2E」節が出所。
+
 ## スクリプト
 
 | コマンド | 内容 |
 |---|---|
 | `npm run dev` | Vite dev server（:5173、`/api`→:8080 proxy） |
-| `npm run build` | 型チェック（`tsc`）＋ 本番ビルド（`vite build`） |
+| `npm run build` | 型チェック（`tsc -b`）＋ 本番ビルド（`vite build`） |
 | `npm run lint` | Biome で lint |
 | `npm run format` | Biome で整形 |
 | `npm run test` | Vitest（API クライアント・認証・ルーティングガード・一覧） |
+| `npm run test:e2e` | Playwright のブラウザ E2E（Docker が要る。下記「自動のブラウザ E2E」） |
+| `npm run emulator` | Firebase Auth Emulator 単体起動（:9099）。E2E のデバッグ用で、通常は `test:e2e` が自分で起動する |
 
-CI（`.github/workflows/frontend.yml`）と lefthook の pre-commit が `frontend/**` の変更時に lint/build/test を回す。
+CI（`.github/workflows/frontend.yml`）と lefthook の pre-commit が `frontend/**` の変更時に lint/build/test を回す（`test:e2e` はゲート外で、独立ワークフロー `.github/workflows/browser-e2e.yml` が回す）。
+
+> **型検査の範囲は `tsconfig.json`（`src`）と `tsconfig.node.json`（`vite.config.ts` / `playwright.config.ts` / `e2e/`）の 2 つに分かれている。**
+> `tsc` はプロジェクト参照を辿らないため、`build` は `tsc -b` で両方を検査する（#725）。node 側のファイルを増やしたら
+> `tsconfig.node.json` の `include` に足すこと。足さないと Biome も Playwright も型を見ないため、無検査のまま残る。
 
 > **`biome.json` の `$schema` はバージョン付き URL に戻さない**（#788）。`https://biomejs.dev/schemas/<version>/schema.json`
 > を直書きすると、Dependabot が `@biomejs/biome` を上げるたびに版がずれて `npm run lint` が info を 1 件出す

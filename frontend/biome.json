@@ -11,5 +11,16 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
-  "files": { "includes": ["**", "!**/dist", "!**/coverage", "!**/node_modules"] }
+  "files": {
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/coverage",
+      "!**/node_modules",
+      "!**/test-results",
+      "!**/playwright-report",
+      "!**/blob-report",
+      "!**/playwright/.cache"
+    ]
+  }
 }

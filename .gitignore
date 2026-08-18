@@ -72,3 +72,5 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env.local
 frontend/coverage/
+# Playwright / Firebase Emulator の生成物はここではなく frontend/.gitignore に足す（#725）。
+# 同じ道具の ignore が 2 ファイルに割れないよう、ツール単位で片方に寄せている。
