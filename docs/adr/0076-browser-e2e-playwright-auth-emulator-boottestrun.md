@@ -47,7 +47,9 @@ CI の paths を `frontend/**` に絞らないのは意図的で、#705 のよ�
 
 この E2E が**守らないもの**。後から「E2E が通っているから安全」と誤読しないために明記する。
 
-- **JWKS による署名検証**。Emulator のトークンは未署名で構造的に検証できない。`SecurityConfigTest` と本番運用が担保する
+- **JWKS 取得と RS256 署名検証そのもの**。Emulator のトークンは未署名で、構造的に検証できない。ここは**担保の分担を書き分けておく**:
+  - 「**署名が検証できないトークンは 401 になる**」というフィルタ層の振る舞いは `SecurityConfigTest` が担保する。ただし同テストも `JwtDecoder` を `TestJwtDecoderConfiguration` の HS256 実装へ差し替えており、**実 JWKS は引かない**（`@WebMvcTest` の slice が認証フィルタを無効化しているため、フィルタ層を通す役割を負っているのがこのテストである）。
+  - したがって「**Identity Platform の JWKS を取得して RS256 で署名を検証する**」経路そのものを実行しているテストはリポジトリに存在しない。ここを担保するのは**本番運用のみ**である。
 - **実 Identity Platform テナントとの疎通**（issuer の OIDC discovery、実テナントのユーザー管理）
 - **WorldsPage の改名・削除**。ハッピーパス 1 本に絞ったため。jsdom 側の `WorldsPage.test.tsx` が担保する
 - **エラー表示・失敗分岐**（`RequireProvisioned` の error 状態など）。jsdom 側が担保する
@@ -62,7 +64,7 @@ CI の paths を `frontend/**` に絞らないのは意図的で、#705 のよ�
 
 引き受けたもの:
 
-- **署名検証がこの経路の射程に入らない**。上記「射程外」のとおり、`SecurityConfigTest` と本番運用に委ねる。
+- **署名検証がこの経路の射程に入らない**。上記「射程外」のとおり、フィルタ層の振る舞い（検証できないトークンは 401）は `SecurityConfigTest` に、JWKS 取得と RS256 検証そのものは本番運用に委ねる。
 - **ローカル実行に Docker が要る**（PostgreSQL）。`bootTestRun` では `spring-boot-docker-compose` が `developmentOnly` 依存で test runtime classpath に載らないため、`compose.yaml` の自動配線が効かない。DB は `docker compose up -d --wait` で先に立て、datasource を env で明示供給する（本番 Cloud Run と同じ注入経路）。
 - **`GCP_PROJECT_ID` / Emulator の `--project` / `VITE_FIREBASE_PROJECT_ID` の 3 箇所を一致させ続ける必要がある**。ずれると全トークンが 401 になる（fail closed）。
 - **ゲート外なので、赤いまま気づかずマージされうる**。API E2E（ADR-0056）と同じ割り切りで、網羅はここで広げず内側リング（vitest + jsdom、`@WebMvcTest`）で担保する。
