@@ -81,6 +81,17 @@ jobs:
           # 攻撃者が制御しうる文字列がコードとして解釈される余地がない）。
           CACHE_HIT: ${{ steps.playwright-cache.outputs.cache-hit }}
 
+      # webServer（playwright.config.ts）の 300 秒には Gradle の構成・コンパイルと postgres イメージの
+      # pull まで含まれる。cold runner でそこを丸ごと背負うと 1 回超えただけでジョブが赤くなる
+      # （webServer の起動失敗は global setup の失敗であり、retries の対象にならない）。
+      # 重い前準備をここへ出すことでタイムアウトの余裕を確保し、ログ上でも
+      # 「ビルドが遅いのか E2E が遅いのか」を切り分けられるようにする。
+      - name: Warm up Gradle build
+        run: ./gradlew testClasses
+
+      - name: Pre-pull PostgreSQL image
+        run: docker compose pull
+
       - name: Run browser E2E
         run: npm run test:e2e
         working-directory: frontend
