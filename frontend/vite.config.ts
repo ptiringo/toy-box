@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+// `test` セクションを型として認めるのは vitest/config の defineConfig（vite のそれには無い）。
+import { defineConfig } from "vitest/config";
 
 // dev server（:5173）から /api/* を bootRun（:8080）へ転送し、同一オリジン扱いにする（CORS 不要）。
 const apiProxy = {
@@ -17,9 +18,12 @@ export default defineConfig({
   },
   // ブラウザ E2E（#725）は dev server ではなく本番ビルド成果物を配信して検証するため、
   // preview にも dev と同じ proxy を置く。
-  // 既定では IPv6 の [::1] だけに bind するため、127.0.0.1 で待つ側（Playwright の webServer）とは
-  // --host 127.0.0.1 を明示して揃える（#725）。
+  //
+  // `host` の明示は必須。vite preview は既定で IPv6 の [::1] だけに bind するため、
+  // `http://127.0.0.1:5173` で readiness を待つ Playwright の webServer から到達できない（#725 で実測）。
+  // bind 先の出所をこの 1 箇所に集約するため、起動コマンド側では `--host` を渡さない。
   preview: {
+    host: "127.0.0.1",
     port: 5173,
     proxy: apiProxy,
   },
