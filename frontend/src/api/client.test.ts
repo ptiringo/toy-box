@@ -1,11 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost, errorMessage } from "./client";
 
 const token = async () => "id-token-123";
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 describe("apiGet", () => {
   it("Authorization: Bearer にIDトークンを載せてJSONを返す", async () => {

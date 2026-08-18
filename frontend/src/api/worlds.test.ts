@@ -1,11 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createWorld, deleteWorld, listWorlds, renameWorld } from "./worlds";
 
 const token = async () => "id-token-123";
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 function stubFetch(status: number, body: unknown): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn().mockResolvedValue(

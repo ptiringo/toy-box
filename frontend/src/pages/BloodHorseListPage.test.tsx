@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "../api/client";
 
 vi.mock("../auth/AuthContext", () => ({
@@ -22,11 +22,6 @@ import { apiGet } from "../api/client";
 import { BloodHorseListPage } from "./BloodHorseListPage";
 
 const apiGetMock = vi.mocked(apiGet);
-
-// 呼び出し履歴はテストをまたいで積み上がるので、各テストの前に落とす（実装＝mockResolvedValue は残す）。
-beforeEach(() => {
-  apiGetMock.mockClear();
-});
 
 function renderAt(path: string) {
   useWorldsMock.mockReturnValue({
