@@ -79,8 +79,9 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 ## ブラウザ E2E（frontend・ゲート外）
 
 `frontend/` の画面は vitest + jsdom（コンポーネント単位）に加えて、実ブラウザでの通しを 1 本だけ持つ
-（`frontend/e2e/`、Playwright。#725）。API E2E と同じく **`check` / pre-push のゲート外**で、CI は独立
-ワークフロー `browser-e2e.yml` が回す。ローカルは `cd frontend && npm run test:e2e`（Docker が要る）。
+（`frontend/e2e/`、Playwright。#725。決定は [ADR-0076](../../docs/adr/0076-browser-e2e-playwright-auth-emulator-boottestrun.md)）。
+API E2E と同じく **`check` / pre-push のゲート外**で、CI は独立ワークフロー `browser-e2e.yml` が回す。
+ローカルは `cd frontend && npm run test:e2e`（Docker が要る）。人間向けの手順は `frontend/README.md` が出所。
 
 - **守るのは「配線が繋がっていること」**（認証・ガード・ルーティング・API パス・世界スコープ）。分岐や
   エラー表示は jsdom 側で担保し、シナリオはハッピーパス 1 本に絞る。
@@ -101,8 +102,12 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 - **`GCP_PROJECT_ID=toy-box-e2e` を渡し忘れると全トークンが 401 になる**。`application.yml` の issuer / audience
   は `${GCP_PROJECT_ID:...}` で既定値が実在しない値になっており（fail closed）、フロントの
   `VITE_FIREBASE_PROJECT_ID` / Emulator の `--project` と **3 箇所で一致**していないと通らない。
-- **`vite preview` は既定で IPv6 `[::1]` にしか bind しない**。`--host 127.0.0.1` を明示しないと
-  `http://127.0.0.1:5173` で待つ側から到達できない。
+- **`vite preview` は既定で IPv6 `[::1]` にしか bind しない**。`127.0.0.1` を明示しないと
+  `http://127.0.0.1:5173` で待つ側から到達できない。出所は `vite.config.ts` の `preview.host` 1 箇所で、
+  起動コマンド側の `--host` と二重に持たせない。
+- **`e2e/` と `playwright.config.ts` は `tsconfig.node.json` の `include` が型検査の入口**。`tsc` は
+  プロジェクト参照を辿らないため、`npm run build` は `tsc -b` で両プロジェクトを検査する。node 側の
+  ファイルを足したら `include` にも足すこと（Biome も Playwright も型は見ないので、漏れると無検査で残る）。
 - **ローカルで `npm run dev` が 5173 に居座っていると、`reuseExistingServer` がそれを再利用する**。
   `--mode e2e` でないビルド（＝実 Identity Platform を向いた `.env.local`）が使われ、
   **画面は正常に見えるのに `.status` だけ 401** という最も分かりにくい形で落ちる。9099 / 8080 も同様。
