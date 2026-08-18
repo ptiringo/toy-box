@@ -10,7 +10,7 @@ import { useWorlds } from "../worlds/useWorlds";
  */
 export function WorldsPage() {
   const { signOutUser } = useAuth();
-  const { worlds, loading, error, create, rename, remove } = useWorlds();
+  const { worlds, loading, busy, error, create, rename, remove } = useWorlds();
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -24,7 +24,8 @@ export function WorldsPage() {
     }
   };
 
-  const onSaveRename = async (worldId: string) => {
+  const onSaveRename = async (e: FormEvent, worldId: string) => {
+    e.preventDefault();
     if (await rename(worldId, editingName)) {
       setEditingId(null);
     }
@@ -66,24 +67,27 @@ export function WorldsPage() {
           {worlds.map((world) => (
             <li className="worlds__item" key={world.id}>
               {editingId === world.id ? (
-                <>
+                // 作成側と同じく form + required にする（required の検証は submit のときだけ走るので、
+                // ボタンの onClick で保存すると空名が素通りする）。
+                <form className="worlds__edit" onSubmit={(e) => void onSaveRename(e, world.id)}>
                   {/* 作成フォームの「新しい世界の名前」と紛れないラベルにする。 */}
                   <label className="field worlds__field">
                     <span>変更後の名前</span>
                     <input
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
+                      required
                       // biome-ignore lint/a11y/noAutofocus: 改名ボタンから開いた入力に即入力できるようにする
                       autoFocus
                     />
                   </label>
-                  <button className="btn" type="button" onClick={() => void onSaveRename(world.id)}>
+                  <button className="btn" type="submit" disabled={busy}>
                     保存
                   </button>
                   <button className="btn-ghost" type="button" onClick={() => setEditingId(null)}>
                     やめる
                   </button>
-                </>
+                </form>
               ) : (
                 <>
                   <button
@@ -107,6 +111,7 @@ export function WorldsPage() {
                     className="btn-ghost"
                     type="button"
                     onClick={() => void onDelete(world.id, world.name)}
+                    disabled={busy}
                   >
                     削除
                   </button>
@@ -122,7 +127,8 @@ export function WorldsPage() {
           <span>新しい世界の名前</span>
           <input value={newName} onChange={(e) => setNewName(e.target.value)} required />
         </label>
-        <button className="btn" type="submit">
+        {/* 変更中は文言を変えず disabled だけにする（busy はどの操作でも立つので「作成中…」は嘘になりうる）。 */}
+        <button className="btn" type="submit" disabled={busy}>
           作る
         </button>
       </form>

@@ -1,11 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { provisionMe } from "./me";
 
 const token = async () => "id-token-123";
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 function okResponse(): Response {
   return new Response(JSON.stringify({ account_id: "a1" }), {

@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => ({ signOutUser: vi.fn() }),
@@ -11,10 +11,6 @@ const useWorldsMock = vi.fn();
 vi.mock("../worlds/useWorlds", () => ({ useWorlds: () => useWorldsMock() }));
 
 import { WorldsPage } from "./WorldsPage";
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 function renderPage() {
   return render(
@@ -32,6 +28,7 @@ function renderPage() {
 type WorldsStub = {
   worlds: { id: string; name: string }[];
   loading: boolean;
+  busy: boolean;
   error: string | null;
   create: ReturnType<typeof vi.fn>;
   rename: ReturnType<typeof vi.fn>;
@@ -42,6 +39,7 @@ function stubWorlds(overrides: Partial<WorldsStub> = {}): WorldsStub {
   const value: WorldsStub = {
     worlds: [{ id: "w1", name: "はじまりの世界" }],
     loading: false,
+    busy: false,
     error: null,
     create: vi.fn().mockResolvedValue(true),
     rename: vi.fn().mockResolvedValue(true),
@@ -95,6 +93,21 @@ describe("WorldsPage", () => {
     expect(value.rename).toHaveBeenCalledWith("w1", "改名後");
   });
 
+  // 空名はサーバが world-name-blank で弾くが、送る前に止めて作成側（required）と揃える。
+  it("空の名前では作成も改名もしない", async () => {
+    const value = stubWorlds();
+
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "作る" }));
+    expect(value.create).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "改名" }));
+    await userEvent.clear(screen.getByLabelText("変更後の名前"));
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(value.rename).not.toHaveBeenCalled();
+  });
+
   it("削除は確認してから実行し、取り消したら実行しない", async () => {
     const value = stubWorlds();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
@@ -107,6 +120,18 @@ describe("WorldsPage", () => {
     confirmSpy.mockReturnValue(true);
     await userEvent.click(screen.getByRole("button", { name: "削除" }));
     expect(value.remove).toHaveBeenCalledWith("w1");
+  });
+
+  // 連打すると 2 本目が 409 の赤帯を出し、世界は 1 つできているのに失敗したように見える。
+  it("変更の実行中は作成・保存・削除を押せない", async () => {
+    stubWorlds({ busy: true });
+
+    renderPage();
+
+    expect(screen.getByRole("button", { name: "作る" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "削除" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "改名" }));
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
   });
 
   it("エラーがあれば alert で表示する", async () => {
