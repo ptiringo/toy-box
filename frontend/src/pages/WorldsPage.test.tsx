@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => ({ signOutUser: vi.fn() }),
@@ -11,10 +11,6 @@ const useWorldsMock = vi.fn();
 vi.mock("../worlds/useWorlds", () => ({ useWorlds: () => useWorldsMock() }));
 
 import { WorldsPage } from "./WorldsPage";
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 function renderPage() {
   return render(

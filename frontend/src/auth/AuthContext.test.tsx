@@ -22,9 +22,9 @@ function Probe() {
   return <div>{loading ? "loading" : user ? "signed-in" : "signed-out"}</div>;
 }
 
+// signInMock の履歴は clearMocks（vite.config.ts）が落とすので、ここは listeners だけ戻す。
 beforeEach(() => {
   listeners.length = 0;
-  signInMock.mockReset();
 });
 
 describe("AuthContext", () => {
