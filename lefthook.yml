@@ -125,6 +125,14 @@ pre-commit:
 pre-push:
   # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
   piped: true
+
+  # glob を当てる対象（push 予定の変更ファイル）を自前で供給する（#804）。
+  # lefthook 既定の {push_files} は worktree で比較対象を取り違える。origin より前の名前を持つ
+  # リモートが 1 つでもあると無関係な履歴との差分を返すため、.md だけの push でもほぼ全ファイルが
+  # 「push 対象」と見なされ、下の glob が素通りする。取り違えの機序・切り分けの実測・この供給を
+  # 残す理由は、スクリプト冒頭のコメントにある。
+  files: scripts/list-push-target-files.sh
+
   commands:
     # Docker 到達性の事前確認（#679 / ADR-0071）。
     #

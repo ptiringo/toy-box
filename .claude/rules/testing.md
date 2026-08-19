@@ -59,6 +59,7 @@ Testcontainers の PostgreSQL はプロセス内で共有されるため、テ�
 
 pre-push（lefthook の `full-test`）は `./gradlew test` を丸ごと回す。**Testcontainers 依存テストも対象のまま**で、Docker 不要なテストだけを切り出す運用は採らない（[ADR-0071](../../docs/adr/0071-pre-push-docker-fail-fast-guard.md)。穴が空くのが永続化契約テストという最も守りたい場所になること、`@Tag` の付け忘れが危険側に転ぶことが理由）。したがって **push には Docker が要る**。
 
+- 要るのは **`.kt` / `.kts` / `.java` を含む push のとき**だけ（両コマンドの `glob`）。ドキュメントや設定だけの push はゲートごとスキップされ、Docker を落としていても通る。glob を当てる対象は `scripts/list-push-target-files.sh` が供給する（lefthook 既定の `{push_files}` は worktree で比較対象を取り違え、`.md` だけの push でもゲートが起動していた。#804）。
 - pre-push の先頭で `scripts/check-docker-available.sh` が Docker 到達性を確認し、駄目なら理由と対処を出して即座に落とす（`piped: true` で `full-test` は走らない）。ハングして「push が無反応」に見える状態を潰すためのガードで、ゲートの範囲は変えない。
 - 判定は `docker info` の成否のみ。**Docker は生きているが Testcontainers だけ失敗する**ケース（イメージの pull 不可・リソース枯渇等）はガードを素通りし、従来どおりテストの失敗として出る。
 - Docker が復旧しないまま push したいときは **`LEFTHOOK_EXCLUDE=docker-available,full-test git push`**（`--no-verify` は gitleaks 等まで飛ばすので最後の手段）。同じテストは CI（`api-tests.yml`）で走る。
