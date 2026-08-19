@@ -122,6 +122,16 @@ pre-commit:
       run: scripts/check-migration-validate-separation.sh {staged_files}
       tags: lint
 
+    # ADR の採番と索引の整合チェック（#757）。
+    # 番号の重複はリポジトリ全体を見ないと判定できないため {staged_files} は渡さず常に全件を
+    # 検査する（glob は発火の条件だけを絞る役）。素の bash なのでコミットは実質重くならない。
+    # ここで見られるのは自ブランチ内の重複まで。PR 作成後に main へ入った ADR との衝突は
+    # ローカルからは原理的に見えないので、CI（.github/workflows/adr-check.yml）が本命になる。
+    adr-numbering:
+      glob: "docs/adr/*.md"
+      run: scripts/check-adr-numbering.sh
+      tags: lint
+
 pre-push:
   # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
   piped: true
