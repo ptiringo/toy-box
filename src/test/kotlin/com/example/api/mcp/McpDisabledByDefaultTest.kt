@@ -3,11 +3,14 @@ package com.example.api.mcp
 import com.example.api.mcp.iam.world.WorldMcpTools
 import com.example.api.mcp.racing.jockey.JockeyMcpTools
 import com.example.api.support.PostgresContainerSupport
+import com.example.api.support.TestJwtDecoderConfiguration
 import io.modelcontextprotocol.server.McpSyncServer
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
+import org.springframework.context.annotation.Import
 
 /**
  * 既定プロファイルでは MCP が 1 つも生えないことの検証（#712）。
@@ -21,10 +24,16 @@ import org.springframework.context.ApplicationContext
  *
  * `@Autowired` の失敗（コンテキスト起動エラー）に頼らず Bean 名の集合を直接見るのは、 「起動が壊れないこと」も同時に確かめたいため。
  *
- * `@SpringBootTest` は [com.example.api.ApiApplicationTests] と同一構成にしてコンテキストキャッシュを共有する
- * （プロファイルもプロパティも足さない）。
+ * `@SpringBootTest` の構成は、web 環境を要する 5 クラス（[com.example.api.ApiApplicationTests] /
+ * [com.example.api.actuator.HealthEndpointTest] / [com.example.api.OpenApiTest] /
+ * [com.example.api.controller.SecurityConfigTest] / 本クラス）でキーを揃え、コンテキストを 1 つ共有する ためのもの（#817 /
+ * ADR-0077）。**MCP の在不在に効く設定（プロファイル・`spring.ai.mcp.server.enabled`）は
+ * 本番と同じ既定のままで、一切足していない**。`@Import` する [TestJwtDecoderConfiguration] は `JwtDecoder` を HS256
+ * 実装へ差し替えるだけで、MCP の Bean 登録には関与しない。
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureRestTestClient
+@Import(TestJwtDecoderConfiguration::class)
 class McpDisabledByDefaultTest : PostgresContainerSupport() {
     @Autowired private lateinit var context: ApplicationContext
 

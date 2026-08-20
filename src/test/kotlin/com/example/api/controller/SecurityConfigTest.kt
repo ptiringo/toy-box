@@ -19,6 +19,11 @@ import org.springframework.test.web.servlet.client.RestTestClient
  *
  * `@WebMvcTest` の slice は認証フィルタを無効化してあるため（ADR-0064）、フィルタ層の振る舞いはここと E2E だけが担保する。 `JwtDecoder` は
  * [TestJwtDecoderConfiguration] の HS256 実装に差し替え、実 JWKS を引かずに本物のフィルタチェーンを走らせる。
+ *
+ * この構成（`RANDOM_PORT` + `@AutoConfigureRestTestClient` + `@Import(TestJwtDecoderConfiguration)`）は、
+ * web 環境を要する `@SpringBootTest` 5 クラス（[com.example.api.ApiApplicationTests] /
+ * [com.example.api.mcp.McpDisabledByDefaultTest] / [com.example.api.actuator.HealthEndpointTest] /
+ * [com.example.api.OpenApiTest] / 本クラス）の共通キーでもある（#817 / ADR-0077）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
