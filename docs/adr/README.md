@@ -86,3 +86,4 @@
 | [0074](0074-billing-guardrails-spend-cap-and-budget-alert.md) | 課金ガードレールを Cloud Run spend cap（手設定）と budget alert（Terraform）の二段構えにする | Accepted |
 | [0075](0075-gcp-project-id-not-a-secret.md) | GCP プロジェクト ID は秘匿対象にせず、識別子の扱いは開示済みかどうかで分ける | Accepted |
 | [0076](0076-browser-e2e-playwright-auth-emulator-boottestrun.md) | ブラウザ E2E を Playwright + Auth Emulator + bootTestRun で組み、ゲート外の独立ワークフローで回す | Accepted |
+| [0077](0077-consolidate-web-test-contexts-trading-jwt-decoder-assurance.md) | web 環境を要するテストコンテキストを 1 つに畳み、本番 JwtDecoder Bean 生成の担保を手放す | Accepted |

@@ -71,7 +71,16 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 - **distinct なコンテキスト構成を増やさない**。キャッシュは「同一の unique 構成」のときだけ再利用される（キーは classes / context customizers / active profiles / property sources 等の組合せ）。`@MockkBean` は context customizer を足してキーを分けるので**乱発しない**、`@Import` 構成は揃える、`@SpringBootTest(webEnvironment=...)` を不必要に散らさない。
 - **`@DirtiesContext` は原則使わない**（キャッシュを退避させ再構築を強いる）。状態リークは設計で断つ。
 - **テスト並列化（`maxParallelForks` / JUnit 5 の `junit.jupiter.execution.parallel`）は採らない**。フォークはキャッシュが JVM 単位のため逆効果、JVM 内並列は `@MockBean`/`@MockkBean` や共有状態を使うテストを Spring 公式が非推奨とする。加えて DB を触るテストの後始末（共有コンテナの全テーブル TRUNCATE。[ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）は JVM 内並列と両立しない（他スレッドのデータまで消す）。再評価は #690。
-- 速度を縮めたいときの効く順: ビルドキャッシュ/デーモン（[ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）→ コンテキスト構成の共通化 → （将来）隔離を整えた上での並列化。
+- 速度を縮めたいときの効く順: ビルドキャッシュ/デーモン（[ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）→ コンテキスト構成の共通化（#817 で実施済み。下記）→ （将来）隔離を整えた上での並列化。
+
+### web 環境を要する `@SpringBootTest` は 1 構成に揃える（崩すと -20.5% が消える）
+
+`ApiApplicationTests` / `McpDisabledByDefaultTest` / `HealthEndpointTest` / `OpenApiTest` / `SecurityConfigTest` の 5 クラスは、**`RANDOM_PORT` + `@AutoConfigureRestTestClient` + `@Import(TestJwtDecoderConfiguration)` という同一キー**でコンテキストを 1 つ共有する（[ADR-0077](../../docs/adr/0077-consolidate-web-test-contexts-trading-jwt-decoder-assurance.md)）。CI 実測（各 3 回の中央値）で `:test` が 84.93s → 67.55s（**-20.5%**）になった構成であり、**どれか 1 つに `@MockkBean` / `@TestPropertySource` / 別の `@Import` を足すと、そのクラスだけ別コンテキストへ分岐して効果が失われる**。web 環境を要する `@SpringBootTest` を新しく足すときも、この 5 クラスと同じ構成に揃える。ArchUnit / detekt では強制できないのでレビューで担保する。
+
+- `RestTestClient` も JWT も使わないクラス（`ApiApplicationTests` / `McpDisabledByDefaultTest`）が `@AutoConfigureRestTestClient` と `@Import` を持つのは、**キーを一致させるためだけ**。不自然に見えても外さない。
+- 引き換えに「本番の `issuer-uri` 設定から `JwtDecoder` Bean が生成される」ことを確かめるコンテキストが無くなっている（API E2E もブラウザ E2E も decoder を差し替えるため、リポジトリ全体で担保が無い）。この穴は #813 が引き取る。
+- **`@WebMvcTest` スライスの 11 個は削減対象にしない**。`controllers` 引数ごとに 1 コンテキストになるのはスライステストの機械的帰結で、束ねると「そのコントローラだけを載せる」意図が壊れる。
+- **効果は推論せず実測で確かめる**。実測では 18→17 個で -3.7〜-6.3%、17→16 個で -14.1% と、1 個あたりの効果が 2 倍以上違った（機序は未特定）。ローカルは初回コンテキスト構築の振れが大きく（同一構成で 17.5s / 36.5s、外れ値では `:test` が 74 分停止）効果より測定ノイズが大きいため、**CI（`workflow_dispatch` で 3 回）で測る**。
 
 ## E2E（ブラックボックス API テスト・ゲート外）
 
