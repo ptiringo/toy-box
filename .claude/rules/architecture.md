@@ -180,4 +180,4 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 - **inline value class によるメソッド名マングリング**: `@JvmInline value class`（ID 値クラス等）を**引数に取るメソッドも、戻り値に持つメソッドも**、JVM 名がハッシュ付きにマングルされる（`of` → `of-Havw-KM`、`Result` を返す `invoke` → `invoke-Zyo9ksc`）。`haveName("invoke")` や `target.name == "of"` は完全一致せず空振りする。ベース名（`name.substringBefore('-')`）で突合するか `haveNameStartingWith` で前方一致させ、過剰マッチはパラメータ型条件との AND で絞る。
 - **companion object メソッドの owner**: `Foo.of(...)` の呼び出しターゲット owner は `Foo` ではなく `Foo$Companion`。`call.target.owner.enclosingClass.orElse(owner)` で囲みクラスを辿って突合する。
 
-**新しく書いた呼び出し制約ルールは、必ずミューテーションで非空振りを確認する**。許可パッケージ定数を一時的に bogus 値へ変えるか、規約を守っているコードのアノテーションを外し、テストが FAIL することを確かめてから戻す。パスしたまま BUILD SUCCESSFUL なら述語が空振りしている。恒久的には違反サンプル fixture ＋ `assertNotSatisfied` 系の回帰テストを別途置く（先例: `AggregateNotDataClassRuleTest` / `DtoDomainEnumRuleTest`）。
+**新しく書いた呼び出し制約ルールは、必ずミューテーションで非空振りを確認する**。パスしたまま BUILD SUCCESSFUL なら述語が空振りしている。壊し方・恒久的な回帰テストの置き方・他のゲート種別（detekt / Claude hook / CI ジョブ / lefthook）にも共通する一般則は `.claude/rules/gates.md` にある。
