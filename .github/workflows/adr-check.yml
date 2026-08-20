@@ -1,0 +1,44 @@
+# ADR チェックワークフロー
+#
+# 目的: ADR の連番が二重採番されていないか、索引（docs/adr/README.md）と実ファイルが食い違って
+# いないかを検査する（#757）。ADR のファイル名は番号が同じでもサフィックスが違えば別ファイルで、
+# 索引行が離れていれば git は自動マージするため、二重採番は衝突として現れず main に入りうる。
+#
+# pull_request が見るのは**その実行時点**の main と PR の合成である。PR 作成後に main へ別の ADR が
+# 入り、PR 側に新しい push が無ければ再実行されないため、マージ直前に生じた衝突は取り逃す余地が
+# 残る。push（main）側にも載せているのはそのためで、事後ではあるが #597 のように人間が気づくまで
+# 放置される状態は避けられる。
+
+name: ADR Check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "docs/adr/**"
+      - "scripts/check-adr-numbering.sh"
+  push:
+    branches: [main]
+    paths:
+      - "docs/adr/**"
+      - "scripts/check-adr-numbering.sh"
+  workflow_dispatch:
+
+jobs:
+  adr-check:
+    runs-on: ubuntu-latest
+    name: ADR Numbering and Index Check
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 素の bash だけで動くのでツールのインストールは要らない（mise のセットアップも不要）。
+      - name: ADR numbering and index check
+        run: scripts/check-adr-numbering.sh
