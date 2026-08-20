@@ -3,6 +3,7 @@ paths:
   - "src/test/**"
   - "detekt-rules/src/**"
   - ".github/workflows/**"
+  - "scripts/**"
   - "lefthook.yml"
   - ".claude/hooks/**"
   - ".claude/settings.json"
