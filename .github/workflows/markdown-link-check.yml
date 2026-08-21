@@ -1,0 +1,42 @@
+# Markdown リンクチェックワークフロー
+#
+# 目的: Markdown が張る相対リンクの切れを検知する（#806）。#776 で指示ファイルをリンク委譲型へ
+# 再構成したため、リンクが切れると情報がどこにも無い状態になる。主要因は ADR の連番繰り下げ
+# （#597 / #712 の実績）と .claude/rules/ の分割・改名で、どちらも静かに壊れる。
+#
+# pre-commit（lefthook の markdown-links）でも同じスクリプトが走るが、--no-verify や GitHub の
+# web 編集はローカルフックを通らない。push（main）側にも載せているのは、PR 作成後に main 側の
+# 改名でリンクが切れた場合、PR 側に新しい push が無ければ pull_request が再実行されないため。
+
+name: Markdown Link Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "**/*.md"
+      - "scripts/check-markdown-links.sh"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - "scripts/check-markdown-links.sh"
+  workflow_dispatch:
+
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    name: Markdown Relative Link Check
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 素の bash だけで動くのでツールのインストールは要らない（mise のセットアップも不要）。
+      - name: Markdown relative link check
+        run: scripts/check-markdown-links.sh
