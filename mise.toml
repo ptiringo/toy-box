@@ -1,6 +1,32 @@
 [settings]
 lockfile = true
 
+# ローカルの GCP アクセスを read-only の「最小抵抗の既定」にする（#475 / ADR-0036）。
+# ローカル identity（owner）のまま叩くと変更操作まで通ってしまうため、プロジェクトディレクトリに
+# いる間は viewer SA（roles/viewer のみ）への impersonation を既定にし、覚えていなくても
+# read-only で動くようにする。対話シェル（mise activate）と Claude Code セッション
+# （.claude/hooks/session-start-mise.sh の `mise hook-env`）の双方に適用される。
+#
+# これは「強制」ではなく既定であって、owner は常に回避できる（ハード強制は不可）。無確認の変更操作を
+# 実際に止めるのは .claude/settings.json の permissions（deny/ask）で、本設定はその多層防御
+# ＋事故防止。運用・昇格手順は .claude/rules/gcp-guardrails.md を参照。
+#
+# 前提: local-readonly SA が apply 済みで、利用者に roles/iam.serviceAccountTokenCreator が
+# 付いていること（infra/modules/local-readonly/ と HCP の local_readonly_impersonators）。
+# 付与前にこの env を有効化すると impersonation が解決できず、読み取りを含む全 gcloud が壊れる。
+#
+# CI では効かせる必要がない: deploy.yml は mise を経由せず WIF + deployer@ で認証し、
+# terraform-check.yml は `terraform init -backend=false` + validate/fmt なので provider 認証を
+# 行わない。将来 mise 経由の CI ジョブで gcloud / terraform apply を使うなら、そのジョブで
+# 明示的に空へ上書きすること（さもないと viewer 権限で失敗する）。
+[env]
+# gcloud CLI（--impersonate-service-account の既定値に相当）
+CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT = "local-readonly@ptiringo-toy-box.iam.gserviceaccount.com"
+# terraform の google / google-beta provider（provider ブロックの impersonate_service_account に相当）。
+# infra/ は HCP Terraform（cloud ブロック）で remote 実行されるためこの env は HCP の run には渡らない。
+# provider がローカルで認証する場合のみ効く多層防御。
+GOOGLE_IMPERSONATE_SERVICE_ACCOUNT = "local-readonly@ptiringo-toy-box.iam.gserviceaccount.com"
+
 [tools]
 actionlint = "1.7.12"
 "aqua:cli/cli" = "2.96.0"
