@@ -132,6 +132,18 @@ pre-commit:
       run: scripts/check-adr-numbering.sh
       tags: lint
 
+    # Markdown の相対リンク切れチェック（#806）。
+    # リンク切れは「リンク先が消えた・改名された」ときに起きるが、そのときリンク元の .md は
+    # stage されない。{staged_files} を渡すと主要因（ADR の繰り下げ）を取り逃すため、常に全件を
+    # 検査する（glob は発火の条件だけを絞る役。adr-numbering と同じ形）。
+    # glob の `{,**/}` はルート直下（CLAUDE.md / README.md）を漏らさないため（#800 と同じ理由）。
+    # pre-push ではなく pre-commit に置くのは、pre-push の glob 判定が worktree で当てにならない
+    # 経緯があるため（#804）。
+    markdown-links:
+      glob: "{,**/}*.md"
+      run: scripts/check-markdown-links.sh
+      tags: lint
+
 pre-push:
   # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
   piped: true
