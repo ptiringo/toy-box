@@ -7,7 +7,6 @@ run-name: Container Smoke Test for ${{ github.ref }}
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
     paths-ignore:
       - "infra/**"

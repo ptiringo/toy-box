@@ -12,7 +12,6 @@ run-name: Browser E2E for ${{ github.ref }}
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
     paths-ignore:
       - "docs/**"

@@ -7,7 +7,6 @@ name: SQL Check
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
     paths:
       - "src/main/resources/db/migration/**"
