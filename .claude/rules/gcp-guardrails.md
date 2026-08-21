@@ -23,13 +23,37 @@ Claude Code から Google Cloud（project `ptiringo-toy-box`）を扱うとき�
 - infra apply: HCP Terraform run（tfctl / HCP UI。[ADR-0034](../../docs/adr/0034-adopt-tfctl-cli.md)）。ローカルは `terraform plan` まで。
 - 変更系を流したいときは ask の確認に従うか、上記の正規ルートに寄せる。
 
-## viewer SA を使う（impersonation）
+## viewer SA は既定で効く（impersonation）
 
-`local_readonly_impersonators` に自分の `user:<mail>` を追加して apply（CI/HCP 経由）したうえで:
+`mise.toml` の `[env]` が `CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT`（gcloud）と `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT`（terraform の google / google-beta provider）を設定するため、**プロジェクトディレクトリでは何も付けなくても viewer SA で走る**。対話シェル（`mise activate`）と Claude Code セッション（session-start hook の `mise hook-env`）の双方に適用される。read-only を「最小抵抗の既定」にするのが狙いで、フラグを覚えている必要はない。
+
+前提は `local_readonly_impersonators`（HCP workspace の Terraform 変数）に自分の `user:<mail>` が入った状態で apply 済みであること。付与前に env だけ有効化すると impersonation が解決できず、**読み取りを含む全 gcloud が壊れる**。
+
+変数は `list(string)` なので HCP UI で登録するときは **HCL フラグをオンにする**（`["user:foo@example.com"]`）。忘れると文字列として渡り run が型エラーで落ちる。付与対象は**実際に `gcloud config list` の `[core] account` になるアカウント**にすること（複数アカウントを使い分けているなら、切り替え先も入れておかないと切り替えた瞬間に全 gcloud が壊れる）。
+
+効いているかは次で確認する:
 
 ```bash
-gcloud <read-only command> --impersonate-service-account=local-readonly@ptiringo-toy-box.iam.gserviceaccount.com
+gcloud config list                          # [auth] impersonate_service_account に SA が出る
+gcloud projects describe ptiringo-toy-box   # 通れば tokenCreator 付与まで含めて健全
 ```
+
+impersonation が効いている間は実行のたびに `WARNING: This command is using service account impersonation.` が stderr へ出る（2 行出ることがある）。**正常動作の合図でエラーではない**ので、出力をパースするスクリプトでは stdout だけを見ること。
+
+`gcloud auth login` 等の auth 系は impersonation の影響を受けない（資格情報の取得自体はローカル identity で行う）。
+
+terraform 側の `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` が効くのは **provider がローカルで認証するときだけ**。`infra/` は HCP Terraform（`cloud` ブロック）なので `plan` / `apply` は HCP 上で HCP の資格情報で走り、この env は渡らない。ローカルの多層防御（将来のローカル実行・別ディレクトリでの provider 利用）として置いてある。`gcloud config list` の `[core] account` も **owner のまま表示される**（impersonation は実行時に被さるだけでアクティブアカウントを置き換えない）ので、これを見て「効いていない」と誤読しないこと。
+
+## owner へ昇格する（例外）
+
+- **変更系は昇格しない**。正規ルート（GitHub Actions / HCP Terraform run）に寄せる。
+- viewer では見えない**読み取り**（課金など）に限り、対話シェルで env を外してから叩く:
+
+  ```bash
+  unset CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT   # そのシェルの間だけ owner に戻る
+  ```
+
+- **`VAR= gcloud ...` の env 代入プレフィックスで昇格しない**。先頭トークンが `gcloud` でなくなり、permissions の deny/ask マッチャに当たらないまま走りうる（下記「変更系を env ランナーでラップしない」と同じ穴）。
 
 ## メンテナンス
 
