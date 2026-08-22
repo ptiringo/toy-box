@@ -25,3 +25,9 @@ variable "billing_account_id" {
   description = "Cloud Billing アカウント ID（HCP workspace 変数で供給。公開リポジトリに直書きしない）"
   type        = string
 }
+
+variable "audit_alert_email" {
+  description = "監査アラート（正規ルート外の変更検知）の通知先メールアドレス（機微。HCP workspace 変数で供給。公開リポジトリに直書きしない）"
+  type        = string
+  sensitive   = true
+}

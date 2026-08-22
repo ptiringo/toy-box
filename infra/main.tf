@@ -5,6 +5,7 @@ resource "google_project_service" "project" {
     "iam",
     "iamcredentials",
     "identitytoolkit",
+    "monitoring",
     "orgpolicy",
     "run",
     "secretmanager",
@@ -70,6 +71,17 @@ module "billing" {
 
   billing_account_id = var.billing_account_id
   monthly_amount_jpy = "3000"
+
+  depends_on = [google_project_service.project]
+}
+
+# 監査の検知（正規ルートを外れた変更操作のアラート）。#473 / ADR-0078。
+# 記録は Admin Activity ログが常時担うので、ここで足すのは「気づく手段」だけ。
+# monitoring API 有効化に依存させ、初回 apply の順序レースを避ける。
+module "audit" {
+  source = "./modules/audit"
+
+  alert_email = var.audit_alert_email
 
   depends_on = [google_project_service.project]
 }
