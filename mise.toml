@@ -36,6 +36,21 @@ fnox = "1.27.1"
 gitleaks = "8.30.1"
 java = "temurin-25.0.3+9.0.LTS"
 lefthook = "2.1.9"
+# npm 自体も node とは別に固定する（#786）。node 22 同梱の npm 10 は optional 依存の `libc` メタデータを
+# 書き出さないため、npm 11 以降が書いた `frontend/package-lock.json` を手元で更新すると、本題と無関係な
+# `libc` の削除が巻き添えで入る。Dependabot は新しい npm で lock を書くので、固定しないと
+# 「手で触ると消える → Dependabot が足す」の往復差分がレビューのたびに混ざる（PR #785 で直した直後、
+# c6d9877 で再び 4 箇所が消えた）。
+#
+# 実測: 同じ package.json から生成した lock の `libc` は npm 10 で 0 件、npm 11 / 12 で 14 件。
+# npm 11 と 12 の出力はバイト単位で一致するため、Dependabot が 11 系のままでも 12 で揃う。
+#
+# CI の install_args には足していない。frontend / browser-e2e のジョブは `npm ci`（lock を書き換えない）
+# しか使わず node 同梱の npm で足りるので、「そのジョブが使うツールだけ入れる」方針（#464）を優先する。
+#
+# **`node` より前に書くこと**。mise は [tools] の宣言順に PATH を積むため、node の後ろに置くと node 同梱の
+# npm 10 が先に解決され、この固定は無言で効かなくなる（`mise exec -- npm --version` が 10.9.8 を返すのを実測）。
+"npm:npm" = "12.0.2"
 node = "22"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "pipx:diff-cover" = "10.3.0"
