@@ -55,6 +55,20 @@ terraform 側の `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` が効くのは **provider
 
 - **`VAR= gcloud ...` の env 代入プレフィックスで昇格しない**。先頭トークンが `gcloud` でなくなり、permissions の deny/ask マッチャに当たらないまま走りうる（下記「変更系を env ランナーでラップしない」と同じ穴）。
 
+## 監査（何が記録され、何が鳴るか）
+
+記録は **Admin Activity ログ**が担う。常時有効・無効化不可で、既定シンクにより `_Required` バケット（保持 400 日・`locked` で変更不可・課金対象外）へ入る。**Data Access ログは有効化していない**ので、読み取りと impersonation のトークン発行（`GenerateAccessToken`）は記録されない。決定経緯と実測値は [ADR-0078](../../docs/adr/0078-audit-via-admin-activity-detect-only.md)。
+
+**呼び出し元は `principalEmail` ではなく delegation 側で見る**。正規ルートの変更は principal が SA になるため、人間や CI を突き止めるには `protoPayload.authenticationInfo.serviceAccountDelegationInfo[].principalSubject` を読む。ここに WIF の subject が入り、GitHub Actions ならリポジトリと environment、HCP Terraform なら workspace と `run_phase` まで分かる。
+
+```bash
+gcloud logging read 'log_id("cloudaudit.googleapis.com/activity")' --project=ptiringo-toy-box \
+  --limit=10 --freshness=7d \
+  --format='value(protoPayload.authenticationInfo.principalEmail,protoPayload.methodName)'
+```
+
+**アラートが鳴る条件は「Admin Activity の principal が SA ではない」**（`infra/modules/audit/`）。正規ルート（GitHub Actions の `deployer@` / HCP run の `tfc-service-account@`）はすべて SA なので鳴らない。鳴るのは **owner へ昇格しての直接変更**と **Console 操作**で、平時は無音なので鳴ったこと自体が信号になる。閲覧では鳴らない（Data Access 側のため）。通知先は HCP workspace の sensitive 変数 `audit_alert_email` で供給する。
+
 ## メンテナンス
 
 - 新しい変更系コマンド（別ツールや新サブコマンド）を使い始めたら、deny/ask 語彙へ追記する。read-only は allow に足してよい。`gsutil` / `bq` は現状未列挙なので、使い始めたら同様に追記する。
