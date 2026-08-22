@@ -20,10 +20,20 @@
 # 互換: macOS 標準の bash 3.2 で動くよう連想配列/mapfile を使わない（check-adr-numbering.sh と同じ）。
 set -euo pipefail
 
+# リポジトリ root へ移動してから検査する（check-adr-numbering.sh と同じ前提の機械的な担保）。
+# root 外から実行すると git ls-files が対象を欠いたまま「出力なし・exit 0」になり成功と区別が
+# つかず、git 管理外のディレクトリから実行すると git コマンドが失敗するだけで status=0 のまま
+# 抜けてしまう。set -e があるので非 git ディレクトリでは rev-parse の失敗でここで落ちる。
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
 status=0
 
 # 追跡下の .md だけを対象にする。gitignore された生成物（build/・node_modules/・
 # docs/superpowers/）は git が自然に除くので、除外リストを自前で持たなくて済む。
+# core.quotePath（既定 true）は非 ASCII パスを `"f-\346\227\245..."` のように 8 進エスケープで
+# クォートするため、無効化しないと日本語ファイル名の .md が awk で開けず無検査のまま素通りする
+# （fail-open。このリポジトリは日本語ファイル名のドキュメントが普通に増える）。
 while IFS= read -r file; do
   [ -n "$file" ] || continue
   dir=$(dirname "$file")
@@ -60,6 +70,6 @@ while IFS= read -r file; do
       }
     }
   ' "$file")
-done < <(git ls-files '*.md')
+done < <(git -c core.quotePath=false ls-files '*.md')
 
 exit "$status"
