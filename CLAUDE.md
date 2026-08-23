@@ -102,7 +102,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 ## Google Cloud 操作のガードレール
 
-Claude Code から GCP を触るときは、変更・削除・課金を伴う操作を deny（CI/HCP 専用）/ ask（確認強制）で抑え、ローカルは最小権限 viewer SA の impersonation で読み取りに限定する。強制の実体は `.claude/settings.json` の permissions で、語彙・手順は `.claude/rules/gcp-guardrails.md`、決定経緯は [ADR-0036](docs/adr/0036-gcp-operation-guardrails.md)。**変更系は正規ルート（アプリ deploy は GitHub Actions、infra apply は HCP Terraform run）に寄せる**。
+Claude Code から GCP を触るときは、変更・削除・課金を伴う操作を deny（CI/HCP 専用）/ ask（確認強制）で抑え、ローカルは最小権限 viewer SA の impersonation で読み取りに限定する。強制の実体は `.claude/settings.json` の permissions で、語彙・手順は `.claude/rules/gcp-guardrails.md`、決定経緯は [ADR-0036](docs/adr/0036-gcp-operation-guardrails.md)。**変更系は正規ルート（アプリ deploy は GitHub Actions、infra apply は HCP Terraform run）に寄せる**。予防をすり抜けた変更は事後に検知する（Admin Activity ログと、正規ルート外の変更を知らせるアラート。[ADR-0078](docs/adr/0078-audit-via-admin-activity-detect-only.md)）。
 
 ## インフラストラクチャ（Terraform）
 
