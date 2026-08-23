@@ -39,6 +39,18 @@ tfctl api "/plans/$plan" --jq '{add:.data.attributes."resource-additions", chang
 
 `planned_and_finished` + 期待どおりの add/change/destroy なら plan は健全。作成/変更されるリソース名の一覧が要るときは HCP UI の run ページ（`run status` の link）か run のログを見る。
 
+## 手順: PR の run を回し直す
+
+**`tfctl run start` では回し直せない**。`--help` が「creates a new plan and apply run with the **most recent configuration**」と明記しているとおり、対象は workspace の最新 configuration（＝ main の内容）で、PR ブランチではない。configuration version を指定するフラグも無い（`--plan-only` は「apply しない」を意味するだけで、対象を PR に変える機能ではない）。
+
+PR の configuration version のまま回し直すには、**HCP UI の run ページで "Retry this run" を押す**。
+
+```
+https://app.terraform.io/app/ptiringo-tech/workspaces/toy-box/runs/<run-id>
+```
+
+回し直しが要る典型は **新しい変数を足した PR**。変数を HCP workspace に登録する前に push すると plan が `No value for required variable` で errored になり、**その後に変数を登録しても run は自動では回り直さない**。retry するか、別の変更を新しいコミットとして push する（push すれば VCS 連携で新しい run が走る）。
+
 ## 手順: 差分の中身（どの属性が変わるのか）を見る
 
 `resource-changes` は件数、run のログ（`type: planned_change`）はリソース名までしか出ない。**どの属性が差分なのかは plan の JSON 出力で before/after を突き合わせる**。「毎回同じリソースが update される」の原因究明はここまで落とさないと分からない。
@@ -70,6 +82,7 @@ jq -n --slurpfile d d.json '$d[0].before as $b | $d[0].after as $a
 | run の状態（要約） | `tfctl run status <run-id>` |
 | plan の変更数 | `tfctl api "/plans/<plan-id>"`（`resource-additions` / `-changes` / `-destructions`） |
 | 差分の属性まで | `tfctl api "/plans/<plan-id>/json-output"` → `.resource_changes[].change.before/after`（変数値が平文で入る点に注意） |
+| PR の run を回し直す | HCP UI の "Retry this run"（`tfctl run start` は最新 configuration が対象で使えない） |
 
 ## Common Mistakes
 
@@ -78,3 +91,4 @@ jq -n --slurpfile d d.json '$d[0].before as $b | $d[0].after as $a
 - `search[commit]` / `page[size]` の `[` `]` を URL エンコードし忘れる（`%5B` / `%5D`）。
 - TLS エラー `OSStatus -26276` → tfctl が sandbox 外で実行されていない。`X Unauthorized for app.terraform.io` → `tfctl auth login` 未実施。
 - 「毎回 `1 to change` が消えない」を件数とリソース名だけ見て原因不明のままにする → `json-output` で属性まで落とす。設定に書いていない block を API が既定値付きで返しているだけ（apply しても state に書き戻されて収束しない永久差分）というのが典型で、既定値をそのまま HCL に明示すれば止まる。
+- `tfctl run start` で PR の plan を回し直そうとする → 対象は workspace の最新 configuration（= main）で、PR ブランチではない。UI の retry を使う。
