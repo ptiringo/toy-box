@@ -65,23 +65,27 @@ module "identity_platform" {
 
 # 課金の見張り（プロジェクト全体の月次予算アラート）。#700 / ADR-0074。
 # 止めるのは Cloud Run の spend cap（Console 手設定）で、ここは検知のみ。
-# billingbudgets API 有効化に依存させ、初回 apply の順序レースを避ける。
+# billingbudgets API 有効化に依存させ、初回 apply の順序レースを避ける。依存先は for_each 全体では
+# なく、このモジュールが実際に使う API のキーだけにする。
+# なお depends_on を持つモジュール内の data source は plan 時に読まれず apply へ延期されるため、
+# budget_filter.projects が unknown になり plan に update が出る（値は不変で実害なし。#834）。
 module "billing" {
   source = "./modules/billing"
 
   billing_account_id = var.billing_account_id
   monthly_amount_jpy = "3000"
 
-  depends_on = [google_project_service.project]
+  depends_on = [google_project_service.project["billingbudgets"]]
 }
 
 # 監査の検知（正規ルートを外れた変更操作のアラート）。#473 / ADR-0078。
 # 記録は Admin Activity ログが常時担うので、ここで足すのは「気づく手段」だけ。
-# monitoring API 有効化に依存させ、初回 apply の順序レースを避ける。
+# monitoring API 有効化に依存させ、初回 apply の順序レースを避ける。依存先は for_each 全体ではなく
+# 該当キーだけにする（billing と同じ方針）。
 module "audit" {
   source = "./modules/audit"
 
   alert_email = var.audit_alert_email
 
-  depends_on = [google_project_service.project]
+  depends_on = [google_project_service.project["monitoring"]]
 }
