@@ -153,7 +153,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 ### ゲートの考え方（ラチェット）
 
 - **excludes 反転でゲート対象を決める**: 全体をゲート対象とし、探索段階のパッケージだけを `variant("mature")` の `excludes` に列挙する。パッケージが成熟したら `excludes` から外す＝ゲート対象へ昇格。**外し忘れても「より厳しくなる」安全側**（includes 方式では追加忘れが「緩くなる」危険側だった）。
-- **カバレッジ単位は LINE と BRANCH の 2 ボーンド**。下限は反転後母集団の実測直下のキリ番（LINE 90% / BRANCH 80%）に固定した**手動ラチェット**。実測が上がったら手で下限を上げてよい。割ると `./gradlew check`（CI の `koverVerifyMature`）が失敗する。
+- **カバレッジ単位は LINE と BRANCH の 2 ボーンド**。下限は実測直下のキリ番（**LINE 95% / BRANCH 85%**。出所は `build.gradle.kts` の `minValue`）に固定した**手動ラチェット**。実測が上がったら手で下限を上げてよい（[#735](https://github.com/ptiringo/toy-box/issues/735) で 90% / 80% から引き上げ。そのときの実測は LINE 97.35% / BRANCH 90.36%）。割ると `./gradlew check`（CI の `koverVerifyMature`）が失敗する。
 - **自動ラチェット機構は持たない**（YAGNI）。手動で引き上げる。
 
 探索除外パッケージ（`build.gradle.kts` の `variant("mature")` の `excludes` が唯一の出所。ここは要約）:
@@ -210,7 +210,7 @@ CI（`api-tests.yml`）は test 後に `koverVerifyMature` でゲートを掛け
 
 `total` レポートで 0% に見える領域は、成熟させるときにテストを添える。優先度は実装の成熟度に従う:
 
-- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）。なお `infrastructure.*` は `excludes` に入れておらず**既にゲート母集団内**。未テスト分は集計に乗るが現状の LINE 90% / BRANCH 80% を満たしている（割り込んだらテストを添えること）。
+- `infrastructure.*`（JDBC リポジトリ）: `Jockey` は Testcontainers 契約テスト済み。残り集約（`BloodHorse` / `BreedingRegistration` / `BreedingResult`）は JDBC 実装＋契約テストが未整備で、移行に伴い InMemory を廃止する（JDBC 一本化。[ADR-0030](../../docs/adr/0030-jdbc-only-persistence-retire-inmemory.md) / #435）。なお `infrastructure.*` は `excludes` に入れておらず**既にゲート母集団内**。未テスト分は集計に乗るが現状の LINE 95% / BRANCH 85% を満たしている（割り込んだらテストを添えること）。
 - `domain.racing.service`（`confirmRaceResult`）: サービスだがテスト無し。`excludes` 在籍。
 - `domain.racing.model`（`race`）: 探索段階のモデル。`excludes` 在籍（`sakamichi` は #367、`tennis` は #677 でテストが揃いゲート対象へ昇格済み）。
 

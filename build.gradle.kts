@@ -237,15 +237,18 @@ kover {
                 onCheck = true
                 rule("成熟領域の行・分岐カバレッジ（リグレッション防止のラチェット）") {
                     bound {
-                        // 反転後母集団の実測 94.57% を 90 に固定したラチェット。
-                        minValue = 90
+                        // 実測 97.35%（3417/3510 行）を 95 に固定したラチェット（#735）。
+                        // 余裕 2.35pt ≒ 82 行。手動ラチェットのため、実測が上がったら手で上げる。
+                        minValue = 95
                         coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
                         aggregationForGroup =
                             kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
                     }
                     bound {
-                        // 反転後母集団の実測 84.91% を 80 に固定したラチェット。
-                        minValue = 80
+                        // 実測 90.36%（675/747 分岐）を 85 に固定したラチェット（#735）。
+                        // BRANCH は母集団が LINE の約 1/4.7 と小さく 1 分岐の重みが効くため、
+                        // LINE（2.35pt）より厚い 5.36pt ≒ 40 分岐ぶんの余裕を残す。
+                        minValue = 85
                         coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH
                         aggregationForGroup =
                             kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE

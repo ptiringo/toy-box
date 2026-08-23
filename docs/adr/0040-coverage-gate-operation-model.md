@@ -4,6 +4,8 @@
 - Date: 2026-06-30
 - Deciders: Matsui
 
+> 注: 下限の具体値はその後 **LINE 95% / BRANCH 85%** へ引き上げた（[#735](https://github.com/ptiringo/toy-box/issues/735)、実測 LINE 97.35% / BRANCH 90.36%）。本 ADR の「3. 閾値は手動ラチェットで維持する」に従った運用の一回であり、運用モデル自体は不変。以下の 90% / 80% と `excludes` の一覧は本 ADR 決定時点の値で、**現行値の出所は `build.gradle.kts`**（要約は `.claude/rules/testing.md`）。
+
 ## Context（背景・課題）
 
 [ADR-0006](0006-kover-over-jacoco.md) で Kover を採用し、「成熟パッケージのみ `includes` フィルタで絞ったゲート（`variant("mature")`）」を設けた。
