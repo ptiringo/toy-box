@@ -4,6 +4,8 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -25,10 +27,19 @@ import org.testcontainers.utility.DockerImageName
  * **DB の後始末も本クラスが担う**（#440 / ADR-0070）。コンテナはプロセス内で共有されるため、テストが書いた行は 明示的に消さない限り後続のテストへ漏れる。
  * [truncateAllTables] を `@BeforeEach` に置くことで、継承した時点で 必ず後始末が効き、テスト側が書き忘れうる余地を無くしている。`@Transactional`
  * によるロールバック分離は 採らない（トランザクション意味論を検証するテストが実コミットを要求するため適用範囲を 100% にできず、 隔離方式が二重化する。ADR-0070）。
+ *
+ * **並列実行からの隔離も本クラスが担う**（#690 / ADR-0079）。テストはクラス間並列で走るが、全テーブル TRUNCATE
+ * 方式は並行実行と両立しない（他スレッドのデータまで消す）。クラス注釈の `@Execution(SAME_THREAD)` が `@Inherited` で継承先すべてに効き、DB
+ * を触るテストだけを 1 スレッドへ閉じ込める。
  */
 // テストが継承して共有コンテナを得るための基底クラス。object 化すると継承できないため、
 // 「companion のユーティリティだけなら object にせよ」という detekt の指摘はここでは当たらない。
 @Suppress("UtilityClassWithPublicConstructor")
+// DB を触るテストを 1 スレッドへ閉じ込める（#690 / ADR-0079）。クラス間並列の下では、
+// [truncateAllTables] が共有コンテナの全テーブルを消す（ADR-0070）ため、並行して走る別の DB テストの
+// データまで消してしまう。@Execution は @Inherited なので、本クラスを継承するテストすべてに効く。
+// **この 1 行が DB テストの隔離を支えているので外さないこと。**
+@Execution(ExecutionMode.SAME_THREAD)
 abstract class PostgresContainerSupport {
     companion object {
         @JvmStatic

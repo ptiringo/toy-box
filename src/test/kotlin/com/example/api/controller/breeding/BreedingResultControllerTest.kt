@@ -44,6 +44,8 @@ import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -54,6 +56,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.assertj.MockMvcTester
 
+@Execution(ExecutionMode.SAME_THREAD)
 @WebMvcTest(BreedingResultController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class)

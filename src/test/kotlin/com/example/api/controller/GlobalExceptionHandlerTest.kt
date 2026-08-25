@@ -20,6 +20,8 @@ import io.mockk.every
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -35,6 +37,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
  *
  * 業務ルール違反ではない例外（リクエストボディ不正・想定外例外）が RFC 9457 形式で返ることを、 [JockeyController] を踏み台にして確認する。
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @WebMvcTest(JockeyController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class, RequestFingerprint::class)

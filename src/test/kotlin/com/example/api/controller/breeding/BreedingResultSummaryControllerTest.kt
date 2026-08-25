@@ -15,6 +15,8 @@ import io.mockk.every
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.HttpStatus
@@ -23,6 +25,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.assertj.MockMvcTester
 
+@Execution(ExecutionMode.SAME_THREAD)
 @WebMvcTest(BreedingResultSummaryController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @TestConstructor(autowireMode = AutowireMode.ALL)
