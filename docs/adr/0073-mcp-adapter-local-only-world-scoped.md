@@ -111,7 +111,8 @@ application 層には**新しいポートも新しい認可判断も足してい
   `variant("mature")` の includes に追加する」は **includes 方式時代の記述**であり、現行の excludes 反転方式
   （[ADR-0040](0040-coverage-gate-operation-model.md)）では探索段階のパッケージだけを列挙して残り全部を
   ゲートするため、`com.example.api.mcp` は列挙されておらず**既にゲート母集団に入る**。`mcp` を excludes へ
-  追加して逃げることはせず、LINE 90% / BRANCH 80% を満たす（slice 相当のテストで賄う）。
+  追加して逃げることはせず、`koverVerifyMature` の下限（現行値の出所は `build.gradle.kts`）を満たす
+  （slice 相当のテストで賄う）。
 - **本プロジェクト初の `@ConfigurationProperties` 利用になる。** `ApiApplication` に
   `@ConfigurationPropertiesScan` を足すとアプリ全体のスキャン方針を変えることになるため、`McpConfig` の
   `@EnableConfigurationProperties(McpProperties::class)` で局所的に有効化した。以後 `@ConfigurationProperties`

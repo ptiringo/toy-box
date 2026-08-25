@@ -4,6 +4,8 @@
 - Date: 2026-07-07
 - Deciders: Matsui
 
+> 注: 本 ADR が決めた差分ゲートの閾値（`--fail-under 90`）は現行も 90% で不変。一方、本文が引用する集約ゲート（`koverVerifyMature`）の **LINE 90% / BRANCH 80% は [ADR-0040](0040-coverage-gate-operation-model.md) 決定時点の値**で、その後 [#735](https://github.com/ptiringo/toy-box/issues/735) で **LINE 95% / BRANCH 85%** へ引き上げられた（**現行値の出所は `build.gradle.kts`**、要約は `.claude/rules/testing.md`）。したがって決定 2 の「`koverVerifyMature` の LINE 下限に揃えた」という関係は現在は成立していない（追従させるかは [#843](https://github.com/ptiringo/toy-box/issues/843) で判断する）。
+
 ## Context（背景・課題）
 
 [ADR-0040](0040-coverage-gate-operation-model.md) は「成熟領域全体の絶対水準」を守る集約ゲート（`koverVerifyMature`、LINE 90% / BRANCH 80%）を確立した一方、差分カバレッジ（patch coverage: PR で変更した行のカバレッジ）は別概念として #437 に委譲していた。
@@ -57,7 +59,7 @@ diff-cover に食わせる XML は `koverVerifyMature` と同じ `mature` varian
 
 ## 関連
 
-- [ADR-0040](0040-coverage-gate-operation-model.md): 集約ゲート（絶対水準・LINE 90% / BRANCH 80%）の運用モデル。本 ADR が差分カバレッジを委譲された先
+- [ADR-0040](0040-coverage-gate-operation-model.md): 集約ゲート（絶対水準・LINE / BRANCH の 2 ボーンド。現行値の出所は `build.gradle.kts`）の運用モデル。本 ADR が差分カバレッジを委譲された先
 - [ADR-0006](0006-kover-over-jacoco.md): Kover 採用の前提（本 ADR が入力とする XML レポートの生成元）
 - #437: 差分カバレッジ（patch coverage）の検討 Issue（本 ADR の決定対象）
 - #412: ADR-0040 に対応する実装 Issue（`mature` variant の excludes 反転を実装）
