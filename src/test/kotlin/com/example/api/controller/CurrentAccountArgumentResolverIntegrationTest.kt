@@ -9,6 +9,8 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController
  * `/api/test/current-account-probe` が生えてしまう。`@TestConfiguration` の nested class は Spring Boot の
  * `TestTypeExcludeFilter` が自動でコンポーネントスキャン対象から除外するため、明示 `@Import` した slice にしか現れない）。
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @WebMvcTest(ProbeControllerConfiguration.CurrentAccountProbeController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ProbeControllerConfiguration::class)

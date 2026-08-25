@@ -22,6 +22,8 @@ import io.mockk.every
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -44,6 +46,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
  * テスト（`JockeyControllerTest` / `BloodHorseControllerTest`）はいずれも本物の resolver をそのまま使い
  * `AccountRepository` だけをスタブする流儀のため、そちらに合わせた。
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @WebMvcTest(WorldController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class)

@@ -12,6 +12,8 @@ import com.github.michaelbull.result.getOrThrow
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -45,6 +47,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
  * `SecurityContextRepository` に頼る）はフィルタ無しでは効かないため使わない。代わりに
  * `MockHttpServletRequestBuilder.principal(Principal)` で `userPrincipal` を直接差し込む。
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @WebMvcTest(MeController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ClockConfiguration::class, ProvisionMeUseCase::class)

@@ -70,8 +70,8 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 
 - **distinct なコンテキスト構成を増やさない**。キャッシュは「同一の unique 構成」のときだけ再利用される（キーは classes / context customizers / active profiles / property sources 等の組合せ）。`@MockkBean` は context customizer を足してキーを分けるので**乱発しない**、`@Import` 構成は揃える、`@SpringBootTest(webEnvironment=...)` を不必要に散らさない。
 - **`@DirtiesContext` は原則使わない**（キャッシュを退避させ再構築を強いる）。状態リークは設計で断つ。
-- **テスト並列化（`maxParallelForks` / JUnit 5 の `junit.jupiter.execution.parallel`）は採らない**。フォークはキャッシュが JVM 単位のため逆効果、JVM 内並列は `@MockBean`/`@MockkBean` や共有状態を使うテストを Spring 公式が非推奨とする。加えて DB を触るテストの後始末（共有コンテナの全テーブル TRUNCATE。[ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）は JVM 内並列と両立しない（他スレッドのデータまで消す）。再評価は #690。
-- 速度を縮めたいときの効く順: ビルドキャッシュ/デーモン（[ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）→ コンテキスト構成の共通化（#817 で実施済み。下記）→ （将来）隔離を整えた上での並列化。
+- **テストは JVM 内のクラス間並列で走る**（[ADR-0079](../../docs/adr/0079-in-jvm-class-level-test-parallelism.md) / #690。下記）。ただし**`maxParallelForks`（プロセス並列）は採らない**。キャッシュが JVM 単位のため、フォークすると 16 個のコンテキスト構築が各 JVM で重複する（ADR-0015 当時 forks=1/2/4 で 42s/61s/97s と単調悪化）。
+- 速度を縮めたいときの効く順: ビルドキャッシュ/デーモン（[ADR-0015](../../docs/adr/0015-gradle-build-performance-tuning.md)）→ コンテキスト構成の共通化（#817 で実施済み。下記）→ クラス間並列（#690 で実施済み。下記）。
 
 ### web 環境を要する `@SpringBootTest` は 1 構成に揃える（崩すと -20.5% が消える）
 
@@ -80,7 +80,31 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 - `RestTestClient` も JWT も使わないクラス（`ApiApplicationTests` / `McpDisabledByDefaultTest`）が `@AutoConfigureRestTestClient` と `@Import` を持つのは、**キーを一致させるためだけ**。不自然に見えても外さない。
 - 引き換えに「本番の `issuer-uri` 設定から `JwtDecoder` Bean が生成される」ことを確かめるコンテキストが無くなっている（API E2E もブラウザ E2E も decoder を差し替えるため、リポジトリ全体で担保が無い）。この穴は #813 が引き取る。
 - **`@WebMvcTest` スライスの 11 個は削減対象にしない**。`controllers` 引数ごとに 1 コンテキストになるのはスライステストの機械的帰結で、束ねると「そのコントローラだけを載せる」意図が壊れる。
-- **効果は推論せず実測で確かめる**。実測では 18→17 個で -3.7〜-6.3%、17→16 個で -14.1% と、1 個あたりの効果が 2 倍以上違った（機序は未特定）。ローカルは初回コンテキスト構築の振れが大きく（同一構成で 17.5s / 36.5s、外れ値では `:test` が 74 分停止）効果より測定ノイズが大きいため、**CI（`workflow_dispatch` で 3 回）で測る**。
+- **効果は推論せず実測で確かめる**。実測では 18→17 個で -3.7〜-6.3%、17→16 個で -14.1% と、1 個あたりの効果が 2 倍以上違った（機序は未特定）。ローカルは初回コンテキスト構築の振れが大きく（同一構成で 17.5s / 36.5s、外れ値では `:test` が 74 分停止）効果より測定ノイズが大きいため、**CI（`workflow_dispatch` で 3 回）で測る**。ただし **3 回で足りるのはこの -20.5% 規模の効果に対してだけ**で、10% 前後を測るなら各 8 回が要る（後述「`:test` の速度を測り直すときは各 8 回」）。
+
+### クラス間並列（並列にしてはいけないテストは 2 種類だけ）
+
+テストは**クラス間だけ並列**で走る（クラス内のメソッドは逐次のまま）。設定の出所は `build.gradle.kts` の `tasks.withType<Test>` にある `junit.jupiter.execution.parallel.*` の 3 行で、決定経緯は [ADR-0079](../../docs/adr/0079-in-jvm-class-level-test-parallelism.md)（CI -11.5% / ローカル -13.3%）。
+
+並列にしてはいけないのは次の 2 種類だけで、どちらも `@Execution(ExecutionMode.SAME_THREAD)` で閉じる。
+
+| 対象 | 理由 | 書き手がすること |
+|---|---|---|
+| DB を触るテスト | 全テーブル TRUNCATE（[ADR-0070](../../docs/adr/0070-db-test-cleanup-via-truncate-not-transactional.md)）が並行実行と両立せず、他スレッドのデータまで消す | **何もしなくてよい**。`PostgresContainerSupport` のクラス注釈が `@Inherited` で継承先すべてに効く |
+| `@WebMvcTest` スライス | `@MockkBean`（`@MockBean` 機構）が Spring 公式「Parallel Test Execution」の非推奨条件に該当する | **クラスに `@Execution(SAME_THREAD)` を付ける** |
+
+- **`@WebMvcTest` を新しく足すときは `@Execution(SAME_THREAD)` を忘れないこと**。付け忘れは例外にならず、非推奨条件のまま静かに走って後から不安定さとして出る。`TestParallelismRulesTest.webMvcTestsRunInSameThread` が機械強制するので `check` で落ちる（注釈の有無だけでなく**値が `SAME_THREAD` であること**まで見る。`CONCURRENT` の明示も付け忘れと同じ結果になるため）。
+- **並列が効いていること自体を `ParallelExecutionProbeTest` が守る**。設定 3 行が消えても全テストは緑のまま通り速度が静かに戻るだけなので、2 クラスが互いの到達を待ち合わせ、逐次実行なら必ずタイムアウトして落ちるプローブを置いている。これが落ちたら、まず `build.gradle.kts` の並列設定を疑う。
+- **`@AnalyzeClasses`（ArchUnit）の規約テストは並列化されない**。ArchUnit 独自の TestEngine で動くため `junit.jupiter.execution.parallel.*`（Jupiter engine の設定）の対象外になる。並列化されるのは自前で `ClassFileImporter` を回すメタテストのほう。
+- **テストを並列で走らせると個々のクラスは遅くなる**（per-class 合計は約 2 倍）。それでも壁時計が縮むのは実行が重なるためで、per-class time を見て「遅くなった」と判断しないこと。
+
+### `:test` の速度を測り直すときは各 8 回（3 回では符号が反転する）
+
+10% 前後の効果は**各 3 回では判定できない**。#690 では最初の各 3 回で「+6.1% 遅い」、次の各 3 回で「-14.1% 速い」と符号が反転し、各 8 回に増やして初めて安定した（-11.5%, 並べ替え検定 p=0.030）。上記「効果は推論せず実測で確かめる」の CI 3 回という手順は -20.5% 規模の効果には足りたが、一般には足りないと考えること。
+
+- **ローカルでも測れる**。baseline と parallel を**交互に**回してペアで比べれば、ランナー状態のドリフトが打ち消せる（#690 では 8 ペア中 7 ペアで符号が揃い、符号検定 p=0.035）。ADR-0077 の「ローカルは計測に使えない」は、単発の実行を 3 回だけ比べる前提の話。
+- **初回の実行は捨てる**（ウォームアップで 1.3〜1.5 倍遅い）。外れ値（#818 の 400 秒級ブロック）を引いた回も別扱いにする。
+- 壁時計は `--profile` レポートか、`:cleanTest :test --no-build-cache` を挟んだ前後の時刻で測る。`BUILD SUCCESSFUL in Xs` は compile 等を含むため使えない。
 
 ## E2E（ブラックボックス API テスト・ゲート外）
 

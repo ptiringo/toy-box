@@ -108,11 +108,24 @@ tasks.withType<Test> {
     // （42s→97s @ forks=4）。コンテキストキャッシュ統計の実測では distinct な ApplicationContext は
     // 16 個・ヒット率 99.7%（hit 4860 / miss 16）で、:test の時間は「一度きりの 16 コンテキスト構築 +
     // JVM ウォームアップ」が支配的。Spring のキャッシュは JVM 単位のためフォークすると 16 構築が
-    // 各 JVM で重複し JVM 起動も N 倍になる。JVM 内スレッド並列も @MockkBean(springmockk＝@MockBean 機構)が
-    // Spring 公式「Parallel Test Execution」の非推奨条件に該当するため不可。加えて DB を触るテストの
-    // 後始末（共有コンテナの全テーブル TRUNCATE。ADR-0070）が JVM 内並列と両立しない。
+    // 各 JVM で重複し JVM 起動も N 倍になる。
     // 詳細・根拠は ADR-0015 / #349、コンテキストを 18 → 16 に畳んだ経緯は ADR-0077 / #817。
-    // 並列化の再評価は #690（#338 はクローズ済みで受け皿がここへ移っている）。
+    //
+    // 一方 **JVM 内のクラス間並列は採用する**（#690 / ADR-0079）。CI 実測（各 8 回）で :test が
+    // 74.0s → 65.5s（-11.5%, 並べ替え検定 p=0.030）、ローカル（8 論理コア・8 ペア）でも 7/8 のペアで
+    // 速く 79.0s → 68.5s（-13.3%, 符号検定 p=0.035）。コンテキストキャッシュは並列でも劣化しない
+    // （baseline / parallel とも size=16 / hit=4860 / miss=16 / failure=0 で完全一致）。
+    //   - mode.default=same_thread        … クラス内のメソッドは逐次のまま（既存テストの前提を崩さない）
+    //   - mode.classes.default=concurrent … クラス間だけ並列にする
+    // 並列にしないテストは @Execution(SAME_THREAD) で個別に閉じる。対象は 2 つ:
+    //   - DB を触るテスト … 全テーブル TRUNCATE（ADR-0070）が並行実行と両立しないため。
+    //     PostgresContainerSupport のクラス注釈が @Inherited で継承先すべてに効く。
+    //   - @WebMvcTest スライス … @MockkBean（springmockk＝@MockBean 機構）が Spring 公式
+    //     「Parallel Test Execution」の非推奨条件に該当するため。付け忘れは
+    //     ControllerContractRulesTest.webMvcTestsRunInSameThread が機械強制する。
+    systemProperty("junit.jupiter.execution.parallel.enabled", "true")
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "same_thread")
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "concurrent")
     // ユビキタス言語カタログの再生成フラグ（-DubiquitousLanguage.update=true）をフォークした JVM へ引き渡す。
     // UbiquitousLanguageCatalogTest が docs/ubiquitous-language.md の自動生成ブロックを書き戻すために参照する。
     System.getProperty("ubiquitousLanguage.update")?.let {
