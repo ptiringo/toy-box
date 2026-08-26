@@ -179,6 +179,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 - **excludes 反転でゲート対象を決める**: 全体をゲート対象とし、探索段階のパッケージだけを `variant("mature")` の `excludes` に列挙する。パッケージが成熟したら `excludes` から外す＝ゲート対象へ昇格。**外し忘れても「より厳しくなる」安全側**（includes 方式では追加忘れが「緩くなる」危険側だった）。
 - **カバレッジ単位は LINE と BRANCH の 2 ボーンド**。下限は実測直下のキリ番（**LINE 95% / BRANCH 85%**。出所は `build.gradle.kts` の `minValue`）に固定した**手動ラチェット**。実測が上がったら手で下限を上げてよい（[#735](https://github.com/ptiringo/toy-box/issues/735) で 90% / 80% から引き上げ。そのときの実測は LINE 97.35% / BRANCH 90.36%）。割ると `./gradlew check`（CI の `koverVerifyMature`）が失敗する。
 - **自動ラチェット機構は持たない**（YAGNI）。手動で引き上げる。
+- **引き上げるとき差分ゲート（diff-cover の `--fail-under`）は触らない**。差分ゲートの閾値は集約ゲートの下限に追従させず独立に決めると [#843](https://github.com/ptiringo/toy-box/issues/843) で確定した（理由は [ADR-0055](../../docs/adr/0055-patch-coverage-diff-cover-gate.md) 決定 2-1。母集団が PR ごとに数行〜百数十行しかなく、ラチェットの「実測直下に固定」という論理が成立しない）。
 
 探索除外パッケージ（`build.gradle.kts` の `variant("mature")` の `excludes` が唯一の出所。ここは要約）:
 `domain.racing.model.race` / `domain.racing.service` / `e2e`（E2E テスト基盤）/ `dbdoc`（tbls ドキュメント生成基盤）/ `replay`（帰納的検証ハーネス）。
@@ -191,7 +192,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 
 集約ゲート（成熟領域全体の絶対水準）を補完し、PR で変更した行のカバレッジを個別に検証するのが差分ゲートである（[ADR-0055](../../docs/adr/0055-patch-coverage-diff-cover-gate.md)）。母集団が厚い集約ゲートだけでは新規変更行のテスト漏れが薄まって見逃されるため、変更行そのものに閾値を課す。
 
-- **[diff-cover](https://github.com/Bachmann1234/diff-cover)**（pipx, 10.3.0, mise 管理）で変更行カバレッジを算出し、`--fail-under 90` で 90% 未満の PR を落とす。
+- **[diff-cover](https://github.com/Bachmann1234/diff-cover)**（pipx, 10.3.0, mise 管理）で変更行カバレッジを算出し、`--fail-under 90` で 90% 未満の PR を落とす（出所は `.github/workflows/api-tests.yml`。集約ゲートの LINE 下限とは**独立**の値で、ラチェットに連動しない）。
 - 入力は `koverVerifyMature` と同じ `mature` variant の XML（`build/reports/kover/reportMature.xml`）。探索領域（`excludes` denylist、出所は `build.gradle.kts` に一元化）は mature XML の時点で除外済みのため、差分ゲートにも自動で継承される。
 - CI（`api-tests.yml`）は **PR ジョブ限定**で実行する（`github.event_name == 'pull_request'`）。main への push では走らせない（push でも走る `koverVerifyMature` が最終防波堤）。
 
