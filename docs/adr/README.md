@@ -89,3 +89,4 @@
 | [0077](0077-consolidate-web-test-contexts-trading-jwt-decoder-assurance.md) | web 環境を要するテストコンテキストを 1 つに畳み、本番 JwtDecoder Bean 生成の担保を手放す | Accepted |
 | [0078](0078-audit-via-admin-activity-detect-only.md) | GCP の監査は Admin Activity ログに委ね、正規ルート外の変更検知だけを足す | Accepted |
 | [0079](0079-in-jvm-class-level-test-parallelism.md) | テストを JVM 内のクラス間並列で走らせる（DB / WebMvc は逐次のまま） | Accepted |
+| [0080](0080-docker-guard-on-gradle-test-tasks.md) | Docker 到達性ガードを Gradle の Test タスクへ広げる | Accepted |

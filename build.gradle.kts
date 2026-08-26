@@ -93,8 +93,53 @@ kotlin {
     }
 }
 
+// テストを起動する前に Docker の到達性を確かめるプローブ（#847 / ADR-0071）。
+// 設定フェーズで値を確定させ、タスクアクションからは project を触らない（configuration cache は
+// problems=fail で運用しているため、doFirst の中で project を参照すると設定フェーズごと落ちる）。
+val dockerProbeScript =
+    layout.projectDirectory.file("scripts/check-docker-available.sh").asFile.absolutePath
+// CI には Docker が必ずあるので、プローブは純粋な追加コストにしかならない。ローカル専用にする。
+val runningOnCi = providers.environmentVariable("CI").isPresent
+
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Docker 不在ならテストを 1 件も走らせずに落とす（#847）。
+    //
+    // Testcontainers に到達性が無いと、共有コンテナを起動する PostgresContainerSupport の静的
+    // 初期化が ExceptionInInitializerError で落ち、以降その基底クラスに触る全テストが
+    // NoClassDefFoundError を投げ続ける。実測（#690 の作業中）では 172 件の失敗のうち真因は 1 件で、
+    // 失敗一覧の先頭に出るとも限らないため「並列化でテストが壊れた」と誤診しかけた。原因 1 つに
+    // 対して失敗 1 つを返すのがこのガードの役割で、ゲートの範囲は変えない。
+    //
+    // pre-push では lefthook の docker-available（ADR-0071）と二重に走るが、これは許容する。
+    // 環境変数で片方を抑止する仕組みは置かない —— 誤って抑止されたときに「ガードが効いていないのに
+    // 気づけない」危険側へ転ぶため（.claude/rules/gates.md の「忘れても安全側」）。lefthook 側を
+    // 残すのは、Gradle の起動と設定フェーズ（worktree では --no-daemon）を待たずに数秒で落ちること
+    // 自体が ADR-0071 の価値だから。重複するのは数秒で、全テストを回す pre-push の中では無視できる。
+    if (!runningOnCi) {
+        // スクリプトのパスをローカルへ束縛してから doFirst に渡す。ラムダの中でトップレベルの
+        // `dockerProbeScript` を直に読むと、Kotlin DSL ではビルドスクリプトオブジェクトごと
+        // キャプチャされ、configuration cache が「cannot serialize Gradle script object
+        // references」で落ちる（実測）。
+        val probeScript = dockerProbeScript
+        doFirst {
+            val probe =
+                ProcessBuilder(probeScript)
+                    // 出力は inheritIO せずパイプで受ける。タスクアクションは Gradle デーモンの
+                    // プロセス内で走るため、inheritIO ではデーモンの stdout へ流れて呼び出した
+                    // 端末には何も出ない（実測。「詳細は上のメッセージ」と言いながら本文が消える）。
+                    .redirectErrorStream(true)
+                    // 対処の案内を Gradle 経路向けに切り替える（pre-push 向けの LEFTHOOK_EXCLUDE の
+                    // 案内はここでは的外れになる）。
+                    .apply { environment()["DOCKER_PROBE_CALLER"] = "gradle" }
+                    .start()
+            // waitFor より先に読み切る（パイプバッファが埋まるとプローブ側が書き込みで止まる）。
+            val output = probe.inputStream.bufferedReader().use { it.readText() }
+            if (probe.waitFor() != 0) {
+                throw GradleException("テストを起動しませんでした。\n\n$output")
+            }
+        }
+    }
     // テスト JVM の CDS（Class Data Sharing）を明示的に切る。
     // Kover の JVM agent は MANIFEST の `Boot-Class-Path` で自分自身をブートストラップクラスパスへ
     // 追記するため、JDK 既定の CDS アーカイブ（lib/server/classes.jsa）が存在する環境では
