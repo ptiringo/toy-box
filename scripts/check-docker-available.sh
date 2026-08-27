@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
-# pre-push で全テストを起動する前に Docker の到達性を確認し、到達できなければ
-# 理由と対処を明示して即座に失敗させる（ADR-0071 / #679）。
+# テストを起動する前に Docker の到達性を確認し、到達できなければ理由と対処を明示して即座に
+# 失敗させる（ADR-0071 / #679。射程を Gradle の Test タスクへ広げたのは #847）。
 #
-# 背景: pre-push の `./gradlew test` は Testcontainers（PostgreSQL）に依存するため Docker
-# デーモンを要求する。デーモンが不調だと Testcontainers が接続を試み続けてテストが長時間
-# ハングし、端末上は「push が無反応」に見える。ネットワークやリモートを疑って切り分けに
-# 時間を取られ、最後は `--no-verify`（全フック迂回）へ逃げることになる。ゲートは残したまま、
-# 失敗を「速く・分かる形」に変えるのがこのスクリプトの役割。
+# 呼び出し元は 2 つあり、どちらも判定ロジックは同じ。失敗時の対処案内だけを
+# DOCKER_PROBE_CALLER で出し分ける（迂回の手順が経路ごとに違うため）。
+#
+#   - pre-push（lefthook の docker-available コマンド。既定）
+#     `./gradlew test` は Testcontainers（PostgreSQL）に依存するため Docker デーモンを要求する。
+#     デーモンが不調だと Testcontainers が接続を試み続けてテストが長時間ハングし、端末上は
+#     「push が無反応」に見える。ネットワークやリモートを疑って切り分けに時間を取られ、最後は
+#     `--no-verify`（全フック迂回）へ逃げることになる。
+#   - gradle（build.gradle.kts の tasks.withType<Test> の doFirst）
+#     Docker 不在のまま test / check を直接叩くと、共有コンテナの静的初期化
+#     （PostgresContainerSupport）が失敗し、そこから NoClassDefFoundError が連鎖して 172 件の
+#     テスト失敗になる。真因は ExceptionInInitializerError の 1 件だけで、失敗一覧の先頭に
+#     出るとも限らないため埋もれる（#847 で実測）。
+#
+# どちらもゲートの範囲は変えない。失敗を「速く・分かる形」に変えるのがこのスクリプトの役割。
 #
 # 使い方:
 #   scripts/check-docker-available.sh
 #   - 環境変数 DOCKER_PROBE_TIMEOUT_SECONDS で打ち切り秒数を上書きできる（既定 15）。
+#   - 環境変数 DOCKER_PROBE_CALLER で対処案内を切り替える（pre-push（既定）/ gradle）。
 # 終了コード: Docker に到達できれば 0、できなければ 1。
 #
 # 判定は `docker info` の成否だけで行い、`docker ps` 等は重ねない。実測した障害
@@ -23,25 +34,46 @@
 set -euo pipefail
 
 TIMEOUT_SECONDS="${DOCKER_PROBE_TIMEOUT_SECONDS:-15}"
+CALLER="${DOCKER_PROBE_CALLER:-pre-push}"
 
-# 到達不能の理由を示した上で、対処の選択肢（復旧・確認・ゲートを外して push）を出して落とす。
-fail() {
+# 到達不能の理由と、どちらの経路でも共通する対処（復旧・確認）を出す。
+fail_common() {
   cat >&2 <<EOF
 NG: Docker に到達できません（$1）。
 
-pre-push の全テスト（./gradlew test）は Testcontainers（PostgreSQL）を使うため Docker デーモンが
-要ります。テストを起動すると接続の再試行で長時間ハングし「push が無反応」に見えるため、起動前に
-打ち切りました。
+$2
 
 対処:
   1. Docker を起動する（Docker Desktop / colima / dockerd 等）。起動しているつもりなら再起動する
      （バックエンドが不調で API が 500 を返し続けることがある）。
   2. \`docker info\` を手で叩いて出力を確認する。
+EOF
+}
+
+# 経路ごとに違うのは 3 番目（今すぐ先へ進みたいときの逃げ道）だけ。
+fail() {
+  case "$CALLER" in
+    gradle)
+      fail_common "$1" "このプロジェクトのテストは Testcontainers（PostgreSQL）で本番ターゲットの DB を用意するため Docker
+デーモンが要ります。このまま起動すると共有コンテナの静的初期化が失敗し、原因を示さないテスト失敗が
+大量に出て真因が埋もれるため（#847）、テストを 1 件も走らせずに打ち切りました。"
+      cat >&2 <<EOF
+  3. Docker 不要なテストだけを回す運用は用意していません（ADR-0071。穴が空くのが永続化契約テスト
+     という最も守りたい場所になるため）。Docker を復旧してから実行し直してください。
+EOF
+      ;;
+    *)
+      fail_common "$1" "pre-push の全テスト（./gradlew test）は Testcontainers（PostgreSQL）を使うため Docker デーモンが
+要ります。テストを起動すると接続の再試行で長時間ハングし「push が無反応」に見えるため、起動前に
+打ち切りました。"
+      cat >&2 <<EOF
   3. どうしても今 push したいなら、テストゲートだけ外して push する:
        LEFTHOOK_EXCLUDE=docker-available,full-test git push
      （pre-push の他フックは残る。\`--no-verify\` は全フックを飛ばすので最後の手段）。
      同じテストは CI（api-tests.yml）でも走るため、壊れたまま push すれば CI が検出する。
 EOF
+      ;;
+  esac
   exit 1
 }
 

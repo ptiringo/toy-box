@@ -83,5 +83,11 @@ Error）になり、この事象を実際に踏んだ。`git push` が 2 分待�
   ガードの守備範囲は「Docker に到達できない」ことに限る。
 - 成功パスでも完了検知の粒度（1 秒）ぶんの待ちが乗る。全テストを回す pre-push の中では無視できる。
 - 結論（守るべきルール）は `.claude/rules/testing.md` の「ローカルゲートと Docker」に置いた。
-- **関連 ADR**: [ADR-0056](0056-drop-karate-native-resttestclient-e2e.md)（何をゲート外へ切り出すかの
-  線引き）、[ADR-0040](0040-coverage-gate-operation-model.md)（「忘れても安全側」を採る判断基準）。
+- **本 ADR のガードは pre-push 限定である**。手で `./gradlew test` / `check` を叩く経路は素通りし、
+  そこでは 172 件のテスト失敗に真因 1 件が埋もれる（#847 で実測）。この射程は
+  [ADR-0080](0080-docker-guard-on-gradle-test-tasks.md) が Gradle の `Test` タスクへ広げた
+  （本 ADR の決定自体は有効なまま）。
+- **関連 ADR**: [ADR-0080](0080-docker-guard-on-gradle-test-tasks.md)（本 ADR の射程を Gradle の
+  `Test` タスクへ広げた決定）、[ADR-0056](0056-drop-karate-native-resttestclient-e2e.md)（何をゲート外へ
+  切り出すかの線引き）、[ADR-0040](0040-coverage-gate-operation-model.md)（「忘れても安全側」を採る
+  判断基準）。

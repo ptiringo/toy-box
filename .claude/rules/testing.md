@@ -57,12 +57,21 @@ Testcontainers の PostgreSQL はプロセス内で共有されるため、テ�
 
 ## ローカルゲートと Docker
 
-pre-push（lefthook の `full-test`）は `./gradlew test` を丸ごと回す。**Testcontainers 依存テストも対象のまま**で、Docker 不要なテストだけを切り出す運用は採らない（[ADR-0071](../../docs/adr/0071-pre-push-docker-fail-fast-guard.md)。穴が空くのが永続化契約テストという最も守りたい場所になること、`@Tag` の付け忘れが危険側に転ぶことが理由）。したがって **push には Docker が要る**。
+pre-push（lefthook の `full-test`）は `./gradlew test` を丸ごと回す。**Testcontainers 依存テストも対象のまま**で、Docker 不要なテストだけを切り出す運用は採らない（[ADR-0071](../../docs/adr/0071-pre-push-docker-fail-fast-guard.md)。穴が空くのが永続化契約テストという最も守りたい場所になること、`@Tag` の付け忘れが危険側に転ぶことが理由）。したがって **push にも `test` / `check` にも Docker が要る**。
 
-- 要るのは **`.kt` / `.kts` / `.java` を含む push のとき**だけ（両コマンドの `glob`）。ドキュメントや設定だけの push はゲートごとスキップされ、Docker を落としていても通る。glob を当てる対象は `scripts/list-push-target-files.sh` が供給する（lefthook 既定の `{push_files}` は worktree で比較対象を取り違え、`.md` だけの push でもゲートが起動していた。#804）。
-- pre-push の先頭で `scripts/check-docker-available.sh` が Docker 到達性を確認し、駄目なら理由と対処を出して即座に落とす（`piped: true` で `full-test` は走らない）。ハングして「push が無反応」に見える状態を潰すためのガードで、ゲートの範囲は変えない。
+**Docker に到達できなければテストは 1 件も走らずに落ちる**。判定は `scripts/check-docker-available.sh` に一本化され、呼び出し口が 2 つある。
+
+- **pre-push の先頭**（lefthook の `docker-available`。`piped: true` で `full-test` は走らない）。ハングして「push が無反応」に見える状態を潰すためのガード（[ADR-0071](../../docs/adr/0071-pre-push-docker-fail-fast-guard.md)）。
+- **Gradle の全 `Test` タスク**（`test` / `e2eTest` / `replay`）の `doFirst`。手で `./gradlew test` / `check` を叩く経路を守る（#847）。無いと `PostgresContainerSupport` の静的初期化が `ExceptionInInitializerError` で落ち、そこから `NoClassDefFoundError` が連鎖して**真因 1 件が 172 件の失敗に埋もれる**（#690 の作業中に実測。「並列化でテストが壊れた」と誤診しかけた）。
+- **CI では Gradle 側のプローブは走らない**（環境変数 `CI` で分岐）。CI には Docker が必ずあるため純粋な追加コストにしかならない。lefthook 側は CI で動かないので分岐は要らない。
+- **pre-push では両方が走る（二重）**。片方を抑止する環境変数は置かない —— 誤って抑止されたときに「ガードが効いていないのに気づけない」危険側へ転ぶため（[gates.md](gates.md) の「忘れても安全側」）。重複は数秒で、全テストを回す pre-push の中では無視できる。
+
+その他:
+
+- pre-push でゲートが要るのは **`.kt` / `.kts` / `.java` を含む push のとき**だけ（両コマンドの `glob`）。ドキュメントや設定だけの push はゲートごとスキップされ、Docker を落としていても通る。glob を当てる対象は `scripts/list-push-target-files.sh` が供給する（lefthook 既定の `{push_files}` は worktree で比較対象を取り違え、`.md` だけの push でもゲートが起動していた。#804）。**Gradle 側には glob に相当する絞り込みが無い**（`Test` タスクが実行される時点で Docker は必ず要るため）。
 - 判定は `docker info` の成否のみ。**Docker は生きているが Testcontainers だけ失敗する**ケース（イメージの pull 不可・リソース枯渇等）はガードを素通りし、従来どおりテストの失敗として出る。
-- Docker が復旧しないまま push したいときは **`LEFTHOOK_EXCLUDE=docker-available,full-test git push`**（`--no-verify` は gitleaks 等まで飛ばすので最後の手段）。同じテストは CI（`api-tests.yml`）で走る。
+- Docker が復旧しないまま push したいときは **`LEFTHOOK_EXCLUDE=docker-available,full-test git push`**（`--no-verify` は gitleaks 等まで飛ばすので最後の手段）。同じテストは CI（`api-tests.yml`）で走る。**`test` / `check` 側に同種の逃げ道は無い**（Docker を復旧してから実行し直す）。
+- ガードの動作を確かめたいときは Docker を落とさずに `DOCKER_HOST=tcp://127.0.0.1:1` を被せればよい（`docker info` が接続拒否で非ゼロになる）。
 
 ## テスト実行性能（コンテキストキャッシュ優先・並列化しない）
 
