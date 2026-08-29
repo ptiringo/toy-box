@@ -1,3 +1,8 @@
+# provider に設定されたプロジェクト。billing の budget_filter が projects/<project_number> 形式を
+# 要求するため、番号をハードコードせずここで引いて渡す。depends_on を持つモジュールの内側に置くと
+# plan 時に読まれず apply へ延期され、plan のたびに update が出るため、ルートで宣言する（#834）。
+data "google_project" "current" {}
+
 resource "google_project_service" "project" {
   for_each = toset([
     "artifactregistry",
@@ -67,13 +72,12 @@ module "identity_platform" {
 # 止めるのは Cloud Run の spend cap（Console 手設定）で、ここは検知のみ。
 # billingbudgets API 有効化に依存させ、初回 apply の順序レースを避ける。依存先は for_each 全体では
 # なく、このモジュールが実際に使う API のキーだけにする。
-# なお depends_on を持つモジュール内の data source は plan 時に読まれず apply へ延期されるため、
-# budget_filter.projects が unknown になり plan に update が出る（値は不変で実害なし。#834）。
 module "billing" {
   source = "./modules/billing"
 
   billing_account_id = var.billing_account_id
   monthly_amount_jpy = "3000"
+  project_number     = data.google_project.current.number
 
   depends_on = [google_project_service.project["billingbudgets"]]
 }
