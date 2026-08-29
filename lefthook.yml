@@ -144,6 +144,22 @@ pre-commit:
       run: scripts/check-markdown-links.sh
       tags: lint
 
+    # mise.lock の http バックエンドツールの健全性チェック（#762）。
+    # `mise install` は、触ってすらいないツールの lock を書き換える。ツール名を指定した
+    # install は http:kotlin-lsp を 2 エントリへ割り、引数なしの install（`mise bootstrap`
+    # が流す実体）は逆に platform の checksum / URL を丸ごと落とす。後者が main に入ると、
+    # 欠けた platform で `mise install --locked` が解決できなくなる（#584 と同型）。
+    # 壊れるのは「触っていないツール」の側なので {staged_files} は渡さず常に全件を検査する
+    # （glob は発火の条件だけを絞る役。adr-numbering / markdown-links と同じ形）。
+    # 素の bash なのでコミットは実質重くならない。
+    mise-lock-platforms:
+      glob:
+        - "mise.toml"
+        - "mise.lock"
+        - "scripts/check-mise-lock-platforms.sh"
+      run: scripts/check-mise-lock-platforms.sh
+      tags: lint
+
 pre-push:
   # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
   piped: true

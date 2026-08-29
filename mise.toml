@@ -85,7 +85,9 @@ bin = "tfctl"
 # checksum は公式 SHA256SUMS（releases.hashicorp.com/tfctl/<version>/tfctl_<version>_SHA256SUMS）の値を固定する。
 # http バックエンドは aqua/ubi と異なり mise.lock に per-platform SHA を埋めないため、ここで明示して整合性を担保する。
 # バージョン更新時は version と 4 つの checksum を SHA256SUMS から更新すること。mise.lock 側は
-# `mise install` しても自ホスト分しか書き換わらないため、6 エントリ（linux の -musl 派生を含む）を手で揃える。
+# `mise install` しても自ホスト分しか書き換わらないため、6 エントリ（linux の -musl 派生を含む）を
+# `mise lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64 "http:tfctl"`
+# で揃える（platform 間で options が揃っているツールなので、このコマンドは冪等に働く。#762 で実測）。
 [tools."http:tfctl".platforms.macos-x64]
 url = "https://releases.hashicorp.com/tfctl/{{version}}/tfctl_{{version}}_darwin_amd64.zip"
 checksum = "sha256:19786ebddb3cbd922402d21577e85842385910a666e62b1f9b0de46520c527d7"
@@ -110,12 +112,35 @@ checksum = "sha256:5f2caf7900b8f43dd72f390b992bafceab4ae85bbc58b60325bb1888ef9a0
 # 供給経路: JetBrains 公式配布は download-cdn.jetbrains.com（GitHub Releases に資産なし → ubi / aqua 不可、
 # 公式 brew tap は macOS 限定）。クロスプラットフォーム再現性を保つため tfctl と同様に http バックエンドで
 # 直接指す。mac は `.sit`（実体は zip なので `format = "zip"` で明示）、Linux は `.tar.gz`。
-# 版は JetBrains ビルド番号（例 262.8190.0）。更新時は version と 4 checksum を差し替える。
+# 版は JetBrains ビルド番号（例 262.8190.0）。更新の手順は下の「バージョン更新時」を参照。
 #
 # checksum は公式 <asset>.sha256（同 URL に `.sha256` を付けたファイル）の値を固定する。http バックエンドは
 # aqua / ubi と異なり mise.lock に per-platform SHA を埋めないため、ここで明示して整合性を担保する。
 # strip_components=1 で version 付きトップディレクトリ（kotlin-server-<version>/）を剥がし、その直下の
 # ランチャ `kotlin-lsp.sh` を rename_exe でコマンド名 `kotlin-lsp` として PATH に出す。
+#
+# **`format = "zip"` は外せない**（#762 で実測）。`.sit` は実体こそ zip だが mise は拡張子から
+# それを推論しない。指定を外して再インストールすると、mise はアーカイブを展開せず 389MB の `.sit`
+# をそのまま `kotlin-lsp` にリネームしたうえで「✓ installed」と表示する。エラーは出ないので、
+# 壊れたバイナリが無言で PATH に載る。JetBrains は macOS 用の `.zip` を配布していない（404）ので、
+# 配布形式を揃えて回避する道も無い。
+#
+# この「macOS だけ options が違う」状態が mise.lock を汚す。lock の options はツール単位
+# （[tools.<tool>.options]）でしか表現できないため、mise は 1 エントリに収められず、`mise install`
+# のたびに lock を書き換える。これは upstream で意図された挙動（jdx/mise#10999）なので待っても
+# 直らない。壊れ方は 2 通り（mise 2026.8.12 で実測）:
+#   - ツール名を指定した install → macOS 分が別エントリへ切り出され、エントリが 2 つになる
+#   - 引数なしの install（`mise bootstrap` の実体）→ 逆に platform の checksum / URL が丸ごと消える
+# lock の正は「エントリ 1 つ・mise.toml が宣言する platform が全部載っている」状態とし、
+# `mise install` の後に出た lock の差分は `git checkout -- mise.lock` で捨てる。捨て忘れは
+# scripts/check-mise-lock-platforms.sh が pre-commit と CI で止める。
+# なお `mise lock --upgrade`（lockfile_version = 1）でもこの分裂は解消しない（実測）。
+#
+# バージョン更新時は version と 4 checksum を差し替えたうえで、
+# `mise lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64 "http:kotlin-lsp"`
+# で全 platform の checksum / URL を取得する（自ホスト分しか書き換わらない install と違い、
+# このコマンドは 6 platform 分を揃えられる）。出力は上記のとおり 2 エントリになるので、
+# 1 エントリへ手でまとめてからコミットする。
 [tools."http:kotlin-lsp"]
 version = "262.8190.0"
 strip_components = 1

@@ -1,0 +1,40 @@
+# mise.lock 健全性チェックワークフロー
+#
+# 目的: mise.lock の http バックエンドツールが壊れたまま main へ入るのを止める（#762）。
+# `mise install` は、触ってすらいないツールの lock を書き換える。ツール名を指定した install は
+# http:kotlin-lsp を 2 エントリへ割り、引数なしの install（`mise bootstrap` が流す実体）は逆に
+# platform の checksum / URL を丸ごと落とす。後者が main に入ると、欠けた platform で
+# `mise install --locked` が解決できなくなる（#584 と同型）。機序と実測はスクリプト冒頭に書いてある。
+#
+# lefthook の pre-commit にも同じ検査を置いているが、`--no-verify` と worktree の hook sync 漏れ
+# （#807）で抜けるため、ここを backstop にする。lock を書き換えるのはローカルの mise だけなので、
+# 事後検知（push: main）は載せず PR で止めるだけにしている。
+
+name: Mise Lock Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "mise.toml"
+      - "mise.lock"
+      - "scripts/check-mise-lock-platforms.sh"
+  workflow_dispatch:
+
+jobs:
+  mise-lock-check:
+    runs-on: ubuntu-latest
+    name: Mise Lock Platform Check
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 素の bash だけで動くのでツールのインストールは要らない（mise のセットアップも不要）。
+      - name: mise.lock platform check
+        run: scripts/check-mise-lock-platforms.sh
