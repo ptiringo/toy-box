@@ -91,4 +91,5 @@ jq -n --slurpfile d d.json '$d[0].before as $b | $d[0].after as $a
 - `search[commit]` / `page[size]` の `[` `]` を URL エンコードし忘れる（`%5B` / `%5D`）。
 - TLS エラー `OSStatus -26276` → tfctl が sandbox 外で実行されていない。`X Unauthorized for app.terraform.io` → `tfctl auth login` 未実施。
 - 「毎回 `1 to change` が消えない」を件数とリソース名だけ見て原因不明のままにする → `json-output` で属性まで落とす。設定に書いていない block を API が既定値付きで返しているだけ（apply しても state に書き戻されて収束しない永久差分）というのが典型で、既定値をそのまま HCL に明示すれば止まる。
+- 「毎回同じ update が出る」を**すべて永久差分だと決めつける**。`json-output` の `after_unknown` がその属性で `true` なら、原因は state との食い違いではなく **plan 時に値が確定していない**こと。典型は **`depends_on` を持つモジュール内の data source**で、Terraform はこれを plan 時に読まず apply へ延期するため、参照先の属性が unknown のまま計上される。`depends_on` の依存先を確定済みのものへ絞っても消えない（引き金は依存先ではなくモジュールが `depends_on` を持つこと自体）。data source をルートへ出し、値を変数でモジュールへ渡せば `depends_on` を残したまま止まる（#834 / PR #853）。
 - `tfctl run start` で PR の plan を回し直そうとする → 対象は workspace の最新 configuration（= main）で、PR ブランチではない。UI の retry を使う。
