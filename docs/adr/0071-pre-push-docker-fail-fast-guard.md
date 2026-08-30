@@ -81,6 +81,15 @@ Error）になり、この事象を実際に踏んだ。`git push` が 2 分待�
 - 判定は `docker info` 一本なので、**Docker は生きているが Testcontainers だけが失敗する**ケース
   （イメージの pull 不可、リソース枯渇等）は素通りする。そこは従来どおりテストの失敗として現れる。
   ガードの守備範囲は「Docker に到達できない」ことに限る。
+- 上記の「素通りする」ケースは、**テストの失敗ではなくハングとして現れうる**ことが後に判明した（#818）。
+  コンテナは起動したのに Postgres が応答を返せない状態では、pgjdbc の接続確立に実効的なタイムアウトが
+  1 つも掛からない（HikariCP の `connectionTimeout` は `DriverManager.setLoginTimeout()` 経由でしか
+  ドライバへ伝わらないが、pgjdbc は `loginTimeout` プロパティの既定値 `"0"` を先に読むため
+  `DriverManager` の値へフォールバックしない。`socketTimeout` も既定 0 で無制限）。実測では
+  `HikariPool-1 - Starting...` から 402.9 秒ブロックし、pre-push が 7 分近く無反応になった。本 ADR が
+  潰したかったハングが別経路で残っていたことになる。#818 で
+  `spring.datasource.hikari.data-source-properties.loginTimeout` を明示して接続確立にも上限を掛け、
+  この経路を塞いだ（本 ADR の決定自体は有効なまま）。
 - 成功パスでも完了検知の粒度（1 秒）ぶんの待ちが乗る。全テストを回す pre-push の中では無視できる。
 - 結論（守るべきルール）は `.claude/rules/testing.md` の「ローカルゲートと Docker」に置いた。
 - **本 ADR のガードは pre-push 限定である**。手で `./gradlew test` / `check` を叩く経路は素通りし、
