@@ -2,12 +2,13 @@ package com.example.api.application.iam.world
 
 import com.example.api.domain.iam.model.world.World
 import com.example.api.domain.iam.model.world.WorldFixture
-import com.example.api.domain.iam.model.world.WorldName
 import com.example.api.domain.iam.model.world.WorldRepository
+import com.example.api.domain.iam.model.world.WorldSaveFailure
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.getOrThrow
@@ -30,8 +31,7 @@ class RenameWorldUseCaseTest {
     fun `自分の世界は改名できる`() {
         val world = WorldFixture.world(accountId = ownerId, name = "旧名", version = 1L)
         every { worlds.findOwnedBy(ownerId, world.id) } returns world
-        every { worlds.existsByAccountIdAndName(ownerId, WorldName("新名")) } returns false
-        every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
+        every { worlds.saveIfNameAvailable(any()) } answers { Ok(firstArg<World>()) }
 
         val view =
             useCase(ownerId, Command.now(RenameWorldCommand(world.id, "新名"), clock)).getOrThrow {
@@ -80,7 +80,7 @@ class RenameWorldUseCaseTest {
     fun `同名の世界へ改名しようとすると競合として返す`() {
         val world = WorldFixture.world(accountId = ownerId, name = "旧名", version = 1L)
         every { worlds.findOwnedBy(ownerId, world.id) } returns world
-        every { worlds.existsByAccountIdAndName(ownerId, WorldName("新名")) } returns true
+        every { worlds.saveIfNameAvailable(any()) } returns Err(WorldSaveFailure.NameTaken)
 
         val error =
             useCase(ownerId, Command.now(RenameWorldCommand(world.id, "新名"), clock)).getError()
@@ -89,10 +89,11 @@ class RenameWorldUseCaseTest {
     }
 
     @Test
-    fun `現在と同じ名前への改名は自分自身との重複とみなさず成功する`() {
+    fun `現在と同じ名前への改名もそのまま保存まで通す`() {
+        // 「自分自身との重複」を除いた重複判定はポートの責務なので、ここでは保存まで到達することだけを見る。
         val world = WorldFixture.world(accountId = ownerId, name = "同じ名前", version = 1L)
         every { worlds.findOwnedBy(ownerId, world.id) } returns world
-        every { worlds.save(any()) } answers { Ok(firstArg<World>()) }
+        every { worlds.saveIfNameAvailable(any()) } answers { Ok(firstArg<World>()) }
 
         val view =
             useCase(ownerId, Command.now(RenameWorldCommand(world.id, "同じ名前"), clock)).getOrThrow {
@@ -100,6 +101,18 @@ class RenameWorldUseCaseTest {
             }
 
         assert(view.name == "同じ名前")
-        verify(exactly = 0) { worlds.existsByAccountIdAndName(any(), any()) }
+        verify(exactly = 1) { worlds.saveIfNameAvailable(any()) }
+    }
+
+    @Test
+    fun `改名の保存が並行更新と競合したら競合として返す`() {
+        val world = WorldFixture.world(accountId = ownerId, name = "旧名", version = 1L)
+        every { worlds.findOwnedBy(ownerId, world.id) } returns world
+        every { worlds.saveIfNameAvailable(any()) } returns Err(WorldSaveFailure.Conflict)
+
+        val error =
+            useCase(ownerId, Command.now(RenameWorldCommand(world.id, "新名"), clock)).getError()
+
+        assert(error is WorldMutationError.Conflict)
     }
 }

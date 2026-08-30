@@ -6,15 +6,20 @@ import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.world.World
 import com.example.api.domain.iam.model.world.WorldName
 import com.example.api.domain.iam.model.world.WorldRepository
+import com.example.api.domain.iam.model.world.WorldSaveFailure
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.support.PostgresContainerSupport
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.getOrThrow
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.dao.DuplicateKeyException
+import org.springframework.transaction.IllegalTransactionStateException
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 
 /** [JdbcWorldRepository] と [JdbcWorldQueries] が契約を満たすことを実 DB で検証する。 */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -23,6 +28,18 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
     @Autowired private lateinit var accounts: AccountRepository
     @Autowired private lateinit var worlds: WorldRepository
     @Autowired private lateinit var queries: WorldQueries
+    @Autowired private lateinit var transactionManager: PlatformTransactionManager
+
+    /**
+     * [WorldRepository.saveIfNameAvailable] は呼び出し側のトランザクションを要求する（`Propagation.MANDATORY`）。
+     *
+     * ロックで直列化する口なので、トランザクションが無ければ意味を成さないため。本番ではユースケースの `@Transactional` が境界になるが、契約テストは Spring
+     * の宣言的境界の外側で走るので、ここで明示的に張る。
+     */
+    private val transaction by lazy { TransactionTemplate(transactionManager) }
+
+    private fun <T : Any> inTransaction(block: () -> T): T =
+        checkNotNull(transaction.execute { block() })
 
     /** 世界は account への FK を持つため、先にアカウントを作らないと insert できない。 */
     private fun newOwner(subjectId: String): AccountId =
@@ -34,8 +51,12 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
     private fun newWorld(ownerId: AccountId, name: String): World =
         World.create(ownerId, name).getOrThrow { AssertionError(it.toString()) }
 
+    private fun save(world: World): Result<World, WorldSaveFailure> = inTransaction {
+        worlds.saveIfNameAvailable(world)
+    }
+
     private fun saveWorld(ownerId: AccountId, name: String): World =
-        worlds.save(newWorld(ownerId, name)).getOrThrow { AssertionError(it.toString()) }
+        save(newWorld(ownerId, name)).getOrThrow { AssertionError(it.toString()) }
 
     @Test
     fun `所有付き lookup で自分の世界を ID で引き当てられる`() {
@@ -88,35 +109,73 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
         val saved = saveWorld(ownerId, "旧名")
 
         val renamed = saved.rename("新名").getOrThrow { AssertionError(it.toString()) }
-        worlds.save(renamed).getOrThrow { AssertionError(it.toString()) }
+        save(renamed).getOrThrow { AssertionError(it.toString()) }
 
         assert(worlds.findOwnedBy(ownerId, saved.id)?.name == WorldName("新名"))
     }
 
     @Test
-    fun `同名の世界は未所持と判定される`() {
-        val ownerId = newOwner("sub-world-name-exists")
+    fun `同名の世界を作ろうとすると例外ではなく NameTaken が返る`() {
+        // UNIQUE 制約違反はトランザクションを abort させるため、例外として飛ばしてしまうと 409 に写せない
+        // （#739）。名前の裁定を保存と同じ 1 手に閉じ込め、衝突を Err として返すのがこの口の契約。
+        val ownerId = newOwner("sub-world-duplicate")
+        saveWorld(ownerId, "重複名")
 
-        assert(!worlds.existsByAccountIdAndName(ownerId, WorldName("未使用の名前")))
+        val result = save(newWorld(ownerId, "重複名"))
 
-        saveWorld(ownerId, "使用済みの名前")
-
-        assert(worlds.existsByAccountIdAndName(ownerId, WorldName("使用済みの名前")))
+        assert(result.getError() == WorldSaveFailure.NameTaken)
+        assert(queries.findAllByAccountId(ownerId).size == 1)
     }
 
     @Test
-    fun `同名の世界を重複作成すると Err ではなく DuplicateKeyException が飛ぶ`() {
-        // I-1: save は OptimisticLockingFailureException しか捕まえないため、UNIQUE 制約違反
-        // （DuplicateKeyException）は Err(UpdateConflict) に化けず未捕捉のまま伝播する。
-        // このためユースケース側は existsByAccountIdAndName による事前照会で重複を弾く必要があり、
-        // save 自体は「事前照会をすり抜けた極小のレース窓」に対する backstop として未捕捉のまま残す。
-        val ownerId = newOwner("sub-world-duplicate")
-        saveWorld(ownerId, "重複名")
-        val duplicate = World.create(ownerId, "重複名").getOrThrow { AssertionError(it.toString()) }
+    fun `同じ名前は他のアカウントとなら重複しない`() {
+        val ownerId = newOwner("sub-world-name-scoped")
+        val otherId = newOwner("sub-world-name-scoped-other")
+        saveWorld(ownerId, "同じ名前")
 
-        val thrown = runCatching { worlds.save(duplicate) }.exceptionOrNull()
+        val result = save(newWorld(otherId, "同じ名前"))
 
-        assert(thrown is DuplicateKeyException)
+        assert(result.getError() == null)
+    }
+
+    @Test
+    fun `名前を変えない保存は自分自身との重複とみなさない`() {
+        // 改名の no-op（現在と同じ名前への改名）がこの経路を通る。重複判定が自分自身を除かないと
+        // 「自分と衝突している」と誤判定して 409 になる。
+        val ownerId = newOwner("sub-world-rename-noop")
+        val saved = saveWorld(ownerId, "変わらない名前")
+
+        val result = save(saved.rename("変わらない名前").getOrThrow { AssertionError(it.toString()) })
+
+        assert(result.getError() == null)
+    }
+
+    @Test
+    fun `古い version の世界を保存すると Conflict が返る`() {
+        val ownerId = newOwner("sub-world-stale")
+        val saved = saveWorld(ownerId, "楽観ロックの世界")
+        val stale = saved.rename("先を越された名前").getOrThrow { AssertionError(it.toString()) }
+        save(saved.rename("先に確定した名前").getOrThrow { AssertionError(it.toString()) }).getOrThrow {
+            AssertionError(it.toString())
+        }
+
+        val result = save(stale)
+
+        assert(result.getError() == WorldSaveFailure.Conflict)
+    }
+
+    @Test
+    fun `トランザクションの外から保存すると落ちる`() {
+        // ロックはトランザクションの終了まで保持されて初めて直列化になる。トランザクションが無いまま
+        // 呼ばれると FOR UPDATE が即座に解放されて防御が無症状で消えるため、MANDATORY で顕在化させる。
+        val ownerId = newOwner("sub-world-no-transaction")
+
+        val thrown = runCatching {
+            worlds.saveIfNameAvailable(newWorld(ownerId, "境界の外"))
+        }
+            .exceptionOrNull()
+
+        assert(thrown is IllegalTransactionStateException)
     }
 
     @Test
@@ -144,12 +203,12 @@ class JdbcWorldRepositoryContractTest : PostgresContainerSupport() {
     }
 
     @Test
-    fun `saveIfAbsent の初回保存は save と同じ version を採番する`() {
+    fun `saveIfAbsent の初回保存は saveIfNameAvailable と同じ version を採番する`() {
         // saveIfAbsent は upsert のため Spring Data JDBC を通さず INSERT 文を手書きする。
-        // 初期 version が save（Spring Data JDBC 採番）とずれると、以後の楽観ロック更新の
+        // 初期 version が saveIfNameAvailable（Spring Data JDBC 採番）とずれると、以後の楽観ロック更新の
         // 前提が経路によって食い違うため、ここで縛る。
         val ownerId = newOwner("sub-world-if-absent-version")
-        val bySave = saveWorld(ownerId, "save で作った世界")
+        val bySave = saveWorld(ownerId, "saveIfNameAvailable で作った世界")
 
         val byIfAbsent = worlds.saveIfAbsent(newWorld(ownerId, "saveIfAbsent で作った世界"))
 
