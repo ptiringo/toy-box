@@ -59,6 +59,13 @@ pre-commit:
       run: mise exec -- shellcheck {staged_files}
       tags: lint
 
+    # bash 3.2 で壊れる変数参照（非 ASCII 文字の直前の $name）の検査（#864）
+    # shellcheck はこの形を検出しないので別立てにする（壊れていた行は shellcheck を通っていた）。
+    shell-brace-expansion:
+      glob: "{,**/}*.sh"
+      run: scripts/check-shell-brace-expansion.sh {staged_files}
+      tags: lint
+
     # Terraform フォーマットチェック
     # `-recursive` は CI（.github/workflows/terraform-check.yml）と揃えるため。付けないと
     # infra/ 直下しか見ず、infra/modules/** の整形崩れがローカルを素通りして CI で初めて落ちる（#793）。

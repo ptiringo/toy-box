@@ -48,3 +48,8 @@ jobs:
 
       - name: Run ShellCheck
         run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck
+
+      # ShellCheck が検出しない形（bash 3.2 が変数参照の直後の非 ASCII 文字を変数名として
+      # 食う）を別途検査する（#864）。素の bash / perl で動くのでツールの追加導入は要らない。
+      - name: Check shell variable expansion before non-ASCII
+        run: scripts/check-shell-brace-expansion.sh

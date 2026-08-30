@@ -44,5 +44,5 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
-echo "Docker デーモンの起動を試みましたが応答待ちで確認できませんでした（ログ: $log_file）。" >&2
+echo "Docker デーモンの起動を試みましたが応答待ちで確認できませんでした（ログ: ${log_file}）。" >&2
 exit 0
