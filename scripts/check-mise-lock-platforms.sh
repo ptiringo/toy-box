@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# mise.lock の http バックエンドツールが壊れていないかを検査する（#762）。
+# mise.lock の http バックエンドツールが壊れていないかを検査する（#762 / #857）。
 #
 # mise.lock の options は**ツール単位**（[tools.<tool>.options]）でしか表現できない。一方
 # http:kotlin-lsp は macOS だけ format = "zip" を要求する（JetBrains の mac 配布が .sit で、
@@ -16,9 +16,26 @@
 #      Linux 側の `mise install --locked` が解決できなくなる（#584 と同型）
 #
 # lock の正は「http ツールごとに [[tools]] エントリが 1 つ、mise.toml が宣言する platform が
-# すべて載っている」状態とする。`mise install` の後に出た lock の差分は本題と無関係なので
-# `git checkout -- mise.lock` で捨てること。バージョンを上げるときだけ、per-platform の
-# checksum / URL を手で揃える（mise.toml 側のコメントも参照）。
+# すべて載っていて、checksum の形式が mise.toml の宣言と揃っている」状態とする。`mise install`
+# の後に出た lock の差分は本題と無関係なので `git checkout -- mise.lock` で捨てること。
+# バージョンを上げるときだけ、per-platform の checksum / URL を手で揃える
+# （mise.toml 側のコメントも参照）。
+#
+# 検出するもの:
+#   1. [[tools."http:NAME"]] エントリの二重化・欠落
+#   2. mise.toml が宣言する platform の lock からの欠落
+#   3. checksum の形式（sha256 / blake3 等の algo）が mise.toml の宣言と食い違うこと（#857）。
+#      `mise install --force` は lock の checksum を blake3 で書き直す（mise 2026.8.12 で実測）。
+#      blake3 も有効な checksum で `--locked` が壊れるわけではないが、本題と無関係な差分が PR に
+#      混ざる。#762 で潰したかったのは、まさにこの「触っていないのに lock が汚れる」状態
+#
+# 検出しないもの（既知の穴）:
+#   - checksum の**値**が配布物と一致するか。ここでは形式しか見ない（値の照合は install 時に
+#     mise 自身が行う）
+#   - http 以外の backend（aqua / ubi / registry）の lock エントリ。per-platform の url / checksum を
+#     mise.toml 側に持たないため、lock と突き合わせる相手がそもそも無い
+#   - lock 側にしか無い platform（musl 派生）の checksum 形式は、mise.toml が宣言する形式が
+#     ツール内で 1 種類のときだけ照合する。混在していれば期待値を決められないので飛ばす
 #
 # 使い方:
 #   scripts/check-mise-lock-platforms.sh
@@ -41,6 +58,21 @@ if [ ! -f "$LOCK" ]; then
   echo "NG: $LOCK がありません。" >&2
   exit 1
 fi
+
+# TOML セクション（$2 の見出し行）の直下にある checksum の algo（"sha256:..." の sha256）を出す。
+# 見つからなければ何も出さない。セクションは次の見出し行（^[）で終わる。
+checksum_algo() {
+  awk -v header="$2" '
+    $0 == header { in_section = 1; next }
+    /^\[/ { in_section = 0 }
+    in_section && $1 == "checksum" {
+      if (match($0, /"[^":]+:/)) {
+        print substr($0, RSTART + 1, RLENGTH - 2)
+        exit
+      }
+    }
+  ' "$1"
+}
 
 # mise.toml が宣言する http バックエンドのツール名（http:NAME）。
 # 検査対象を http に絞るのは、per-platform の url / checksum を mise.toml 側で持つのが
@@ -94,6 +126,46 @@ for tool in $tools; do
     echo "    \`git checkout -- $LOCK\` で戻してください（この差分は捨ててよい）。" >&2
     status=1
   fi
+
+  # 3. checksum の形式（algo）が mise.toml の宣言と一致するか（#857）。
+  #    mise.toml が宣言している platform は 1 対 1 で照合する。
+  algos=""
+  for p in $declared; do
+    want=$(checksum_algo "$CONFIG" "[tools.\"$tool\".platforms.$p]")
+    # mise.toml が checksum を書いていない platform は照合対象にしない（期待値が無い）。
+    [ -n "$want" ] || continue
+    algos="$algos
+$want"
+    got=$(checksum_algo "$LOCK" "[tools.\"$tool\".\"platforms.$p\"]")
+    # 欠落は検査 2 が報告済みなので、ここでは形式の食い違いだけを見る。
+    [ -n "$got" ] || continue
+    if [ "$got" != "$want" ]; then
+      echo "NG: $LOCK の $tool ($p) の checksum が $got 形式です（$CONFIG の宣言は ${want}）。" >&2
+      echo "    \`mise install --force\` は lock の checksum を書き直します。" >&2
+      echo "    \`git checkout -- $LOCK\` で戻してください（この差分は捨ててよい）。" >&2
+      status=1
+    fi
+  done
+
+  # 宣言側の形式が 1 種類なら、lock 側にしか無い platform（musl 派生）も同じ形式のはず。
+  # 混在しているツール、および 1 つも checksum を宣言していないツールでは期待値を決められない
+  # ので照合しない。
+  expected=$(printf '%s\n' "$algos" | grep -v '^$' | sort -u) || true
+  [ -n "$expected" ] || continue
+  if [ "$(printf '%s\n' "$expected" | wc -l)" -ne 1 ]; then
+    continue
+  fi
+  extra=$(comm -13 <(printf '%s\n' "$declared") <(printf '%s\n' "$locked")) || true
+  for p in $extra; do
+    got=$(checksum_algo "$LOCK" "[tools.\"$tool\".\"platforms.$p\"]")
+    [ -n "$got" ] || continue
+    if [ "$got" != "$expected" ]; then
+      echo "NG: $LOCK の $tool ($p) の checksum が $got 形式です（$CONFIG の宣言は ${expected}）。" >&2
+      echo "    \`mise install --force\` は lock の checksum を書き直します。" >&2
+      echo "    \`git checkout -- $LOCK\` で戻してください（この差分は捨ててよい）。" >&2
+      status=1
+    fi
+  done
 done
 
 exit "$status"
