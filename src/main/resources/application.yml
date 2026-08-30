@@ -14,6 +14,21 @@ spring:
   #   - ローカル bootRun: spring-boot-docker-compose が compose.yaml の PostgreSQL を自動起動・自動配線。
   #   - テスト: Testcontainers の PostgreSQL を PostgresContainerSupport が注入。
   # driver-class-name は明示せず JDBC URL から導出させる（URL の差し替えだけで接続先を切り替えられる）。
+  # 以下に置くのは接続先ではなく接続確立のタイムアウトだけで、上記の「既定値を置かない」方針は保つ。
+  # 接続確立（TCP connect のあとの startup / 認証の応答待ち）に上限を掛ける（#818）。HikariCP の
+  # connectionTimeout は本来「プールから接続を借りる待ち時間」で、接続確立そのものへは
+  # DriverManager.setLoginTimeout() 経由でしか伝わらない。ところが pgjdbc は loginTimeout プロパティの
+  # 既定値 "0" を先に読むため DriverManager の値へフォールバックせず、HikariCP の意図が届かない。
+  # socketTimeout も既定 0（無制限）なので、詰まった DB に対して接続確立が**無限に待つ**（実測 402 秒
+  # ブロックし pre-push が 7 分無反応になった）。そこで loginTimeout をドライバへ直接渡して届かせる。
+  # loginTimeout は PostgreSQL ドライバのプロパティ（単位は秒）で、接続確立フェーズにのみ効く
+  # （クエリの実行時間は切らない）。値は connection-timeout と揃える運用で、一致は
+  # DataSourceLoginTimeoutTest が固定する。
+  datasource:
+    hikari:
+      connection-timeout: 30000
+      data-source-properties:
+        loginTimeout: 30
   # マイグレーションは Flyway（plain SQL）。db/migration 配下の V*.sql を起動時に適用する。
   flyway:
     enabled: true
