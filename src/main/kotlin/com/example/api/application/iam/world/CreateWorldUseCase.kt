@@ -3,11 +3,9 @@ package com.example.api.application.iam.world
 import com.example.api.domain.iam.model.world.World
 import com.example.api.domain.iam.model.world.WorldNameValidationError
 import com.example.api.domain.iam.model.world.WorldRepository
+import com.example.api.domain.iam.model.world.WorldSaveFailure
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.Command
-import com.example.api.domain.shared.UpdateConflict
-import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.map
@@ -34,9 +32,8 @@ sealed interface CreateWorldError {
 /**
  * 自分の世界を新しく作るユースケース。
  *
- * 同名の世界の作成は、DB の `UNIQUE (account_id, name)` に検知を委ねず [WorldRepository.existsByAccountIdAndName]
- * で事前照会して弾く（I-1: UNIQUE 制約違反はトランザクション abort を伴うため未捕捉の例外＝500 になり、 `Conflict`＝409 に届かない。DB の UNIQUE
- * 制約は事前照会をすり抜けた極小のレース窓に対する backstop として残る）。
+ * 名前の重複は事前照会せず、[WorldRepository.saveIfNameAvailable] に判定ごと委ねる（#739）。事前照会と保存が別々の呼び出しに分かれていると、その 2
+ * 手のあいだに別のリクエストが同名を書き込む TOCTOU が残り、負けた側は DB の `UNIQUE (account_id, name)` 違反＝未捕捉の例外（500）になるため。
  */
 @Service
 class CreateWorldUseCase(private val worlds: WorldRepository) {
@@ -48,19 +45,13 @@ class CreateWorldUseCase(private val worlds: WorldRepository) {
     ): Result<WorldView, CreateWorldError> =
         World.create(accountId, command.payload.name)
             .mapError { CreateWorldError.InvalidName(it) }
-            .andThen { world -> checkNameAvailable(accountId, world) }
-            .andThen { world ->
-                worlds.save(world).mapError { _: UpdateConflict -> CreateWorldError.Conflict }
-            }
+            .andThen { world -> worlds.saveIfNameAvailable(world).mapError { it.toError() } }
             .map { WorldView(it.id.value, it.name.value) }
 
-    private fun checkNameAvailable(
-        accountId: AccountId,
-        world: World,
-    ): Result<World, CreateWorldError> =
-        if (worlds.existsByAccountIdAndName(accountId, world.name)) {
-            Err(CreateWorldError.Conflict)
-        } else {
-            Ok(world)
+    /** 保存の失敗はいずれも「作れなかった＝競合」として 1 つに畳む（呼び出し側はどちらも 409 に描画する）。 */
+    private fun WorldSaveFailure.toError(): CreateWorldError =
+        when (this) {
+            WorldSaveFailure.NameTaken,
+            WorldSaveFailure.Conflict -> CreateWorldError.Conflict
         }
 }

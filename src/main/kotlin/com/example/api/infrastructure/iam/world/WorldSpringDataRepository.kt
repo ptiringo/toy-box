@@ -11,8 +11,12 @@ interface WorldSpringDataRepository : CrudRepository<WorldRow, UUID> {
     /** そのアカウントが世界を 1 つでも持っているかを判定する。 */
     fun existsByAccountId(accountId: UUID): Boolean
 
-    /** 同一アカウント内に同名の世界が既にあるかを判定する。 */
-    fun existsByAccountIdAndName(accountId: UUID, name: String): Boolean
+    /**
+     * 同一アカウント内で、**指定の世界以外に**同名の世界があるかを判定する。
+     *
+     * 自分自身を除くのは、名前を変えない改名（no-op）を「自分と重複している」と誤判定させないため。作成のときは採番したての ID が渡るので除外は空振りする。
+     */
+    fun existsByAccountIdAndNameAndIdNot(accountId: UUID, name: String, id: UUID): Boolean
 
     /** 同一アカウント内の同名の世界を引く（UNIQUE (account_id, name) により高々 1 行）。 */
     fun findByAccountIdAndName(accountId: UUID, name: String): WorldRow?
