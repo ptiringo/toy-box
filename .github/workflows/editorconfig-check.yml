@@ -15,28 +15,53 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+    # http backend ツール（kotlin-lsp/tfctl）を config から外す（mise.ci.toml。#510）。
+    # **ジョブ全体に置く**。mise-action のステップにだけ付けると、後段で `mise exec` を使う
+    # ステップが素の mise.toml を読み、CI で使わない http ツールを解決しにいって落ちる（#859 / #863）。
+    env:
+      MISE_ENV: ci
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install EditorConfig check
-        uses: editorconfig-checker/action-editorconfig-checker@d2ed4fd072ae6f887e9407c909af0f585d2ad9f4 # v2.0.0
-
-      - name: Run EditorConfig check
-        run: editorconfig-checker --format github-actions
-
       # .gitattributes が要求する行末正規化（例: `*.bat text eol=crlf` は blob を LF で保存）と、
       # コミット済み blob の実体がズレていないかを検証する。Dependabot 等は gitattributes の
       # clean フィルタを通さずに CRLF を焼き込んだ blob を持ち込むことがあり、その場合 clone 直後から
       # 恒常的な `M`（無変更なのに modified）が出る（#416）。renormalize で差分が出たら fail させる。
+      #
+      # **ツールを入れる前（checkout 直後）に置く**。見たいのは「コミット済み blob と .gitattributes の
+      # 整合」だけで、その後の作業ツリーの変化は対象外。mise の install は mise.lock を書き換えることが
+      # あり（#762）、後ろに置くとその書き換えを行末の乱れとして誤検出する（#878 で実測。この検査だけが
+      # mise を使う他 10 本に無いため、CI での lock 書き換えはここでしか表面化しない）。
       - name: Check line-ending normalization (.gitattributes)
         run: |
           git add --renormalize .
           if ! git diff --cached --quiet; then
             echo "::error::行末が .gitattributes どおりに正規化されていません。ローカルで 'git add --renormalize . && git commit' を実行して push してください。"
             git diff --cached --stat
+            # 何がどう変わったのかまで出す（--stat だけだと「1 行増えた」しか分からず切り分けに詰まる）。
+            git diff --cached
             exit 1
           fi
           echo "Line endings are normalized per .gitattributes ✓"
+
+      # 専用 action（action-editorconfig-checker）は使わない。CLI のバージョンを `latest` で追従するため、
+      # 上流がリリース資産名を変えた瞬間に壊れる（v4.0.0 で `ec-*` が `editorconfig-checker-*` になり
+      # `The binary 'ec-linux-amd64*' not found` で全 PR が赤になった。#878）。加えて mise.toml が持つ
+      # ローカル / lefthook のバージョンと二重管理になり、同じ検査が別バージョンで走っていた。
+      # 他 10 本と同じく mise へ寄せ、バージョンの出所を mise.toml（実体の固定は mise.lock）に一本化する。
+      - name: Install mise
+        uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
+        # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
+        with:
+          # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
+          # 必要なのは editorconfig-checker のみ。名前は mise.toml の [tools] キーと完全一致させる
+          # （短縮名では --locked が解決できない）。
+          install_args: "editorconfig-checker"
+
+      # 実行名は `ec`。mise が入れる editorconfig-checker 3.7.0 が提供するのはこの名前だけで、
+      # `mise exec -- editorconfig-checker` は "No such file or directory" になる（lefthook も `ec` を呼ぶ）。
+      - name: Run EditorConfig check
+        run: mise exec -- ec --format github-actions
