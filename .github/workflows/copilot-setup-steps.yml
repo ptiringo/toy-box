@@ -14,6 +14,13 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 15
+    # http backend ツール（kotlin-lsp/tfctl）を config から外す（mise.ci.toml。#510）。
+    # **ジョブ全体に置く**。mise-action のステップにだけ付けると、後段で `mise exec` を使う
+    # ステップが素の mise.toml を読み、CI で使わない http ツールを解決しにいって落ちる（#859 / #863）。
+    # （kotlin-lsp/tfctl は mise が per-platform SHA を mise.lock に永続化せず `mise install --locked`
+    # を満たせない。#510 回帰。どちらも Copilot 環境では不要。）
+    env:
+      MISE_ENV: ci
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -22,6 +29,7 @@ jobs:
 
       - name: Set up mise
         uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
+        # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
         with:
           # `mise install` の代わりに `mise bootstrap` を走らせ、[tools] の導入に続けて
           # `[tasks.bootstrap]`（= lefthook install）まで 1 ステップで流す（#396）。onboarding の
@@ -30,11 +38,6 @@ jobs:
           # install_args とは併用不可だが、本ジョブは元々使っていない（除外は MISE_ENV=ci が担う）。
           # lock ファイルがあるため action は `mise --locked bootstrap` を呼ぶ（install 経路と同じ扱い）。
           bootstrap: true
-        env:
-          # CI 用オーバーレイ mise.ci.toml を読み込み、http backend ツール（kotlin-lsp/tfctl）を
-          # インストール対象から外す（mise が per-platform SHA を mise.lock に永続化せず
-          # `mise install --locked` を満たせない。#510 回帰。どちらも Copilot 環境では不要）。
-          MISE_ENV: ci
 
       - name: Set up JDK
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
