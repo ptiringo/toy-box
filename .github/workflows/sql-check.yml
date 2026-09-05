@@ -45,7 +45,9 @@ jobs:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
           # 必要なのは sqlfluff / squawk のみ。他ジョブ用ツールや http backend の
           # kotlin-lsp/tfctl は列挙しないため取得されない（#510 の --locked 問題も回避）。
-          install_args: "pipx:sqlfluff github:sbdchd/squawk"
+          # sqlfluff は pipx backend で、インストール時に venv 作成へ uv を要するため uv も併せて入れる
+          # （列挙から漏らすと mise が install dependency を解決できずステップごと落ちる。#876）。
+          install_args: "pipx:sqlfluff github:sbdchd/squawk uv"
 
       - name: Verify tool versions
         run: |
