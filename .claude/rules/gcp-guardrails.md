@@ -71,7 +71,9 @@ gcloud logging read 'log_id("cloudaudit.googleapis.com/activity")' --project=pti
 
 ## メンテナンス
 
-- 新しい変更系コマンド（別ツールや新サブコマンド）を使い始めたら、deny/ask 語彙へ追記する。read-only は allow に足してよい。`gsutil` / `bq` は現状未列挙なので、使い始めたら同様に追記する。
-- `gcloud` は動詞が引数末尾に来るため中間ワイルドカード（`gcloud * delete *`）に依存する。マッチ不良が出たら動詞別の列挙へ切り替える。
+- 新しい変更系コマンド（別ツールや新サブコマンド）を使い始めたら、deny/ask 語彙へ追記する。read-only は allow に足してよい（下記の形で）。`gsutil` / `bq` は現状未列挙なので、使い始めたら同様に追記する。
+- **allow に中間ワイルドカードを使わない**: `gcloud * list *` のように動詞の手前へ `*` を置くと、その位置に挿し込まれたグローバルフラグ（`--account=` / `--impersonate-service-account=`）ごと無確認で通り、viewer SA の既定を黙って上書きできてしまう（Claude Code が起動時に警告する）。allow は `gcloud <group> <verb> *` の形で group から明示列挙し、`*` は末尾だけに置く。列挙は drift するので、プロンプトが出たら塞ぐのではなく足りない行を足す。
+- **deny/ask は中間ワイルドカードのままでよい**（`gcloud * delete *`）。`gcloud` は動詞が引数末尾に来るため、遮断側は広くマッチするほど安全側に倒れる。マッチ不良が出たら動詞別の列挙へ切り替える。
+- **末尾 `*` にフラグを足す経路までは permissions で塞げない**（`gcloud projects list --account=...` は allow に当たる）。ここは viewer SA と監査アラートが backstop。
 - **変更系を env ランナーでラップしない**: `mise exec -- <cmd>` / `docker exec` 等はマッチャの前で剥離されないため、`mise exec -- terraform apply` のようにラップすると deny/ask を迂回して無確認実行されうる（`timeout` 等のラッパーは剥離されるので当たる）。変更系は直接呼ぶか正規ルート（CI/HCP）に寄せる。列挙では塞ぎきれないため、viewer SA と CI が backstop。
 - sandbox 下では `gcloud auth` / `tfctl auth` / 操作系は 1Password・ブラウザ・認証に到達できないため `!` プレフィックス等で sandbox 外実行する（[ADR-0034](../../docs/adr/0034-adopt-tfctl-cli.md) と整合）。
