@@ -242,3 +242,30 @@ commit-msg:
           exit 1
         fi
       tags: commit-msg
+
+    # ヘッダー先頭の `fix: #<n>` が GitHub の自動クローズを誘発するのを止める（#862）。
+    #
+    # GitHub の closing keyword（close / closes / closed / fix / fixes / fixed /
+    # resolve / resolves / resolved）は直後に `#<番号>` が続くと当該 Issue を閉じる。間の
+    # コロンや空白は無視されるため、Conventional Commits の `fix:` と Issue 番号を並べた
+    # `fix: #859 …` は `fix #859` として読まれる。実際に PR #860 のマージで #859（未着手・
+    # P1）が無言で閉じ、Project の Status も Done に飛んで候補集合から消えた。
+    # Issue を閉じる意図は PR 本文の `Closes #<n>` で表明する運用なので、コミットヘッダー側は
+    # 一律で弾いてよく、抜け道は設けない。番号は末尾に置けば keyword と隣接せず閉じない。
+    # keyword の判定は GitHub のパーサに合わせて大文字小文字を問わない。
+    # マージ進行中（MERGE_HEAD あり）に緩めるのは commitizen-check と同じ理由（#506）。
+    closing-keyword-check:
+      run: |
+        if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+          exit 0
+        fi
+        if echo "$(head -n1 {1})" | grep -qiE "^(close[sd]?|fix(e[sd])?|resolve[sd]?)(\(.+\))?[[:space:]]*:[[:space:]]*#[0-9]+"; then
+          echo "コミットヘッダーの先頭に closing keyword と Issue 番号を並べないでください（#862）"
+          echo "GitHub がこれを自動クローズ指示と解釈し、未着手の Issue が無言で閉じます"
+          echo "Issue 番号はヘッダーの末尾に置いてください"
+          echo "  NG: fix: #862 自動クローズを止める"
+          echo "  OK: fix: 自動クローズを止める (#862)"
+          echo "意図して Issue を閉じるときは PR 本文に Closes #862 と書いてください"
+          exit 1
+        fi
+      tags: commit-msg
