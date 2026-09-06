@@ -163,6 +163,8 @@ class Command<T>(val payload: T, val issuedAt: Instant)
 - **相互排他・共在の不変条件は CHECK 制約で必須強制**する（多層防御。マッパーが整合行を書いても DB 単独で破れないように）。命名は `chk_<table>_<rule>`。
 - **子テーブル化は多重度（コレクション `List`）かイベント性（[ADR-0041](../../docs/adr/0041-immutable-data-model-as-modeling-discipline.md) の INSERT-only イベント）のときだけ**。リソースの現在状態は親行へフラット化して UPDATE、イベントは INSERT-only 子テーブル。
 - マッピング SQL は PostgreSQL 専用構文でよい（H2 は #451 で全面脱却済み。ADR-0062）。
+- **楽観ロックの競合を例外で受け取らない**（#739 / #867）。Spring Data JDBC の `save` は競合を `OptimisticLockingFailureException` で知らせるが、`SimpleJdbcRepository.save` 自身が `@Transactional` を持ちユースケースのトランザクションに**参加**するため、内側で例外が起きた時点で global rollback-only がマークされる。捕まえて `Err(UpdateConflict)` に写しても**外側のコミットが `UnexpectedRollbackException` になる**（＝409 のつもりが 500）。UNIQUE 違反を `ON CONFLICT DO NOTHING` で例外にしないのと同じ理由。update 経路（`version` が非 null）では `infrastructure.shared` の `lockRowIfVersionMatches` で対象行を `FOR UPDATE` ロックして版を突き合わせ、一致したときだけ `save` を通す（`JdbcWorldRepository` は更新行数で判定する同型）。ロックは**呼び出し側のトランザクション内で取ること**が前提で、境界の外だと防御が無症状で消えるためヘルパーが `check` で落とす。
+- **楽観ロックの契約テストはトランザクション境界の内側で書く**。リポジトリを直呼びすると `Err` が返った時点で assert が成立し、コミットすべき外側が無いのでこの穴は原理的に現れない（#739 で実測）。`TransactionTemplate` で包み、**コミットまで通す**こと（先例: `Jdbc〜RepositoryContractTest` の `inTransaction`）。
 
 ### 機械強制しない規約（レビューで担保）
 

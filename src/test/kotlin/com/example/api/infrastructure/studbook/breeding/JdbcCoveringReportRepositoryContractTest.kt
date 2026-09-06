@@ -5,6 +5,7 @@ import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistration
+import com.example.api.domain.studbook.model.breeding.CoveringReport
 import com.example.api.domain.studbook.model.breeding.CoveringReportId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -22,8 +23,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 
 /**
  * ドメインポート CoveringReportRepository の Spring Data JDBC 実装 [JdbcCoveringReportRepository] の契約テスト
@@ -37,6 +41,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 3. `findByStallionRegistrationIdAndCoveringYear` が種牡馬×種付年で引き当てられること
  * 4. 「種牡馬×種付年」の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  * 5. 並行削除された保存済み集約への save が UpdateConflict を返すこと（楽観ロックの契約）
+ * 6. update 経路が呼び出し側のトランザクションを要求し、その境界の内側で競合しても外側のコミットが通ること（#867）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -45,9 +50,14 @@ class JdbcCoveringReportRepositoryContractTest(
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val horseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+    transactionManager: PlatformTransactionManager,
 ) : PostgresContainerSupport() {
 
-    private val repository = JdbcCoveringReportRepository(rows)
+    /** 呼び出し側のトランザクション境界を張る（#867）。本番ではユースケースの `@Transactional` が担う。 */
+    private val transaction = TransactionTemplate(transactionManager)
+
+    private val repository = JdbcCoveringReportRepository(rows, jdbcClient)
     // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
     private lateinit var worldIdValue: UUID
     private val worldId
@@ -59,7 +69,7 @@ class JdbcCoveringReportRepositoryContractTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows, jdbcClient)
     }
 
     /** 親（種牡馬とその繁殖登録）を seed 済みの繁殖登録を返す。 */
@@ -132,21 +142,37 @@ class JdbcCoveringReportRepositoryContractTest(
 
     @Test
     fun `並行削除された保存済み集約のsaveはUpdateConflictを返す`() {
-        val stallionRegistration = seededStallionRegistration()
-        val inserted =
-            repository
-                .save(
-                    worldId,
-                    BreedingFixture.coveringReport(stallionRegistration = stallionRegistration),
-                )
-                .unwrap()
+        val inserted = seededCoveringReport()
         rows.deleteAll()
 
-        // version 非 null の集約の save は update 経路になり、対象行が無いので競合として検出される
-        val conflicted = repository.save(worldId, inserted)
+        // version 非 null の集約の save は update 経路になり、対象行が無いので競合として検出される。
+        // 内側で例外が起きると rollback-only がマークされて外側のコミットが落ちるため、境界ごと通す（#867）。
+        val conflicted = inTransaction { repository.save(worldId, inserted) }
 
         assert(conflicted.getError() == UpdateConflict)
     }
+
+    @Test
+    fun `トランザクションの外から更新すると落ちる`() {
+        // 行ロックはトランザクションの終了まで保持されて初めて競合判定の前提になる。境界の外から呼ばれると
+        // FOR UPDATE が即座に解放されて防御が無症状で消えるため、例外で顕在化させる（#867）。
+        val inserted = seededCoveringReport()
+
+        assertThrows<IllegalStateException> { repository.save(worldId, inserted) }
+    }
+
+    /** 種牡馬の繁殖登録ごと種付成績報告を 1 件永続化して返す（update 経路の検証の下ごしらえ）。 */
+    private fun seededCoveringReport(): CoveringReport =
+        repository
+            .save(
+                worldId,
+                BreedingFixture.coveringReport(stallionRegistration = seededStallionRegistration()),
+            )
+            .unwrap()
+
+    /** [block] を 1 つのトランザクションで包み、**コミットまで**通す（コミットが落ちればテストも落ちる。#867）。 */
+    private fun <T : Any> inTransaction(block: () -> T): T =
+        checkNotNull(transaction.execute { block() })
 
     @Test
     fun `存在しない繁殖登録を参照する行はFK制約で拒否される`() {

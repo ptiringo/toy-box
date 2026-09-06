@@ -10,11 +10,12 @@ import com.example.api.domain.studbook.model.breeding.BreedingRetirement
 import com.example.api.domain.studbook.model.breeding.BreedingRole
 import com.example.api.domain.studbook.model.breeding.RetirementReason
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrThrow
-import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 
 /**
@@ -30,22 +31,31 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 class JdbcBreedingRegistrationRepository(
-    private val rows: BreedingRegistrationSpringDataRepository
+    private val rows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
 ) : BreedingRegistrationRepository {
 
     override fun findById(worldId: WorldId, id: BreedingRegistrationId): BreedingRegistration? =
         rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
 
+    /**
+     * 版が一致するときだけ更新する（競合は例外にせず [UpdateConflict] で返す。#867）。
+     *
+     * insert（version が null）はロック不要。update のときだけ [lockRowIfVersionMatches] で行をロックして版を
+     * 突き合わせ、一致した場合にのみ `save` を通す（例外に頼れない理由はヘルパーの KDoc）。
+     */
     override fun save(
         worldId: WorldId,
         breedingRegistration: BreedingRegistration,
-    ): Result<BreedingRegistration, UpdateConflict> =
-        try {
-            Ok(rows.save(breedingRegistration.toRow(worldId)).toDomain())
-        } catch (_: OptimisticLockingFailureException) {
-            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
-            Err(UpdateConflict)
+    ): Result<BreedingRegistration, UpdateConflict> {
+        val version = breedingRegistration.version
+        val id = breedingRegistration.id.value
+        // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+        if (version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, id, version)) {
+            return Err(UpdateConflict)
         }
+        return Ok(rows.save(breedingRegistration.toRow(worldId)).toDomain())
+    }
 
     override fun existsByRegistrationNumber(
         worldId: WorldId,
@@ -94,4 +104,9 @@ class JdbcBreedingRegistrationRepository(
             retirementOccurredOn = retirement?.occurredOn,
             version = version,
         )
+
+    private companion object {
+        /** 楽観ロックの行ロックを掛ける対象（[lockRowIfVersionMatches] に渡す完全修飾名）。 */
+        const val TABLE = "studbook.breeding_registration"
+    }
 }

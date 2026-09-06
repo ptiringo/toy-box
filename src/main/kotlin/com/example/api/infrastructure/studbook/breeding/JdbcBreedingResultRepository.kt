@@ -11,13 +11,14 @@ import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.example.api.infrastructure.shared.orThrow
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import java.time.LocalDate
 import java.time.Year
-import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 
 /**
@@ -31,8 +32,10 @@ import org.springframework.stereotype.Repository
  * PostgreSQL。H2 全面脱却・#451）ため、InMemory 実装・プロファイル切替は持たない（ADR-0030）。
  */
 @Repository
-class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRepository) :
-    BreedingResultRepository {
+class JdbcBreedingResultRepository(
+    private val rows: BreedingResultSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+) : BreedingResultRepository {
 
     override fun findById(worldId: WorldId, id: BreedingResultId): BreedingResult? =
         rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
@@ -50,16 +53,24 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             )
             ?.toDomain()
 
+    /**
+     * 版が一致するときだけ更新する（競合は例外にせず [UpdateConflict] で返す。#867）。
+     *
+     * insert（version が null）はロック不要。update のときだけ [lockRowIfVersionMatches] で行をロックして版を
+     * 突き合わせ、一致した場合にのみ `save` を通す（例外に頼れない理由はヘルパーの KDoc）。
+     */
     override fun save(
         worldId: WorldId,
         breedingResult: BreedingResult,
-    ): Result<BreedingResult, UpdateConflict> =
-        try {
-            Ok(rows.save(breedingResult.toRow(worldId)).toDomain())
-        } catch (_: OptimisticLockingFailureException) {
-            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
-            Err(UpdateConflict)
+    ): Result<BreedingResult, UpdateConflict> {
+        val version = breedingResult.version
+        val id = breedingResult.id.value
+        // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+        if (version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, id, version)) {
+            return Err(UpdateConflict)
         }
+        return Ok(rows.save(breedingResult.toRow(worldId)).toDomain())
+    }
 
     /** 永続化モデルからドメイン集約を再構成する（検証・採番なし。covering/区分の整合は集約の init が保証）。 */
     private fun BreedingResultRow.toDomain(): BreedingResult =
@@ -142,4 +153,9 @@ class JdbcBreedingResultRepository(private val rows: BreedingResultSpringDataRep
             FoalingOutcome.TwinNeonatalDeath -> OutcomeType.TWIN_NEONATAL_DEATH to null
             FoalingOutcome.NotCovered -> OutcomeType.NOT_COVERED to null
         }
+
+    private companion object {
+        /** 楽観ロックの行ロックを掛ける対象（[lockRowIfVersionMatches] に渡す完全修飾名）。 */
+        const val TABLE = "studbook.breeding_result"
+    }
 }

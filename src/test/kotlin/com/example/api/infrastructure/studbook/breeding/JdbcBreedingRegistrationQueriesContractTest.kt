@@ -46,7 +46,7 @@ class JdbcBreedingRegistrationQueriesContractTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows, jdbcClient)
     }
 
     @Test
@@ -85,7 +85,8 @@ class JdbcBreedingRegistrationQueriesContractTest(
     @Test
     fun `他の世界の繁殖登録は引けない`() {
         val otherWorldId = WorldId(createWorld())
-        val otherSeeder = StudbookSeeder(otherWorldId, inspectionRows, horseRows, registrationRows)
+        val otherSeeder =
+            StudbookSeeder(otherWorldId, inspectionRows, horseRows, registrationRows, jdbcClient)
         val id = otherSeeder.seedRegistrationRow()
 
         assert(queries.findById(worldId, BreedingRegistrationId(id)) == null)

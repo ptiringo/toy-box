@@ -3,17 +3,30 @@ package com.example.api.infrastructure.iam.account
 import com.example.api.domain.iam.model.account.Account
 import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
+import com.example.api.domain.shared.UpdateConflict
 import com.example.api.support.PostgresContainerSupport
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.getOrThrow
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 
 /** [JdbcAccountRepository] がドメインポート [AccountRepository] の契約を満たすことを実 DB で検証する。 */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class JdbcAccountRepositoryContractTest : PostgresContainerSupport() {
 
     @Autowired private lateinit var repository: AccountRepository
+    @Autowired private lateinit var transactionManager: PlatformTransactionManager
+
+    /** 呼び出し側のトランザクション境界を張る（#867）。本番ではユースケースの `@Transactional` が担う。 */
+    private val transaction by lazy { TransactionTemplate(transactionManager) }
+
+    /** [block] を 1 つのトランザクションで包み、**コミットまで**通す（コミットが落ちればテストも落ちる。#867）。 */
+    private fun <T : Any> inTransaction(block: () -> T): T =
+        checkNotNull(transaction.execute { block() })
 
     private fun newAccount(subjectId: String): Account =
         Account.create(subjectId).getOrThrow { AssertionError(it.toString()) }
@@ -78,5 +91,32 @@ class JdbcAccountRepositoryContractTest : PostgresContainerSupport() {
         val byIfAbsent = repository.saveIfAbsent(newAccount("sub-version-if-absent"))
 
         assert(byIfAbsent.version == bySave.version)
+    }
+
+    @Test
+    fun `古い version での save は UpdateConflict を返し外側のコミットも通る`() {
+        // 内側で例外が起きると participating transaction が rollback-only をマークするため、Err を返しても
+        // 外側のコミットが UnexpectedRollbackException になる（＝409 のつもりが 500）。#867
+        val inserted =
+            repository.save(newAccount("sub-tx-conflict")).getOrThrow {
+                AssertionError(it.toString())
+            }
+        inTransaction { repository.save(inserted) }.getOrThrow { AssertionError(it.toString()) }
+
+        val conflicted = inTransaction { repository.save(inserted) }
+
+        assert(conflicted.getError() == UpdateConflict)
+    }
+
+    @Test
+    fun `トランザクションの外から更新すると落ちる`() {
+        // 行ロックはトランザクションの終了まで保持されて初めて競合判定の前提になる。境界の外から呼ばれると
+        // FOR UPDATE が即座に解放されて防御が無症状で消えるため、例外で顕在化させる（#867）。
+        val inserted =
+            repository.save(newAccount("sub-no-transaction")).getOrThrow {
+                AssertionError(it.toString())
+            }
+
+        assertThrows<IllegalStateException> { repository.save(inserted) }
     }
 }
