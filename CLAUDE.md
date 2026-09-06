@@ -39,7 +39,7 @@ DB スキーマドキュメントは tbls が生成する（[ADR-0045](docs/adr/
 ## コーディング規約
 
 - **コメントとドキュメント**は日本語、**識別子（変数・関数・クラス名）**は英語で書く。命名は Kotlin 標準（ktfmt / detekt が強制する）。
-- **コミットメッセージ**: 日本語・Conventional Commits 形式。ヘッダー（例: `feat: 新機能を追加`）の後に、ファイルごとの詳細な変更内容を書く。
+- **コミットメッセージ**: 日本語・Conventional Commits 形式。ヘッダー（例: `feat: 新機能を追加`）の後に、ファイルごとの詳細な変更内容を書く。`fix` / `close` / `resolve` 系の type で Issue 番号を書くときは**末尾に置く**（`fix: 自動クローズを止める (#862)`）。先頭に置くと GitHub が closing keyword と解釈して未着手の Issue を閉じる（lefthook の `closing-keyword-check` が弾く）。
 - **PR のマージ方式**: 必ず **merge commit**（`gh pr merge --merge`）を使う。squash / rebase は使わない（個々のコミット履歴を main に残す方針）。CLI でマージする場合はセルフ PR の BLOCKED 表示回避のため `--admin` を付ける。
 - **テスト**: 戦略（リング × テスト手法・カバレッジゲート）も記法（JUnit 5 / Power Assert / `@WebMvcTest` / 日本語ケース名）も **`.claude/rules/testing.md`**（`src/test` 編集時にロード）に集約している。
 - **フォーマット**: `.editorconfig`（LF・末尾改行・行末空白削除・UTF-8）が出所で、editorconfig-checker が pre-commit と CI で強制する。
