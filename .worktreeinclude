@@ -1,0 +1,15 @@
+# git worktree を作ったときに、メインチェックアウトから引き継ぐ gitignore 済みファイル。
+#
+# Orca と Claude Code の双方がこのファイルを自前で読んでコピーする（worktree 作成時。
+# セットアップスクリプトは要らない）。追跡されているファイルは worktree にそのまま入るので、
+# ここに書くのは gitignore 済みのものだけ。両者で受け付ける書式が違うので、**両方が理解できる
+# 「リテラルなパス」だけを書く**:
+#   - Claude Code: gitignore 形式のパターン
+#   - Orca: リテラルなファイル / ディレクトリのパスのみ（`*` `?` `!` を含む行は警告を出して無視、
+#     絶対パス・`..`・`.git` 始まりも拒否。コピー上限は 2GB / 50,000 エントリ）
+
+# Claude Code のローカル権限・sandbox 設定。無いと worktree ごとに許可プロンプトが増える。
+.claude/settings.local.json
+
+# フロントの Firebase 設定。無いと `npm run dev` が真っ白な画面になる（frontend/README.md）。
+frontend/.env.local
