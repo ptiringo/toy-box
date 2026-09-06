@@ -102,6 +102,10 @@ pre-commit:
     # スコープの正は dprint.json の includes/excludes 側。ここでの exclude は devcontainer-lock.json のみ明示し、
     # 他の除外（build/**・.gradle/**・worktrees・settings.local.json）は gitignore と dprint.json が backstop する
     # （それら配下の追跡設定ファイルが将来 stage されると dprint が「No files found」で exit する余地がある点に留意）。
+    # diff 形式は既定（空白を `·` で可視化する dprint 独自形式）のまま。CI 側だけ
+    # `--diff-format unified` を付ける（#874）。ここで直面するのは TOML/JSON/YAML の空白差分が
+    # 大半で、末尾空白のみの差分は unified だと目視で区別できない。ローカルはどうせ `dprint fmt`
+    # で直すだけなので「どこが違うか」が一目で分かる既定形式のほうが向く。
     dprint:
       glob: "{,**/}*.{toml,json,jsonc,yml,yaml}"
       exclude:

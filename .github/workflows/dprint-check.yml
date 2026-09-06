@@ -56,5 +56,10 @@ jobs:
       - name: Verify dprint version
         run: dprint --version
 
+      # --diff-format unified: 失敗ログをそのままパッチとして読める・貼れる形にする（#874）。
+      # 既定形式は行番号と空白可視化（`·`）が混ざり、Actions のログ上では読み解きに手間がかかる。
+      # ローカルの pre-commit（lefthook.yml の dprint）は既定のままにする（用途が違う。理由は
+      # lefthook.yml 側のコメント）。0.55.1 以前は `--diff-format` を受け付けない（引数エラーで
+      # exit 10）ため、mise.toml の 0.57.0 追従とセットで初めて成立する。
       - name: dprint check
-        run: dprint check
+        run: dprint check --diff-format unified
