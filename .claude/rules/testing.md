@@ -215,7 +215,9 @@ mise exec -- diff-cover build/reports/kover/reportMature.xml \
 
 `--src-roots src/main/kotlin` は必須（省略するとソースパスを解決できずレポートが空になる）。
 
-**診断メッセージのラムダを単独行に折らない**（ktfmt × diff-cover）。`checkNotNull(x) { "診断メッセージ" }` のように正常系では通らない分岐へメッセージのラムダを添えるとき、ktfmt が行長の都合でラムダ本体を単独行へ折ると、**壊れたデータでしか実行されない行が独立した行として計上され、常に未カバーになる**。列は先にローカル変数へ取り出し、`checkNotNull` の呼び出しごと 1 行に収めること（先例: `JdbcBloodHorseQueries.toOrigin()`）。
+**ktfmt が単独行へ折った式は、独立した計上単位になる**（ktfmt × diff-cover）。ktfmt が行長の都合で式の一部を単独行へ折ると、**その行がカバレッジの独立した計上単位になり、正常系では実行されない条件・分岐だと常に未カバーになる**。回避策は一般形で「長くなる部分式は先にローカル変数へ取り出し、折り返しが起きない長さに収める」。**同じロジックでも整形結果でゲートの通過可否が変わる**のが要点で、ラムダに限らない。以下は同じ機序の別々の現れ方である。
+
+**例 1: 診断メッセージのラムダ**（[#687](https://github.com/ptiringo/toy-box/issues/687)）。`checkNotNull(x) { "診断メッセージ" }` のように正常系では通らない分岐へメッセージのラムダを添えると、ラムダ本体が単独行へ折られて壊れたデータでしか実行されない行になる（先例: `JdbcBloodHorseQueries.toOrigin()`）。
 
 ```kotlin
 // 悪い例: ラムダ本体が単独行に折られ、その行が常に未カバーになる
@@ -228,7 +230,26 @@ val sire = getObject("sire_id", UUID::class.java)
 sireId = BloodHorseId(checkNotNull(sire) { "内国産の父IDが欠落: id=$id" })
 ```
 
-[#687](https://github.com/ptiringo/toy-box/issues/687) では読み取り経路（`JdbcBloodHorseQueries` / `JdbcBreedingRegistrationQueries` / `JdbcBreedingResultQueries`）の NULL 診断がこの形で折られ、差分カバレッジが **89%** まで落ちて `--fail-under 90` を割った。1 行に収め直して **98%** へ回復している。同じ診断を持つ書き込み側（`JdbcBloodHorseRepository`）が 100% だったのは、たまたま 1 行に収まっていたからで設計の差ではない。**同じコードでも整形結果でゲートの通過可否が変わる**のが要点。
+読み取り経路（`JdbcBloodHorseQueries` / `JdbcBreedingRegistrationQueries` / `JdbcBreedingResultQueries`）の NULL 診断がこの形で折られ、差分カバレッジが **89%** まで落ちて `--fail-under 90` を割った。1 行に収め直して **98%** へ回復している。同じ診断を持つ書き込み側（`JdbcBloodHorseRepository`）が 100% だったのは、たまたま 1 行に収まっていたからで設計の差ではない。
+
+**例 2: `if` の複合条件**（[#867](https://github.com/ptiringo/toy-box/issues/867)）。条件式が単独行へ折られると、正常系では成立しない条件の行が未カバーになる。ラムダは 1 つも出てこない。
+
+```kotlin
+// 悪い例: 条件式が単独行に折られ、その行が未カバー計上される
+if (
+    version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, account.id.value, version)
+) {
+    return Err(UpdateConflict)
+}
+
+// 良い例: 部分式を先に取り出し、if の条件を 1 行に収める
+val id = account.id.value
+if (version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, id, version)) {
+    return Err(UpdateConflict)
+}
+```
+
+`JdbcAccountRepository.save` がこの形で折られ、当該ファイルの差分カバレッジが **80%** になった。`account.id.value` をローカル変数へ取り出して **100%** へ戻している。同じ PR で同型の変更をした他の 4 リポジトリが最初から 100% だったのは、たまたまローカル変数を挟んでいて折り返しが起きなかったからである。
 
 ### 実行
 
