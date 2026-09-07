@@ -35,6 +35,7 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.dao.DataAccessResourceFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
 
@@ -54,6 +55,7 @@ class RegisterHorseTransactionRollbackTest(
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val bloodHorseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
 ) : PostgresContainerSupport() {
 
     // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
@@ -70,7 +72,8 @@ class RegisterHorseTransactionRollbackTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, bloodHorseRows, registrationRows)
+        seeder =
+            StudbookSeeder(worldId, inspectionRows, bloodHorseRows, registrationRows, jdbcClient)
     }
 
     @TestConfiguration

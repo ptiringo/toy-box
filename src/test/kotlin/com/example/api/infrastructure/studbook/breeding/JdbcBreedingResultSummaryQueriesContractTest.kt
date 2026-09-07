@@ -47,7 +47,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows, jdbcClient)
     }
 
     private val stallion = generateId()

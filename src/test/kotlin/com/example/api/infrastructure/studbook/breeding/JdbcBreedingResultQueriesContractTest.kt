@@ -47,7 +47,7 @@ class JdbcBreedingResultQueriesContractTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows, jdbcClient)
     }
 
     /** 種付あり行を作って ID を返す。outcomeType=null は分娩結果未報告。 */
@@ -182,7 +182,8 @@ class JdbcBreedingResultQueriesContractTest(
     @Test
     fun `他の世界の繁殖成績は引けない`() {
         val otherWorldId = WorldId(createWorld())
-        val otherSeeder = StudbookSeeder(otherWorldId, inspectionRows, horseRows, registrationRows)
+        val otherSeeder =
+            StudbookSeeder(otherWorldId, inspectionRows, horseRows, registrationRows, jdbcClient)
         val id =
             seedCoveredRow(
                 stallionId = otherSeeder.seedHorseRow(sex = "MALE"),

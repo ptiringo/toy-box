@@ -23,8 +23,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 
 /**
  * ドメインポート BloodHorseRepository の Spring Data JDBC 実装 [JdbcBloodHorseRepository] の契約テスト （ADR-0027 /
@@ -47,6 +50,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 11. 馬名の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  * 12. 出自 CarriedOver の往復と CHECK 強制（バリアント固有列の混入を拒否）
  * 13. 血統登録番号の一意性が世界の中で引き当て・UNIQUE 強制されること（世界をまたぐと衝突しないこと）
+ * 14. update 経路が呼び出し側のトランザクションを要求し、その境界の内側で競合しても外側のコミットが通ること（#867）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
@@ -54,9 +58,19 @@ class JdbcBloodHorseRepositoryContractTest(
     private val rows: BloodHorseSpringDataRepository,
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+    transactionManager: PlatformTransactionManager,
 ) : PostgresContainerSupport() {
 
-    private val repository = JdbcBloodHorseRepository(rows)
+    /**
+     * 呼び出し側のトランザクション境界を張る（#867）。
+     *
+     * 本番ではユースケースの `@Transactional` が境界になるが、契約テストは Spring の宣言的境界の外側で走るので、
+     * 境界の内側の振る舞いを見るケースだけここで明示的に張る。
+     */
+    private val transaction = TransactionTemplate(transactionManager)
+
+    private val repository = JdbcBloodHorseRepository(rows, jdbcClient)
     // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
     private lateinit var worldIdValue: UUID
     private val worldId
@@ -68,7 +82,7 @@ class JdbcBloodHorseRepositoryContractTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, rows, registrationRows)
+        seeder = StudbookSeeder(worldId, inspectionRows, rows, registrationRows, jdbcClient)
     }
 
     private fun domesticRow(id: UUID = generateId()) =
@@ -282,8 +296,7 @@ class JdbcBloodHorseRepositoryContractTest(
         val inserted = repository.save(worldId, fixture).unwrap()
         assert(inserted.version != null)
 
-        val named = inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate
-        val updated = repository.save(worldId, named).unwrap()
+        val updated = inTransaction { repository.save(worldId, inserted.named("オグリキャップ")) }.unwrap()
 
         assert(updated.version!! > inserted.version!!)
         assert(rows.count() == 1L)
@@ -295,18 +308,9 @@ class JdbcBloodHorseRepositoryContractTest(
         val fixture = BloodHorseFixture.bloodHorse()
         seeder.seedInspectionFor(fixture)
         val inserted = repository.save(worldId, fixture).unwrap()
-        repository
-            .save(
-                worldId,
-                inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate,
-            )
-            .unwrap()
+        inTransaction { repository.save(worldId, inserted.named("オグリキャップ")) }.unwrap()
 
-        val conflicted =
-            repository.save(
-                worldId,
-                inserted.assignName(HorseName.create("トウカイテイオー").unwrap()).unwrap().aggregate,
-            )
+        val conflicted = inTransaction { repository.save(worldId, inserted.named("トウカイテイオー")) }
 
         assert(conflicted.getError() == UpdateConflict)
         assert(repository.findById(worldId, inserted.id)?.name?.value == "オグリキャップ")
@@ -319,14 +323,29 @@ class JdbcBloodHorseRepositoryContractTest(
         val inserted = repository.save(worldId, fixture).unwrap()
         rows.deleteAll()
 
-        val conflicted =
-            repository.save(
-                worldId,
-                inserted.assignName(HorseName.create("オグリキャップ").unwrap()).unwrap().aggregate,
-            )
+        val conflicted = inTransaction { repository.save(worldId, inserted.named("オグリキャップ")) }
 
         assert(conflicted.getError() == UpdateConflict)
     }
+
+    @Test
+    fun `トランザクションの外から更新すると落ちる`() {
+        // 行ロックはトランザクションの終了まで保持されて初めて競合判定の前提になる。境界の外から呼ばれると
+        // FOR UPDATE が即座に解放されて防御が無症状で消えるため、例外で顕在化させる（#867）。
+        val fixture = BloodHorseFixture.bloodHorse()
+        seeder.seedInspectionFor(fixture)
+        val inserted = repository.save(worldId, fixture).unwrap()
+
+        assertThrows<IllegalStateException> { repository.save(worldId, inserted.named("キョウカイノソト")) }
+    }
+
+    /** [block] を 1 つのトランザクションで包み、**コミットまで**通す（コミットが落ちればテストも落ちる。#867）。 */
+    private fun <T : Any> inTransaction(block: () -> T): T =
+        checkNotNull(transaction.execute { block() })
+
+    /** 命名済みの集約を作る（version は元のまま＝競合を仕込むため）。 */
+    private fun BloodHorse.named(name: String): BloodHorse =
+        assignName(HorseName.create(name).unwrap()).unwrap().aggregate
 
     @Test
     fun `既に採番済みの血統登録番号は existsByRegistrationNumber が true を返す`() {
@@ -392,7 +411,8 @@ class JdbcBloodHorseRepositoryContractTest(
         repository.save(worldId, first).unwrap()
 
         val otherWorldId = WorldId(createWorld())
-        val otherSeeder = StudbookSeeder(otherWorldId, inspectionRows, rows, registrationRows)
+        val otherSeeder =
+            StudbookSeeder(otherWorldId, inspectionRows, rows, registrationRows, jdbcClient)
         val sameNumber = BloodHorseFixture.bloodHorse(registrationNumber = "2023104567")
         otherSeeder.seedInspectionFor(sameNumber)
 

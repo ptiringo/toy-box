@@ -6,11 +6,12 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.CoveringReport
 import com.example.api.domain.studbook.model.breeding.CoveringReportId
 import com.example.api.domain.studbook.model.breeding.CoveringReportRepository
+import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import java.time.Year
-import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 
 /**
@@ -21,8 +22,10 @@ import org.springframework.stereotype.Repository
  * 担う（永続化モデルを分離した帰結。ADR-0027）。
  */
 @Repository
-class JdbcCoveringReportRepository(private val rows: CoveringReportSpringDataRepository) :
-    CoveringReportRepository {
+class JdbcCoveringReportRepository(
+    private val rows: CoveringReportSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+) : CoveringReportRepository {
 
     override fun findById(worldId: WorldId, id: CoveringReportId): CoveringReport? =
         rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
@@ -40,16 +43,24 @@ class JdbcCoveringReportRepository(private val rows: CoveringReportSpringDataRep
             )
             ?.toDomain()
 
+    /**
+     * 版が一致するときだけ更新する（競合は例外にせず [UpdateConflict] で返す。#867）。
+     *
+     * insert（version が null）はロック不要。update のときだけ [lockRowIfVersionMatches] で行をロックして版を
+     * 突き合わせ、一致した場合にのみ `save` を通す（例外に頼れない理由はヘルパーの KDoc）。
+     */
     override fun save(
         worldId: WorldId,
         coveringReport: CoveringReport,
-    ): Result<CoveringReport, UpdateConflict> =
-        try {
-            Ok(rows.save(coveringReport.toRow(worldId)).toDomain())
-        } catch (_: OptimisticLockingFailureException) {
-            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
-            Err(UpdateConflict)
+    ): Result<CoveringReport, UpdateConflict> {
+        val version = coveringReport.version
+        val id = coveringReport.id.value
+        // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+        if (version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, id, version)) {
+            return Err(UpdateConflict)
         }
+        return Ok(rows.save(coveringReport.toRow(worldId)).toDomain())
+    }
 
     /** 永続化モデルからドメイン集約を再構成する（検証・採番なし）。 */
     private fun CoveringReportRow.toDomain(): CoveringReport =
@@ -76,4 +87,9 @@ class JdbcCoveringReportRepository(private val rows: CoveringReportSpringDataRep
             submittedOn = submittedOn,
             version = version,
         )
+
+    private companion object {
+        /** 楽観ロックの行ロックを掛ける対象（[lockRowIfVersionMatches] に渡す完全修飾名）。 */
+        const val TABLE = "studbook.covering_report"
+    }
 }

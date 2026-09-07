@@ -15,6 +15,7 @@ import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringD
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
 import java.util.UUID
+import org.springframework.jdbc.core.simple.JdbcClient
 
 /**
  * FK backstop（ADR-0053）を満たすように、テスト対象行が参照する親行を先に永続化するテスト用シーダ。
@@ -28,6 +29,7 @@ class StudbookSeeder(
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val horseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
 ) {
     /** [horse] が参照する審査行（inspection_id の親）を最小構成で永続化する。 */
     fun seedInspectionFor(horse: BloodHorse) {
@@ -37,12 +39,14 @@ class StudbookSeeder(
     /** 馬を審査行ごと永続化して返す（父・母・種牡馬・繁殖登録対象馬用）。 */
     fun seedHorse(horse: BloodHorse): BloodHorse {
         seedInspectionFor(horse)
-        return JdbcBloodHorseRepository(horseRows).save(worldId, horse).unwrap()
+        return JdbcBloodHorseRepository(horseRows, jdbcClient).save(worldId, horse).unwrap()
     }
 
     /** 繁殖登録を永続化して返す。対象馬は事前に [seedHorse] しておくこと。 */
     fun seedRegistration(registration: BreedingRegistration): BreedingRegistration =
-        JdbcBreedingRegistrationRepository(registrationRows).save(worldId, registration).unwrap()
+        JdbcBreedingRegistrationRepository(registrationRows, jdbcClient)
+            .save(worldId, registration)
+            .unwrap()
 
     /** 任意 ID の審査行を作り ID を返す（生 Row フィクスチャの inspection_id 用）。 */
     fun seedInspectionRow(id: UUID = generateId()): UUID {

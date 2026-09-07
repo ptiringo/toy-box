@@ -23,8 +23,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 
 /**
  * ドメインポート BreedingResultRepository の Spring Data JDBC 実装 [JdbcBreedingResultRepository] の契約テスト
@@ -45,6 +48,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
  * 9. save は集約の version（null なら insert、非 null なら楽観ロック付き update）で判別すること
  * 10. 古い version での save が UpdateConflict を返し先行の書き込みを保つこと（楽観ロック）
  * 11. 並行削除された集約への save が UpdateConflict を返すこと
+ * 12. update 経路が呼び出し側のトランザクションを要求し、その境界の内側で競合しても外側のコミットが通ること（#867）
  * 12. 「繁殖登録×繁殖年」の一意性が UNIQUE 制約でスキーマ側にも強制されること（read-then-insert 競合の backstop）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -54,9 +58,13 @@ class JdbcBreedingResultRepositoryContractTest(
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val horseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+    transactionManager: PlatformTransactionManager,
 ) : PostgresContainerSupport() {
 
-    private val repository = JdbcBreedingResultRepository(rows)
+    private val repository = JdbcBreedingResultRepository(rows, jdbcClient)
+    /** 呼び出し側のトランザクション境界を張る（#867）。本番ではユースケースの `@Transactional` が担う。 */
+    private val transaction = TransactionTemplate(transactionManager)
     // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
     private lateinit var worldIdValue: UUID
     private val worldId
@@ -68,7 +76,7 @@ class JdbcBreedingResultRepositoryContractTest(
     @BeforeEach
     fun setUpWorld() {
         worldIdValue = createWorld()
-        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows)
+        seeder = StudbookSeeder(worldId, inspectionRows, horseRows, registrationRows, jdbcClient)
     }
 
     /**
@@ -295,7 +303,7 @@ class JdbcBreedingResultRepositoryContractTest(
         assert(inserted.version != null)
 
         val reported = inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap()
-        val updated = repository.save(worldId, reported).unwrap()
+        val updated = inTransaction { repository.save(worldId, reported) }.unwrap()
 
         assert(updated.version!! > inserted.version!!)
         assert(rows.count() == 1L)
@@ -305,12 +313,14 @@ class JdbcBreedingResultRepositoryContractTest(
     @Test
     fun `古いversionでのsaveはUpdateConflictを返し先行の書き込みが保たれる`() {
         val inserted = repository.save(worldId, seededBreedingResult()).unwrap()
-        repository
-            .save(worldId, inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+        inTransaction {
+            repository.save(worldId, inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+        }
             .unwrap()
 
-        val conflicted =
+        val conflicted = inTransaction {
             repository.save(worldId, inserted.recordFoaling(FoalingOutcome.Abortion).unwrap())
+        }
 
         assert(conflicted.getError() == UpdateConflict)
         assert(repository.findById(worldId, inserted.id)?.outcome == FoalingOutcome.NotConceived)
@@ -321,11 +331,27 @@ class JdbcBreedingResultRepositoryContractTest(
         val inserted = repository.save(worldId, seededBreedingResult()).unwrap()
         rows.deleteAll()
 
-        val conflicted =
+        val conflicted = inTransaction {
             repository.save(worldId, inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+        }
 
         assert(conflicted.getError() == UpdateConflict)
     }
+
+    @Test
+    fun `トランザクションの外から更新すると落ちる`() {
+        // 行ロックはトランザクションの終了まで保持されて初めて競合判定の前提になる。境界の外から呼ばれると
+        // FOR UPDATE が即座に解放されて防御が無症状で消えるため、例外で顕在化させる（#867）。
+        val inserted = repository.save(worldId, seededBreedingResult()).unwrap()
+
+        assertThrows<IllegalStateException> {
+            repository.save(worldId, inserted.recordFoaling(FoalingOutcome.NotConceived).unwrap())
+        }
+    }
+
+    /** [block] を 1 つのトランザクションで包み、**コミットまで**通す（コミットが落ちればテストも落ちる。#867）。 */
+    private fun <T : Any> inTransaction(block: () -> T): T =
+        checkNotNull(transaction.execute { block() })
 
     @Test
     fun `提出済みの成績は提出日ごと往復できる`() {

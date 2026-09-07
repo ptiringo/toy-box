@@ -16,11 +16,12 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.HorseInspectionId
+import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.example.api.infrastructure.shared.orThrow
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 
 /**
@@ -34,8 +35,10 @@ import org.springframework.stereotype.Repository
  * PostgreSQL。H2 全面脱却・#451）ため、InMemory 実装・プロファイル切替は持たない（ADR-0030）。
  */
 @Repository
-class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository) :
-    BloodHorseRepository {
+class JdbcBloodHorseRepository(
+    private val rows: BloodHorseSpringDataRepository,
+    private val jdbcClient: JdbcClient,
+) : BloodHorseRepository {
 
     override fun findById(worldId: WorldId, id: BloodHorseId): BloodHorse? =
         rows.findByWorldIdAndId(worldId.value, id.value)?.toDomain()
@@ -55,17 +58,22 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
      * **更新時の `world_id`**: Spring Data JDBC の UPDATE は主キー（＋version）で行を特定するため、誤った [worldId] を渡すと既存行の
      * `world_id` を書き換えうる。読み取りが常に `(world_id, id)` で絞られる以上、
      * 呼び出し側が持つ集約は自分の世界のものに限られるが、この口を世界チェック無しの汎用 update として使わないこと。
+     *
+     * **競合の判定**: insert（version が null）はロック不要。update のときだけ [lockRowIfVersionMatches] で行を
+     * ロックして版を突き合わせ、一致した場合にのみ `save` を通す（例外に頼れない理由はヘルパーの KDoc。#867）。
      */
     override fun save(
         worldId: WorldId,
         bloodHorse: BloodHorse,
-    ): Result<BloodHorse, UpdateConflict> =
-        try {
-            Ok(rows.save(bloodHorse.toRow(worldId)).toDomain())
-        } catch (_: OptimisticLockingFailureException) {
-            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
-            Err(UpdateConflict)
+    ): Result<BloodHorse, UpdateConflict> {
+        val version = bloodHorse.version
+        val id = bloodHorse.id.value
+        // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う
+        if (version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, id, version)) {
+            return Err(UpdateConflict)
         }
+        return Ok(rows.save(bloodHorse.toRow(worldId)).toDomain())
+    }
 
     override fun existsByName(worldId: WorldId, name: HorseName): Boolean =
         rows.existsByWorldIdAndName(worldId.value, name.value)
@@ -152,5 +160,10 @@ class JdbcBloodHorseRepository(private val rows: BloodHorseSpringDataRepository)
                 )
             Origin.CarriedOver -> base.copy(originType = OriginType.CARRIED_OVER)
         }
+    }
+
+    private companion object {
+        /** 楽観ロックの行ロックを掛ける対象（[lockRowIfVersionMatches] に渡す完全修飾名）。 */
+        const val TABLE = "studbook.blood_horse"
     }
 }

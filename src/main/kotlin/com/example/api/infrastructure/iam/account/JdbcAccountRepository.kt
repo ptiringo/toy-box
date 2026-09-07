@@ -5,10 +5,10 @@ import com.example.api.domain.iam.model.account.AccountRepository
 import com.example.api.domain.iam.model.account.SubjectId
 import com.example.api.domain.shared.AccountId
 import com.example.api.domain.shared.UpdateConflict
+import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 
@@ -22,13 +22,21 @@ class JdbcAccountRepository(
     override fun findBySubjectId(subjectId: SubjectId): Account? =
         rows.findBySubjectId(subjectId.value)?.toDomain()
 
-    override fun save(account: Account): Result<Account, UpdateConflict> =
-        try {
-            Ok(rows.save(account.toRow()).toDomain())
-        } catch (_: OptimisticLockingFailureException) {
-            // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う。
-            Err(UpdateConflict)
+    /**
+     * 版が一致するときだけ更新する（競合は例外にせず [UpdateConflict] で返す。#867）。
+     *
+     * insert（version が null）はロック不要。update のときだけ [lockRowIfVersionMatches] で行をロックして
+     * 版を突き合わせ、一致した場合にのみ `save` を通す。詳細と、例外に頼れない理由はヘルパーの KDoc を参照。
+     */
+    override fun save(account: Account): Result<Account, UpdateConflict> {
+        val version = account.version
+        val id = account.id.value
+        // version 不一致（並行更新）または行の並行削除。どちらも「読み取り時点から競合した」として扱う。
+        if (version != null && !jdbcClient.lockRowIfVersionMatches(TABLE, id, version)) {
+            return Err(UpdateConflict)
         }
+        return Ok(rows.save(account.toRow()).toDomain())
+    }
 
     /**
      * `ON CONFLICT DO NOTHING` で insert し、結果によらず DB の現状を読み直して返す。
@@ -63,6 +71,9 @@ class JdbcAccountRepository(
     private fun Account.toRow(): AccountRow = AccountRow(id.value, subjectId.value, version)
 
     private companion object {
+        /** 楽観ロックの行ロックを掛ける対象（[lockRowIfVersionMatches] に渡す完全修飾名）。 */
+        const val TABLE = "iam.account"
+
         /**
          * Spring Data JDBC が insert 時に採番する初期 version と揃える。ずれると経路によって楽観ロックの前提が
          * 食い違うため、契約テスト（`saveIfAbsent の初回保存は save と同じ version を採番する`）で縛っている。
