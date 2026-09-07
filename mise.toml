@@ -30,7 +30,9 @@ GOOGLE_IMPERSONATE_SERVICE_ACCOUNT = "local-readonly@ptiringo-toy-box.iam.gservi
 [tools]
 actionlint = "1.7.12"
 "aqua:cli/cli" = "2.96.0"
-editorconfig-checker = "3.7.0"
+# 4.x は aqua-registry が資産名の変更（`ec-*` → `editorconfig-checker-*`）に未追従のため入らない
+# （`mise install` が 404。aquaproj/aqua-registry#60131 待ち）。追従したら 4.x を検討する（#881）。
+editorconfig-checker = "3.11.3"
 fnox = "1.27.1"
 "github:sbdchd/squawk" = "2.58.0"
 gitleaks = "8.30.1"
