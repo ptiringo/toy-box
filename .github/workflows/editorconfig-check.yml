@@ -61,7 +61,10 @@ jobs:
           # （短縮名では --locked が解決できない）。
           install_args: "editorconfig-checker"
 
-      # 実行名は `ec`。mise が入れる editorconfig-checker 3.7.0 が提供するのはこの名前だけで、
+      # 実行名は `ec`。mise が入れる editorconfig-checker 3.11.3 が提供するのはこの名前だけで、
       # `mise exec -- editorconfig-checker` は "No such file or directory" になる（lefthook も `ec` を呼ぶ）。
+      # v4.0.0 で実行名が `editorconfig-checker` へ改称されたが、aqua-registry が資産名の変更
+      # （`ec-*` → `editorconfig-checker-*`）に未追従で 4.x は mise から入らない（#881）。
+      # 追従して 4.x へ上げるときは、この実行名も併せて見直すこと。
       - name: Run EditorConfig check
         run: mise exec -- ec --format github-actions
