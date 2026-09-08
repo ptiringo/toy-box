@@ -12,7 +12,7 @@ kover = "0.9.9"
 
 # ライブラリのバージョン
 spring-ai = "2.0.1"
-springdoc-openapi-bom = "3.1.0"
+springdoc-openapi-bom = "3.1.1"
 java-uuid-generator = "5.2.0"
 kotlin-result = "2.3.1"
 mockk = "1.14.11"
