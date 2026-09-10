@@ -24,6 +24,7 @@ class ToyBoxRuleSetProvider : RuleSetProvider {
                 RuleName("NoSilentMapError") to ::NoSilentMapError,
                 RuleName("WorldScopedPortSignature") to ::WorldScopedPortSignature,
                 RuleName("ActorScopedUseCase") to ::ActorScopedUseCase,
+                RuleName("NoCatchOptimisticLockingFailure") to ::NoCatchOptimisticLockingFailure,
             ),
         )
 
