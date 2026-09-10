@@ -60,3 +60,10 @@ toy-box:
   ActorScopedUseCase:
     active: true
     excludes: ["**/src/test/**", "**/src/testFixtures/**"]
+  # 楽観ロックの競合を catch で受け取らない（#739 / #867 / #890）。save はユースケースのトランザクションに
+  # 参加するため、捕まえて Err(UpdateConflict) に写しても外側のコミットが UnexpectedRollbackException になる
+  # （409 のつもりが 500）。update 経路は lockRowIfVersionMatches で版を突き合わせる。
+  # この誤りはリポジトリ直呼びの契約テストでは緑になるため、ルールで止める。テストコードは対象外。
+  NoCatchOptimisticLockingFailure:
+    active: true
+    excludes: ["**/src/test/**", "**/src/testFixtures/**"]
