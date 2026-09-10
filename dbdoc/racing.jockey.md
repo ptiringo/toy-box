@@ -29,6 +29,12 @@
 | jockey_pkey | CREATE UNIQUE INDEX jockey_pkey ON racing.jockey USING btree (id) |
 | uq_jockey_world_id_id | CREATE UNIQUE INDEX uq_jockey_world_id_id ON racing.jockey USING btree (world_id, id) |
 
+## Triggers
+
+| Name | Definition |
+| ---- | ---------- |
+| trg_jockey_world_id_immutable | CREATE TRIGGER trg_jockey_world_id_immutable BEFORE UPDATE ON racing.jockey FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() |
+
 ## Relations
 
 ```mermaid

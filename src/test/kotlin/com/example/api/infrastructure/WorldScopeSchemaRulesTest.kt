@@ -17,8 +17,8 @@ import org.springframework.jdbc.core.JdbcTemplate
  * 必要はなく、**新しいテーブルは自動で検査対象になる**（追従漏れが安全側に転ぶ）。除外するのは `iam` スキーマ（`Account` / `World`
  * はテナントの根であり世界に属さない）と Flyway の内部管理 テーブルだけ。
  *
- * 列の存在だけでなく `NOT NULL` まで見る。列を足して制約を忘れると（V18 の途中段階で止まると）、 行がどの世界にも属さないまま入れてしまうため。複合 FK の有無や
- * `world_id` を書き換える UPDATE の 拒否（#727）は対象外。
+ * 列の存在だけでなく `NOT NULL` まで見る。列を足して制約を忘れると（V18 の途中段階で止まると）、 行がどの世界にも属さないまま入れてしまうため。あわせて `world_id`
+ * を書き換える UPDATE を拒否するトリガの有無も見る（#727 / ADR-0081）。複合 FK の有無は 対象外。
  *
  * `pg_tables` は通常テーブルとパーティションテーブルのみを列挙し、view / materialized view / foreign table は含まない。読み取りモデル（軽量
  * CQRS の Read Model）をマテビューで実装した場合、そのマテビューは このゲートの対象外になり静かに素通りする（レビュー担保）。
@@ -35,6 +35,16 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
         assert(violations.isEmpty()) {
             "world_id UUID NOT NULL を持たないテーブル: $violations。" +
                 "世界スコープのテーブルには world_id が必要（.claude/rules/migrations.md / ADR-0067）"
+        }
+    }
+
+    @Test
+    fun `対象テーブルが world_id の書き換えを拒否するトリガを持つ`() {
+        val violations = jdbc.queryForList(TABLES_WITHOUT_IMMUTABLE_TRIGGER, String::class.java)
+
+        assert(violations.isEmpty()) {
+            "world_id イミュータブルトリガを持たないテーブル: $violations。" +
+                "トリガが無いと行が世界をまたいで移動できる（.claude/rules/migrations.md / ADR-0081）"
         }
     }
 
@@ -91,6 +101,36 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
                     AND c.column_name = 'world_id'
                     AND c.data_type = 'uuid'
                     AND c.is_nullable = 'NO'
+            )
+            ORDER BY 1
+            """
+                .trimIndent()
+
+        /**
+         * 対象テーブルのうち `world_id` の書き換えを拒否するトリガを持たないもの（#727 / ADR-0081）。
+         *
+         * 照合はトリガ名ではなく**呼び出す関数名**で行う。命名規約（`trg_<table>_world_id_immutable`）に 依存させないため。`tgisinternal`
+         * の除外は、制約が内部生成するトリガ（FK の実体）を数えないため。
+         *
+         * `tgtype` は BEFORE / ROW / UPDATE 等のビットマスクで、`1`(ROW) | `2`(BEFORE) | `16`(UPDATE) = 19。
+         * ここまで見るのは、関数さえ呼べば何でもよいと読める検査にしないため（例えば AFTER INSERT に 張り替えても素通りする検査では、守りたい性質を表していない）。
+         */
+        val TABLES_WITHOUT_IMMUTABLE_TRIGGER =
+            """
+            $TARGET_TABLES_CTE
+            SELECT format('%I.%I', t.schemaname, t.tablename)
+            FROM target t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM pg_trigger tg
+                    JOIN pg_class c ON c.oid = tg.tgrelid
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                    JOIN pg_proc p ON p.oid = tg.tgfoid
+                WHERE n.nspname = t.schemaname
+                    AND c.relname = t.tablename
+                    AND NOT tg.tgisinternal
+                    AND p.proname = 'reject_world_id_update'
+                    AND (tg.tgtype & 19) = 19
             )
             ORDER BY 1
             """

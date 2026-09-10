@@ -37,6 +37,12 @@
 | ix_breeding_registration_registered_horse_id | CREATE INDEX ix_breeding_registration_registered_horse_id ON studbook.breeding_registration USING btree (world_id, registered_horse_id) |
 | uq_breeding_registration_registration_number | CREATE UNIQUE INDEX uq_breeding_registration_registration_number ON studbook.breeding_registration USING btree (world_id, registration_number) |
 
+## Triggers
+
+| Name | Definition |
+| ---- | ---------- |
+| trg_breeding_registration_world_id_immutable | CREATE TRIGGER trg_breeding_registration_world_id_immutable BEFORE UPDATE ON studbook.breeding_registration FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() |
+
 ## Relations
 
 ```mermaid

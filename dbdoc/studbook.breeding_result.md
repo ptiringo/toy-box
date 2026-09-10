@@ -46,6 +46,12 @@
 | ix_breeding_result_registration_year | CREATE INDEX ix_breeding_result_registration_year ON studbook.breeding_result USING btree (world_id, breeding_registration_id, breeding_year) |
 | ix_breeding_result_covering_stallion_id | CREATE INDEX ix_breeding_result_covering_stallion_id ON studbook.breeding_result USING btree (world_id, covering_stallion_id) |
 
+## Triggers
+
+| Name | Definition |
+| ---- | ---------- |
+| trg_breeding_result_world_id_immutable | CREATE TRIGGER trg_breeding_result_world_id_immutable BEFORE UPDATE ON studbook.breeding_result FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() |
+
 ## Relations
 
 ```mermaid

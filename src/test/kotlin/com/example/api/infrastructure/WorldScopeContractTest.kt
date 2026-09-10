@@ -172,4 +172,49 @@ class WorldScopeContractTest : PostgresContainerSupport() {
         assert(countBy("studbook.blood_horse", worldId) == 0)
         assert(countBy("studbook.horse_inspection", worldId) == 0)
     }
+
+    @Test
+    fun `別の世界へ world_id を書き換える UPDATE は拒否される`() {
+        // 複合 FK（V19）が封じたのは「他人の世界の行を参照する」経路だけで、「自分の行を他人の世界へ移す」
+        // 経路は V23 のトリガだけが止めている。アプリは自分の世界しか読まないためこの UPDATE を組み立てる
+        // 対応物が Kotlin 側に無く、ここで直接書き込んで確かめる。
+        //
+        // 対象に horse_inspection を選ぶのは、blood_horse では**トリガが無くても UPDATE が弾かれる**ため
+        // （実測）。blood_horse の world_id を書き換えると複合 FK (world_id, inspection_id) の参照先が
+        // 移動先の世界に無くなり、トリガの手前で FK 違反になる。それを合格と読むと「トリガが効いている」
+        // ことの検証にならない。horse_inspection は他集約を参照せず、ここでは誰からも参照されていないので、
+        // world_id の書き換えを止められるのはトリガだけになる（jockey も同じ位置づけ）。
+        //
+        // トリガの RAISE EXCEPTION が ERRCODE 23514 で上がり、Spring に DataIntegrityViolationException
+        // として訳されることも、この catch 型が同時に実測している（既定の P0001 のままだと
+        // UncategorizedSQLException に落ちてここが失敗する）。
+        val worldA = createWorld("世界A")
+        val worldB = createWorld("世界B")
+        val inspectionId = insertInspection(worldA)
+
+        val moveToOtherWorld = "UPDATE studbook.horse_inspection SET world_id = ? WHERE id = ?"
+
+        var rejected = false
+        try {
+            jdbc.update(moveToOtherWorld, worldB, inspectionId)
+        } catch (_: DataIntegrityViolationException) {
+            rejected = true
+        }
+
+        assert(rejected)
+        assert(countBy("studbook.horse_inspection", worldA) == 1)
+    }
+
+    @Test
+    fun `同じ world_id を書き込む UPDATE は成功する`() {
+        // Spring Data JDBC の UPDATE は全列を書くため、通常の更新でも world_id が同値で毎回書き込まれる。
+        // トリガの WHEN (OLD.world_id IS DISTINCT FROM NEW.world_id) がこの本番経路を巻き込まないことの実測。
+        val worldId = createWorld()
+        val inspectionId = insertInspection(worldId)
+
+        val sameWorld = "UPDATE studbook.horse_inspection SET world_id = ? WHERE id = ?"
+        val updated = jdbc.update(sameWorld, worldId, inspectionId)
+
+        assert(updated == 1)
+    }
 }

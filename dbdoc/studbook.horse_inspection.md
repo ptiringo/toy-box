@@ -34,6 +34,12 @@
 | horse_inspection_pkey | CREATE UNIQUE INDEX horse_inspection_pkey ON studbook.horse_inspection USING btree (id) |
 | uq_horse_inspection_world_id_id | CREATE UNIQUE INDEX uq_horse_inspection_world_id_id ON studbook.horse_inspection USING btree (world_id, id) |
 
+## Triggers
+
+| Name | Definition |
+| ---- | ---------- |
+| trg_horse_inspection_world_id_immutable | CREATE TRIGGER trg_horse_inspection_world_id_immutable BEFORE UPDATE ON studbook.horse_inspection FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() |
+
 ## Relations
 
 ```mermaid
