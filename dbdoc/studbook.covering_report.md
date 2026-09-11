@@ -33,6 +33,12 @@
 | uq_covering_report_stallion_year | CREATE UNIQUE INDEX uq_covering_report_stallion_year ON studbook.covering_report USING btree (stallion_breeding_registration_id, covering_year) |
 | uq_covering_report_world_id_id | CREATE UNIQUE INDEX uq_covering_report_world_id_id ON studbook.covering_report USING btree (world_id, id) |
 
+## Triggers
+
+| Name | Definition | Comment |
+| ---- | ---------- | ------- |
+| trg_covering_report_world_id_immutable | CREATE TRIGGER trg_covering_report_world_id_immutable BEFORE UPDATE ON studbook.covering_report FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() | world_id の書き換えを拒否する（行の世界間移動の禁止） |
+
 ## Relations
 
 ```mermaid

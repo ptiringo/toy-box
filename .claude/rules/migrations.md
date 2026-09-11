@@ -65,11 +65,17 @@ Flyway のチェックサムはコメントを含むファイル全体から計�
 ## 新しいテーブルには `world_id UUID NOT NULL` が要る（#706 / ADR-0067）
 
 データは世界（セーブデータ＝テナント）ごとに閉じる。`iam` スキーマ（`account` / `world` はテナントの根）以外の
-テーブルは `world_id UUID NOT NULL` を持ち、`iam.world(id)` への FK を張ること。忘れると全プレイヤー共有の
-テーブルが黙って生まれ、例外も出ないままデータが混ざる。
+テーブルは `world_id UUID NOT NULL` を持ち、`iam.world(id)` への FK を張り、`world_id` の書き換えを拒否する
+トリガを張ること。忘れると全プレイヤー共有のテーブルが黙って生まれ、例外も出ないままデータが混ざる。
 
-`WorldScopeSchemaRulesTest`（`src/test/.../infrastructure/`）が `pg_tables` から対象テーブルを動的に列挙して
-`world_id UUID NOT NULL` の有無を検査するため、**列と NOT NULL を忘れると `./gradlew check` が落ちる**。テーブルの列挙は自動なので
-規約テスト側を手で更新する必要はない。**ただし `iam.world(id)` への FK の有無は検査しておらず、忘れても `check` は落ちない**
-（FK を検査しないためレビュー担保。#727）。世界をまたぐ参照を封じているのはこの FK であるため、張り忘れないこと。
-複合 FK の張り方は V19（`V19__enforce_world_scope_constraints.sql`）を参照する。
+`WorldScopeSchemaRulesTest`（`src/test/.../infrastructure/`）が `pg_tables` から対象テーブルを動的に列挙し、
+`world_id UUID NOT NULL` の有無と `world_id` イミュータブルトリガの有無を検査するため、**列・NOT NULL・
+トリガのいずれを忘れても `./gradlew check` が落ちる**。テーブルの列挙は自動なので規約テスト側を手で更新する
+必要はない。**ただし `iam.world(id)` への FK の有無は検査しておらず、忘れても `check` は落ちない**
+（レビュー担保）。世界をまたぐ参照を封じているのはこの FK であるため、張り忘れないこと。
+複合 FK の張り方は V19（`V19__enforce_world_scope_constraints.sql`）、トリガの張り方は V23
+（`V23__reject_world_id_update.sql`）を参照する。
+
+トリガは `world_id` を実質的にイミュータブルな列にするためのもので、拒否関数 `iam.reject_world_id_update()`
+は 1 本を共有する（[ADR-0081](../../docs/adr/0081-world-id-immutability-via-trigger.md)）。**このリポジトリで
+トリガを使ってよいのは、この種の不変条件 backstop に限る**（業務ロジックは DB に置かない）。

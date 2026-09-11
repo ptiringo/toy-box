@@ -14,6 +14,12 @@
 | [iam.world](iam.world.md) | 4 | プレイヤーごとの世界（セーブデータ）。全ドメインのデータはいずれかの世界に属する | BASE TABLE |
 | [shared.idempotency_record](shared.idempotency_record.md) | 5 | 再送を識別する冪等キーの記録（Idempotency-Key ヘッダ） | BASE TABLE |
 
+## Stored procedures and functions
+
+| Name | ReturnType | Arguments | Type |
+| ---- | ------- | ------- | ---- |
+| iam.reject_world_id_update | trigger |  | FUNCTION |
+
 ## Relations
 
 ```mermaid

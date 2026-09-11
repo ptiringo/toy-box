@@ -51,6 +51,12 @@
 | uq_blood_horse_name | CREATE UNIQUE INDEX uq_blood_horse_name ON studbook.blood_horse USING btree (world_id, name) |
 | uq_blood_horse_registration_number | CREATE UNIQUE INDEX uq_blood_horse_registration_number ON studbook.blood_horse USING btree (world_id, registration_number) |
 
+## Triggers
+
+| Name | Definition | Comment |
+| ---- | ---------- | ------- |
+| trg_blood_horse_world_id_immutable | CREATE TRIGGER trg_blood_horse_world_id_immutable BEFORE UPDATE ON studbook.blood_horse FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() | world_id の書き換えを拒否する（行の世界間移動の禁止） |
+
 ## Relations
 
 ```mermaid

@@ -27,6 +27,12 @@
 | ---- | ---------- |
 | pk_idempotency_record | CREATE UNIQUE INDEX pk_idempotency_record ON shared.idempotency_record USING btree (world_id, idempotency_key) |
 
+## Triggers
+
+| Name | Definition | Comment |
+| ---- | ---------- | ------- |
+| trg_idempotency_record_world_id_immutable | CREATE TRIGGER trg_idempotency_record_world_id_immutable BEFORE UPDATE ON shared.idempotency_record FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() | world_id の書き換えを拒否する（行の世界間移動の禁止） |
+
 ## Relations
 
 ```mermaid
