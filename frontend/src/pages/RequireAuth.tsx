@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router";
 import { useAuth } from "../auth/AuthContext";
 
 // 認証状態が確定するまで待ち、未ログインは /login へ送る。

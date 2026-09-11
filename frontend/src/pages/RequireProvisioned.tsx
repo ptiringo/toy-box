@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router";
 import { errorMessage } from "../api/client";
 import { provisionMe } from "../api/me";
 import { useAuth } from "../auth/AuthContext";
