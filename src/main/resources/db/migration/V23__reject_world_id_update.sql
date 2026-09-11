@@ -45,11 +45,17 @@ FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
 
+COMMENT ON TRIGGER trg_blood_horse_world_id_immutable ON studbook.blood_horse IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';
+
 CREATE TRIGGER trg_breeding_registration_world_id_immutable
 BEFORE UPDATE ON studbook.breeding_registration
 FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
+
+COMMENT ON TRIGGER trg_breeding_registration_world_id_immutable ON studbook.breeding_registration IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';
 
 CREATE TRIGGER trg_breeding_result_world_id_immutable
 BEFORE UPDATE ON studbook.breeding_result
@@ -57,11 +63,17 @@ FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
 
+COMMENT ON TRIGGER trg_breeding_result_world_id_immutable ON studbook.breeding_result IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';
+
 CREATE TRIGGER trg_horse_inspection_world_id_immutable
 BEFORE UPDATE ON studbook.horse_inspection
 FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
+
+COMMENT ON TRIGGER trg_horse_inspection_world_id_immutable ON studbook.horse_inspection IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';
 
 CREATE TRIGGER trg_covering_report_world_id_immutable
 BEFORE UPDATE ON studbook.covering_report
@@ -69,14 +81,23 @@ FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
 
+COMMENT ON TRIGGER trg_covering_report_world_id_immutable ON studbook.covering_report IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';
+
 CREATE TRIGGER trg_jockey_world_id_immutable
 BEFORE UPDATE ON racing.jockey
 FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
 
+COMMENT ON TRIGGER trg_jockey_world_id_immutable ON racing.jockey IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';
+
 CREATE TRIGGER trg_idempotency_record_world_id_immutable
 BEFORE UPDATE ON shared.idempotency_record
 FOR EACH ROW
 WHEN (old.world_id IS DISTINCT FROM new.world_id)
 EXECUTE FUNCTION iam.reject_world_id_update();
+
+COMMENT ON TRIGGER trg_idempotency_record_world_id_immutable ON shared.idempotency_record IS
+'world_id の書き換えを拒否する（行の世界間移動の禁止）';

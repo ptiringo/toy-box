@@ -53,9 +53,9 @@
 
 ## Triggers
 
-| Name | Definition |
-| ---- | ---------- |
-| trg_blood_horse_world_id_immutable | CREATE TRIGGER trg_blood_horse_world_id_immutable BEFORE UPDATE ON studbook.blood_horse FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() |
+| Name | Definition | Comment |
+| ---- | ---------- | ------- |
+| trg_blood_horse_world_id_immutable | CREATE TRIGGER trg_blood_horse_world_id_immutable BEFORE UPDATE ON studbook.blood_horse FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() | world_id の書き換えを拒否する（行の世界間移動の禁止） |
 
 ## Relations
 

@@ -35,9 +35,9 @@
 
 ## Triggers
 
-| Name | Definition |
-| ---- | ---------- |
-| trg_covering_report_world_id_immutable | CREATE TRIGGER trg_covering_report_world_id_immutable BEFORE UPDATE ON studbook.covering_report FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() |
+| Name | Definition | Comment |
+| ---- | ---------- | ------- |
+| trg_covering_report_world_id_immutable | CREATE TRIGGER trg_covering_report_world_id_immutable BEFORE UPDATE ON studbook.covering_report FOR EACH ROW WHEN ((old.world_id IS DISTINCT FROM new.world_id)) EXECUTE FUNCTION iam.reject_world_id_update() | world_id の書き換えを拒否する（行の世界間移動の禁止） |
 
 ## Relations
 
