@@ -127,36 +127,36 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/464728577"
 provenance = "github-attestations"
 
 [[tools."aqua:dprint/dprint"]]
-version = "0.57.0"
+version = "0.55.1"
 backend = "aqua:dprint/dprint"
 
 [tools."aqua:dprint/dprint"."platforms.linux-arm64"]
-checksum = "sha256:76f01495dae94d531e9ebd5e97977ae9a8edc8d7fc8ae8a479d34715617cb69d"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-aarch64-unknown-linux-gnu.zip"
+checksum = "sha256:2d414d659034650bc25b208a87ab427cd01a7ac6c21b3ed2191cf92e1b58f76c"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-aarch64-unknown-linux-musl.zip"
 
 [tools."aqua:dprint/dprint"."platforms.linux-arm64-musl"]
-checksum = "sha256:4458fb5ad357c2735210470a91e3f2a95abafcd7f2d7840cb94afc96dd11fbfe"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-aarch64-unknown-linux-musl.zip"
+checksum = "sha256:2d414d659034650bc25b208a87ab427cd01a7ac6c21b3ed2191cf92e1b58f76c"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-aarch64-unknown-linux-musl.zip"
 
 [tools."aqua:dprint/dprint"."platforms.linux-x64"]
-checksum = "sha256:f6275d992123e94a96ebfd0a0921aee6c7f37314e54f30ff360764cde44677bc"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-x86_64-unknown-linux-gnu.zip"
+checksum = "sha256:7ce856d5999585e58666701eab5e0291abfb63953884d5dd0268001c89d74b8d"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-x86_64-unknown-linux-musl.zip"
 
 [tools."aqua:dprint/dprint"."platforms.linux-x64-musl"]
-checksum = "sha256:981a98fd4d245be8dda9bfb3d52a826d532b3290a559cb335970cebca7bf0b45"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-x86_64-unknown-linux-musl.zip"
+checksum = "sha256:7ce856d5999585e58666701eab5e0291abfb63953884d5dd0268001c89d74b8d"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-x86_64-unknown-linux-musl.zip"
 
 [tools."aqua:dprint/dprint"."platforms.macos-arm64"]
-checksum = "sha256:14bdbfb9b1e3ebd614d5ec08a068b04b0d0370d70c112723003dd9103a4c0c3a"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-aarch64-apple-darwin.zip"
+checksum = "sha256:94a9ce5ca91dbb609d4f22f2ccf28d8b422627c0944c6ee63d1beecac28f8cd4"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-aarch64-apple-darwin.zip"
 
 [tools."aqua:dprint/dprint"."platforms.macos-x64"]
-checksum = "sha256:41b6bb07d121d0506edd85d8176caf3d3909648089ee6c0b8b4f9c896791c14f"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-x86_64-apple-darwin.zip"
+checksum = "sha256:21f9784b3edf3b0a686932b4387359ebd83fba798ac2f7e2ba1e7b8c9f674e3e"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-x86_64-apple-darwin.zip"
 
 [tools."aqua:dprint/dprint"."platforms.windows-x64"]
-checksum = "sha256:90e81a6106af4571893587acb4a1b1baa6b0879c60eec36497a08c03127410d1"
-url = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:dfdee60f04810c14df310696ce680da7ece599cd27b162f77906adc80d5e9679"
+url = "https://github.com/dprint/dprint/releases/download/0.55.1/dprint-x86_64-pc-windows-msvc.zip"
 
 [[tools."aqua:k1LoW/tbls"]]
 version = "1.94.5"
@@ -215,36 +215,36 @@ checksum = "sha256:8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e7
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"
 
 [[tools.editorconfig-checker]]
-version = "3.11.3"
+version = "3.7.0"
 backend = "aqua:editorconfig-checker/editorconfig-checker"
 
 [tools.editorconfig-checker."platforms.linux-arm64"]
-checksum = "sha256:6d333917ad3c21cf0a23c191ec660549de381e6df56ee5e76ace0c513da2b7b4"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-linux-arm64.tar.gz"
+checksum = "sha256:e978f3f0940469989930311af8e101dd9ce8c2ee4da69264f3d76a3787e961ad"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-arm64.tar.gz"
 
 [tools.editorconfig-checker."platforms.linux-arm64-musl"]
-checksum = "sha256:6d333917ad3c21cf0a23c191ec660549de381e6df56ee5e76ace0c513da2b7b4"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-linux-arm64.tar.gz"
+checksum = "sha256:e978f3f0940469989930311af8e101dd9ce8c2ee4da69264f3d76a3787e961ad"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-arm64.tar.gz"
 
 [tools.editorconfig-checker."platforms.linux-x64"]
-checksum = "sha256:6a73858f8906e466910fb3b3b525c206b27dacdad138910b0b0513f021ab32c4"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-linux-amd64.tar.gz"
+checksum = "sha256:9a0c3a5170bffa24f9e5f0def53d285777b6c5284a95367f40d399d0b76af552"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-amd64.tar.gz"
 
 [tools.editorconfig-checker."platforms.linux-x64-musl"]
-checksum = "sha256:6a73858f8906e466910fb3b3b525c206b27dacdad138910b0b0513f021ab32c4"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-linux-amd64.tar.gz"
+checksum = "sha256:9a0c3a5170bffa24f9e5f0def53d285777b6c5284a95367f40d399d0b76af552"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-linux-amd64.tar.gz"
 
 [tools.editorconfig-checker."platforms.macos-arm64"]
-checksum = "sha256:eeb0e5d1db4a913277da781bc40802542eb42c4f3f43b7c87c000714dd905faf"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-darwin-arm64.tar.gz"
+checksum = "sha256:727e6ef506c6fbe7719cc29c69b495715b64514a00059f3f179077bfad0580e5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-darwin-arm64.tar.gz"
 
 [tools.editorconfig-checker."platforms.macos-x64"]
-checksum = "sha256:126c8fa83500389078f6b2072a04170f063787ec9905e5d1ab69a5a62ee5b10d"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-darwin-amd64.tar.gz"
+checksum = "sha256:6cd2e4aa2a374d391e3baeaae43fc28906fd15b09490f5669eee206a63eef00a"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-darwin-amd64.tar.gz"
 
 [tools.editorconfig-checker."platforms.windows-x64"]
-checksum = "sha256:0d6739507ac0b57099f0339fce1de0856584c71dd878c89cbc07845884f42ab5"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.3/ec-windows-amd64.zip"
+checksum = "sha256:9c6b8a4cd7ccc5826ab96d34c460f37ab18b9cb50607d3ee9eb743fc47335da7"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-windows-amd64.zip"
 
 [[tools.fnox]]
 version = "1.27.1"
