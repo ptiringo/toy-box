@@ -69,12 +69,14 @@ Flyway のチェックサムはコメントを含むファイル全体から計�
 トリガを張ること。忘れると全プレイヤー共有のテーブルが黙って生まれ、例外も出ないままデータが混ざる。
 
 `WorldScopeSchemaRulesTest`（`src/test/.../infrastructure/`）が `pg_tables` から対象テーブルを動的に列挙し、
-`world_id UUID NOT NULL` の有無と `world_id` イミュータブルトリガの有無を検査するため、**列・NOT NULL・
-トリガのいずれを忘れても `./gradlew check` が落ちる**。テーブルの列挙は自動なので規約テスト側を手で更新する
-必要はない。**ただし `iam.world(id)` への FK の有無は検査しておらず、忘れても `check` は落ちない**
-（レビュー担保）。世界をまたぐ参照を封じているのはこの FK であるため、張り忘れないこと。
-複合 FK の張り方は V19（`V19__enforce_world_scope_constraints.sql`）、トリガの張り方は V23
-（`V23__reject_world_id_update.sql`）を参照する。
+`world_id UUID NOT NULL` の有無・`iam.world(id)` への FK の有無・`world_id` イミュータブルトリガの有無を
+検査するため、**列・NOT NULL・FK・トリガのいずれを忘れても `./gradlew check` が落ちる**。テーブルの列挙は
+自動なので規約テスト側を手で更新する必要はない。FK は `ON DELETE CASCADE` であることと VALIDATE 済みで
+あることまで見る（世界の削除で配下が消えることを `DeleteWorldUseCase` が前提にしているため／`NOT VALID` の
+まま VALIDATE を忘れると既存行が未検証で残るため）。**ただし集約間の複合 FK（`(world_id, id)` で別の集約を
+参照するもの）の有無は検査していない**（レビュー担保）。FK の張り方は V19
+（`V19__enforce_world_scope_constraints.sql`）、トリガの張り方は V23（`V23__reject_world_id_update.sql`）を
+参照する。
 
 トリガは `world_id` を実質的にイミュータブルな列にするためのもので、拒否関数 `iam.reject_world_id_update()`
 は 1 本を共有する（[ADR-0081](../../docs/adr/0081-world-id-immutability-via-trigger.md)）。**このリポジトリで
