@@ -14,7 +14,7 @@ paths:
 
 このリポジトリは「規約は機械強制する」前提で運用している。したがって**空振りしているゲートは、守れているように見えて実は何もしていない**状態になり、「ゲートが緑である」ことを根拠に使う後続の判断まで汚染する（#780 では、空振りしていたガードが防ぐはずの競合が実際に起き、偽の BUILD FAILED を見たエージェントが自分の変更を疑って原因を探しにいく二次被害まで出た）。
 
-対象は ArchUnit / detekt カスタムルール / Claude hook / CI ジョブ / lefthook のすべて。
+対象は ArchUnit / detekt カスタムルール / Claude hook / CI ジョブ / lefthook / DB スキーマ規約テストのすべて。
 
 ## 原則
 
@@ -38,10 +38,23 @@ paths:
   実行中のプロセスやリポジトリの状態を判定に使う hook は、**その判定文字列が実際に何にマッチするか**まで確かめる（#780 のガードは `org.gradle.wrapper.GradleWrapperMain` がどのプロセスにも当たらず、構文としては正しいまま一度も発火しなかった）
 - **CI ジョブ**: 検査の本体はワークフローのインラインではなく `scripts/*.sh` へ切り出す。違反状態を作ってローカルで直接実行するだけで発火を確認できる（先例: `scripts/check-adr-numbering.sh` と `.github/workflows/adr-check.yml`）。加えて **`paths` フィルタがその変更でジョブを起動するか**を別途確かめる。フィルタが外れているとゲート本体が正しくてもジョブごと走らない
 - **lefthook**: 違反ファイルを stage して `lefthook run pre-commit`（push 側は `lefthook run pre-push`）を実行し、当該コマンドが skip されずに落ちることを見る。**glob が効かず、対象ファイルだけのコミットで素通りする**穴が繰り返し出ている（#800 / #804）。glob を書いたら「そのファイル 1 本だけを stage したとき」に走るかを必ず確かめる
+- **DB スキーマ規約テスト**（Testcontainers + `pg_catalog` 問い合わせ。先例: `WorldScopeSchemaRulesTest`）: **適用済みマイグレーションは編集できない**ため（Flyway のチェックサム。`.claude/rules/migrations.md`）、規約を守っている定義を一時的に書き換える ArchUnit 流のやり方が使えない。代わりに**新しいマイグレーションを足して制約を落とす**（コミットしない）。
+
+  ```sql
+  -- src/main/resources/db/migration/V24__tmp_mutation_check.sql（コミットしない）
+  ALTER TABLE studbook.breeding_registration DROP CONSTRAINT fk_breeding_registration_world;
+  ALTER TABLE racing.jockey DROP CONSTRAINT fk_jockey_world;
+  ALTER TABLE racing.jockey
+  ADD CONSTRAINT fk_jockey_world FOREIGN KEY (world_id) REFERENCES iam.world (id);
+  ```
+
+  **検査が複数条件の AND なら、条件ごとに壊して落ちることを見る**。上の 2 本目は FK を `ON DELETE CASCADE` なし（`NO ACTION`）で張り直しており、「FK は在るが CASCADE でない」ケースの検出を確かめている。落とすだけで済ませると、効いていない条件が残っていても気づけない。また**壊す前に本実装をコミットしておく**。後始末が `rm` ＋ `git status` で clean を確認するだけで済み、`git checkout --` で未コミットの本実装ごと巻き戻す事故を避けられる
 
 ## 一度きりのミューテーションで終わらせない
 
 一時的に壊して戻す確認は、そのとき見た空振りしか防げない。違反サンプルを恒久的な fixture として置ける種別（ArchUnit / detekt カスタムルール）では、FAIL 側を検証する回帰テスト（ArchUnit なら違反サンプル fixture ＋ `assertNotSatisfied` 系、detekt なら違反スニペットの `lint`）を併せて置く（先例: `AggregateNotDataClassRuleTest` / `DtoDomainEnumRuleTest` / `ControllerPackageLayoutRuleTest`）。
+
+ただし**検査対象を動的に列挙する種別では、違反サンプルを恒久 fixture として置けない**。`WorldScopeSchemaRulesTest` は対象テーブルを `pg_tables` から列挙するため、違反するテーブルを 1 本足すと以降すべての実行が赤くなる。この種別は一時的なミューテーションと PR 本文の実測でしか担保できない。代わりに、**列挙そのものが全滅していないこと**を検査するテストを常設する（「対象なし＝違反なし」で静かに通る空振りだけは恒久的に防げる。先例: `WorldScopeSchemaRulesTest` の「検査対象のテーブルを列挙できている」）。
 
 ## この規約自体について
 
