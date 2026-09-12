@@ -61,6 +61,21 @@ jobs:
           # （短縮名では --locked が解決できない）。
           install_args: "editorconfig-checker"
 
+      # runner 上で mise が mise.lock を書き換えていないかを見る（#880）。
+      #
+      # **なぜここに置くか**: `mise install --locked` は install_args のツールだけでなく config 上の
+      # 全ツールを lock に照合するため、このジョブ 1 本で lock 全体の drift を見られる。加えて本
+      # ワークフローは paths で絞っておらず全 PR で走るので、lock を触らない PR の書き換えも拾える
+      # （#878 を踏んだ PR がまさに mise.toml / mise.lock を触っていなかった）。
+      #
+      # **なぜ fail させないか**: #878 で一度だけ観測された書き換え（`mise.lock | 1 +`）は、当時の
+      # コミット・当時の mise 2026.9.1・当時の mise-action・MISE_ENV=ci・同じ install コマンドまで
+      # 揃えて runner 上で再現を試みても再発しなかった（#880）。原因は runner image か mise が参照する
+      # 外部状態（aqua-registry / GitHub API のその時点のレスポンス）に帰着し、固定できていない。
+      # 赤にすると上流都合で CI が止まる側に倒れるため、気づける状態に留める。
+      - name: Check mise.lock drift on runner (#880)
+        run: scripts/check-mise-lock-drift.sh
+
       # 実行名は `ec`。mise が入れる editorconfig-checker 3.11.3 が提供するのはこの名前だけで、
       # `mise exec -- editorconfig-checker` は "No such file or directory" になる（lefthook も `ec` を呼ぶ）。
       # v4.0.0 で実行名が `editorconfig-checker` へ改称されたが、aqua-registry が資産名の変更
