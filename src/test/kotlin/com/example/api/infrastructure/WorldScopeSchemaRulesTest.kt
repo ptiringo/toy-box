@@ -18,7 +18,8 @@ import org.springframework.jdbc.core.JdbcTemplate
  * はテナントの根であり世界に属さない）と Flyway の内部管理 テーブルだけ。
  *
  * 列の存在だけでなく `NOT NULL` まで見る。列を足して制約を忘れると（V18 の途中段階で止まると）、 行がどの世界にも属さないまま入れてしまうため。あわせて `world_id`
- * を書き換える UPDATE を拒否するトリガの有無も見る（#727 / ADR-0081）。複合 FK の有無は 対象外。
+ * を書き換える UPDATE を拒否するトリガの有無（#727 / ADR-0081）と、`iam.world(id)` への FK の 有無（#905）も見る。集約間の複合 FK
+ * の有無は対象外。
  *
  * `pg_tables` は通常テーブルとパーティションテーブルのみを列挙し、view / materialized view / foreign table は含まない。読み取りモデル（軽量
  * CQRS の Read Model）をマテビューで実装した場合、そのマテビューは このゲートの対象外になり静かに素通りする（レビュー担保）。
@@ -45,6 +46,16 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
         assert(violations.isEmpty()) {
             "world_id イミュータブルトリガを持たないテーブル: $violations。" +
                 "トリガが無いと行が世界をまたいで移動できる（.claude/rules/migrations.md / ADR-0081）"
+        }
+    }
+
+    @Test
+    fun `対象テーブルが iam の world への FK を持つ`() {
+        val violations = jdbc.queryForList(TABLES_WITHOUT_WORLD_FOREIGN_KEY, String::class.java)
+
+        assert(violations.isEmpty()) {
+            "iam.world(id) への FK（ON DELETE CASCADE・検証済み）を持たないテーブル: $violations。" +
+                "FK が無いと他人の世界の行を参照できる（.claude/rules/migrations.md / ADR-0067）"
         }
     }
 
@@ -131,6 +142,41 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
                     AND NOT tg.tgisinternal
                     AND p.proname = 'reject_world_id_update'
                     AND (tg.tgtype & 19) = 19
+            )
+            ORDER BY 1
+            """
+                .trimIndent()
+
+        /**
+         * 対象テーブルのうち `world_id` → `iam.world(id)` の FK を持たないもの（#905 / ADR-0067）。
+         *
+         * **参照先が `iam.world` であることまで条件に含める**。さもないと集約間の複合 FK（`(world_id, id)`
+         * で別の集約テーブルを参照するもの。V19）を数えてしまい、`iam.world` への FK が無くても通る検査になる。
+         *
+         * `ON DELETE CASCADE`（`confdeltype = 'c'`）と検証済み（`convalidated`）も見る。前者は世界の削除で 配下が消えることを
+         * `DeleteWorldUseCase` が前提にしているため（`NO ACTION` で張られると世界が 消せなくなる）。後者は `NOT VALID` のまま
+         * VALIDATE を忘れると既存行が未検証のまま残るため （マイグレーションを 2
+         * ファイルに分ける規約の後半だけが欠ける形。`.claude/rules/migrations.md`）。
+         */
+        val TABLES_WITHOUT_WORLD_FOREIGN_KEY =
+            """
+            $TARGET_TABLES_CTE
+            SELECT format('%I.%I', t.schemaname, t.tablename)
+            FROM target t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint con
+                    JOIN pg_class c ON c.oid = con.conrelid
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                    JOIN pg_attribute a
+                        ON a.attrelid = con.conrelid AND a.attnum = ANY (con.conkey)
+                WHERE n.nspname = t.schemaname
+                    AND c.relname = t.tablename
+                    AND con.contype = 'f'
+                    AND con.confrelid = 'iam.world'::regclass
+                    AND a.attname = 'world_id'
+                    AND con.confdeltype = 'c'
+                    AND con.convalidated
             )
             ORDER BY 1
             """
