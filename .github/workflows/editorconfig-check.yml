@@ -74,12 +74,23 @@ jobs:
       - name: Inspect working-tree drift after mise install (temporary, #880)
         run: |
           if git diff --quiet; then
-            echo "作業ツリーに差分なし（mise install は何も書き換えなかった）"
+            echo "unstaged 差分なし（mise install は何も書き換えなかった）"
+          else
+            echo "::warning::mise install の後に作業ツリーが書き換わった（#880 の調査対象）"
+            git --no-pager diff --stat
+            git --no-pager diff
+          fi
+          # 当時（#878）の検査そのものを再現する。`mise.lock | 1 +` を出したのは
+          # 「renormalize してから git diff --cached」というこの経路であって、
+          # unstaged の diff ではなかった。
+          git add --renormalize .
+          if git diff --cached --quiet; then
+            echo "renormalize 後も差分なし"
             exit 0
           fi
-          echo "::warning::mise install の後に作業ツリーが書き換わった（#880 の調査対象）"
-          git --no-pager diff --stat
-          git --no-pager diff
+          echo "::warning::git add --renormalize . が差分を生んだ（#880 の 1 行の正体）"
+          git --no-pager diff --cached --stat
+          git --no-pager diff --cached
 
       # 実行名は `ec`。mise が入れる editorconfig-checker 3.11.3 が提供するのはこの名前だけで、
       # `mise exec -- editorconfig-checker` は "No such file or directory" になる（lefthook も `ec` を呼ぶ）。
