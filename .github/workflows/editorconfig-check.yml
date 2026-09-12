@@ -61,6 +61,23 @@ jobs:
           # （短縮名では --locked が解決できない）。
           install_args: "editorconfig-checker"
 
+      # 【一時】#880 の調査。runner 上で mise が作業ツリー（mise.lock）を書き換えるかを観測する。
+      # #878 では `mise.lock | 1 +` までしか分からず、その 1 行の中身が未特定のまま残っている。
+      # ローカル（macOS）でも Linux コンテナ（当時のコミット・当時の mise 2026.9.1・MISE_ENV=ci・
+      # リポジトリ全体）でも再現しないため、runner 固有の条件を実地で観測する。
+      #
+      # **このステップは失敗させない**。目的は正体の採取であって、ゲートを増やすことではない
+      # （恒久的な検知の口を置くかは #880 で正体が分かってから判断する）。
+      - name: Inspect working-tree drift after mise install (temporary, #880)
+        run: |
+          if git diff --quiet; then
+            echo "作業ツリーに差分なし（mise install は何も書き換えなかった）"
+            exit 0
+          fi
+          echo "::warning::mise install の後に作業ツリーが書き換わった（#880 の調査対象）"
+          git --no-pager diff --stat
+          git --no-pager diff
+
       # 実行名は `ec`。mise が入れる editorconfig-checker 3.11.3 が提供するのはこの名前だけで、
       # `mise exec -- editorconfig-checker` は "No such file or directory" になる（lefthook も `ec` を呼ぶ）。
       # v4.0.0 で実行名が `editorconfig-checker` へ改称されたが、aqua-registry が資産名の変更
