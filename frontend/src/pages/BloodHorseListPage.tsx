@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router";
 import { ApiError, apiGet, errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { breedLabels, coatColors, coatLabels, label, sexLabels } from "../labels";
