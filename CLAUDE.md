@@ -34,7 +34,7 @@ Virtual Thread (`spring.threads.virtual.enabled=true`) を有効化し、ブロ�
 
 Spring Data JDBC + PostgreSQL。集約と永続化 Row は別型に分けマッパーで写す（[ADR-0027](docs/adr/0027-persistence-spring-data-jdbc.md)）。InMemory 実装は持たず **JDBC 一本化**（[ADR-0030](docs/adr/0030-jdbc-only-persistence-retire-inmemory.md)）、本番 DB は Prisma Postgres（[ADR-0044](docs/adr/0044-adopt-prisma-postgres-for-production-db.md)）、スキーマはコンテキスト別に分ける（[ADR-0048](docs/adr/0048-per-context-db-schema-namespaces.md)）。集約 ⇔ テーブルの写し方は `.claude/rules/architecture.md`、Flyway マイグレーションの規約は **`.claude/rules/migrations.md`**（`db/migration` 編集時にロード）。
 
-DB スキーマドキュメントは tbls が生成する（[ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）。`./gradlew generateDbDoc` で `dbdoc/` を再生成し、`./gradlew checkDbDoc` が鮮度とコメント必須を検査する。
+DB スキーマドキュメントは tbls が生成する（[ADR-0045](docs/adr/0045-tbls-db-schema-docs.md)）。`./gradlew generateDbDoc` で `dbdoc/` を再生成し、`./gradlew checkDbDoc` が鮮度とコメント必須を検査する（`check` ではなく、dbdoc に影響する変更の pre-push と CI で走る。#906）。
 
 ## コーディング規約
 

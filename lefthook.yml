@@ -172,7 +172,7 @@ pre-commit:
       tags: lint
 
 pre-push:
-  # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test の順で fail fast）。
+  # piped: 先頭のコマンドが落ちたら後続を打ち切る（docker-available → full-test → db-doc-check の順で fail fast）。
   piped: true
 
   # glob を当てる対象（push 予定の変更ファイル）を自前で供給する（#804）。
@@ -191,11 +191,22 @@ pre-push:
     # 踏んだ）。ゲート自体は残したまま、テストを起動する前に到達性を確かめて理由と対処つきで
     # 即座に失敗させる。判定条件とタイムアウトの理由はスクリプト側のコメントに書いてある。
     #
-    # glob は full-test と揃える（テストが走らない push で Docker を要求しない）。
-    # priority で full-test より先に走らせる（lefthook の既定はコマンド名の辞書順）。
+    # glob は Docker を要る後続（full-test / db-doc-check）の和集合にする。テストも dbdoc 検査も
+    # 走らない push で Docker を要求しないため絞り、逆に `.sql` だけの push で fail fast を
+    # 取りこぼさないため dbdoc 側の glob も足す（取りこぼすと Testcontainers が接続を試み続けて
+    # 「push が無反応」に見える。#679 で踏んだ形そのもの）。`build.gradle.kts` は
+    # `{,**/}*.{kt,kts,java}` に含まれるので、db-doc-check 側にはあってもここには再掲しない。
+    # priority で後続より先に走らせる（lefthook の既定はコマンド名の辞書順）。
     docker-available:
       priority: 1
-      glob: "{,**/}*.{kt,kts,java}"
+      glob:
+        - "{,**/}*.{kt,kts,java}"
+        - "src/main/resources/db/migration/*.sql"
+        - ".tbls.yml"
+        - "dbdoc/*"
+        - "src/dbdoc/*"
+        - "mise.toml"
+        - "mise.lock"
       run: scripts/check-docker-available.sh
       tags: test
 
@@ -219,6 +230,30 @@ pre-push:
       glob: "{,**/}*.{kt,kts,java}"
       run: mise exec -- ./gradlew test $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
       tags: test
+
+    # dbdoc/ の鮮度（tbls diff）とコメント規約（tbls lint）の検査（#906）。
+    #
+    # `check` ではなく pre-push に置く。塞ぎたいのは「ローカルは緑のまま push でき、CI の
+    # `tbls diff and lint` で初めて落ちる」1 往復（#727 / PR #902 で実際に踏んだ。トリガの
+    # コメント必須に気づかず再 push した）。`check` に載せると DB と無関係な Kotlin 変更でも
+    # 毎回 Testcontainers 起動ぶんの時間（実測 20 秒前後）を払うことになり、検出機会が
+    # `.sql` 等を触ったときだけであることに対して費用が非対称になる。
+    #
+    # glob は CI（.github/workflows/db-doc-check.yml）の paths と同じ集合にして
+    # 「CI で走る変更 ＝ pre-push でも走る」の対応を保つ。ズレると塞いだはずの往復が戻る。
+    # `--no-daemon` の分岐は full-test と同じ理由（worktree での foreign daemon 再利用。#482）。
+    db-doc-check:
+      priority: 3
+      glob:
+        - "src/main/resources/db/migration/*.sql"
+        - ".tbls.yml"
+        - "dbdoc/*"
+        - "src/dbdoc/*"
+        - "build.gradle.kts"
+        - "mise.toml"
+        - "mise.lock"
+      run: mise exec -- ./gradlew checkDbDoc $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
+      tags: lint
 
 commit-msg:
   commands:
