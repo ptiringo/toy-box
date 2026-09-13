@@ -409,7 +409,8 @@ tasks.register<JavaExec>("generateDbDoc") {
 }
 
 // dbdoc/ が最新か（tbls diff）とコメント規約（tbls lint）を検査する。
-// check / pre-push には載せない（Docker 依存の重いタスクを内側ループから外す。CI 専用ジョブで回す）。
+// `check` には載せない（Docker 依存の重いタスクを内側ループから外す）。CI 専用ジョブに加えて
+// pre-push でも走らせる（#906。lefthook.yml の db-doc-check。glob は CI 側の paths と同じ集合）。
 tasks.register<JavaExec>("checkDbDoc") {
     description = "tbls diff（ドキュメント鮮度）と tbls lint（コメント必須）でスキーマドリフト/規約を検査する"
     group = "verification"
