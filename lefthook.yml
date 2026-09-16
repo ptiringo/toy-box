@@ -53,6 +53,21 @@ pre-commit:
       run: mise exec -- zizmor --offline --quiet .github/workflows/
       tags: security
 
+    # CI ワークフローが mise exec 経由でツールを呼んでいないかの検査（#917）。
+    # mise-action は install 先の bin を PATH に足すので直接呼べる。mise exec を挟むと config 上の
+    # 全ツールを解決・install してしまい、install_args の絞り込み（#464）が後段で崩れる。
+    # 構文もセキュリティも壊れていないので actionlint / zizmor は検出しない。
+    # **このファイル（lefthook.yml）自身の mise exec は対象外**。上の actionlint / zizmor / shellcheck
+    # が意図的に mise exec を使っているとおり、ローカルのシェルは mise の PATH が通っている保証がない。
+    # 検査対象はワークフロー全件なので {staged_files} は渡さない（glob は発火の条件だけを絞る役。
+    # adr-numbering / mise-lock-platforms と同じ形）。素の bash なのでコミットは実質重くならない。
+    workflow-mise-exec:
+      glob:
+        - ".github/workflows/*.{yml,yaml}"
+        - "scripts/check-workflow-mise-exec.sh"
+      run: scripts/check-workflow-mise-exec.sh
+      tags: lint
+
     # ShellCheck によるシェルスクリプトの lint
     shellcheck:
       glob: "{,**/}*.sh"

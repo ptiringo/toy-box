@@ -1,6 +1,9 @@
-# mise.lock 健全性チェックワークフロー
+# mise の使い方の健全性チェックワークフロー
 #
-# 目的: mise.lock の http バックエンドツールが壊れたまま main へ入るのを止める（#762）。
+# 素の bash だけで走る軽い検査（ツールのインストールが要らないもの）をここに集める。ジョブは
+# 検査ごとに分け、失敗したチェック名だけで原因を切り分けられる状態を保つ。
+#
+# 目的 1: mise.lock の http バックエンドツールが壊れたまま main へ入るのを止める（#762）。
 # `mise install` は、触ってすらいないツールの lock を書き換える。ツール名を指定した install は
 # http:kotlin-lsp を 2 エントリへ割り、引数なしの install（`mise bootstrap` が流す実体）は逆に
 # platform の checksum / URL を丸ごと落とす。後者が main に入ると、欠けた platform で
@@ -9,6 +12,13 @@
 # lefthook の pre-commit にも同じ検査を置いているが、`--no-verify` と worktree の hook sync 漏れ
 # （#807）で抜けるため、ここを backstop にする。lock を書き換えるのはローカルの mise だけなので、
 # 事後検知（push: main）は載せず PR で止めるだけにしている。
+#
+# 目的 2: CI ワークフローが `mise exec` 経由でツールを呼ぶのを止める（#917）。mise-action が
+# install 先の bin を PATH に足すので直接呼べるが、`mise exec` を挟むと config 上の全ツールを
+# 解決・install してしまい、install_args による絞り込み（#464）が後段で崩れる。機序と実測は
+# スクリプト冒頭に書いてある。
+#
+# 名前（ワークフロー / ジョブ）は既存のチェック名を壊さないよう据え置いている。
 
 name: Mise Lock Check
 
@@ -19,6 +29,9 @@ on:
       - "mise.toml"
       - "mise.lock"
       - "scripts/check-mise-lock-platforms.sh"
+      # mise exec の検査（#917）は全ワークフローを対象にするため、どれが変わっても走らせる。
+      - ".github/workflows/**"
+      - "scripts/check-workflow-mise-exec.sh"
   workflow_dispatch:
 
 jobs:
@@ -38,3 +51,21 @@ jobs:
       # 素の bash だけで動くのでツールのインストールは要らない（mise のセットアップも不要）。
       - name: mise.lock platform check
         run: scripts/check-mise-lock-platforms.sh
+
+  workflow-mise-exec-check:
+    runs-on: ubuntu-latest
+    name: Workflow mise exec Check
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # このジョブも素の bash だけで動く。ここで mise をセットアップすると、検査する当の
+      # 「install_args で絞る」構図を自分でも抱えることになるので、入れない。
+      - name: Workflow mise exec check
+        run: scripts/check-workflow-mise-exec.sh
