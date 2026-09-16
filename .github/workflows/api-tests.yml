@@ -52,7 +52,7 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
+        # MISE_ENV=ci はジョブの env で与える（理由は上の env ブロックのコメント）。
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
           # 使うのは patch coverage 用の diff-cover のみ（JDK/Gradle は setup-java / setup-gradle が供給）。
