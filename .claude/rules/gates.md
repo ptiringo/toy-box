@@ -37,7 +37,16 @@ paths:
 
   実行中のプロセスやリポジトリの状態を判定に使う hook は、**その判定文字列が実際に何にマッチするか**まで確かめる（#780 のガードは `org.gradle.wrapper.GradleWrapperMain` がどのプロセスにも当たらず、構文としては正しいまま一度も発火しなかった）
 - **CI ジョブ**: 検査の本体はワークフローのインラインではなく `scripts/*.sh` へ切り出す。違反状態を作ってローカルで直接実行するだけで発火を確認できる（先例: `scripts/check-adr-numbering.sh` と `.github/workflows/adr-check.yml`）。加えて **`paths` フィルタがその変更でジョブを起動するか**を別途確かめる。フィルタが外れているとゲート本体が正しくてもジョブごと走らない
-- **lefthook**: 違反ファイルを stage して `lefthook run pre-commit`（push 側は `lefthook run pre-push`）を実行し、当該コマンドが skip されずに落ちることを見る。**glob が効かず、対象ファイルだけのコミットで素通りする**穴が繰り返し出ている（#800 / #804）。glob を書いたら「そのファイル 1 本だけを stage したとき」に走るかを必ず確かめる
+- **lefthook（pre-commit）**: 違反ファイルを stage して `lefthook run pre-commit` を実行し、当該コマンドが skip されずに落ちることを見る。**glob が効かず、対象ファイルだけのコミットで素通りする**穴が繰り返し出ている（#800 / #804）。glob を書いたら「そのファイル 1 本だけを stage したとき」に走るかを必ず確かめる
+- **lefthook（pre-push）**: **判定材料が stage ではない**ため、pre-commit のやり方が通用しない。pre-push の glob は `scripts/list-push-target-files.sh` が返す「これから push される変更ファイル」に対して当たるので、**ファイルを stage しただけでは glob は当たらない**。検証したい種類のファイルだけを変更した**一時コミット**を作ってから `lefthook run pre-push` を実行し、走り分けを見る（#906 / PR #918 の実測）。
+
+  ```text
+  │  full-test (skip) no files for inspection
+  ✔️ docker-available (2.16 seconds)
+  ✔️ db-doc-check (18.96 seconds)
+  ```
+
+  当たってほしいコマンドが走り、当たってほしくないコマンドが skip されることの両方を見る。確認後は `git reset --hard HEAD~1` で一時コミットを破棄するので、**本実装は先にコミットしておく**（後始末が reset だけで済み、未コミットの本実装ごと巻き戻す事故を避けられる）。重いコマンドを外して回したいときは `LEFTHOOK_EXCLUDE=full-test lefthook run pre-push`。なお `@{push}` 未設定（初回 push 前）では `origin/main` との merge-base が基準になり、**すでに push 済みのコミットの変更まで push 対象に含まれる**。過剰にゲートが走る向きの誤差なので、非空振りの確認には影響しない（#804 の設計どおり）
 - **DB スキーマ規約テスト**（Testcontainers + `pg_catalog` 問い合わせ。先例: `WorldScopeSchemaRulesTest`）: **適用済みマイグレーションは編集できない**ため（Flyway のチェックサム。`.claude/rules/migrations.md`）、規約を守っている定義を一時的に書き換える ArchUnit 流のやり方が使えない。代わりに**新しいマイグレーションを足して制約を落とす**（コミットしない）。
 
   ```sql
