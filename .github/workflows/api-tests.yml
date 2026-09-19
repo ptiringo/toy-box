@@ -17,10 +17,12 @@ jobs:
     permissions:
       contents: read
     # http backend ツール（kotlin-lsp / tfctl）を config から外す（mise.ci.toml。#510）。
-    # **ジョブ全体に置く**。mise-action のステップにだけ付けると、後段で `mise exec` を使う
-    # ステップが素の mise.toml を読み、CI で使わない http ツールまで解決しにいく。実際に
-    # kotlin-lsp の配布物が上流から消えた 2026-08-30、差分カバレッジのステップだけが 404 で
-    # 落ちた（#859。この env はそのステップに届いていなかった）。
+    # mise-action の `mise install --locked` は install_args のツールだけでなく config 上の全ツールを
+    # lock へ照合するため、この env が無いと CI で使わない http ツールを解決しにいって落ちる。
+    # **ジョブ全体に置く**。元の理由は「後段の `mise exec` にも効かせる」ことだった（kotlin-lsp の
+    # 配布物が上流から消えた 2026-08-30、env の届いていなかった差分カバレッジのステップだけが 404 で
+    # 落ちている。#859）。その `mise exec` は外した（#917）が、mise を呼ぶステップが後から増えても
+    # 取りこぼさないための予防として残す。
     env:
       MISE_ENV: ci
     steps:
@@ -50,7 +52,7 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
+        # MISE_ENV=ci はジョブの env で与える（理由は上の env ブロックのコメント）。
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
           # 使うのは patch coverage 用の diff-cover のみ（JDK/Gradle は setup-java / setup-gradle が供給）。
@@ -77,13 +79,19 @@ jobs:
 
       # 変更行カバレッジ（patch coverage）ゲート。PR で触った行の 90% 未満で落とす(#437, ADR-0055)。
       # 探索領域(denylist)は mature XML に載らないため分母から自動で外れる。
+      #
+      # **`mise exec --` は挟まない**（#917）。mise-action は install 先の bin（この場合
+      # `installs/pipx-diff-cover/10.3.0/bin`）を PATH に足すので直接呼べる。一方 `mise exec` は
+      # config 上の全ツールを解決・install してしまい、install_args による絞り込み（#464）を後段で
+      # 無効化する。mise-action のキャッシュ保存は `mise install` の直後なので、そこで入った分は
+      # キャッシュにも乗らず毎 run 入れ直しになる。
       - name: Verify patch coverage
         if: github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
           ./gradlew koverXmlReportMature --stacktrace
-          mise exec -- diff-cover build/reports/kover/reportMature.xml \
+          diff-cover build/reports/kover/reportMature.xml \
             --compare-branch "origin/$BASE_REF" \
             --src-roots src/main/kotlin \
             --fail-under 90 \

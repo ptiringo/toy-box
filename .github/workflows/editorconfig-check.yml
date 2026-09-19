@@ -16,8 +16,10 @@ jobs:
     permissions:
       contents: read
     # http backend ツール（kotlin-lsp/tfctl）を config から外す（mise.ci.toml。#510）。
-    # **ジョブ全体に置く**。mise-action のステップにだけ付けると、後段で `mise exec` を使う
-    # ステップが素の mise.toml を読み、CI で使わない http ツールを解決しにいって落ちる（#859 / #863）。
+    # mise-action の `mise install --locked` は install_args のツールだけでなく config 上の全ツールを
+    # lock へ照合するため、この env が無いと CI で使わない http ツールを解決しにいって落ちる（#859 / #863）。
+    # **ジョブ全体に置く**。元の理由は「後段の `mise exec` にも効かせる」ことだったが、その
+    # `mise exec` は外した（#917）。今は mise を呼ぶステップが後から増えても取りこぼさないための予防。
     env:
       MISE_ENV: ci
     steps:
@@ -54,7 +56,7 @@ jobs:
       # 他 10 本と同じく mise へ寄せ、バージョンの出所を mise.toml（実体の固定は mise.lock）に一本化する。
       - name: Install mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
+        # MISE_ENV=ci はジョブの env で与える（理由は上の env ブロックのコメント）。
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
           # 必要なのは editorconfig-checker のみ。名前は mise.toml の [tools] キーと完全一致させる
@@ -76,10 +78,16 @@ jobs:
       - name: Check mise.lock drift on runner (#880)
         run: scripts/check-mise-lock-drift.sh
 
-      # 実行名は `ec`。mise が入れる editorconfig-checker 3.11.3 が提供するのはこの名前だけで、
-      # `mise exec -- editorconfig-checker` は "No such file or directory" になる（lefthook も `ec` を呼ぶ）。
+      # 実行名は `ec`。mise が入れる editorconfig-checker 3.11.3 が提供する実行ファイルはこの名前だけ
+      # （`editorconfig-checker` では PATH に出ない。lefthook も `ec` を呼ぶ）。
       # v4.0.0 で実行名が `editorconfig-checker` へ改称されたが、aqua-registry が資産名の変更
       # （`ec-*` → `editorconfig-checker-*`）に未追従で 4.x は mise から入らない（#881）。
       # 追従して 4.x へ上げるときは、この実行名も併せて見直すこと。
+      #
+      # **`mise exec --` は挟まない**（#917）。mise-action は install 先の bin（この場合
+      # `installs/editorconfig-checker/3.11.3/bin`）を PATH に足すので直接呼べる。一方 `mise exec` は
+      # config 上の全ツールを解決・install してしまい、install_args による絞り込み（#464）を後段で
+      # 無効化する（run 34693138310 で `installed 19 tools in 7.3s` を実測）。mise-action のキャッシュ
+      # 保存は `mise install` の直後なので、そこで入った 18 本はキャッシュにも乗らず毎 run 入れ直しになる。
       - name: Run EditorConfig check
-        run: mise exec -- ec --format github-actions
+        run: ec --format github-actions
