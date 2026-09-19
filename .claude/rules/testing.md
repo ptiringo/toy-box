@@ -68,9 +68,9 @@ pre-push（lefthook の `full-test`）は `./gradlew test` を丸ごと回す。
 
 その他:
 
-- pre-push でゲートが要るのは **`.kt` / `.kts` / `.java` を含む push のとき**だけ（両コマンドの `glob`）。ドキュメントや設定だけの push はゲートごとスキップされ、Docker を落としていても通る。glob を当てる対象は `scripts/list-push-target-files.sh` が供給する（lefthook 既定の `{push_files}` は worktree で比較対象を取り違え、`.md` だけの push でもゲートが起動していた。#804）。**Gradle 側には glob に相当する絞り込みが無い**（`Test` タスクが実行される時点で Docker は必ず要るため）。
+- pre-push でゲートが要るのは **Docker 依存コマンドの `glob` に当たる push のとき**だけ。Kotlin 系（`.kt` / `.kts` / `.java`）に加え、DB ドキュメント系（`.sql` / `.tbls.yml` / `dbdoc/` / `src/dbdoc/` / `mise.toml` / `mise.lock`）も対象になる（`db-doc-check` を足した #906 以降。実測: `.tbls.yml` 1 本だけの push で `docker-available` が発火する）。それ以外のドキュメントや設定だけの push はゲートごとスキップされ、Docker を落としていても通る。glob を当てる対象は `scripts/list-push-target-files.sh` が供給する（lefthook 既定の `{push_files}` は worktree で比較対象を取り違え、`.md` だけの push でもゲートが起動していた。#804）。**Gradle 側には glob に相当する絞り込みが無い**（`Test` タスクが実行される時点で Docker は必ず要るため）。
 - 判定は `docker info` の成否のみ。**Docker は生きているが Testcontainers だけ失敗する**ケース（イメージの pull 不可・リソース枯渇等）はガードを素通りし、従来どおりテストの失敗として出る。
-- Docker が復旧しないまま push したいときは **`LEFTHOOK_EXCLUDE=docker-available,full-test git push`**（`--no-verify` は gitleaks 等まで飛ばすので最後の手段）。同じテストは CI（`api-tests.yml`）で走る。**`test` / `check` 側に同種の逃げ道は無い**（Docker を復旧してから実行し直す）。
+- Docker が復旧しないまま push したいときは **`LEFTHOOK_EXCLUDE=docker git push`**（`docker` は `lefthook.yml` の pre-push コマンドに付けた依存タグ。Docker を要るコマンドが増えてもこの 1 語で外れる。`--no-verify` は gitleaks 等まで飛ばすので最後の手段）。同じテストは CI（`api-tests.yml`）で走る。**`test` / `check` 側に同種の逃げ道は無い**（Docker を復旧してから実行し直す）。
 - ガードの動作を確かめたいときは Docker を落とさずに `DOCKER_HOST=tcp://127.0.0.1:1` を被せればよい（`docker info` が接続拒否で非ゼロになる）。
 
 ## テスト実行性能（コンテキストキャッシュ優先・並列化しない）
