@@ -22,26 +22,30 @@ exclude:
 
 # lint ルールは可能な限り有効化する方針（crit レビュー: 基本的に全て true）。
 # ただし現スキーマに対して「違反ゼロで通せる」ものだけを true にする（CI の tbls lint ゲートを割らないため）。
-# 残りは該当機能（外部キー / ラベル / ビューポイント / index・制約コメント）を導入した時点で有効化する。
+# 残りは該当機能（ラベル / ビューポイント / index・制約コメント）を導入した時点で有効化する。
 # 外部キーは ADR-0053 で導入済み。DB スキーマはコンテキスト別に分割済み（#569 / ADR-0048。studbook / racing）。
+#
+# 各ルールの注記には**有効化・無効化の理由だけ**を書き、対象の有無・件数・具体的な数値は書かない。
+# 「対象ゼロ」を前提にした注記は対象が増えた瞬間に嘘になり、嘘になったことを誰も検知しない（#919）。
+# 実際 requireTriggerComment の「トリガー未使用（対象ゼロ）」は、V23（#727 / ADR-0081）でトリガを
+# 導入した後も残り、「このルールは今は何も見ていない」と読ませてコメント漏れの一往復を招いた（#906）。
 lint:
   # コメント必須（スキーマを一次情報とする）。
   requireTableComment:
     enabled: true
   requireColumnComment:
     enabled: true
-  # 現スキーマで対象ゼロ＝違反なしのため有効化（該当要素が増えたら実効化する）。
   requireTriggerComment:
-    enabled: true # トリガー未使用（対象ゼロ）
+    enabled: true # トリガーにもコメントを要求する（V23 の world_id イミュータブル化トリガが対象。ADR-0081）
   duplicateRelations:
     enabled: true # ADR-0053 で FK 導入済み。同一テーブル対の重複関連を検知する
   requireForeignKeyIndex:
     enabled: true # ADR-0053 で FK 導入済み。FK 列の index 有無を検査する
   labelStyleBigQuery:
-    enabled: true # tbls ラベル未使用（対象ゼロ）
+    enabled: true # ラベルを導入したときの命名を BigQuery 準拠に固定する
   columnCount:
     enabled: true
-    max: 50 # 現状の最大は blood_horse の 15 列。上限は緩めに設定
+    max: 50 # テーブルの肥大化を検知する。上限は緩めに設定
   # 以下は現スキーマだと違反が出て tbls lint が落ちるため、対応が済むまで無効（理由を明記）。
   unrelatedTable:
     enabled: true # 集約間 FK（ADR-0053）導入済み。関連を持たないテーブルの混入を検知する
@@ -58,4 +62,4 @@ lint:
   requireViewpoints:
     enabled: false # ビューポイント未定義のため必須化すると落ちる（viewpoint 定義後に有効化）
   requireColumns:
-    enabled: false # 全テーブル共通の必須列（created/updated 等）が無いため対象なし
+    enabled: false # 全テーブル共通の必須列（created/updated 等）を定義していないため無効（定義したら有効化する）
