@@ -67,8 +67,12 @@ Error）になり、この事象を実際に踏んだ。`git push` が 2 分待�
 - `lefthook.yml` の pre-push に `docker-available` コマンドを追加し、`priority` で `full-test` より
   先に走らせる。pre-push を `piped: true` にして、ここが落ちたら後続を打ち切る。
   `glob` は `full-test` と揃える（テストが走らない push で Docker を要求しない）。
-- 迂回の正規手順は `--no-verify` ではなく **`LEFTHOOK_EXCLUDE=docker-available,full-test git push`**
-  とする（pre-push の他フックを残せる粒度）。この案内はガードの失敗メッセージ自体に埋め込む。
+- 迂回の正規手順は `--no-verify` ではなく **`LEFTHOOK_EXCLUDE`** とする（pre-push の他フックを
+  残せる粒度）。この案内はガードの失敗メッセージ自体に埋め込む。
+  - 当初はコマンド名を列挙していた（`LEFTHOOK_EXCLUDE=docker-available,full-test git push`）が、
+    **現在は依存を表すタグで外す**（**`LEFTHOOK_EXCLUDE=docker git push`**）。名前の列挙は
+    Docker 依存のコマンドが増えたときに案内が古くなり、#906 で `db-doc-check` を足した後は
+    案内どおりに実行するとそれが起動してハングした（#930）。タグなら増えても案内は変わらない。
 
 ## Consequences（結果・影響）
 

@@ -95,9 +95,9 @@ pre-push は `docker-available`（lefthook）→ `full-test`（`./gradlew test`�
 - **ガードの守備範囲は ADR-0071 と同じ**「Docker に到達できない」ことに限る。Docker は生きているが
   Testcontainers だけ失敗するケース（イメージの pull 不可・リソース枯渇等）は素通りし、従来どおり
   テストの失敗として出る。
-- **pre-push の逃げ道（`LEFTHOOK_EXCLUDE=docker-available,full-test git push`）に相当するものは
-  `test` / `check` 側に無い**。Docker を復旧してから実行し直すことになる。案 C を採らない以上、
-  これは意図した帰結である。
+- **pre-push の逃げ道（`LEFTHOOK_EXCLUDE=docker git push`。本 ADR 時点ではコマンド名を列挙して
+  いたが、#930 で依存タグへ変えた）に相当するものは `test` / `check` 側に無い**。Docker を復旧して
+  から実行し直すことになる。案 C を採らない以上、これは意図した帰結である。
 - ガードの非空振り確認は **Docker を落とさずに `DOCKER_HOST=tcp://127.0.0.1:1` を被せる**ことで
   再現できる（`docker info` が接続拒否で非ゼロになる）。手順は `.claude/rules/testing.md` に置いた。
 - 結論（守るべきルール）は `.claude/rules/testing.md` の「ローカルゲートと Docker」に置いた。

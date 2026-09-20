@@ -223,7 +223,13 @@ pre-push:
         - "mise.toml"
         - "mise.lock"
       run: scripts/check-docker-available.sh
-      tags: test
+      # `docker` は依存を表すタグで、Docker 不在時の迂回（`LEFTHOOK_EXCLUDE=docker git push`）が
+      # 名前の列挙に頼らずに済むように付ける。Docker を要るコマンドを足すときはここにも `docker` を
+      # 付ければ、案内文を直さなくても迂回の対象に入る（#930。db-doc-check を足したとき案内の
+      # 列挙を更新し忘れ、案内どおりに push するとハングする状態になっていた）。
+      tags:
+        - test
+        - docker
 
     # プッシュ前に全体のテストを実行
     #
@@ -244,7 +250,9 @@ pre-push:
       priority: 2
       glob: "{,**/}*.{kt,kts,java}"
       run: mise exec -- ./gradlew test $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
-      tags: test
+      tags:
+        - test
+        - docker
 
     # dbdoc/ の鮮度（tbls diff）とコメント規約（tbls lint）の検査（#906）。
     #
@@ -268,7 +276,9 @@ pre-push:
         - "mise.toml"
         - "mise.lock"
       run: mise exec -- ./gradlew checkDbDoc $([ "$(git rev-parse --git-common-dir)" != "$(git rev-parse --git-dir)" ] && echo --no-daemon)
-      tags: lint
+      tags:
+        - lint
+        - docker
 
 commit-msg:
   commands:

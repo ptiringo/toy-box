@@ -67,9 +67,10 @@ EOF
 要ります。テストを起動すると接続の再試行で長時間ハングし「push が無反応」に見えるため、起動前に
 打ち切りました。"
       cat >&2 <<EOF
-  3. どうしても今 push したいなら、テストゲートだけ外して push する:
-       LEFTHOOK_EXCLUDE=docker-available,full-test git push
-     （pre-push の他フックは残る。\`--no-verify\` は全フックを飛ばすので最後の手段）。
+  3. どうしても今 push したいなら、Docker を要るゲートだけ外して push する:
+       LEFTHOOK_EXCLUDE=docker git push
+     （\`docker\` は lefthook.yml のタグ。Docker 依存のコマンドが増えてもこの 1 語で外れる。
+     pre-push の他フックは残る。\`--no-verify\` は全フックを飛ばすので最後の手段）。
      同じテストは CI（api-tests.yml）でも走るため、壊れたまま push すれば CI が検出する。
 EOF
       ;;
