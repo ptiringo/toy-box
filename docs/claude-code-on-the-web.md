@@ -128,7 +128,7 @@ Claude Code の `kotlin-lsp@claude-plugins-official` プラグイン（`.claude/
 
 ## gh CLI（GitHub 操作）（#628）
 
-クラウド／モバイルから GitHub の Issue/PR・Projects #4（Priority 運用）・PR マージ（`--admin` マージ）を `gh` で回せるようにする。ローカルの GitHub 操作方針（MCP でなく `gh` CLI = [ADR-0001](adr/0001-drop-github-mcp-use-gh-cli.md)）とクラウドを揃える follow-up。設計・認証運用は [ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)。
+クラウド／モバイルから GitHub の Issue/PR・Projects #4（Priority 運用）・PR マージを `gh` で回せるようにする。ローカルの GitHub 操作方針（MCP でなく `gh` CLI = [ADR-0001](adr/0001-drop-github-mcp-use-gh-cli.md)）とクラウドを揃える follow-up。設計・認証運用は [ADR-0066](adr/0066-gh-cli-via-gh-token-on-web.md)。
 
 ### 導入と認証
 
