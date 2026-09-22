@@ -1,6 +1,6 @@
 # 0076. ブラウザ E2E を Playwright + Auth Emulator + bootTestRun で組み、ゲート外の独立ワークフローで回す
 
-- Status: Accepted
+- Status: Accepted（主軸決定は有効。「CI の paths」の除外集合は [ADR-0082](0082-ci-path-filter-rules.md) で拡張）
 - Date: 2026-08-18
 - Deciders: Matsui
 

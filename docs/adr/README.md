@@ -91,3 +91,5 @@
 | [0079](0079-in-jvm-class-level-test-parallelism.md) | テストを JVM 内のクラス間並列で走らせる（DB / WebMvc は逐次のまま） | Accepted |
 | [0080](0080-docker-guard-on-gradle-test-tasks.md) | Docker 到達性ガードを Gradle の Test タスクへ広げる | Accepted |
 | [0081](0081-world-id-immutability-via-trigger.md) | world_id の不変性を BEFORE UPDATE トリガで強制する | Accepted |
+| [0082](0082-ci-path-filter-rules.md) | CI の paths フィルタは required なワークフローに掛けず、掛けるなら denylist で自身を含める | Accepted |
+| [0083](0083-merge-without-admin-bypass.md) | PR は --admin を付けずにマージし、required status check を迂回しない | Accepted |
