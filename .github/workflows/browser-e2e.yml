@@ -13,16 +13,19 @@ on:
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened]
+    # 除外集合は e2e-tests / container-smoke-test と揃える（#819 / ADR-0082）。
     paths-ignore:
-      - "docs/**"
-      - "infra/**"
       - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "infra/**"
   push:
     branches: [main]
     paths-ignore:
-      - "docs/**"
-      - "infra/**"
       - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "infra/**"
 
 jobs:
   browser-e2e:

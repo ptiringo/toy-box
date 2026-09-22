@@ -4,6 +4,8 @@ run-name: CodeQL Analysis for ${{ github.ref }}
 
 on:
   workflow_dispatch:
+  # `paths` / `paths-ignore` で絞らない。この解析が報告する `CodeQL`（code scanning）は main の
+  # required status check なので、絞ると対象外の PR で pending のまま止まる（#819 / ADR-0082）。
   pull_request:
     types: [opened, synchronize, reopened]
   push:

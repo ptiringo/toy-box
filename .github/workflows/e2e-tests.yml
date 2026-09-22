@@ -7,8 +7,21 @@ on:
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened]
+    # ドキュメント・Claude 指示・インフラだけの変更では走らせない（#819 / ADR-0082）。
+    # 除外集合は browser-e2e / container-smoke-test と揃える。`E2E` は main の required status
+    # check ではないので絞れる（required のものを絞ると、起動しない PR で pending のまま止まる）。
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "infra/**"
   push:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "infra/**"
 
 jobs:
   e2e:

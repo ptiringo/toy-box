@@ -17,11 +17,14 @@ on:
     paths:
       - "docs/adr/**"
       - "scripts/check-adr-numbering.sh"
+      # ワークフロー自身を変更した PR でも走らせる（#819。無いと、その変更を CI で確かめられない）。
+      - ".github/workflows/adr-check.yml"
   push:
     branches: [main]
     paths:
       - "docs/adr/**"
       - "scripts/check-adr-numbering.sh"
+      - ".github/workflows/adr-check.yml"
   workflow_dispatch:
 
 jobs:

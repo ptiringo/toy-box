@@ -13,6 +13,8 @@ on:
       - ".sqlfluff"
       - ".squawk.toml"
       - "scripts/check-migration-validate-separation.sh"
+      # ワークフロー自身を変更した PR でも走らせる（#819。無いと、その変更を CI で確かめられない）。
+      - ".github/workflows/sql-check.yml"
   push:
     branches: [main]
     paths:
@@ -20,6 +22,7 @@ on:
       - ".sqlfluff"
       - ".squawk.toml"
       - "scripts/check-migration-validate-separation.sh"
+      - ".github/workflows/sql-check.yml"
   workflow_dispatch:
 
 jobs:
