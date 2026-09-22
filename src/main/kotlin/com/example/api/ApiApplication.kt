@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
+// #819 検証用（マージしない）
 @SpringBootApplication
 @OpenAPIDefinition(
     info =
