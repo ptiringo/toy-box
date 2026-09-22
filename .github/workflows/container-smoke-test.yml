@@ -8,18 +8,22 @@ on:
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened]
+    # 除外集合は e2e-tests / browser-e2e と揃える（#819 / ADR-0082）。`src/test/**` だけは
+    # このジョブ固有（検査対象は本番イメージで、テストコードを含まない）。
     paths-ignore:
-      - "infra/**"
-      - ".claude/**"
-      - "src/test/**"
       - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "infra/**"
+      - "src/test/**"
   push:
     branches: [main]
     paths-ignore:
-      - "infra/**"
-      - ".claude/**"
-      - "src/test/**"
       - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "infra/**"
+      - "src/test/**"
 
 jobs:
   container-smoke-test:

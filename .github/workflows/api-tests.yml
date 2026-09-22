@@ -4,6 +4,8 @@ run-name: API Tests for ${{ github.ref }}
 
 on:
   workflow_dispatch:
+  # `paths` / `paths-ignore` で絞らない。`Run API Tests` は main の required status check なので、
+  # 絞ると対象外の PR で起動せず pending のまま止まり、マージできなくなる（#819 / ADR-0082）。
   pull_request:
     types: [opened, synchronize, reopened]
   push:

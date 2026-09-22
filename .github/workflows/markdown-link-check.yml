@@ -16,11 +16,14 @@ on:
     paths:
       - "**/*.md"
       - "scripts/check-markdown-links.sh"
+      # ワークフロー自身を変更した PR でも走らせる（#819。無いと、その変更を CI で確かめられない）。
+      - ".github/workflows/markdown-link-check.yml"
   push:
     branches: [main]
     paths:
       - "**/*.md"
       - "scripts/check-markdown-links.sh"
+      - ".github/workflows/markdown-link-check.yml"
   workflow_dispatch:
 
 jobs:

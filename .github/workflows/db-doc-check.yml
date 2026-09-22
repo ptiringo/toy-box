@@ -17,6 +17,10 @@ on:
       - "build.gradle.kts"
       - "mise.toml"
       - "mise.lock"
+      # ワークフロー自身を変更した PR でも走らせる（#819。無いと、その変更を CI で確かめられない）。
+      # この 1 行だけは pre-push の glob に対応を持たない（ローカルの checkDbDoc はワークフロー
+      # 定義を検証しないため）。CI と pre-push の集合の二重管理そのものは #920。
+      - ".github/workflows/db-doc-check.yml"
   push:
     branches: [main]
     paths:
@@ -27,6 +31,7 @@ on:
       - "build.gradle.kts"
       - "mise.toml"
       - "mise.lock"
+      - ".github/workflows/db-doc-check.yml"
   workflow_dispatch:
 
 jobs:
