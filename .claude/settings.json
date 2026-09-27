@@ -1,7 +1,17 @@
 {
   "language": "japanese",
+  "extraKnownMarketplaces": {
+    "docker": {
+      "source": {
+        "source": "github",
+        "repo": "docker/skills",
+        "ref": "v0.3.0"
+      }
+    }
+  },
   "enabledPlugins": {
-    "kotlin-lsp@claude-plugins-official": true
+    "kotlin-lsp@claude-plugins-official": true,
+    "docker-skills@docker": true
   },
   "permissions": {
     "deny": [

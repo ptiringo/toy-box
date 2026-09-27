@@ -72,7 +72,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 必要な MCP は各自が `/plugin` 等でアドホックに入れず、**リポジトリ管理の設定ファイルに宣言**して共有する（[ADR-0003](docs/adr/0003-consolidate-mcp-config-in-repo.md)）。Claude Code 用は `.mcp.json`（採用は `context7`＝ライブラリ最新ドキュメント参照 / `terraform`＝レジストリ・プロバイダ参照）、VS Code・Copilot 用は `.vscode/mcp.json`（別フォーマットで併存。共通 MCP は両者を同期する）。`.mcp.json` を唯一の出所とし、グローバル設定や `/plugin` で同名サーバーを二重定義しない。
 
-同じ方針で、**Claude Code の LSP プラグインは `.claude/settings.json` の `enabledPlugins` に宣言**する（`kotlin-lsp@claude-plugins-official`。要求バイナリは mise が供給。LSP はゲート（detekt / ArchUnit / `check`）を置き換えない補助。[ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。
+同じ方針で、**Claude Code の LSP プラグインは `.claude/settings.json` の `enabledPlugins` に宣言**する（`kotlin-lsp@claude-plugins-official`。要求バイナリは mise が供給。LSP はゲート（detekt / ArchUnit / `check`）を置き換えない補助。[ADR-0046](docs/adr/0046-adopt-kotlin-lsp-plugin.md)）。Docker 公式スキル集も同じく `extraKnownMarketplaces`（`docker/skills`、タグ固定）＋ `enabledPlugins`（`docker-skills@docker`）で宣言する。スキルの助言よりリポジトリの既存方針（本番イメージは Dockerfile ではなく `bootBuildImage`）を優先する（[ADR-0084](docs/adr/0084-adopt-docker-skills-plugin.md)）。
 
 上記とは別に、**この API 自身も MCP サーバを公開する**（`/mcp`。`mcp` アダプタ）。これは開発者が自分の世界（セーブデータ）を覗くためのローカル探索ツールで、**`local` プロファイル限定**（既定は `spring.ai.mcp.server.enabled: false`）。`bootRun` は自動で `local` になるが、操作主体の解決に `MCP_SUBJECT_ID`（自分の Identity Platform の `sub`）を環境変数で渡す必要がある（[ADR-0073](docs/adr/0073-mcp-adapter-local-only-world-scoped.md)）。
 
