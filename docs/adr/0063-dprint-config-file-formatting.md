@@ -1,6 +1,6 @@
 # 0063. 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする
 
-- Status: Accepted
+- Status: Accepted（一部 [ADR-0085](0085-dprint-plugins-via-npm-with-cooldown.md) で改訂）
 - Date: 2026-07-08
 - Deciders: Matsui
 

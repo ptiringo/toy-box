@@ -61,7 +61,7 @@ node = "22"
 terraform = "1.15.6"
 tflint = "0.63.1"
 "aqua:aquasecurity/trivy" = "0.71.2"
-"aqua:dprint/dprint" = "0.57.0"
+"aqua:dprint/dprint" = "0.60.1"
 uv = "0.11.24"
 vacuum = "0.29.9"
 zizmor = "1.26.1"
@@ -73,6 +73,13 @@ zizmor = "1.26.1"
 [tasks.bootstrap]
 description = "git フック（lefthook）を設定する"
 run = "lefthook install"
+
+# dprint プラグイン（dprint.json の plugins）の更新。npm 指定子へ書き出し、公開から 7 日未満の版は選ばない
+# （Dependabot の cooldown と同じ「出たばかりの版を掴まない」方針。ADR-0085）。`dprint config update` を
+# 素で叩くと最新版を選ぶので、更新はこのタスク経由で行う。
+[tasks.dprint-update]
+description = "dprint プラグインを公開後 7 日以上経った最新版へ更新する"
+run = "dprint config update --minimum-dependency-age P7D --yes"
 
 # tfctl: HCP Terraform / TFE 管理 CLI（run / variable / workspace 操作）。採否は ADR-0034 参照。
 # mise registry の短名 `tfctl` は別物（flux-iac/tofu-controller の tfctl）と衝突し、aqua-registry にも
