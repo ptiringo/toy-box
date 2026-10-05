@@ -94,3 +94,4 @@
 | [0082](0082-ci-path-filter-rules.md) | CI の paths フィルタは required なワークフローに掛けず、掛けるなら denylist で自身を含める | Accepted |
 | [0083](0083-merge-without-admin-bypass.md) | PR は --admin を付けずにマージし、required status check を迂回しない | Accepted |
 | [0084](0084-adopt-docker-skills-plugin.md) | Docker 公式の Agent Skills（docker/skills）をプラグインとしてリポジトリ管理で宣言する | Accepted |
+| [0085](0085-adopt-gradle-skills-plugin.md) | Gradle 公式の Agent Skills（gradle/gradle-skills）をプラグインとしてリポジトリ管理で宣言する | Accepted |
