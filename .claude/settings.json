@@ -7,11 +7,19 @@
         "repo": "docker/skills",
         "ref": "v0.3.0"
       }
+    },
+    "gradle-skills": {
+      "source": {
+        "source": "github",
+        "repo": "gradle/gradle-skills",
+        "ref": "1.0.0"
+      }
     }
   },
   "enabledPlugins": {
     "kotlin-lsp@claude-plugins-official": true,
-    "docker-skills@docker": true
+    "docker-skills@docker": true,
+    "gradle-skills@gradle-skills": true
   },
   "permissions": {
     "deny": [
