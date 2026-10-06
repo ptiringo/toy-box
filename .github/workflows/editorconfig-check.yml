@@ -55,7 +55,7 @@ jobs:
       # ローカル / lefthook のバージョンと二重管理になり、同じ検査が別バージョンで走っていた。
       # 他 10 本と同じく mise へ寄せ、バージョンの出所を mise.toml（実体の固定は mise.lock）に一本化する。
       - name: Install mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         # MISE_ENV=ci はジョブの env で与える（理由は上の env ブロックのコメント）。
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
