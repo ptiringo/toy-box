@@ -72,7 +72,7 @@
 | [0060](0060-gradle-enhanced-cache-provider-and-cc-persistence.md) | setup-gradle は既定の enhanced キャッシュプロバイダを使う（configuration cache の CI 持ち越しは断念） | Accepted |
 | [0061](0061-sakamichi-non-senbatsu-tracks.md) | 非選抜曲をトラック × 編成の 0..\* コレクションとしてモデル化する | Accepted |
 | [0062](0062-unique-backstop-plain-add-constraint.md) | 既存テーブルへの UNIQUE backstop は素の ADD CONSTRAINT で行う | Accepted |
-| [0063](0063-dprint-config-file-formatting.md) | 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする | Accepted（一部 [0085](0085-dprint-plugins-via-npm-with-cooldown.md) で改訂） |
+| [0063](0063-dprint-config-file-formatting.md) | 設定ファイル（TOML/JSON/YAML）の整形に dprint を採用し lefthook / CI でゲートする | Accepted（一部 [0086](0086-dprint-plugins-via-npm-with-cooldown.md) で改訂） |
 | [0064](0064-authn-via-identity-platform-authz-in-app.md) | 認証は GCP Identity Platform に委譲し、認可の権限は自前 DB に持つ | Accepted |
 | [0065](0065-claude-code-on-the-web-support.md) | Claude Code on the web を軽量変更ワークフローとして最小サポートする | Accepted |
 | [0066](0066-gh-cli-via-gh-token-on-web.md) | Claude Code on the web で gh CLI を GH_TOKEN 認証で使う | Accepted |
@@ -94,4 +94,4 @@
 | [0082](0082-ci-path-filter-rules.md) | CI の paths フィルタは required なワークフローに掛けず、掛けるなら denylist で自身を含める | Accepted |
 | [0083](0083-merge-without-admin-bypass.md) | PR は --admin を付けずにマージし、required status check を迂回しない | Accepted |
 | [0084](0084-adopt-docker-skills-plugin.md) | Docker 公式の Agent Skills（docker/skills）をプラグインとしてリポジトリ管理で宣言する | Accepted |
-| [0085](0085-dprint-plugins-via-npm-with-cooldown.md) | dprint プラグインを npm 指定子でピンし、更新時に公開後 7 日の cooldown を置く | Accepted |
+| [0086](0086-dprint-plugins-via-npm-with-cooldown.md) | dprint プラグインを npm 指定子でピンし、更新時に公開後 7 日の cooldown を置く | Accepted |

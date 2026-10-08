@@ -75,7 +75,7 @@ description = "git フック（lefthook）を設定する"
 run = "lefthook install"
 
 # dprint プラグイン（dprint.json の plugins）の更新。npm 指定子へ書き出し、公開から 7 日未満の版は選ばない
-# （Dependabot の cooldown と同じ「出たばかりの版を掴まない」方針。ADR-0085）。`dprint config update` を
+# （Dependabot の cooldown と同じ「出たばかりの版を掴まない」方針。ADR-0086）。`dprint config update` を
 # 素で叩くと最新版を選ぶので、更新はこのタスク経由で行う。
 [tasks.dprint-update]
 description = "dprint プラグインを公開後 7 日以上経った最新版へ更新する"

@@ -1,4 +1,4 @@
-# 0085. dprint プラグインを npm 指定子でピンし、更新時に公開後 7 日の cooldown を置く
+# 0086. dprint プラグインを npm 指定子でピンし、更新時に公開後 7 日の cooldown を置く
 
 - Status: Accepted
 - Date: 2026-10-05
