@@ -23,6 +23,11 @@ updates:
     cooldown:
       semver-major-days: 14
       semver-minor-days: 7
+    ignore:
+      # Gradle 9.8 で非推奨になった Configuration.setVisible を ktfmt プラグイン（0.27.0）が呼んでおり、
+      # warning.mode=fail（#649）でビルドが落ちる。ktfmt の修正版が出るまで 9.7.x に据え置く（#965）。
+      - dependency-name: "gradle-wrapper"
+        versions: [">= 9.8.0"]
     groups:
       # Kotlin コンパイラ版と歩調を揃える必要がある依存を 1 グループに束ね、一般グループ
       # （gradle-minor-patch）を軽く緑に保つ。以下は常に同一 PR で足並みを揃える:

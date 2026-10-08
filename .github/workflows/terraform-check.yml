@@ -45,7 +45,7 @@ jobs:
           persist-credentials: false
 
       - name: Install mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
@@ -83,7 +83,7 @@ jobs:
       # sarif_file は root 相対の infra/trivy.sarif。category で CodeQL と区別する。
       - name: Upload Trivy SARIF to Code Scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           sarif_file: infra/trivy.sarif
           category: trivy-iac
