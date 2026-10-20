@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         # MISE_ENV=ci はジョブの env で与える（このステップ限定にすると後段の mise exec に効かない）。
         with:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
