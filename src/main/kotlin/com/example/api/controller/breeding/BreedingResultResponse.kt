@@ -1,6 +1,7 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
+import com.example.api.application.studbook.breeding.CoveringKind
 import com.example.api.controller.horse.ForeignSireResponse
 import com.example.api.controller.horse.toResponse
 import com.example.api.domain.studbook.model.breeding.BreedingResult
@@ -97,8 +98,15 @@ fun BreedingResultDetailView.toResponse(): BreedingResultResponse =
         outcome = outcome?.toResponse(),
         reportSubmittedOn = reportSubmittedOn,
         reportSubmittedLate = reportSubmittedLate,
-        coveringType = coveringType?.let { CoveringTypeDto.valueOf(it) },
+        coveringType = coveringType?.toApi(),
         foreignSire = foreignSire?.toResponse(),
         coveringCountry = coveringCountry,
         proofNumber = proofNumber,
     )
+
+/** 読み取りモデルの種付の区分を HTTP 契約の区分へ変換する。 */
+fun CoveringKind.toApi(): CoveringTypeDto =
+    when (this) {
+        CoveringKind.DOMESTIC -> CoveringTypeDto.DOMESTIC
+        CoveringKind.OVERSEAS -> CoveringTypeDto.OVERSEAS
+    }

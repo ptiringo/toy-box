@@ -1,5 +1,6 @@
 package com.example.api.infrastructure.studbook.breeding
 
+import com.example.api.application.studbook.breeding.CoveringKind
 import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
@@ -221,7 +222,7 @@ class JdbcBreedingResultQueriesContractTest(
         val view = queries.findById(worldId, BreedingResultId(id))
 
         assert(view != null)
-        assert(view!!.coveringType == "OVERSEAS")
+        assert(view!!.coveringType == CoveringKind.OVERSEAS)
         assert(
             view.foreignSire ==
                 ForeignSireView("Danehill", "アメリカ", BreedType.THOROUGHBRED, CoatColor.BAY)
@@ -239,7 +240,7 @@ class JdbcBreedingResultQueriesContractTest(
 
         val view = queries.findById(worldId, BreedingResultId(id))
 
-        assert(view!!.coveringType == "DOMESTIC")
+        assert(view!!.coveringType == CoveringKind.DOMESTIC)
         assert(view.foreignSire == null)
         assert(view.coveringCountry == null)
         assert(view.proofNumber == null)

@@ -2,6 +2,7 @@ package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
 import com.example.api.application.studbook.breeding.BreedingResultQueries
+import com.example.api.application.studbook.breeding.CoveringKind
 import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
@@ -56,7 +57,7 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
                     certificateNumber = rs.getString("covering_certificate_number"),
                     outcome = rs.toOutcome(),
                     reportSubmittedOn = rs.getObject("report_submitted_on", LocalDate::class.java),
-                    coveringType = rs.getString("covering_type"),
+                    coveringType = rs.toCoveringKind(),
                     foreignSire = rs.toForeignSire(),
                     coveringCountry = rs.getString("covering_country"),
                     proofNumber = rs.getString("covering_proof_number"),
@@ -64,6 +65,15 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
             }
             .optional()
             .orElse(null)
+
+    /** 判別子 `covering_type` を [CoveringKind] に写す（種付せずの年は NULL のまま null）。 */
+    private fun ResultSet.toCoveringKind(): CoveringKind? =
+        when (val type = getString("covering_type")) {
+            null -> null
+            CoveringType.DOMESTIC -> CoveringKind.DOMESTIC
+            CoveringType.OVERSEAS -> CoveringKind.OVERSEAS
+            else -> error("未知の種付の判別子: $type (id=${getObject("id", UUID::class.java)})")
+        }
 
     /**
      * 海外種付の外国種牡馬の 4 列から [ForeignSireView] を組む（海外種付でなければ馬名が NULL で null）。

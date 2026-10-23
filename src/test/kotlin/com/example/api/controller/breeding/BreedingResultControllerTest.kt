@@ -3,6 +3,7 @@ package com.example.api.controller.breeding
 import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
 import com.example.api.application.studbook.breeding.BreedingResultNotFound
+import com.example.api.application.studbook.breeding.CoveringKind
 import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.application.studbook.breeding.GetBreedingResultQuery
 import com.example.api.application.studbook.breeding.GetBreedingResultUseCase
@@ -705,6 +706,10 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                         outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
                         // 繁殖年 2024 の期限は 2025-05-31。その翌日の提出は期限超過として応答に表れる。
                         reportSubmittedOn = LocalDate.of(2025, 6, 1),
+                        coveringType = CoveringKind.DOMESTIC,
+                        foreignSire = null,
+                        coveringCountry = null,
+                        proofNumber = null,
                     )
                 )
 
@@ -732,7 +737,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                         certificateNumber = null,
                         outcome = null,
                         reportSubmittedOn = null,
-                        coveringType = "OVERSEAS",
+                        coveringType = CoveringKind.OVERSEAS,
                         foreignSire =
                             ForeignSireView(
                                 "Danehill",
@@ -769,6 +774,10 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                         certificateNumber = "C-2024-0001",
                         outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
                         reportSubmittedOn = LocalDate.of(2025, 6, 1),
+                        coveringType = CoveringKind.DOMESTIC,
+                        foreignSire = null,
+                        coveringCountry = null,
+                        proofNumber = null,
                     )
                 )
 

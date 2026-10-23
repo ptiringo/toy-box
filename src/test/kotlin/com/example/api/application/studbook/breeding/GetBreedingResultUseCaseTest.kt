@@ -40,6 +40,10 @@ class GetBreedingResultUseCaseTest {
             certificateNumber = "C-2024-0001",
             outcome = null,
             reportSubmittedOn = null,
+            coveringType = CoveringKind.DOMESTIC,
+            foreignSire = null,
+            coveringCountry = null,
+            proofNumber = null,
         )
 
     @Test
@@ -82,6 +86,10 @@ class BreedingResultDetailViewTest {
             certificateNumber = "C-2024-0001",
             outcome = FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
             reportSubmittedOn = submittedOn,
+            coveringType = CoveringKind.DOMESTIC,
+            foreignSire = null,
+            coveringCountry = null,
+            proofNumber = null,
         )
 
     @Test

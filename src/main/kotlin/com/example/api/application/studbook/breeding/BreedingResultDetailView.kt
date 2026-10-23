@@ -26,7 +26,7 @@ import org.jmolecules.architecture.cqrs.QueryModel
  * @property certificateNumber 種付証明書番号。種付せずの年は null
  * @property outcome 分娩結果。種付した年で未報告なら null
  * @property reportSubmittedOn 繁殖成績報告書（様式第14号）の提出日。未提出は null
- * @property coveringType 種付の判別子（`DOMESTIC` = 国内種付 / `OVERSEAS` = 海外種付）。種付せずの年は null
+ * @property coveringType 種付の区分。種付せずの年は null
  * @property foreignSire 海外種付の外国種牡馬。海外種付でなければ null（国内種付の種牡馬は [stallionId]）
  * @property coveringCountry 海外種付が行われた国。海外種付でなければ null
  * @property proofNumber 種付国の血統登録機関が発行した種付事実の証明の番号。海外種付でなければ null
@@ -42,10 +42,10 @@ data class BreedingResultDetailView(
     val certificateNumber: String?,
     val outcome: FoalingOutcome?,
     val reportSubmittedOn: LocalDate?,
-    val coveringType: String? = null,
-    val foreignSire: ForeignSireView? = null,
-    val coveringCountry: String? = null,
-    val proofNumber: String? = null,
+    val coveringType: CoveringKind?,
+    val foreignSire: ForeignSireView?,
+    val coveringCountry: String?,
+    val proofNumber: String?,
 ) {
     /**
      * 提出が期限（繁殖年の翌年5/31、[BreedingReportDeadline]）超過だったか。未提出なら null。
@@ -75,3 +75,17 @@ data class ForeignSireView(
     val breedType: BreedType,
     val coatColor: CoatColor,
 )
+
+/**
+ * 種付の区分の読み取り表現（[BreedingResultDetailView.coveringType]）。
+ *
+ * 永続化の判別子文字列を application や wire に持ち込まないため、読み取り経路でも型で受ける（ADR-0007 と同じ趣旨）。 値は sealed な種付
+ * [com.example.api.domain.studbook.model.breeding.Covering] のバリアントに対応する。
+ */
+enum class CoveringKind {
+    /** 国内種付（`Covering.Domestic`）。 */
+    DOMESTIC,
+
+    /** 海外種付（`Covering.Overseas`）。 */
+    OVERSEAS,
+}
