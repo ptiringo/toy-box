@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegistrationReposi
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
+import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankBreeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.BlankPedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
@@ -237,7 +238,10 @@ class RegisterFoalUseCase(
                     )
                 }
                 .bind()
-        val sireId = covering.stallionId
+        val sireId =
+            when (covering) {
+                is Covering.Domestic -> covering.stallionId
+            }
         bloodHorseRepository
             .findById(actor.worldId, sireId)
             .toResultOr { RegisterFoalUseCaseError.SireNotFound(sireId.value) }

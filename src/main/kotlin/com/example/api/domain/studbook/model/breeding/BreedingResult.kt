@@ -278,7 +278,7 @@ private constructor(
                                 breedingRegistrationId = broodmareRegistration.id,
                                 breedingYear = Year.of(coveringDate.year),
                                 covering =
-                                    Covering(
+                                    Covering.Domestic(
                                         stallionRegistration.registeredHorseId,
                                         coveringDate,
                                         coveringPlace,

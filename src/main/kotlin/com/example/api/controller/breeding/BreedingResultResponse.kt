@@ -2,6 +2,7 @@ package com.example.api.controller.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
 import com.example.api.domain.studbook.model.breeding.BreedingResult
+import com.example.api.domain.studbook.model.breeding.Covering
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
@@ -41,19 +42,25 @@ data class BreedingResultResponse(
 )
 
 /** [BreedingResult] を繁殖成績リソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */
-fun BreedingResult.toResponse(): BreedingResultResponse =
-    BreedingResultResponse(
+fun BreedingResult.toResponse(): BreedingResultResponse {
+    val domestic =
+        when (val c = covering) {
+            is Covering.Domestic -> c
+            null -> null
+        }
+    return BreedingResultResponse(
         id = id.value,
         breedingRegistrationId = breedingRegistrationId.value,
         breedingYear = breedingYear.value,
-        stallionId = covering?.stallionId?.value,
+        stallionId = domestic?.stallionId?.value,
         coveringDate = covering?.coveringDate,
-        coveringPlace = covering?.coveringPlace?.value,
-        certificateNumber = covering?.certificateNumber?.value,
+        coveringPlace = domestic?.coveringPlace?.value,
+        certificateNumber = domestic?.certificateNumber?.value,
         outcome = outcome?.toResponse(),
         reportSubmittedOn = reportSubmittedOn,
         reportSubmittedLate = reportSubmittedLate,
     )
+}
 
 /**
  * 読み取りモデル [BreedingResultDetailView] を繁殖成績リソースの表現へ変換する（読み取り経路。Get の成功レスポンス）。

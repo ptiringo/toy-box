@@ -86,7 +86,7 @@ class JdbcBreedingResultRepository(
 
     /** 種付列（coveringDate の有無を判別子とする）から nullable な [Covering] を復元する。 */
     private fun BreedingResultRow.toCovering(): Covering? = coveringDate?.let { date ->
-        Covering(
+        Covering.Domestic(
             stallionId = BloodHorseId(checkNotNull(coveringStallionId) { "種付の種牡馬IDが欠落: id=$id" }),
             coveringDate = date,
             coveringPlace = coveringPlace?.let { BreedingRegion.create(it).orThrow() },
@@ -123,15 +123,20 @@ class JdbcBreedingResultRepository(
      */
     private fun BreedingResult.toRow(worldId: WorldId): BreedingResultRow {
         val (outcomeType, foalingDate) = outcome.toTypeAndDate()
+        val domestic =
+            when (val c = covering) {
+                is Covering.Domestic -> c
+                null -> null
+            }
         return BreedingResultRow(
             id = id.value,
             worldId = worldId.value,
             breedingRegistrationId = breedingRegistrationId.value,
             breedingYear = breedingYear.value,
-            coveringStallionId = covering?.stallionId?.value,
+            coveringStallionId = domestic?.stallionId?.value,
             coveringDate = covering?.coveringDate,
-            coveringPlace = covering?.coveringPlace?.value,
-            coveringCertificateNumber = covering?.certificateNumber?.value,
+            coveringPlace = domestic?.coveringPlace?.value,
+            coveringCertificateNumber = domestic?.certificateNumber?.value,
             outcomeType = outcomeType,
             outcomeFoalingDate = foalingDate,
             reportSubmittedOn = reportSubmittedOn,
