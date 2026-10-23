@@ -17,19 +17,23 @@
 | breeder | varchar(255) |  | false |  |  | 生産者 |
 | inspection_id | uuid |  | false |  | [studbook.horse_inspection](studbook.horse_inspection.md) | 個体識別審査（horse_inspection）の ID |
 | name | varchar(255) |  | true |  |  | 馬名（未命名なら NULL） |
-| origin_type | varchar(16) |  | false |  |  | 出自の判別子（DOMESTIC/IMPORTED/CARRIED_OVER） |
+| origin_type | varchar(16) |  | false |  |  | 出自の判別子（DOMESTIC/IMPORTED/CARRIED_OVER/BROUGHT_IN） |
 | sire_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 父馬 ID（内国産のみ） |
-| dam_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 母馬 ID（内国産のみ） |
+| dam_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 母馬 ID（内国産・持込馬のみ） |
 | origin_country | varchar(255) |  | true |  |  | 原産国（輸入のみ） |
 | landing_date | date |  | true |  |  | 輸入上陸日（輸入のみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 | world_id | uuid |  | false | [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.horse_inspection](studbook.horse_inspection.md) | この行が属する世界（セーブデータ）のID |
+| foreign_sire_name | varchar(255) |  | true |  |  | 父である外国種牡馬の馬名（持込馬のみ） |
+| foreign_sire_stud_book_country | varchar(255) |  | true |  |  | 父である外国種牡馬を登録している血統登録機関の国（持込馬のみ） |
+| foreign_sire_breed_type | varchar(32) |  | true |  |  | 父である外国種牡馬の品種（持込馬のみ） |
+| foreign_sire_coat_color | varchar(32) |  | true |  |  | 父である外国種牡馬の毛色（持込馬のみ） |
 
 ## Constraints
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL)) OR (((origin_type)::text = 'CARRIED_OVER'::text) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)))) |
+| chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL) AND (foreign_sire_name IS NULL) AND (foreign_sire_stud_book_country IS NULL) AND (foreign_sire_breed_type IS NULL) AND (foreign_sire_coat_color IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (foreign_sire_name IS NULL) AND (foreign_sire_stud_book_country IS NULL) AND (foreign_sire_breed_type IS NULL) AND (foreign_sire_coat_color IS NULL)) OR (((origin_type)::text = 'CARRIED_OVER'::text) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL) AND (foreign_sire_name IS NULL) AND (foreign_sire_stud_book_country IS NULL) AND (foreign_sire_breed_type IS NULL) AND (foreign_sire_coat_color IS NULL)) OR (((origin_type)::text = 'BROUGHT_IN'::text) AND (dam_id IS NOT NULL) AND (foreign_sire_name IS NOT NULL) AND (foreign_sire_stud_book_country IS NOT NULL) AND (foreign_sire_breed_type IS NOT NULL) AND (foreign_sire_coat_color IS NOT NULL) AND (sire_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)))) |
 | blood_horse_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | fk_blood_horse_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
 | fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (world_id, dam_id) REFERENCES studbook.blood_horse(world_id, id) |
@@ -86,6 +90,10 @@ erDiagram
   date landing_date
   bigint version
   uuid world_id FK
+  varchar_255_ foreign_sire_name
+  varchar_255_ foreign_sire_stud_book_country
+  varchar_32_ foreign_sire_breed_type
+  varchar_32_ foreign_sire_coat_color
 }
 "studbook.breeding_registration" {
   uuid id
@@ -110,6 +118,13 @@ erDiagram
   bigint version
   date report_submitted_on
   uuid world_id FK
+  varchar_16_ covering_type
+  varchar_255_ covering_foreign_sire_name
+  varchar_255_ covering_foreign_sire_stud_book_country
+  varchar_32_ covering_foreign_sire_breed_type
+  varchar_32_ covering_foreign_sire_coat_color
+  varchar_255_ covering_country
+  varchar_255_ covering_proof_number
 }
 "studbook.horse_inspection" {
   uuid id

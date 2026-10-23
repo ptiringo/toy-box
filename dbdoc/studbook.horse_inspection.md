@@ -76,6 +76,10 @@ erDiagram
   date landing_date
   bigint version
   uuid world_id FK
+  varchar_255_ foreign_sire_name
+  varchar_255_ foreign_sire_stud_book_country
+  varchar_32_ foreign_sire_breed_type
+  varchar_32_ foreign_sire_coat_color
 }
 "iam.world" {
   uuid id

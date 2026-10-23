@@ -76,6 +76,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
             id = generateId(),
             breedingRegistrationId = registrationId,
             breedingYear = year,
+            coveringType = "DOMESTIC",
             coveringStallionId = stallionId,
             coveringDate = LocalDate.of(year, 4, 1),
             coveringPlace = "北海道",

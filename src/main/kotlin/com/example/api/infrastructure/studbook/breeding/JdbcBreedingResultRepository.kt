@@ -133,6 +133,7 @@ class JdbcBreedingResultRepository(
             worldId = worldId.value,
             breedingRegistrationId = breedingRegistrationId.value,
             breedingYear = breedingYear.value,
+            coveringType = domestic?.let { CoveringType.DOMESTIC },
             coveringStallionId = domestic?.stallionId?.value,
             coveringDate = covering?.coveringDate,
             coveringPlace = domestic?.coveringPlace?.value,

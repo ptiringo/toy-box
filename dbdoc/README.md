@@ -6,8 +6,8 @@
 | ---- | ------- | ------- | ---- |
 | [racing.jockey](racing.jockey.md) | 5 | 騎手（JRA 競馬コンテキスト） | BASE TABLE |
 | [studbook.breeding_registration](studbook.breeding_registration.md) | 8 | 繁殖登録（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.blood_horse](studbook.blood_horse.md) | 16 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.breeding_result](studbook.breeding_result.md) | 12 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.blood_horse](studbook.blood_horse.md) | 20 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.breeding_result](studbook.breeding_result.md) | 19 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.horse_inspection](studbook.horse_inspection.md) | 9 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.covering_report](studbook.covering_report.md) | 6 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
 | [iam.account](iam.account.md) | 3 | この API の利用者アカウント（IdP の subject に世界を結びつける） | BASE TABLE |
@@ -75,6 +75,10 @@ erDiagram
   date landing_date
   bigint version
   uuid world_id FK
+  varchar_255_ foreign_sire_name
+  varchar_255_ foreign_sire_stud_book_country
+  varchar_32_ foreign_sire_breed_type
+  varchar_32_ foreign_sire_coat_color
 }
 "studbook.breeding_result" {
   uuid id
@@ -89,6 +93,13 @@ erDiagram
   bigint version
   date report_submitted_on
   uuid world_id FK
+  varchar_16_ covering_type
+  varchar_255_ covering_foreign_sire_name
+  varchar_255_ covering_foreign_sire_stud_book_country
+  varchar_32_ covering_foreign_sire_breed_type
+  varchar_32_ covering_foreign_sire_coat_color
+  varchar_255_ covering_country
+  varchar_255_ covering_proof_number
 }
 "studbook.horse_inspection" {
   uuid id
