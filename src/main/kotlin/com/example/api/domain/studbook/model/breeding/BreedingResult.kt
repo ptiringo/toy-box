@@ -2,6 +2,8 @@ package com.example.api.domain.studbook.model.breeding
 
 import com.example.api.domain.shared.Entity
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSire
+import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -86,6 +88,29 @@ sealed interface RecordCoveringError {
         val year: Year,
         val existingBreedingResultId: BreedingResultId,
     ) : RecordCoveringError
+}
+
+/**
+ * 海外種付の記録（ドメインサービス recordOverseasCovering / ファクトリ [BreedingResult.createOverseas]）の前提条件違反。
+ *
+ * 国内種付の [RecordCoveringError] と分けるのは、種牡馬のロール違反（`NotStallion`）と種畜証明書の有効性違反
+ * （`InvalidCovering`）が海外種付では起こりえないため。前提は2系統で、(1) 対象の繁殖登録のロールが繁殖牝馬であること
+ * （[NotBroodmare]。ファクトリが検証）、(2)「繁殖牝馬 × 繁殖年」で一意という集合制約（[AlreadyRecordedForYear]。 ドメインサービスが検証）。
+ */
+sealed interface RecordOverseasCoveringError {
+    /** 種付対象の繁殖登録のロールが繁殖牝馬でない。 */
+    data object NotBroodmare : RecordOverseasCoveringError
+
+    /**
+     * 同一繁殖牝馬・同一繁殖年に既に年次の繁殖成績が存在する（国内種付・海外種付・種付せずを問わない）。
+     *
+     * @property year 重複した繁殖年
+     * @property existingBreedingResultId 既に存在する同年の繁殖成績のID
+     */
+    data class AlreadyRecordedForYear(
+        val year: Year,
+        val existingBreedingResultId: BreedingResultId,
+    ) : RecordOverseasCoveringError
 }
 
 /**
@@ -288,6 +313,42 @@ private constructor(
                             )
                         }
                         .mapError { RecordCoveringError.InvalidCovering(it) }
+            }
+
+        /**
+         * 繁殖牝馬への海外種付（外国で外国種牡馬と行われた種付）を記録し、分娩結果未報告の [BreedingResult] を生成する。
+         *
+         * 本ファクトリが守るのは対象の繁殖登録のロールが繁殖牝馬であること（[RecordOverseasCoveringError.NotBroodmare]）に限る。
+         * 種畜証明書による検証は持込馬には適用されないため掛けない（[Covering.Overseas] 参照）。種付日が繁殖登録より前
+         * （輸入前の外国での種付）でも記録できる。「繁殖牝馬 × 繁殖年」の一意性はドメインサービス recordOverseasCovering が担う。
+         *
+         * @param broodmareRegistration 種付対象の繁殖牝馬の繁殖登録（ロールが繁殖牝馬であること）
+         * @param sire 外国種牡馬
+         * @param coveringDate 種付日（繁殖年はこの暦年）
+         * @param coveringCountry 種付が行われた国
+         * @param proofNumber 種付国の血統登録機関が発行した種付事実の証明の番号
+         * @return 海外種付を記録した [BreedingResult]、またはロールの前提条件違反
+         */
+        fun createOverseas(
+            broodmareRegistration: BreedingRegistration,
+            sire: ForeignSire,
+            coveringDate: LocalDate,
+            coveringCountry: OriginCountry,
+            proofNumber: ForeignCoveringProofNumber,
+        ): Result<BreedingResult, RecordOverseasCoveringError> =
+            if (broodmareRegistration.role != BreedingRole.BROODMARE) {
+                Err(RecordOverseasCoveringError.NotBroodmare)
+            } else {
+                Ok(
+                    BreedingResult(
+                        id = BreedingResultId(generateId()),
+                        breedingRegistrationId = broodmareRegistration.id,
+                        breedingYear = Year.of(coveringDate.year),
+                        covering =
+                            Covering.Overseas(sire, coveringDate, coveringCountry, proofNumber),
+                        outcome = null,
+                    )
+                )
             }
 
         /**

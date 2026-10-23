@@ -6,6 +6,7 @@ import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
+import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -492,5 +493,31 @@ class JdbcBreedingResultRepositoryContractTest(
         val row = uncoveredRow().copy(coveringType = "DOMESTIC")
 
         assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `海外種付の成績を保存して同じ値で復元できる`() {
+        val broodmareRegistration =
+            BreedingFixture.breedingRegistration(
+                broodmare =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.FEMALE,
+                            registrationNumber = "MARE-${generateId()}",
+                        )
+                    ),
+                registrationNumber = "B-MARE-${generateId()}",
+            )
+        seeder.seedRegistration(broodmareRegistration)
+        val result =
+            BreedingFixture.overseasBreedingResult(broodmareRegistration = broodmareRegistration)
+
+        repository.save(worldId, result).unwrap()
+        val found = repository.findById(worldId, result.id)
+
+        assert(found != null)
+        assert(found!!.covering is Covering.Overseas)
+        assert(found.covering == result.covering)
+        assert(found.breedingYear == Year.of(1999))
     }
 }

@@ -10,7 +10,13 @@ import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.ForeignCoveringProofNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSire
+import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSireName
+import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.example.api.infrastructure.shared.orThrow
 import com.github.michaelbull.result.Err
@@ -84,9 +90,40 @@ class JdbcBreedingResultRepository(
             version = version,
         )
 
-    /** 種付列（coveringDate の有無を判別子とする）から nullable な [Covering] を復元する。 */
-    private fun BreedingResultRow.toCovering(): Covering? = coveringDate?.let { date ->
-        Covering.Domestic(
+    /** 判別子 `covering_type` と各バリアント列から nullable な [Covering] を復元する（種付せずの年は null）。 */
+    private fun BreedingResultRow.toCovering(): Covering? =
+        when (coveringType) {
+            null -> null
+            CoveringType.DOMESTIC -> toDomesticCovering()
+            CoveringType.OVERSEAS -> toOverseasCovering()
+            else -> error("未知の種付の判別子: $coveringType (id=$id)")
+        }
+
+    private fun BreedingResultRow.toOverseasCovering(): Covering.Overseas {
+        val date = checkNotNull(coveringDate) { "海外種付の種付日が欠落: id=$id" }
+        val name = checkNotNull(coveringForeignSireName) { "外国種牡馬の馬名が欠落: id=$id" }
+        val country = checkNotNull(coveringForeignSireStudBookCountry) { "登録国が欠落: id=$id" }
+        val breed = checkNotNull(coveringForeignSireBreedType) { "品種が欠落: id=$id" }
+        val coat = checkNotNull(coveringForeignSireCoatColor) { "毛色が欠落: id=$id" }
+        val place = checkNotNull(this.coveringCountry) { "種付国が欠落: id=$id" }
+        val proof = checkNotNull(coveringProofNumber) { "種付事実の証明の番号が欠落: id=$id" }
+        return Covering.Overseas(
+            sire =
+                ForeignSire(
+                    name = ForeignSireName.create(name).orThrow(),
+                    studBookCountry = OriginCountry.create(country).orThrow(),
+                    breedType = BreedType.valueOf(breed),
+                    coatColor = CoatColor.valueOf(coat),
+                ),
+            coveringDate = date,
+            coveringCountry = OriginCountry.create(place).orThrow(),
+            proofNumber = ForeignCoveringProofNumber.create(proof).orThrow(),
+        )
+    }
+
+    private fun BreedingResultRow.toDomesticCovering(): Covering.Domestic {
+        val date = checkNotNull(coveringDate) { "国内種付の種付日が欠落: id=$id" }
+        return Covering.Domestic(
             stallionId = BloodHorseId(checkNotNull(coveringStallionId) { "種付の種牡馬IDが欠落: id=$id" }),
             coveringDate = date,
             coveringPlace = coveringPlace?.let { BreedingRegion.create(it).orThrow() },
@@ -123,9 +160,12 @@ class JdbcBreedingResultRepository(
      */
     private fun BreedingResult.toRow(worldId: WorldId): BreedingResultRow {
         val (outcomeType, foalingDate) = outcome.toTypeAndDate()
-        val domestic =
-            when (val c = covering) {
-                is Covering.Domestic -> c
+        val domestic = covering as? Covering.Domestic
+        val overseas = covering as? Covering.Overseas
+        val coveringType =
+            when (covering) {
+                is Covering.Domestic -> CoveringType.DOMESTIC
+                is Covering.Overseas -> CoveringType.OVERSEAS
                 null -> null
             }
         return BreedingResultRow(
@@ -133,11 +173,17 @@ class JdbcBreedingResultRepository(
             worldId = worldId.value,
             breedingRegistrationId = breedingRegistrationId.value,
             breedingYear = breedingYear.value,
-            coveringType = domestic?.let { CoveringType.DOMESTIC },
+            coveringType = coveringType,
             coveringStallionId = domestic?.stallionId?.value,
             coveringDate = covering?.coveringDate,
             coveringPlace = domestic?.coveringPlace?.value,
             coveringCertificateNumber = domestic?.certificateNumber?.value,
+            coveringForeignSireName = overseas?.sire?.name?.value,
+            coveringForeignSireStudBookCountry = overseas?.sire?.studBookCountry?.name,
+            coveringForeignSireBreedType = overseas?.sire?.breedType?.name,
+            coveringForeignSireCoatColor = overseas?.sire?.coatColor?.name,
+            coveringCountry = overseas?.coveringCountry?.name,
+            coveringProofNumber = overseas?.proofNumber?.value,
             outcomeType = outcomeType,
             outcomeFoalingDate = foalingDate,
             reportSubmittedOn = reportSubmittedOn,

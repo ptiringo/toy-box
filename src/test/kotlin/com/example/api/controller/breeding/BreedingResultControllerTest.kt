@@ -3,6 +3,7 @@ package com.example.api.controller.breeding
 import com.example.api.application.iam.world.WorldQueries
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
 import com.example.api.application.studbook.breeding.BreedingResultNotFound
+import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.application.studbook.breeding.GetBreedingResultQuery
 import com.example.api.application.studbook.breeding.GetBreedingResultUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
@@ -33,6 +34,8 @@ import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
 import com.example.api.domain.studbook.model.breeding.ValidityPeriod
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -713,6 +716,43 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.outcome.kind")
                 .isEqualTo("LIVE_FOAL")
+        }
+
+        @Test
+        fun `海外種付の成績の照会で判別子と外国種牡馬が応答に載ること`() {
+            every { getBreedingResult(any<Actor>(), GetBreedingResultQuery(id)) } returns
+                Ok(
+                    BreedingResultDetailView(
+                        id = id,
+                        breedingRegistrationId = generateId(),
+                        breedingYear = 1999,
+                        stallionId = null,
+                        coveringDate = LocalDate.of(1999, 4, 10),
+                        coveringPlace = null,
+                        certificateNumber = null,
+                        outcome = null,
+                        reportSubmittedOn = null,
+                        coveringType = "OVERSEAS",
+                        foreignSire =
+                            ForeignSireView(
+                                "Danehill",
+                                "アメリカ",
+                                BreedType.THOROUGHBRED,
+                                CoatColor.BAY,
+                            ),
+                        coveringCountry = "アイルランド",
+                        proofNumber = "IE-1999-0004",
+                    )
+                )
+
+            val body = tester.get().uri(uri, worldId, id).assertThat().hasStatusOk().bodyJson()
+            body.extractingPath("$.covering_type").isEqualTo("OVERSEAS")
+            body.extractingPath("$.foreign_sire.name").isEqualTo("Danehill")
+            body.extractingPath("$.foreign_sire.stud_book_country").isEqualTo("アメリカ")
+            body.extractingPath("$.foreign_sire.breed_type").isEqualTo("THOROUGHBRED")
+            body.extractingPath("$.foreign_sire.coat_color").isEqualTo("BAY")
+            body.extractingPath("$.covering_country").isEqualTo("アイルランド")
+            body.extractingPath("$.proof_number").isEqualTo("IE-1999-0004")
         }
 
         @Test

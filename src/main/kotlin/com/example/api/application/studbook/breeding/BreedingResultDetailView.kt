@@ -2,6 +2,8 @@ package com.example.api.application.studbook.breeding
 
 import com.example.api.domain.studbook.model.breeding.BreedingReportDeadline
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
@@ -24,6 +26,10 @@ import org.jmolecules.architecture.cqrs.QueryModel
  * @property certificateNumber 種付証明書番号。種付せずの年は null
  * @property outcome 分娩結果。種付した年で未報告なら null
  * @property reportSubmittedOn 繁殖成績報告書（様式第14号）の提出日。未提出は null
+ * @property coveringType 種付の判別子（`DOMESTIC` = 国内種付 / `OVERSEAS` = 海外種付）。種付せずの年は null
+ * @property foreignSire 海外種付の外国種牡馬。海外種付でなければ null（国内種付の種牡馬は [stallionId]）
+ * @property coveringCountry 海外種付が行われた国。海外種付でなければ null
+ * @property proofNumber 種付国の血統登録機関が発行した種付事実の証明の番号。海外種付でなければ null
  */
 @QueryModel
 data class BreedingResultDetailView(
@@ -36,6 +42,10 @@ data class BreedingResultDetailView(
     val certificateNumber: String?,
     val outcome: FoalingOutcome?,
     val reportSubmittedOn: LocalDate?,
+    val coveringType: String? = null,
+    val foreignSire: ForeignSireView? = null,
+    val coveringCountry: String? = null,
+    val proofNumber: String? = null,
 ) {
     /**
      * 提出が期限（繁殖年の翌年5/31、[BreedingReportDeadline]）超過だったか。未提出なら null。
@@ -48,3 +58,20 @@ data class BreedingResultDetailView(
             BreedingReportDeadline.of(Year.of(breedingYear)).isMissedBy(it)
         }
 }
+
+/**
+ * 外国種牡馬の読み取り表現（[BreedingResultDetailView.foreignSire]）。
+ *
+ * 品種・毛色はドメイン enum をそのまま持つ（wire への公開は adapter が `〜Dto` へ写す。ADR-0007）。
+ *
+ * @property name 馬名
+ * @property studBookCountry 登録している血統登録機関の国
+ * @property breedType 品種
+ * @property coatColor 毛色
+ */
+data class ForeignSireView(
+    val name: String,
+    val studBookCountry: String,
+    val breedType: BreedType,
+    val coatColor: CoatColor,
+)

@@ -48,11 +48,7 @@ fun recordCovering(
 ): Result<BreedingResult, RecordCoveringError> {
     val breedingYear = Year.of(coveringDate.year)
     val existingForYear =
-        breedingResultRepository.findByBreedingRegistrationIdAndBreedingYear(
-            worldId,
-            broodmareRegistration.id,
-            breedingYear,
-        )
+        findExistingForYear(worldId, broodmareRegistration, breedingYear, breedingResultRepository)
     if (existingForYear != null) {
         return Err(RecordCoveringError.AlreadyRecordedForYear(breedingYear, existingForYear.id))
     }

@@ -2,9 +2,12 @@ package com.example.api.infrastructure.studbook.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
 import com.example.api.application.studbook.breeding.BreedingResultQueries
+import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import java.sql.ResultSet
 import java.time.LocalDate
 import java.util.UUID
@@ -16,8 +19,8 @@ import org.springframework.stereotype.Repository
  *
  * 書き込み側の [JdbcBreedingResultRepository]（集約を `BreedingResultRow` 経由で復元する）とは別経路として、
  * `studbook.breeding_result` を [JdbcClient] で直接 SELECT し、集約を組まずに平坦な [BreedingResultDetailView]
- * へ詰める。種付は列をそのまま平置きし（種付せずの年は 4 列とも NULL）、分娩結果は判別子 `outcome_type` から sealed [FoalingOutcome]
- * を復元する。提出の期限超過は列を持たず View が導出する。
+ * へ詰める。種付は列をそのまま平置きし（種付せずの年は種付の列がすべて NULL。国内種付・海外種付は判別子 `covering_type` で区別する）、分娩結果は判別子
+ * `outcome_type` から sealed [FoalingOutcome] を復元する。提出の期限超過は列を持たず View が導出する。
  */
 @Repository
 class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingResultQueries {
@@ -29,7 +32,10 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
                 SELECT
                     id, breeding_registration_id, breeding_year,
                     covering_stallion_id, covering_date, covering_place,
-                    covering_certificate_number,
+                    covering_certificate_number, covering_type,
+                    covering_foreign_sire_name, covering_foreign_sire_stud_book_country,
+                    covering_foreign_sire_breed_type, covering_foreign_sire_coat_color,
+                    covering_country, covering_proof_number,
                     outcome_type, outcome_foaling_date, report_submitted_on
                 FROM studbook.breeding_result
                 WHERE id = :id AND world_id = :worldId
@@ -50,10 +56,33 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
                     certificateNumber = rs.getString("covering_certificate_number"),
                     outcome = rs.toOutcome(),
                     reportSubmittedOn = rs.getObject("report_submitted_on", LocalDate::class.java),
+                    coveringType = rs.getString("covering_type"),
+                    foreignSire = rs.toForeignSire(),
+                    coveringCountry = rs.getString("covering_country"),
+                    proofNumber = rs.getString("covering_proof_number"),
                 )
             }
             .optional()
             .orElse(null)
+
+    /**
+     * 海外種付の外国種牡馬の 4 列から [ForeignSireView] を組む（海外種付でなければ馬名が NULL で null）。
+     *
+     * 4 列が揃うことは CHECK 制約 `chk_breeding_result_covering` がスキーマ側で強制している（V24）。
+     */
+    private fun ResultSet.toForeignSire(): ForeignSireView? {
+        val name = getString("covering_foreign_sire_name") ?: return null
+        val id = getObject("id", UUID::class.java)
+        val country = getString("covering_foreign_sire_stud_book_country")
+        val breed = getString("covering_foreign_sire_breed_type")
+        val coat = getString("covering_foreign_sire_coat_color")
+        return ForeignSireView(
+            name = name,
+            studBookCountry = checkNotNull(country) { "外国種牡馬の登録国が欠落: id=$id" },
+            breedType = BreedType.valueOf(checkNotNull(breed) { "外国種牡馬の品種が欠落: id=$id" }),
+            coatColor = CoatColor.valueOf(checkNotNull(coat) { "外国種牡馬の毛色が欠落: id=$id" }),
+        )
+    }
 
     /**
      * 判別子 `outcome_type` から sealed [FoalingOutcome] を復元する（未報告なら NULL のまま null）。

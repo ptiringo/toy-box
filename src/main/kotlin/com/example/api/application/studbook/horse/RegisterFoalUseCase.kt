@@ -26,6 +26,7 @@ import com.example.api.domain.studbook.model.inspection.ParentageDetermination
 import com.example.api.domain.studbook.service.horse.RegisterFoalError
 import com.example.api.domain.studbook.service.horse.ensurePedigreeRegistrationNumberAvailable
 import com.example.api.domain.studbook.service.horse.registerFoal
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.getOrElse
@@ -224,7 +225,8 @@ class RegisterFoalUseCase(
      *
      * 種付せず（covering が無い）の年次成績からは産駒が生じず父も定まらないため、父の解決前に、ドメインサービスと
      * 同じ「生産でない」前提条件違反（[RegisterFoalError.NotLiveFoal]）へ寄せて短絡する。種付がある場合のみ種牡馬を [BloodHorseRepository]
-     * で引き当てる。
+     * で引き当てる。海外種付の父は外国種牡馬で引き当てる軽種馬が無いため、引き当て前に [RegisterFoalError.NotDomesticCovering]
+     * で短絡する（持込馬は別経路。#624）。
      */
     private fun resolveSire(
         actor: Actor,
@@ -241,6 +243,13 @@ class RegisterFoalUseCase(
         val sireId =
             when (covering) {
                 is Covering.Domestic -> covering.stallionId
+                is Covering.Overseas ->
+                    Err(
+                            RegisterFoalUseCaseError.PreconditionViolated(
+                                RegisterFoalError.NotDomesticCovering
+                            )
+                        )
+                        .bind()
             }
         bloodHorseRepository
             .findById(actor.worldId, sireId)

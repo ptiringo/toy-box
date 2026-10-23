@@ -1,6 +1,8 @@
 package com.example.api.domain.studbook.model.breeding
 
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSire
+import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import java.time.LocalDate
 import org.jmolecules.ddd.annotation.ValueObject
 
@@ -35,5 +37,24 @@ sealed interface Covering {
         override val coveringDate: LocalDate,
         val coveringPlace: BreedingRegion?,
         val certificateNumber: CoveringCertificateNumber,
+    ) : Covering
+
+    /**
+     * 海外種付。外国で、日本の繁殖登録を持たない外国種牡馬と行われた種付。
+     *
+     * この種付で受胎した繁殖牝馬が輸出国を出国した後に生まれた産駒は持込馬になる（登録規程 第6条第1号）。持込馬の血統登録は 種畜証明書を有する種雄馬の種付であることを要件としないため（同
+     * 第15条柱書）、[Domestic] と異なり種畜証明書による 有効区域・有効期間の検証は掛けない。種付の事実は種付国の血統登録機関が発行した書類で証明する（同 第8条第1項第4号）。
+     *
+     * @property sire 外国種牡馬
+     * @property coveringDate 種付日
+     * @property coveringCountry 種付が行われた国
+     * @property proofNumber 種付国の血統登録機関が発行した種付事実の証明の番号
+     */
+    @ValueObject
+    data class Overseas(
+        val sire: ForeignSire,
+        override val coveringDate: LocalDate,
+        val coveringCountry: OriginCountry,
+        val proofNumber: ForeignCoveringProofNumber,
     ) : Covering
 }

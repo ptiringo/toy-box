@@ -130,4 +130,18 @@ object BloodHorseFixture {
                 registrationNumber = PedigreeRegistrationNumber.create("2023104567").unwrap(),
             )
             .unwrap()
+
+    /** 既定値（Danehill・アメリカ・サラブレッド・鹿毛）を持つ外国種牡馬を生成する。必要な属性のみ上書きする。 */
+    fun foreignSire(
+        name: String = "Danehill",
+        studBookCountry: String = "アメリカ",
+        breedType: BreedType = BreedType.THOROUGHBRED,
+        coatColor: CoatColor = CoatColor.BAY,
+    ): ForeignSire =
+        ForeignSire(
+            name = ForeignSireName.create(name).unwrap(),
+            studBookCountry = OriginCountry.create(studBookCountry).unwrap(),
+            breedType = breedType,
+            coatColor = coatColor,
+        )
 }

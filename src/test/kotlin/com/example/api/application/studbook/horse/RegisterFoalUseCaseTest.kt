@@ -245,6 +245,29 @@ class RegisterFoalUseCaseTest {
     @Nested
     inner class PreconditionFailureCase {
         @Test
+        fun `海外種付の繁殖成績では種牡馬を引き当てず PreconditionViolated(NotDomesticCovering) を返す`() {
+            val w = Wiring()
+            val overseas =
+                BreedingFixture.overseasBreedingResult(
+                        broodmareRegistration = w.breedingRegistration
+                    )
+                    .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2000, 3, 21)))
+                    .unwrap()
+            every { w.breedingResultRepository.findById(worldId, overseas.id) } returns overseas
+
+            val result = w.useCase()(actor, command(overseas.id.value))
+
+            assert(
+                result.getError() ==
+                    RegisterFoalUseCaseError.PreconditionViolated(
+                        RegisterFoalError.NotDomesticCovering
+                    )
+            )
+            verify(exactly = 0) { w.bloodHorseRepository.findById(worldId, any()) }
+            verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
+        }
+
+        @Test
         fun `分娩結果が未報告だと PreconditionViolated(NotLiveFoal) を返す`() {
             val w = Wiring()
             val notReported =
