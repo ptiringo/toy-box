@@ -120,6 +120,11 @@ class JdbcBloodHorseRepository(
                     landingDate = LandingDate(checkNotNull(landingDate) { "輸入の揚陸日が欠落: id=$id" }),
                 )
             OriginType.CARRIED_OVER -> Origin.CarriedOver
+            OriginType.BROUGHT_IN ->
+                Origin.BroughtIn(
+                    sire = foreignSire(),
+                    damId = BloodHorseId(checkNotNull(damId) { "持込馬の母IDが欠落: id=$id" }),
+                )
             else -> error("未知の origin_type です: $originType (id=$id)")
         }
 
@@ -159,8 +164,26 @@ class JdbcBloodHorseRepository(
                     landingDate = o.landingDate.value,
                 )
             Origin.CarriedOver -> base.copy(originType = OriginType.CARRIED_OVER)
+            is Origin.BroughtIn ->
+                base.copy(
+                    originType = OriginType.BROUGHT_IN,
+                    damId = o.damId.value,
+                    foreignSireName = o.sire.name.value,
+                    foreignSireStudBookCountry = o.sire.studBookCountry.name,
+                    foreignSireBreedType = o.sire.breedType.name,
+                    foreignSireCoatColor = o.sire.coatColor.name,
+                )
         }
     }
+
+    private fun BloodHorseRow.foreignSire() =
+        foreignSireOf(
+            foreignSireName,
+            foreignSireStudBookCountry,
+            foreignSireBreedType,
+            foreignSireCoatColor,
+            id,
+        )
 
     private companion object {
         /** 楽観ロックの行ロックを掛ける対象（[lockRowIfVersionMatches] に渡す完全修飾名）。 */

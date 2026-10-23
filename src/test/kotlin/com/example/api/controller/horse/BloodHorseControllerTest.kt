@@ -841,6 +841,48 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         }
 
         @Test
+        fun `持込馬の照会で出自が BROUGHT_IN で外国種牡馬と母の ID が返ること`() {
+            val id = UUID.fromString("55555555-5555-5555-5555-555555555555")
+            val damId = UUID.fromString("66666666-6666-6666-6666-666666666666")
+            val view =
+                BloodHorseDetailView(
+                    id = id,
+                    registrationNumber = "2000100001",
+                    sex = Sex.FEMALE,
+                    coatColor = CoatColor.BAY,
+                    breedType = BreedType.THOROUGHBRED,
+                    dateOfBirth = LocalDate.of(2000, 3, 21),
+                    breeder = "ノーザンファーム",
+                    microchipNumber = "392140000000002",
+                    origin =
+                        Origin.BroughtIn(
+                            sire = BloodHorseFixture.foreignSire(),
+                            damId = BloodHorseId(damId),
+                        ),
+                    name = null,
+                )
+            every { getBloodHorse(any<Actor>(), GetBloodHorseQuery(id)) } returns Ok(view)
+
+            val result =
+                tester.get().uri("/api/worlds/{worldId}/bloodHorses/{id}", worldId, id).exchange()
+
+            assertThat(result).hasStatus(HttpStatus.OK)
+            assertThat(result).bodyJson().extractingPath("$.origin.type").isEqualTo("BROUGHT_IN")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.origin.dam_id")
+                .isEqualTo(damId.toString())
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.origin.foreign_sire.name")
+                .isEqualTo("Danehill")
+            assertThat(result)
+                .bodyJson()
+                .extractingPath("$.origin.foreign_sire.stud_book_country")
+                .isEqualTo("アメリカ")
+        }
+
+        @Test
         fun `存在しない ID で 404 と blood_horse_id 付きの problem+json が返ること`() {
             val id = UUID.fromString("44444444-4444-4444-4444-444444444444")
             every { getBloodHorse(any<Actor>(), GetBloodHorseQuery(id)) } returns

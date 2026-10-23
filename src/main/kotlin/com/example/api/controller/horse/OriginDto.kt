@@ -23,10 +23,19 @@ import java.util.UUID
     JsonSubTypes.Type(value = OriginDto.Domestic::class, name = "DOMESTIC"),
     JsonSubTypes.Type(value = OriginDto.Imported::class, name = "IMPORTED"),
     JsonSubTypes.Type(value = OriginDto.CarriedOver::class, name = "CARRIED_OVER"),
+    JsonSubTypes.Type(value = OriginDto.BroughtIn::class, name = "BROUGHT_IN"),
 )
 @Schema(
-    description = "軽種馬の出自（内国産=DOMESTIC / 輸入=IMPORTED / 移行取り込み=CARRIED_OVER の discriminated union）",
-    oneOf = [OriginDto.Domestic::class, OriginDto.Imported::class, OriginDto.CarriedOver::class],
+    description =
+        "軽種馬の出自（内国産=DOMESTIC / 輸入=IMPORTED / 移行取り込み=CARRIED_OVER / " +
+            "持込馬=BROUGHT_IN の discriminated union）",
+    oneOf =
+        [
+            OriginDto.Domestic::class,
+            OriginDto.Imported::class,
+            OriginDto.CarriedOver::class,
+            OriginDto.BroughtIn::class,
+        ],
     discriminatorProperty = "type",
 )
 sealed interface OriginDto {
@@ -50,6 +59,15 @@ sealed interface OriginDto {
 
     /** 移行取り込み（先行原簿に血統記録済み・当システム外）の出自。判別子以外の属性を持たない。 */
     @Schema(description = "移行取り込みの出自") data object CarriedOver : OriginDto
+
+    /**
+     * 持込馬（種付が外国で行われ国内で生まれた馬）の出自。父である外国種牡馬と、母の生 UUID を持つ。
+     *
+     * @property foreignSire 父である外国種牡馬（日本の繁殖登録を持たない）
+     * @property damId 母（雌）の生 UUID
+     */
+    @Schema(description = "持込馬の出自")
+    data class BroughtIn(val foreignSire: ForeignSireResponse, val damId: UUID) : OriginDto
 }
 
 /** ドメインの [Origin] を HTTP 契約の [OriginDto] へ変換する。 */
@@ -59,4 +77,6 @@ fun Origin.toApi(): OriginDto =
         is Origin.Imported ->
             OriginDto.Imported(country = originCountry.name, landingDate = landingDate.value)
         Origin.CarriedOver -> OriginDto.CarriedOver
+        is Origin.BroughtIn ->
+            OriginDto.BroughtIn(foreignSire = sire.toResponse(), damId = damId.value)
     }

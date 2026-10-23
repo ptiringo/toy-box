@@ -66,6 +66,8 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
                     bh.id, bh.registration_number, bh.sex, bh.coat_color, bh.breed_type,
                     bh.date_of_birth, bh.breeder, bh.name,
                     bh.origin_type, bh.sire_id, bh.dam_id, bh.origin_country, bh.landing_date,
+                    bh.foreign_sire_name, bh.foreign_sire_stud_book_country,
+                    bh.foreign_sire_breed_type, bh.foreign_sire_coat_color,
                     hi.microchip_number
                 FROM studbook.blood_horse bh
                 JOIN studbook.horse_inspection hi
@@ -125,6 +127,20 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
                 )
             }
             OriginType.CARRIED_OVER -> Origin.CarriedOver
+            OriginType.BROUGHT_IN -> {
+                val dam = getObject("dam_id", UUID::class.java)
+                Origin.BroughtIn(
+                    sire =
+                        foreignSireOf(
+                            getString("foreign_sire_name"),
+                            getString("foreign_sire_stud_book_country"),
+                            getString("foreign_sire_breed_type"),
+                            getString("foreign_sire_coat_color"),
+                            id,
+                        ),
+                    damId = BloodHorseId(checkNotNull(dam) { "持込馬の母IDが欠落: id=$id" }),
+                )
+            }
             else -> error("未知の origin_type です: $originType (id=$id)")
         }
     }

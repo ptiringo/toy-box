@@ -5,10 +5,11 @@ import org.jmolecules.ddd.annotation.ValueObject
 /**
  * 軽種馬の出自。
  *
- * 内国産（父・母がともに当システムに血統登録済み）・輸入（父母不明で原産国・揚陸日を持つ）・移行取り込み（先行原簿に血統記録済みで父母 ID も原産国・揚陸日も持たない）は
- * 相互排他であり、一方の属性を持つときもう一方は持たない。#267（PR #358）では `sireId` / `damId` / `originCountry` / `landingDate`
- * の nullable フィールド4つ平置きで表したが、全 null や混在といった無効状態を型で防げなかった。 これを sealed interface
- * に統合し、相互排他をコンパイル時に強制する（[Domestic] / [Imported] / [CarriedOver] のいずれか一方のみ）。
+ * 内国産（父・母がともに当システムに血統登録済み）・持込馬（母は当システムに血統登録済みで、父は外国種牡馬）・輸入（父母不明で原産国・揚陸日を持つ）・移行取り込み（先行原簿に血統記録済みで父母
+ * ID も原産国・揚陸日も持たない）は 相互排他であり、一方の属性を持つときもう一方は持たない。#267（PR #358）では `sireId` / `damId` /
+ * `originCountry` / `landingDate` の nullable フィールド4つ平置きで表したが、全 null や混在といった無効状態を型で防げなかった。 これを
+ * sealed interface に統合し、相互排他をコンパイル時に強制する（[Domestic] / [BroughtIn] / [Imported] / [CarriedOver]
+ * のいずれか一方のみ）。
  *
  * 父・母は別集約（別個体）であり、[Domestic] は集約直接参照ではなく [BloodHorseId] 経由の ID 参照で保持する。 経緯は ADR-0020 を参照。
  */
@@ -21,6 +22,18 @@ sealed interface Origin {
      * @property damId 母（雌）の軽種馬ID
      */
     @ValueObject data class Domestic(val sireId: BloodHorseId, val damId: BloodHorseId) : Origin
+
+    /**
+     * 持込馬の出自。種付が外国で行われ、輸出国出国以降に生まれた馬（登録規程 第6条第1号）。
+     *
+     * 規程上は内国産馬の一部（「内国産馬（持込馬を除く。）」という書き方で区別される）だが、父は日本の繁殖登録を持たない
+     * 外国種牡馬で当システムに軽種馬として存在しないため、[Domestic] とは別のバリアントにし、父を ID ではなく
+     * 外国種牡馬の属性（[ForeignSire]）で持つ。母は当システムに繁殖登録済みの軽種馬で、ID で参照する。
+     *
+     * @property sire 父である外国種牡馬
+     * @property damId 母（雌）の軽種馬ID
+     */
+    @ValueObject data class BroughtIn(val sire: ForeignSire, val damId: BloodHorseId) : Origin
 
     /**
      * 輸入馬・基礎輸入馬の出自。父母が当システムに存在しないため父母 ID は持たず、原産国と揚陸日を持つ。

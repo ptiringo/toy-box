@@ -2,6 +2,7 @@ package com.example.api.infrastructure.studbook.horse
 
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
@@ -165,6 +166,42 @@ class JdbcBloodHorseQueriesContractTest(
                 inspectionId = seeder.seedInspectionRow(),
                 originType = "CARRIED_OVER",
             )
+        )
+    }
+
+    @Test
+    fun `持込馬を ID で引くと外国種牡馬を持つ BroughtIn として復元する`() {
+        val damId = seeder.seedHorseRow(sex = "FEMALE", registrationNumber = "REG-106")
+        val id = generateId()
+        horseRows.save(
+            BloodHorseRow(
+                worldId = worldId.value,
+                id = id,
+                registrationNumber = "REG-107",
+                sex = "FEMALE",
+                coatColor = "BAY",
+                breedType = "THOROUGHBRED",
+                dateOfBirth = LocalDate.of(2000, 3, 21),
+                breeder = "ノーザンファーム",
+                inspectionId = seeder.seedInspectionRow(),
+                originType = "BROUGHT_IN",
+                damId = damId,
+                foreignSireName = "Danehill",
+                foreignSireStudBookCountry = "アメリカ",
+                foreignSireBreedType = "THOROUGHBRED",
+                foreignSireCoatColor = "BAY",
+            )
+        )
+
+        val view = queries.findById(worldId, BloodHorseId(id))
+
+        assert(view != null)
+        assert(
+            view!!.origin ==
+                Origin.BroughtIn(
+                    sire = BloodHorseFixture.foreignSire(),
+                    damId = BloodHorseId(damId),
+                )
         )
     }
 }

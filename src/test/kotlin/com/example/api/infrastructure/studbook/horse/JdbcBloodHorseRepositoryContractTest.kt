@@ -467,4 +467,32 @@ class JdbcBloodHorseRepositoryContractTest(
 
         assertThrows<DataIntegrityViolationException> { rows.save(row) }
     }
+
+    @Test
+    fun `持込馬を保存して同じ出自で復元できる`() {
+        val dam =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(
+                    sex = Sex.FEMALE,
+                    registrationNumber = "DAM-${generateId()}",
+                )
+            )
+        val sire = BloodHorseFixture.foreignSire()
+        val foal =
+            BloodHorse.createBroughtIn(
+                    sire,
+                    dam,
+                    BloodHorseFixture.studBookEntry(sex = Sex.FEMALE),
+                    BloodHorseFixture.inspection(),
+                    PedigreeRegistrationNumber.create("FOAL-${generateId()}").unwrap(),
+                )
+                .unwrap()
+        seeder.seedInspectionFor(foal)
+
+        repository.save(worldId, foal).unwrap()
+        val found = repository.findById(worldId, foal.id)
+
+        assert(found != null)
+        assert(found!!.origin == Origin.BroughtIn(sire = sire, damId = dam.id))
+    }
 }

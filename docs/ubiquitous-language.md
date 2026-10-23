@@ -262,6 +262,8 @@ graph LR
 | CarriedOverHorseEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | CoatColor | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Covering | 値オブジェクト | domain.studbook.model.breeding |
+| Covering.Domestic | 値オブジェクト | domain.studbook.model.breeding |
+| Covering.Overseas | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringReportDeadline | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringReportId | 値オブジェクト | domain.studbook.model.breeding |
@@ -277,6 +279,9 @@ graph LR
 | FoalingOutcome.TwinAbortion | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.TwinStillbirth | 値オブジェクト | domain.studbook.model.breeding |
+| ForeignCoveringProofNumber | 値オブジェクト | domain.studbook.model.breeding |
+| ForeignSire | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| ForeignSireName | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | HorseInspectionId | 値オブジェクト | domain.studbook.model.inspection |
 | HorseName | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | IdentificationFeatures | 値オブジェクト | domain.studbook.model.inspection |
@@ -284,6 +289,7 @@ graph LR
 | LandingDate | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | MicrochipNumber | 値オブジェクト | domain.studbook.model.inspection |
 | Origin | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Origin.BroughtIn | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.CarriedOver | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Domestic | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Imported | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
@@ -306,9 +312,12 @@ graph LR
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
 | ensureBreedingRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.breeding |
 | ensurePedigreeRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.horse |
+| findExistingForYear | ドメインサービス | domain.studbook.service.breeding |
 | nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
+| recordOverseasCovering | ドメインサービス | domain.studbook.service.breeding |
 | recordUncovered | ドメインサービス | domain.studbook.service.breeding |
+| registerBroughtInFoal | ドメインサービス | domain.studbook.service.horse |
 | registerFoal | ドメインサービス | domain.studbook.service.horse |
 | submitCoveringReport | ドメインサービス | domain.studbook.service.breeding |
 

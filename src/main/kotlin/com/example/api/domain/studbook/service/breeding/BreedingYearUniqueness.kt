@@ -14,7 +14,7 @@ import java.time.Year
  *
  * @return 既存の繁殖成績。無ければ null
  */
-fun findExistingForYear(
+internal fun findExistingForYear(
     worldId: WorldId,
     broodmareRegistration: BreedingRegistration,
     breedingYear: Year,

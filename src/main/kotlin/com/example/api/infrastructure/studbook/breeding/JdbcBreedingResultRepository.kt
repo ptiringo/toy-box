@@ -12,13 +12,10 @@ import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.breeding.ForeignCoveringProofNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
-import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
-import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
-import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSire
-import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSireName
 import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.infrastructure.shared.lockRowIfVersionMatches
 import com.example.api.infrastructure.shared.orThrow
+import com.example.api.infrastructure.studbook.horse.foreignSireOf
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -101,19 +98,16 @@ class JdbcBreedingResultRepository(
 
     private fun BreedingResultRow.toOverseasCovering(): Covering.Overseas {
         val date = checkNotNull(coveringDate) { "海外種付の種付日が欠落: id=$id" }
-        val name = checkNotNull(coveringForeignSireName) { "外国種牡馬の馬名が欠落: id=$id" }
-        val country = checkNotNull(coveringForeignSireStudBookCountry) { "登録国が欠落: id=$id" }
-        val breed = checkNotNull(coveringForeignSireBreedType) { "品種が欠落: id=$id" }
-        val coat = checkNotNull(coveringForeignSireCoatColor) { "毛色が欠落: id=$id" }
         val place = checkNotNull(this.coveringCountry) { "種付国が欠落: id=$id" }
         val proof = checkNotNull(coveringProofNumber) { "種付事実の証明の番号が欠落: id=$id" }
         return Covering.Overseas(
             sire =
-                ForeignSire(
-                    name = ForeignSireName.create(name).orThrow(),
-                    studBookCountry = OriginCountry.create(country).orThrow(),
-                    breedType = BreedType.valueOf(breed),
-                    coatColor = CoatColor.valueOf(coat),
+                foreignSireOf(
+                    coveringForeignSireName,
+                    coveringForeignSireStudBookCountry,
+                    coveringForeignSireBreedType,
+                    coveringForeignSireCoatColor,
+                    id,
                 ),
             coveringDate = date,
             coveringCountry = OriginCountry.create(place).orThrow(),
