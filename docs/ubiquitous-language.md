@@ -42,6 +42,7 @@
 | PedigreeRegistrationNumber | 血統登録番号 | 値オブジェクト | 血統登録の成立時に交付される番号。血統登録原簿の中で一意（登録規程 第3〜4条）。一意性の範囲は世界（セーブデータ）に閉じる。繁殖登録番号とは別の採番空間。 | — |
 | MicrochipNumber | マイクロチップ番号 | 値オブジェクト | 個体識別に用いるマイクロチップの番号。 | — |
 | StudBookEntry | 血統登録申請（個体識別の束） | 値オブジェクト | 申請者が持ち込む仔馬自身の個体識別情報の束。父母は集約をまたぐためここには含めない。 | — |
+| Origin.BroughtIn | 持込馬（の出自） | 値オブジェクト | 種付が外国で行われ、輸出国出国以降に生まれた馬（登録規程 第6条第1号）の出自。規程上は内国産馬の一部だが、父が外国種牡馬（`ForeignSire`）なので `Origin.Domestic` とは別のバリアントにする。母は `BloodHorseId` 参照（[ADR-0087](adr/0087-brought-in-horse-modeling.md)）。 | 禁止: 輸入馬（外国で生まれて輸入された馬＝`Origin.Imported`）と混同しない |
 | CarriedOverHorseEntry | 移行取り込み（carried-over）の個体識別の束 | 値オブジェクト | 先行する登録原簿に血統登録済みの馬をシステム境界で取り込む際の入力。JAIRS の手続ではなくシステム境界の移行経路。血統は先行原簿に記録済みのため父母 ID を持たず、輸入馬（`ImportedHorseEntry`）と異なり原産国・揚陸日も持たない（#633）。 | — |
 | DnaParentageResult | DNA 型親子判定結果 | 値オブジェクト | 申告された父母との親子関係の DNA 型検査結果（`CONSISTENT` のときのみ血統登録可）。 | — |
 | BreedType | 品種 | 値オブジェクト | サラブレッド等の品種。親仔の品種整合の検証に用いる。 | — |
@@ -61,7 +62,11 @@
 | CoveringReport | 種付成績報告 | 集約ルート | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年）。提出行為が集約を生成する insert-only で、提出日と期限超過の導出（`submittedLate`）を持つ。報告の内容（明細・総括表）は `BreedingResult` から導出できるため保持しない。 | 種付 0 件の年の提出も受理する |
 | BreedingReportDeadline | 繁殖成績報告の提出期限 | 値オブジェクト | 繁殖成績報告書（様式第14号）の提出期限＝繁殖年の翌年5/31（登録規程第25条）。期限超過の提出は拒否せず受理し、超過をドメインの事実として記録する（同条ただし書き）。 | 期限は日本の暦日（Asia/Tokyo）で締まる |
 | CoveringReportDeadline | 種付成績報告の提出期限 | 値オブジェクト | 種付成績報告書（様式第13号）の提出期限＝種付年の当年9/30（登録規程第25条(1)）。期限超過の提出は拒否せず受理し、超過をドメインの事実として記録する。 | 期限は日本の暦日（Asia/Tokyo）で締まる。牝側 `BreedingReportDeadline`（翌年5/31）と非対称 |
-| Covering | 種付 | 値オブジェクト | 種牡馬を繁殖牝馬に交配したという事実。種牡馬は `BloodHorseId` 参照。種付日・種付場所（`coveringPlace`）を持つ。 | — |
+| Covering | 種付 | 値オブジェクト | 種牡馬を繁殖牝馬に交配したという事実。国内種付（`Covering.Domestic`）と海外種付（`Covering.Overseas`）の sealed で、どちらも種付日を持つ（[ADR-0087](adr/0087-brought-in-horse-modeling.md)）。 | — |
+| Covering.Domestic | 国内種付 | 値オブジェクト | 日本で繁殖登録された種牡馬との種付。種牡馬は `BloodHorseId` 参照。種付場所（`coveringPlace`）と種付証明書番号を持ち、種畜証明書の有効区域・有効期間で有効性を検証する。 | — |
+| Covering.Overseas | 海外種付 | 値オブジェクト | 外国で、日本の繁殖登録を持たない外国種牡馬（`ForeignSire`）と行われた種付。種付国と種付事実の証明の番号を持つ。持込馬には種畜証明書の要件が適用されないため（登録規程 第15条柱書）、有効性の検証を掛けない。 | — |
+| ForeignSire | 外国種牡馬 | 値オブジェクト | 日本の繁殖登録を持たず、外国の血統登録機関に登録された種牡馬。馬名・登録機関の国・品種・毛色を値で持ち、`BloodHorseId` では参照しない。名寄せの同一性は持たない。 | 禁止: 輸入種牡馬（日本へ輸入されて繁殖登録を受けた種牡馬は `BloodHorse`）と混同しない |
+| ForeignCoveringProofNumber | 海外種付証明の番号 | 値オブジェクト | 母馬が種付けを受けた国の血統登録機関が発行した、種付の事実を証明する書類の番号（登録規程 第8条第1項第4号）。 | 禁止: 国内の種付証明書（`CoveringCertificateNumber`）と混同しない |
 | CoveringCertificateNumber | 種付証明書番号 | 値オブジェクト | 種付の**事実**を証明する種付証明書の番号。 | 禁止: 種畜証明書（`StudCertificate`）と混同しない。別書面 |
 | StudCertificate | 種畜証明書 | 値オブジェクト | 種雄馬が繁殖に供されることを証する書面。有効区域（`validRegions`）と有効期間（`validPeriod`）を持ち、種付がその内側で行われたかを `authorizes` で検証する（第9条第1項(1)）。 | 禁止: 種付証明書（`CoveringCertificateNumber`）と混同しない |
 | StudCertificateNumber | 種畜証明書番号 | 値オブジェクト | 種畜証明書の番号。 | — |
@@ -262,6 +267,8 @@ graph LR
 | CarriedOverHorseEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | CoatColor | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Covering | 値オブジェクト | domain.studbook.model.breeding |
+| Covering.Domestic | 値オブジェクト | domain.studbook.model.breeding |
+| Covering.Overseas | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringReportDeadline | 値オブジェクト | domain.studbook.model.breeding |
 | CoveringReportId | 値オブジェクト | domain.studbook.model.breeding |
@@ -277,6 +284,9 @@ graph LR
 | FoalingOutcome.TwinAbortion | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.TwinNeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.TwinStillbirth | 値オブジェクト | domain.studbook.model.breeding |
+| ForeignCoveringProofNumber | 値オブジェクト | domain.studbook.model.breeding |
+| ForeignSire | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| ForeignSireName | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | HorseInspectionId | 値オブジェクト | domain.studbook.model.inspection |
 | HorseName | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | IdentificationFeatures | 値オブジェクト | domain.studbook.model.inspection |
@@ -284,6 +294,7 @@ graph LR
 | LandingDate | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | MicrochipNumber | 値オブジェクト | domain.studbook.model.inspection |
 | Origin | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| Origin.BroughtIn | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.CarriedOver | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Domestic | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | Origin.Imported | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
@@ -306,9 +317,12 @@ graph LR
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
 | ensureBreedingRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.breeding |
 | ensurePedigreeRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.horse |
+| findExistingForYear | ドメインサービス | domain.studbook.service.breeding |
 | nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
+| recordOverseasCovering | ドメインサービス | domain.studbook.service.breeding |
 | recordUncovered | ドメインサービス | domain.studbook.service.breeding |
+| registerBroughtInFoal | ドメインサービス | domain.studbook.service.horse |
 | registerFoal | ドメインサービス | domain.studbook.service.horse |
 | submitCoveringReport | ドメインサービス | domain.studbook.service.breeding |
 

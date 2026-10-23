@@ -1,6 +1,7 @@
 package com.example.api.domain.studbook.service.horse
 
 import com.example.api.domain.studbook.model.breeding.BreedingResult
+import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.DateOfBirth
@@ -25,6 +26,8 @@ import com.github.michaelbull.result.mapError
  * を返す。父=雄・母=雌・DNA 親子整合・親仔の品種整合・親仔の毛色整合といった前提条件の検証は委譲先の [BloodHorse.create] が担う。
  *
  * 父母が当システムに存在しない輸入馬・基礎輸入馬の登録経路は本サービスの対象外であり、別途設計する（#267）。
+ * 海外種付（[Covering.Overseas]）の産駒＝持込馬は父が日本の繁殖登録を持たないため、本サービスでは登録せず
+ * [RegisterFoalError.NotDomesticCovering] を返す（持込馬の経路は registerBroughtInFoal。#624）。
  *
  * @param breedingResult 産駒が生じた繁殖成績（分娩結果が報告済みであること）
  * @param sire 父（雄）の軽種馬。`breedingResult.covering.stallionId` に対応する個体を上位で解決して渡す
@@ -43,12 +46,15 @@ fun registerFoal(
     registrationNumber: PedigreeRegistrationNumber,
 ): Result<BloodHorse, RegisterFoalError> {
     val outcome = breedingResult.outcome
-    if (outcome !is FoalingOutcome.LiveFoal) {
-        return Err(RegisterFoalError.NotLiveFoal(outcome))
-    }
-    val entry = foalIdentity.toStudBookEntry(DateOfBirth(outcome.foalingDate))
-    return BloodHorse.create(sire, dam, entry, inspection, registrationNumber).mapError {
-        RegisterFoalError.RegistrationFailed(it)
+    return when {
+        breedingResult.covering is Covering.Overseas -> Err(RegisterFoalError.NotDomesticCovering)
+        outcome !is FoalingOutcome.LiveFoal -> Err(RegisterFoalError.NotLiveFoal(outcome))
+        else -> {
+            val entry = foalIdentity.toStudBookEntry(DateOfBirth(outcome.foalingDate))
+            BloodHorse.create(sire, dam, entry, inspection, registrationNumber).mapError {
+                RegisterFoalError.RegistrationFailed(it)
+            }
+        }
     }
 }
 
@@ -58,6 +64,13 @@ fun registerFoal(
  * 失敗のしかたが複数あるため sealed interface とし、`when` の網羅性で漏れを防ぐ。
  */
 sealed interface RegisterFoalError {
+    /**
+     * 繁殖成績の種付が海外種付（[Covering.Overseas]）であり、国内の産駒登録の経路では扱えない。
+     *
+     * 父が日本の繁殖登録を持たない外国種牡馬のため、父を軽種馬として引き当てられない。持込馬の経路で登録する。
+     */
+    data object NotDomesticCovering : RegisterFoalError
+
     /**
      * 繁殖成績の分娩結果が生産（[FoalingOutcome.LiveFoal]）でない、または未報告（null）であり、登録できる産駒が存在しない。
      *

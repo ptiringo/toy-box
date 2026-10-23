@@ -37,11 +37,7 @@ fun recordUncovered(
     breedingResultRepository: BreedingResultRepository,
 ): Result<BreedingResult, RecordUncoveredError> {
     val existingForYear =
-        breedingResultRepository.findByBreedingRegistrationIdAndBreedingYear(
-            worldId,
-            broodmareRegistration.id,
-            breedingYear,
-        )
+        findExistingForYear(worldId, broodmareRegistration, breedingYear, breedingResultRepository)
     if (existingForYear != null) {
         return Err(RecordUncoveredError.AlreadyRecordedForYear(breedingYear, existingForYear.id))
     }

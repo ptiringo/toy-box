@@ -1,7 +1,11 @@
 package com.example.api.controller.breeding
 
 import com.example.api.application.studbook.breeding.BreedingResultDetailView
+import com.example.api.application.studbook.breeding.CoveringKind
+import com.example.api.controller.horse.ForeignSireResponse
+import com.example.api.controller.horse.toResponse
 import com.example.api.domain.studbook.model.breeding.BreedingResult
+import com.example.api.domain.studbook.model.breeding.Covering
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 import java.util.UUID
@@ -18,13 +22,17 @@ import java.util.UUID
  * @property id 繁殖成績の生 UUID
  * @property breedingRegistrationId 紐づく繁殖登録（繁殖牝馬のロール）の生 UUID
  * @property breedingYear 繁殖年
- * @property stallionId 種牡馬の生 UUID。種付せずの年は null
+ * @property stallionId 国内種付の種牡馬の生 UUID。種付せずの年・海外種付は null
  * @property coveringDate 種付日。種付せずの年は null
  * @property coveringPlace 種付が行われた場所。種付せずの年は null
- * @property certificateNumber 種付証明書番号。種付せずの年は null
+ * @property certificateNumber 国内種付の種付証明書番号。種付せずの年・海外種付は null
  * @property outcome 分娩結果。種付した年で未報告なら null
  * @property reportSubmittedOn 繁殖成績報告書（様式第14号）の提出日。未提出は null
  * @property reportSubmittedLate 提出が期限（繁殖年の翌年5/31）超過だったか。未提出は null
+ * @property coveringType 種付の区分。種付せずの年は null
+ * @property foreignSire 海外種付の外国種牡馬。海外種付でなければ null（国内種付の種牡馬は [stallionId]）
+ * @property coveringCountry 海外種付が行われた国。海外種付でなければ null
+ * @property proofNumber 種付国の血統登録機関が発行した種付事実の証明の番号。海外種付でなければ null
  */
 @Schema(description = "繁殖成績リソースの表現")
 data class BreedingResultResponse(
@@ -38,22 +46,39 @@ data class BreedingResultResponse(
     val outcome: FoalingOutcomeResponse?,
     val reportSubmittedOn: LocalDate?,
     val reportSubmittedLate: Boolean?,
+    val coveringType: CoveringTypeDto?,
+    val foreignSire: ForeignSireResponse?,
+    val coveringCountry: String?,
+    val proofNumber: String?,
 )
 
 /** [BreedingResult] を繁殖成績リソースの表現へ変換する。各操作の成功レスポンスはこのリソース表現を一律で返す。 */
-fun BreedingResult.toResponse(): BreedingResultResponse =
-    BreedingResultResponse(
+fun BreedingResult.toResponse(): BreedingResultResponse {
+    val domestic = covering as? Covering.Domestic
+    val overseas = covering as? Covering.Overseas
+    val coveringType =
+        when (covering) {
+            is Covering.Domestic -> CoveringTypeDto.DOMESTIC
+            is Covering.Overseas -> CoveringTypeDto.OVERSEAS
+            null -> null
+        }
+    return BreedingResultResponse(
         id = id.value,
         breedingRegistrationId = breedingRegistrationId.value,
         breedingYear = breedingYear.value,
-        stallionId = covering?.stallionId?.value,
+        stallionId = domestic?.stallionId?.value,
         coveringDate = covering?.coveringDate,
-        coveringPlace = covering?.coveringPlace?.value,
-        certificateNumber = covering?.certificateNumber?.value,
+        coveringPlace = domestic?.coveringPlace?.value,
+        certificateNumber = domestic?.certificateNumber?.value,
         outcome = outcome?.toResponse(),
         reportSubmittedOn = reportSubmittedOn,
         reportSubmittedLate = reportSubmittedLate,
+        coveringType = coveringType,
+        foreignSire = overseas?.sire?.toResponse(),
+        coveringCountry = overseas?.coveringCountry?.name,
+        proofNumber = overseas?.proofNumber?.value,
     )
+}
 
 /**
  * 読み取りモデル [BreedingResultDetailView] を繁殖成績リソースの表現へ変換する（読み取り経路。Get の成功レスポンス）。
@@ -73,4 +98,15 @@ fun BreedingResultDetailView.toResponse(): BreedingResultResponse =
         outcome = outcome?.toResponse(),
         reportSubmittedOn = reportSubmittedOn,
         reportSubmittedLate = reportSubmittedLate,
+        coveringType = coveringType?.toApi(),
+        foreignSire = foreignSire?.toResponse(),
+        coveringCountry = coveringCountry,
+        proofNumber = proofNumber,
     )
+
+/** 読み取りモデルの種付の区分を HTTP 契約の区分へ変換する。 */
+fun CoveringKind.toApi(): CoveringTypeDto =
+    when (this) {
+        CoveringKind.DOMESTIC -> CoveringTypeDto.DOMESTIC
+        CoveringKind.OVERSEAS -> CoveringTypeDto.OVERSEAS
+    }

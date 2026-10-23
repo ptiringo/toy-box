@@ -46,6 +46,28 @@ class RegisterFoalTest {
     }
 
     @Test
+    fun `海外種付の繁殖成績だと国内の経路では登録せず NotDomesticCovering を返すこと`() {
+        val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+        val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+        val overseas =
+            BreedingFixture.overseasBreedingResult()
+                .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2000, 3, 21)))
+                .unwrap()
+
+        val result =
+            registerFoal(
+                overseas,
+                sire,
+                dam,
+                BloodHorseFixture.foalIdentity(),
+                BloodHorseFixture.inspection(),
+                registrationNumber,
+            )
+
+        assert(result.getError() == RegisterFoalError.NotDomesticCovering)
+    }
+
+    @Test
     fun `分娩結果が未報告だと NotLiveFoal を返すこと`() {
         val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
         val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)

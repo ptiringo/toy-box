@@ -74,7 +74,7 @@ sealed interface RegisterInStudBookError {
  *
  * 父・母は別個体（別集約）であり、参照は [BloodHorseId] 経由で表す。父=雄・母=雌・親子の DNA 整合・親仔の品種整合・親仔の毛色整合といった前提条件は集約をまたぐが、
  * 父・母を引数で受け取る生成ファクトリ [create] がその場で自己検証する（Jockey.create と同じく、検証を満たさなければ生成しない）。 コンストラクタは private
- * とし、生成は [create] / [createImported] / [createCarriedOver] のみに限る。
+ * とし、生成は [create] / [createBroughtIn] / [createImported] / [createCarriedOver] のみに限る。
  *
  * 出自（内国産か輸入か移行取り込みか）は [origin] に集約する。内国産馬は父・母の軽種馬ID（[Origin.Domestic]）を、 父母が当システムに存在しない個体
  * （輸入馬・基礎輸入馬）は原産国・揚陸日（[Origin.Imported]）を、先行原簿に血統記録済みの移行取り込みは追加の属性を持たない（[Origin.CarriedOver]）。
@@ -177,34 +177,105 @@ private constructor(
             entry: StudBookEntry,
             inspection: HorseInspection,
             registrationNumber: PedigreeRegistrationNumber,
-        ): Result<BloodHorse, RegisterInStudBookError> =
-            when {
-                sire.sex != Sex.MALE -> Err(RegisterInStudBookError.SireNotMale)
-                dam.sex != Sex.FEMALE -> Err(RegisterInStudBookError.DamNotFemale)
-                !inspection.parentage.confirmsDeclaredParents() ->
-                    Err(RegisterInStudBookError.ParentageNotConfirmed)
-                !entry.breedType.isConsistentWith(sire.breedType, dam.breedType) ->
-                    Err(RegisterInStudBookError.BreedMismatch)
-                entry.coatColor.violatesGrayRule(sire.coatColor, dam.coatColor) ->
-                    Err(RegisterInStudBookError.GrayFoalFromNonGrayParents)
-                entry.coatColor.violatesChestnutRule(sire.coatColor, dam.coatColor) ->
-                    Err(RegisterInStudBookError.NonChestnutFoalFromChestnutParents)
-                else ->
-                    Ok(
-                        BloodHorse(
-                            id = BloodHorseId(generateId()),
-                            registrationNumber = registrationNumber,
-                            sex = entry.sex,
-                            coatColor = entry.coatColor,
-                            breedType = entry.breedType,
-                            dateOfBirth = entry.dateOfBirth,
-                            breeder = entry.breeder,
-                            inspectionId = inspection.id,
-                            origin = Origin.Domestic(sireId = sire.id, damId = dam.id),
-                            name = null,
-                        )
+        ): Result<BloodHorse, RegisterInStudBookError> {
+            val violation =
+                if (sire.sex != Sex.MALE) RegisterInStudBookError.SireNotMale
+                else validateWithParents(sire.breedType, sire.coatColor, dam, entry, inspection)
+            return if (violation != null) {
+                Err(violation)
+            } else {
+                Ok(
+                    registered(
+                        entry,
+                        inspection,
+                        registrationNumber,
+                        Origin.Domestic(sireId = sire.id, damId = dam.id),
                     )
+                )
             }
+        }
+
+        /**
+         * 持込馬（種付が外国で行われ、輸出国出国以降に生まれた馬。登録規程 第6条第1号）の血統登録を行い、[BloodHorse] を生成する。
+         *
+         * 父は日本の繁殖登録を持たない外国種牡馬（[ForeignSire]）で、軽種馬としては存在しない。持込馬にも母の繁殖登録・DNA 親子判定・ 毛色の親子整合は適用される（同
+         * 第6条第3号・第15条第5号・第6号）ため、[create] と同じ前提条件を父の属性に対して 検証する。父が雄であることは [ForeignSire]
+         * の型が表すので検証しない。
+         *
+         * @param sire 父である外国種牡馬
+         * @param dam 母（雌）の軽種馬
+         * @param entry 仔馬自身の個体識別情報（性・毛色・品種・生年月日・生産者）
+         * @param inspection 確定済みの個体識別・親子判定審査（親子判定が確認済みであること）
+         * @param registrationNumber 交付される血統登録番号
+         * @return 生成された [BloodHorse]（出自は [Origin.BroughtIn]）、または前提条件違反を表す [RegisterInStudBookError]
+         */
+        fun createBroughtIn(
+            sire: ForeignSire,
+            dam: BloodHorse,
+            entry: StudBookEntry,
+            inspection: HorseInspection,
+            registrationNumber: PedigreeRegistrationNumber,
+        ): Result<BloodHorse, RegisterInStudBookError> {
+            val violation =
+                validateWithParents(sire.breedType, sire.coatColor, dam, entry, inspection)
+            return if (violation != null) {
+                Err(violation)
+            } else {
+                Ok(
+                    registered(
+                        entry,
+                        inspection,
+                        registrationNumber,
+                        Origin.BroughtIn(sire = sire, damId = dam.id),
+                    )
+                )
+            }
+        }
+
+        /**
+         * 父母のある産駒（内国産・持込馬）に共通の前提条件を検証し、最初の違反を返す（無ければ null）。
+         *
+         * 父は軽種馬とは限らない（持込馬の父は外国種牡馬）ため、品種・毛色の属性だけを受け取る。
+         */
+        private fun validateWithParents(
+            sireBreed: BreedType,
+            sireCoat: CoatColor,
+            dam: BloodHorse,
+            entry: StudBookEntry,
+            inspection: HorseInspection,
+        ): RegisterInStudBookError? =
+            when {
+                dam.sex != Sex.FEMALE -> RegisterInStudBookError.DamNotFemale
+                !inspection.parentage.confirmsDeclaredParents() ->
+                    RegisterInStudBookError.ParentageNotConfirmed
+                !entry.breedType.isConsistentWith(sireBreed, dam.breedType) ->
+                    RegisterInStudBookError.BreedMismatch
+                entry.coatColor.violatesGrayRule(sireCoat, dam.coatColor) ->
+                    RegisterInStudBookError.GrayFoalFromNonGrayParents
+                entry.coatColor.violatesChestnutRule(sireCoat, dam.coatColor) ->
+                    RegisterInStudBookError.NonChestnutFoalFromChestnutParents
+                else -> null
+            }
+
+        /** 検証を通った産駒を、未命名の新しい [BloodHorse] として組む。 */
+        private fun registered(
+            entry: StudBookEntry,
+            inspection: HorseInspection,
+            registrationNumber: PedigreeRegistrationNumber,
+            origin: Origin,
+        ): BloodHorse =
+            BloodHorse(
+                id = BloodHorseId(generateId()),
+                registrationNumber = registrationNumber,
+                sex = entry.sex,
+                coatColor = entry.coatColor,
+                breedType = entry.breedType,
+                dateOfBirth = entry.dateOfBirth,
+                breeder = entry.breeder,
+                inspectionId = inspection.id,
+                origin = origin,
+                name = null,
+            )
 
         /**
          * 父母不明の輸入馬・基礎輸入馬として [BloodHorse] を生成する。

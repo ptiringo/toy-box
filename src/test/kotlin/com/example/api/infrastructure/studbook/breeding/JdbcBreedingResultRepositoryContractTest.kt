@@ -6,6 +6,7 @@ import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
+import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -391,6 +392,7 @@ class JdbcBreedingResultRepositoryContractTest(
                 id = generateId(),
                 breedingRegistrationId = seeder.seedRegistrationRow(),
                 breedingYear = 2024,
+                coveringType = "DOMESTIC",
                 coveringStallionId = seeder.seedHorseRow(sex = "MALE"),
                 coveringDate = LocalDate.of(2024, 4, 1),
                 coveringCertificateNumber = "C-2024-0001",
@@ -399,5 +401,123 @@ class JdbcBreedingResultRepositoryContractTest(
             )
 
         assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    /** 海外種付（OVERSEAS）の整合した未報告行。CHECK 制約を満たす最小行。 */
+    private fun overseasRow(id: UUID = generateId()) =
+        BreedingResultRow(
+            worldId = worldId.value,
+            id = id,
+            breedingRegistrationId = seeder.seedRegistrationRow(),
+            breedingYear = 1999,
+            coveringType = "OVERSEAS",
+            coveringDate = LocalDate.of(1999, 4, 10),
+            coveringForeignSireName = "Danehill",
+            coveringForeignSireStudBookCountry = "アメリカ",
+            coveringForeignSireBreedType = "THOROUGHBRED",
+            coveringForeignSireCoatColor = "BAY",
+            coveringCountry = "アイルランド",
+            coveringProofNumber = "IE-1999-0004",
+        )
+
+    @Test
+    fun `国内種付の成績はcovering_typeがDOMESTICで保存される`() {
+        val result = seededBreedingResult()
+
+        repository.save(worldId, result).unwrap()
+
+        val coveringType =
+            jdbcClient
+                .sql("SELECT covering_type FROM studbook.breeding_result WHERE id = :id")
+                .param("id", result.id.value)
+                .query(String::class.java)
+                .single()
+        assert(coveringType == "DOMESTIC")
+    }
+
+    @Test
+    fun `海外種付の列が揃ったOVERSEAS行はCHECK制約を満たす`() {
+        val row = overseasRow()
+
+        rows.save(row)
+
+        assert(rows.findById(row.id).isPresent)
+    }
+
+    @Test
+    fun `OVERSEASなのに国内の種牡馬IDを持つ行はCHECK制約で拒否される`() {
+        val row = overseasRow().copy(coveringStallionId = seeder.seedHorseRow(sex = "MALE"))
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `OVERSEASなのに海外種付証明の番号が欠けた行はCHECK制約で拒否される`() {
+        val row = overseasRow().copy(coveringProofNumber = null)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `DOMESTICなのに海外の列を持つ行はCHECK制約で拒否される`() {
+        val row =
+            overseasRow()
+                .copy(
+                    coveringType = "DOMESTIC",
+                    coveringStallionId = seeder.seedHorseRow(sex = "MALE"),
+                    coveringCertificateNumber = "C-1999-0001",
+                )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `種付ありなのにcovering_typeがNULLの行はCHECK制約で拒否される`() {
+        // V24 の埋め戻し漏れ（種付ありの行が判別子を持たないまま残る）を DB 単独で拒否できること
+        val row =
+            BreedingResultRow(
+                worldId = worldId.value,
+                id = generateId(),
+                breedingRegistrationId = seeder.seedRegistrationRow(),
+                breedingYear = 2024,
+                coveringStallionId = seeder.seedHorseRow(sex = "MALE"),
+                coveringDate = LocalDate.of(2024, 4, 1),
+                coveringCertificateNumber = "C-2024-0001",
+            )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `種付せずの行にcovering_typeを持たせるとCHECK制約で拒否される`() {
+        val row = uncoveredRow().copy(coveringType = "DOMESTIC")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `海外種付の成績を保存して同じ値で復元できる`() {
+        val broodmareRegistration =
+            BreedingFixture.breedingRegistration(
+                broodmare =
+                    seeder.seedHorse(
+                        BloodHorseFixture.bloodHorse(
+                            sex = Sex.FEMALE,
+                            registrationNumber = "MARE-${generateId()}",
+                        )
+                    ),
+                registrationNumber = "B-MARE-${generateId()}",
+            )
+        seeder.seedRegistration(broodmareRegistration)
+        val result =
+            BreedingFixture.overseasBreedingResult(broodmareRegistration = broodmareRegistration)
+
+        repository.save(worldId, result).unwrap()
+        val found = repository.findById(worldId, result.id)
+
+        assert(found != null)
+        assert(found!!.covering is Covering.Overseas)
+        assert(found.covering == result.covering)
+        assert(found.breedingYear == Year.of(1999))
     }
 }

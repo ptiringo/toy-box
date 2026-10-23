@@ -76,6 +76,13 @@ erDiagram
   bigint version
   date report_submitted_on
   uuid world_id FK
+  varchar_16_ covering_type
+  varchar_255_ covering_foreign_sire_name
+  varchar_255_ covering_foreign_sire_stud_book_country
+  varchar_32_ covering_foreign_sire_breed_type
+  varchar_32_ covering_foreign_sire_coat_color
+  varchar_255_ covering_country
+  varchar_255_ covering_proof_number
 }
 "studbook.covering_report" {
   uuid id
@@ -102,6 +109,10 @@ erDiagram
   date landing_date
   bigint version
   uuid world_id FK
+  varchar_255_ foreign_sire_name
+  varchar_255_ foreign_sire_stud_book_country
+  varchar_32_ foreign_sire_breed_type
+  varchar_32_ foreign_sire_coat_color
 }
 "iam.world" {
   uuid id

@@ -76,6 +76,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
             id = generateId(),
             breedingRegistrationId = registrationId,
             breedingYear = year,
+            coveringType = "DOMESTIC",
             coveringStallionId = stallionId,
             coveringDate = LocalDate.of(year, 4, 1),
             coveringPlace = "北海道",
@@ -146,5 +147,33 @@ class JdbcBreedingResultSummaryQueriesContractTest(
     @Test
     fun `該当する種牡馬の成績が無ければ空リストを返す`() {
         assert(queries.findByStallion(worldId, BloodHorseId(generateId())).isEmpty())
+    }
+
+    @Test
+    fun `海外種付の成績は国内種牡馬の年次集計に含まれない`() {
+        rows.save(covered(stallion, 2024, "LIVE_FOAL", LocalDate.of(2025, 3, 1)))
+        rows.save(
+            BreedingResultRow(
+                worldId = worldId.value,
+                id = generateId(),
+                breedingRegistrationId = seeder.seedRegistrationRow(),
+                breedingYear = 2024,
+                coveringType = "OVERSEAS",
+                coveringDate = LocalDate.of(2024, 4, 10),
+                coveringForeignSireName = "Danehill",
+                coveringForeignSireStudBookCountry = "アメリカ",
+                coveringForeignSireBreedType = "THOROUGHBRED",
+                coveringForeignSireCoatColor = "BAY",
+                coveringCountry = "アイルランド",
+                coveringProofNumber = "IE-2024-0001",
+                outcomeType = "LIVE_FOAL",
+                outcomeFoalingDate = LocalDate.of(2025, 3, 2),
+            )
+        )
+
+        val summaries = queries.findByStallion(worldId, BloodHorseId(stallion))
+
+        assert(summaries.single().maresCovered == 1)
+        assert(summaries.single().liveFoals == 1)
     }
 }

@@ -1,9 +1,13 @@
 package com.example.api.infrastructure.studbook.breeding
 
+import com.example.api.application.studbook.breeding.CoveringKind
+import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.infrastructure.studbook.StudbookSeeder
 import com.example.api.infrastructure.studbook.horse.BloodHorseSpringDataRepository
 import com.example.api.infrastructure.studbook.inspection.HorseInspectionSpringDataRepository
@@ -68,6 +72,7 @@ class JdbcBreedingResultQueriesContractTest(
                 id = id,
                 breedingRegistrationId = registrationId,
                 breedingYear = year,
+                coveringType = "DOMESTIC",
                 coveringStallionId = stallionId,
                 coveringDate = LocalDate.of(year, 4, 1),
                 coveringPlace = "北海道",
@@ -192,5 +197,52 @@ class JdbcBreedingResultQueriesContractTest(
             )
 
         assert(queries.findById(worldId, BreedingResultId(id)) == null)
+    }
+
+    @Test
+    fun `海外種付の成績を ID で引くと外国種牡馬と種付国を詰め国内の種牡馬は null`() {
+        val id = generateId()
+        rows.save(
+            BreedingResultRow(
+                worldId = worldId.value,
+                id = id,
+                breedingRegistrationId = seeder.seedRegistrationRow(),
+                breedingYear = 1999,
+                coveringType = "OVERSEAS",
+                coveringDate = LocalDate.of(1999, 4, 10),
+                coveringForeignSireName = "Danehill",
+                coveringForeignSireStudBookCountry = "アメリカ",
+                coveringForeignSireBreedType = "THOROUGHBRED",
+                coveringForeignSireCoatColor = "BAY",
+                coveringCountry = "アイルランド",
+                coveringProofNumber = "IE-1999-0004",
+            )
+        )
+
+        val view = queries.findById(worldId, BreedingResultId(id))
+
+        assert(view != null)
+        assert(view!!.coveringType == CoveringKind.OVERSEAS)
+        assert(
+            view.foreignSire ==
+                ForeignSireView("Danehill", "アメリカ", BreedType.THOROUGHBRED, CoatColor.BAY)
+        )
+        assert(view.coveringCountry == "アイルランド")
+        assert(view.proofNumber == "IE-1999-0004")
+        assert(view.coveringDate == LocalDate.of(1999, 4, 10))
+        assert(view.stallionId == null)
+        assert(view.certificateNumber == null)
+    }
+
+    @Test
+    fun `国内種付の成績は判別子が DOMESTIC で海外の項目は null`() {
+        val id = seedCoveredRow()
+
+        val view = queries.findById(worldId, BreedingResultId(id))
+
+        assert(view!!.coveringType == CoveringKind.DOMESTIC)
+        assert(view.foreignSire == null)
+        assert(view.coveringCountry == null)
+        assert(view.proofNumber == null)
     }
 }

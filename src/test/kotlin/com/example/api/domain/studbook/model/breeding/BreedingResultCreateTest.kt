@@ -29,7 +29,7 @@ class BreedingResultCreateTest {
                 )
                 .unwrap()
 
-        val covering = result.covering
+        val covering = result.covering as? Covering.Domestic
         assert(covering != null)
         assert(result.breedingRegistrationId == broodmareRegistration.id)
         assert(covering?.stallionId == stallionRegistration.registeredHorseId)
@@ -91,7 +91,7 @@ class BreedingResultCreateTest {
                 )
                 .unwrap()
 
-        assert(result.covering?.coveringPlace == place)
+        assert((result.covering as? Covering.Domestic)?.coveringPlace == place)
     }
 
     @Test

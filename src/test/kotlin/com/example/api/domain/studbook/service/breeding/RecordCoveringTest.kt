@@ -5,6 +5,7 @@ import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
+import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.CoveringValidityError
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
@@ -50,7 +51,7 @@ class RecordCoveringTest {
                 )
                 .unwrap()
 
-        val covering = result.covering
+        val covering = result.covering as? Covering.Domestic
         assert(covering != null)
         assert(result.breedingRegistrationId == broodmareRegistration.id)
         assert(covering?.stallionId == stallionRegistration.registeredHorseId)
@@ -164,7 +165,7 @@ class RecordCoveringTest {
                 )
                 .unwrap()
 
-        assert(result.covering?.coveringPlace == place)
+        assert((result.covering as? Covering.Domestic)?.coveringPlace == place)
     }
 
     @Test

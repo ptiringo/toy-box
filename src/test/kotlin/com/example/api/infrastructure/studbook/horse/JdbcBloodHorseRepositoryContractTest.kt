@@ -418,4 +418,81 @@ class JdbcBloodHorseRepositoryContractTest(
 
         assert(repository.save(otherWorldId, sameNumber).unwrap().id == sameNumber.id)
     }
+
+    /** 持込馬（BROUGHT_IN）の整合した行。CHECK 制約を満たす最小行。 */
+    private fun broughtInRow(id: UUID = generateId()) =
+        domesticRow(id)
+            .copy(
+                originType = "BROUGHT_IN",
+                sireId = null,
+                foreignSireName = "Danehill",
+                foreignSireStudBookCountry = "アメリカ",
+                foreignSireBreedType = "THOROUGHBRED",
+                foreignSireCoatColor = "BAY",
+            )
+
+    @Test
+    fun `外国種牡馬の列が揃ったBROUGHT_IN行はCHECK制約を満たす`() {
+        val row = broughtInRow()
+
+        rows.save(row)
+
+        assert(rows.findById(row.id).isPresent)
+    }
+
+    @Test
+    fun `BROUGHT_INなのに国内の父IDを持つ行はCHECK制約で拒否される`() {
+        val row = broughtInRow().copy(sireId = seeder.seedHorseRow(sex = "MALE"))
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `BROUGHT_INなのに外国種牡馬の毛色が欠けた行はCHECK制約で拒否される`() {
+        val row = broughtInRow().copy(foreignSireCoatColor = null)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `BROUGHT_INなのに原産国を持つ行はCHECK制約で拒否される`() {
+        val row = broughtInRow().copy(originCountry = "アイルランド")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `DOMESTIC行に外国種牡馬の列が混入するとCHECK制約で拒否される`() {
+        val row = domesticRow().copy(foreignSireName = "Danehill")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `持込馬を保存して同じ出自で復元できる`() {
+        val dam =
+            seeder.seedHorse(
+                BloodHorseFixture.bloodHorse(
+                    sex = Sex.FEMALE,
+                    registrationNumber = "DAM-${generateId()}",
+                )
+            )
+        val sire = BloodHorseFixture.foreignSire()
+        val foal =
+            BloodHorse.createBroughtIn(
+                    sire,
+                    dam,
+                    BloodHorseFixture.studBookEntry(sex = Sex.FEMALE),
+                    BloodHorseFixture.inspection(),
+                    PedigreeRegistrationNumber.create("FOAL-${generateId()}").unwrap(),
+                )
+                .unwrap()
+        seeder.seedInspectionFor(foal)
+
+        repository.save(worldId, foal).unwrap()
+        val found = repository.findById(worldId, foal.id)
+
+        assert(found != null)
+        assert(found!!.origin == Origin.BroughtIn(sire = sire, damId = dam.id))
+    }
 }

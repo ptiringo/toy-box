@@ -40,5 +40,9 @@ data class BloodHorseRow(
     @Column("dam_id") val damId: UUID? = null,
     @Column("origin_country") val originCountry: String? = null,
     @Column("landing_date") val landingDate: LocalDate? = null,
+    @Column("foreign_sire_name") val foreignSireName: String? = null,
+    @Column("foreign_sire_stud_book_country") val foreignSireStudBookCountry: String? = null,
+    @Column("foreign_sire_breed_type") val foreignSireBreedType: String? = null,
+    @Column("foreign_sire_coat_color") val foreignSireCoatColor: String? = null,
     @Version @Column("version") val version: Long? = null,
 )

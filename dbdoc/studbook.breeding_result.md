@@ -11,21 +11,28 @@
 | id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
 | breeding_registration_id | uuid |  | false |  | [studbook.breeding_registration](studbook.breeding_registration.md) | 対象の繁殖登録 ID |
 | breeding_year | integer |  | false |  |  | 繁殖年（java.time.Year の int 値） |
-| covering_stallion_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 種付種牡馬 ID（種付なしは NULL） |
+| covering_stallion_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 種付種牡馬 ID（国内種付のみ。それ以外は NULL） |
 | covering_date | date |  | true |  |  | 種付日（種付なしは NULL） |
-| covering_place | varchar(255) |  | true |  |  | 種付場所（任意） |
-| covering_certificate_number | varchar(255) |  | true |  |  | 種付証明書番号（種付なしは NULL） |
+| covering_place | varchar(255) |  | true |  |  | 種付場所（国内種付のみ・任意） |
+| covering_certificate_number | varchar(255) |  | true |  |  | 種付証明書番号（国内種付のみ。それ以外は NULL） |
 | outcome_type | varchar(32) |  | true |  |  | 分娩結果の判別子（NOT_COVERED/LIVE_FOAL 等） |
 | outcome_foaling_date | date |  | true |  |  | 分娩日（生産 LIVE_FOAL のときのみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 | report_submitted_on | date |  | true |  |  | 繁殖成績報告書（様式第14号）の提出日（未提出は NULL） |
 | world_id | uuid |  | false |  | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_registration](studbook.breeding_registration.md) | この行が属する世界（セーブデータ）のID |
+| covering_type | varchar(16) |  | true |  |  | 種付の判別子（DOMESTIC=国内種付/OVERSEAS=海外種付。種付なしは NULL） |
+| covering_foreign_sire_name | varchar(255) |  | true |  |  | 外国種牡馬の馬名（海外種付のみ） |
+| covering_foreign_sire_stud_book_country | varchar(255) |  | true |  |  | 外国種牡馬を登録している血統登録機関の国（海外種付のみ） |
+| covering_foreign_sire_breed_type | varchar(32) |  | true |  |  | 外国種牡馬の品種（海外種付のみ） |
+| covering_foreign_sire_coat_color | varchar(32) |  | true |  |  | 外国種牡馬の毛色（海外種付のみ） |
+| covering_country | varchar(255) |  | true |  |  | 種付が行われた国（海外種付のみ） |
+| covering_proof_number | varchar(255) |  | true |  |  | 種付国の血統登録機関が発行した種付事実の証明の番号（海外種付のみ） |
 
 ## Constraints
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| chk_breeding_result_covering | CHECK | CHECK ((((covering_stallion_id IS NULL) AND (covering_date IS NULL) AND (covering_certificate_number IS NULL) AND (covering_place IS NULL)) OR ((covering_stallion_id IS NOT NULL) AND (covering_date IS NOT NULL) AND (covering_certificate_number IS NOT NULL)))) |
+| chk_breeding_result_covering | CHECK | CHECK ((((covering_type IS NULL) AND (covering_date IS NULL) AND (covering_stallion_id IS NULL) AND (covering_place IS NULL) AND (covering_certificate_number IS NULL) AND (covering_foreign_sire_name IS NULL) AND (covering_foreign_sire_stud_book_country IS NULL) AND (covering_foreign_sire_breed_type IS NULL) AND (covering_foreign_sire_coat_color IS NULL) AND (covering_country IS NULL) AND (covering_proof_number IS NULL)) OR ((covering_type IS NOT NULL) AND ((covering_type)::text = 'DOMESTIC'::text) AND (covering_date IS NOT NULL) AND (covering_stallion_id IS NOT NULL) AND (covering_certificate_number IS NOT NULL) AND (covering_foreign_sire_name IS NULL) AND (covering_foreign_sire_stud_book_country IS NULL) AND (covering_foreign_sire_breed_type IS NULL) AND (covering_foreign_sire_coat_color IS NULL) AND (covering_country IS NULL) AND (covering_proof_number IS NULL)) OR ((covering_type IS NOT NULL) AND ((covering_type)::text = 'OVERSEAS'::text) AND (covering_date IS NOT NULL) AND (covering_foreign_sire_name IS NOT NULL) AND (covering_foreign_sire_stud_book_country IS NOT NULL) AND (covering_foreign_sire_breed_type IS NOT NULL) AND (covering_foreign_sire_coat_color IS NOT NULL) AND (covering_country IS NOT NULL) AND (covering_proof_number IS NOT NULL) AND (covering_stallion_id IS NULL) AND (covering_place IS NULL) AND (covering_certificate_number IS NULL)))) |
 | chk_breeding_result_foaling_date | CHECK | CHECK (((outcome_foaling_date IS NULL) OR ((outcome_type)::text = 'LIVE_FOAL'::text))) |
 | chk_breeding_result_outcome_covering | CHECK | CHECK ((((covering_date IS NULL) AND ((outcome_type)::text = 'NOT_COVERED'::text)) OR ((covering_date IS NOT NULL) AND ((outcome_type IS NULL) OR ((outcome_type)::text <> 'NOT_COVERED'::text))))) |
 | chk_breeding_result_report_needs_outcome | CHECK | CHECK (((report_submitted_on IS NULL) OR (outcome_type IS NOT NULL))) |
@@ -74,6 +81,13 @@ erDiagram
   bigint version
   date report_submitted_on
   uuid world_id FK
+  varchar_16_ covering_type
+  varchar_255_ covering_foreign_sire_name
+  varchar_255_ covering_foreign_sire_stud_book_country
+  varchar_32_ covering_foreign_sire_breed_type
+  varchar_32_ covering_foreign_sire_coat_color
+  varchar_255_ covering_country
+  varchar_255_ covering_proof_number
 }
 "studbook.breeding_registration" {
   uuid id
@@ -102,6 +116,10 @@ erDiagram
   date landing_date
   bigint version
   uuid world_id FK
+  varchar_255_ foreign_sire_name
+  varchar_255_ foreign_sire_stud_book_country
+  varchar_32_ foreign_sire_breed_type
+  varchar_32_ foreign_sire_coat_color
 }
 "iam.world" {
   uuid id

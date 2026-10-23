@@ -2,6 +2,8 @@ package com.example.api.domain.studbook.model.breeding
 
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
+import com.example.api.domain.studbook.model.horse.bloodhorse.ForeignSire
+import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -86,4 +88,21 @@ object BreedingFixture {
         submittedOn: LocalDate = LocalDate.of(2024, 9, 30),
     ): CoveringReport =
         CoveringReport.create(stallionRegistration, coveringYear, submittedOn).unwrap()
+
+    /** 既定値（1999-04-10 にアイルランドで Danehill と種付）を持つ、分娩結果未報告の海外種付の [BreedingResult] を生成する。 */
+    fun overseasBreedingResult(
+        broodmareRegistration: BreedingRegistration = breedingRegistration(),
+        sire: ForeignSire = BloodHorseFixture.foreignSire(),
+        coveringDate: LocalDate = LocalDate.of(1999, 4, 10),
+        coveringCountry: String = "アイルランド",
+        proofNumber: String = "IE-1999-0004",
+    ): BreedingResult =
+        BreedingResult.createOverseas(
+                broodmareRegistration,
+                sire,
+                coveringDate,
+                OriginCountry.create(coveringCountry).unwrap(),
+                ForeignCoveringProofNumber.create(proofNumber).unwrap(),
+            )
+            .unwrap()
 }

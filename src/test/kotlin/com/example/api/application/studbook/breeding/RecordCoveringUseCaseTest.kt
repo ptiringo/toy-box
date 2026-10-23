@@ -9,6 +9,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingFixture
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationId
 import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
+import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.getError
@@ -82,7 +83,7 @@ class RecordCoveringUseCaseTest {
                     )
                     .unwrap()
 
-            val covering = result.covering
+            val covering = result.covering as? Covering.Domestic
             assert(covering != null)
             assert(result.breedingRegistrationId == broodmareRegistration.id)
             assert(covering?.stallionId == stallionRegistration.registeredHorseId)
