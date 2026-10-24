@@ -182,7 +182,18 @@ tasks.withType<Test> {
 // 未指定だと Liberica buildpack の既定 LTS（現状 21）が選ばれ、toolchain 25 でコンパイルした bytecode
 // （major 69）を JRE 21 が読めず UnsupportedClassVersionError で起動失敗する。toolchain と揃えて 25 に
 // 固定し、container-smoke-test.yml が本番相当のメモリ制約で起動を検証する。
+//
+// builder と platform も明示する。既定の builder は `:latest` で、2026-10-23 に上流がこれを arm64 だけの
+// 単一 manifest に差し替えた。platform 未指定だと Spring Boot は builder の architecture から run image
+// の platform を決めるため、x64 ランナーで arm64 の run image を引き `exec format error` で落ちた。
+// - builder はマルチアーキ（amd64 / arm64）のバージョンタグに固定する。Dependabot はこの文字列を追わない
+//   ので、更新は https://hub.docker.com/r/paketobuildpacks/builder-noble-java-tiny/tags を見て手で上げる
+//   （上げるときは `docker buildx imagetools inspect` で amd64 を含む index であることを確かめる）。
+// - platform は Cloud Run に合わせて linux/amd64。arm64 マシンのローカル実行はエミュレーションになる。
+//   ネイティブで試したいだけなら `./gradlew bootBuildImage --imagePlatform=linux/arm64` で上書きできる。
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
+    builder = "paketobuildpacks/builder-noble-java-tiny:0.0.200"
+    imagePlatform = "linux/amd64"
     environment.put("BP_JVM_VERSION", "25")
 }
 
