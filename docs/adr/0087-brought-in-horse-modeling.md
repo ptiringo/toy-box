@@ -58,7 +58,13 @@ JAIRS 登録規程（`https://www.jairs.jp/contents/pdf/tourokukitei.pdf`、決�
 - 輸入牝馬が JAIRS の血統登録を経ずに直接繁殖登録を受ける経路（第7条第2号、揚陸日から 90 日の期限）は今のモデルに無く、
   replay では輸入馬の血統登録で代用している。別の Issue で扱う。
 - 応答では `BreedingResultResponse` に `covering_type` / `foreign_sire` / `covering_country` / `proof_number` を、`OriginDto` に
-  `BROUGHT_IN` を追加した（既存項目は不変）。入力側（海外種付の記録と持込馬の登録の API）は後続の PR で足す。
+  `BROUGHT_IN` を追加した（既存項目は不変）。
+- 入力側は #624 の 2 本目の PR で足した。繁殖成績の Create の `covering` は判別子 `type`（`DOMESTIC` / `OVERSEAS`、
+  応答の `covering_type` と同じ値）を持つ入れ子の oneOf にし、`type` を必須にした（欠けると 400）。持込馬の登録は
+  `POST /api/worlds/{worldId}/bloodHorses:registerBroughtIn` で、父母・生年月日は受け取らず繁殖成績から定める。
+- 海外種付の種付国や外国種牡馬の登録国が「日本」でも、ファクトリは拒否しない。国は自由文字列の `OriginCountry` で、
+  文字列「日本」との一致で弾いても「Japan」「JPN」は素通りし、守れているように見えるだけになるため。拒否するなら、
+  国を国コードの値オブジェクトにする決定と一緒に扱う。
 - 繁殖成績の応答の種付は、`origin` のような判別子つきの入れ子（oneOf、api-design.md / ADR-0020）にせず、**平置きのまま
   項目を足す**。既存の国内種付の項目（`stallion_id` / `covering_place` / `certificate_number`）が既に平置きで公開されており、
   入れ子を足すと同じ事実を二重に表すことになるため。入力（`covering {…}` の入れ子）と出力（平置き）の非対称は国内種付の時点から
