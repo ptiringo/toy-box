@@ -40,7 +40,8 @@ import org.springframework.transaction.annotation.Transactional
  * 生産産駒登録ユースケースの入力コマンド。
  *
  * 生産（分娩）された仔馬の血統登録申請に相当する境界の生入力。父・母・出生日は申請者が持ち込まず、報告済みの 繁殖成績（[breedingResultId]）から定まる:
- * - 父 = 種付（`covering.stallionId`）の種牡馬
+ * - 父 =
+ *   国内種付（`Covering.Domestic.stallionId`）の種牡馬。海外種付の産駒は持込馬の経路（[RegisterBroughtInFoalUseCase]）で登録する
  * - 母 = 繁殖登録（`breedingRegistration.registeredHorseId`、ロールは繁殖牝馬）の繁殖牝馬
  * - 出生日 = 分娩結果（`FoalingOutcome.LiveFoal.foalingDate`）
  *

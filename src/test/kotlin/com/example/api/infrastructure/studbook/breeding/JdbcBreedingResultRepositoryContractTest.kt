@@ -459,6 +459,20 @@ class JdbcBreedingResultRepositoryContractTest(
     }
 
     @Test
+    fun `OVERSEASなのに種付場所を持つ行はCHECK制約で拒否される`() {
+        val row = overseasRow().copy(coveringPlace = "北海道")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `OVERSEASなのに国内の種付証明書番号を持つ行はCHECK制約で拒否される`() {
+        val row = overseasRow().copy(coveringCertificateNumber = "C-1999-0001")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
     fun `DOMESTICなのに海外の列を持つ行はCHECK制約で拒否される`() {
         val row =
             overseasRow()

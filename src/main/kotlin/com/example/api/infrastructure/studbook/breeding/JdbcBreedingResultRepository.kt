@@ -98,7 +98,7 @@ class JdbcBreedingResultRepository(
 
     private fun BreedingResultRow.toOverseasCovering(): Covering.Overseas {
         val date = checkNotNull(coveringDate) { "海外種付の種付日が欠落: id=$id" }
-        val place = checkNotNull(this.coveringCountry) { "種付国が欠落: id=$id" }
+        val country = checkNotNull(this.coveringCountry) { "種付国が欠落: id=$id" }
         val proof = checkNotNull(coveringProofNumber) { "種付事実の証明の番号が欠落: id=$id" }
         return Covering.Overseas(
             sire =
@@ -110,7 +110,7 @@ class JdbcBreedingResultRepository(
                     id,
                 ),
             coveringDate = date,
-            coveringCountry = OriginCountry.create(place).orThrow(),
+            coveringCountry = OriginCountry.create(country).orThrow(),
             proofNumber = ForeignCoveringProofNumber.create(proof).orThrow(),
         )
     }

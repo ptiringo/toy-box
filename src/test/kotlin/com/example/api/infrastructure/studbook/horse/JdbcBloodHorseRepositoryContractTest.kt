@@ -469,6 +469,62 @@ class JdbcBloodHorseRepositoryContractTest(
     }
 
     @Test
+    fun `BROUGHT_INなのに揚陸日を持つ行はCHECK制約で拒否される`() {
+        val row = broughtInRow().copy(landingDate = LocalDate.of(1999, 10, 1))
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `BROUGHT_INなのに母IDが欠けた行はCHECK制約で拒否される`() {
+        val row = broughtInRow().copy(damId = null)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    /** 輸入（IMPORTED）の整合した行。負例の基準行で、単独では CHECK 制約を満たす。 */
+    private fun importedRow() =
+        domesticRow()
+            .copy(
+                originType = "IMPORTED",
+                sireId = null,
+                damId = null,
+                originCountry = "アイルランド",
+                landingDate = LocalDate.of(2024, 9, 1),
+            )
+
+    /** 移行取り込み（CARRIED_OVER）の整合した行。負例の基準行で、単独では CHECK 制約を満たす。 */
+    private fun carriedOverRow() =
+        domesticRow().copy(originType = "CARRIED_OVER", sireId = null, damId = null)
+
+    @Test
+    fun `負例の基準にするIMPORTED行とCARRIED_OVER行はCHECK制約を満たす`() {
+        // 下の負例が「別の列の不整合で落ちている」空振りでないことの前提を固定する。
+        val imported = importedRow()
+        val carriedOver = carriedOverRow().copy(registrationNumber = "2002100501")
+
+        rows.save(imported)
+        rows.save(carriedOver)
+
+        assert(rows.findById(imported.id).isPresent)
+        assert(rows.findById(carriedOver.id).isPresent)
+    }
+
+    @Test
+    fun `IMPORTED行に外国種牡馬の列が混入するとCHECK制約で拒否される`() {
+        val row = importedRow().copy(foreignSireName = "Danehill")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `CARRIED_OVER行に外国種牡馬の列が混入するとCHECK制約で拒否される`() {
+        val row = carriedOverRow().copy(foreignSireName = "Danehill")
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
     fun `持込馬を保存して同じ出自で復元できる`() {
         val dam =
             seeder.seedHorse(

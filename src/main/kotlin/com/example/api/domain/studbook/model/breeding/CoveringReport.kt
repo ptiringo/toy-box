@@ -45,8 +45,9 @@ sealed interface SubmitCoveringReportError {
  * 種付成績報告を表す集約ルート。種牡馬×種付年ごとの提出記録。
  *
  * 繁殖登録済みの種牡馬（[BreedingRegistration] のロールが STALLION）について、種付成績報告書（様式第13号）の
- * 年次提出の事実を記録する。報告書の内容（雌馬ごとの明細・総括表）は牝側の年次成績 [BreedingResult]（種牡馬を `Covering.stallionId`
- * で参照）から導出できるため保持せず、提出の事実（提出日）のみを持つ（#540）。 繁殖登録は別集約であり、参照は [BreedingRegistrationId] 経由で表す。
+ * 年次提出の事実を記録する。報告書の内容（雌馬ごとの明細・総括表）は牝側の年次成績 [BreedingResult]（国内種付の種牡馬を
+ * `Covering.Domestic.stallionId` で参照）から導出できるため保持せず、提出の事実（提出日）のみを持つ（#540）。 繁殖登録は別集約であり、参照は
+ * [BreedingRegistrationId] 経由で表す。
  *
  * 牝側（様式第14号）は年次レコード [BreedingResult] に提出を貼ったが、雄側には先行するライフサイクルが無く、 **提出行為そのものが本集約を生成する**。したがって
  * [submittedOn] は非 null で「未提出の報告」状態は存在せず、
