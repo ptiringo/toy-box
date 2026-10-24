@@ -7,8 +7,7 @@ import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
-import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
-import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
+import com.example.api.infrastructure.studbook.horse.foreignSireOf
 import java.sql.ResultSet
 import java.time.LocalDate
 import java.util.UUID
@@ -78,19 +77,24 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
     /**
      * 海外種付の外国種牡馬の 4 列から [ForeignSireView] を組む（海外種付でなければ馬名が NULL で null）。
      *
-     * 4 列が揃うことは CHECK 制約 `chk_breeding_result_covering` がスキーマ側で強制している（V24）。
+     * 4 列が揃うことは CHECK 制約 `chk_breeding_result_covering` がスキーマ側で強制している（V24）。欠落の診断は 書き込み側・持込馬の出自と同じ
+     * [foreignSireOf] に一本化する。
      */
     private fun ResultSet.toForeignSire(): ForeignSireView? {
         val name = getString("covering_foreign_sire_name") ?: return null
-        val id = getObject("id", UUID::class.java)
-        val country = getString("covering_foreign_sire_stud_book_country")
-        val breed = getString("covering_foreign_sire_breed_type")
-        val coat = getString("covering_foreign_sire_coat_color")
+        val sire =
+            foreignSireOf(
+                name,
+                getString("covering_foreign_sire_stud_book_country"),
+                getString("covering_foreign_sire_breed_type"),
+                getString("covering_foreign_sire_coat_color"),
+                getObject("id", UUID::class.java),
+            )
         return ForeignSireView(
-            name = name,
-            studBookCountry = checkNotNull(country) { "外国種牡馬の登録国が欠落: id=$id" },
-            breedType = BreedType.valueOf(checkNotNull(breed) { "外国種牡馬の品種が欠落: id=$id" }),
-            coatColor = CoatColor.valueOf(checkNotNull(coat) { "外国種牡馬の毛色が欠落: id=$id" }),
+            name = sire.name.value,
+            studBookCountry = sire.studBookCountry.name,
+            breedType = sire.breedType,
+            coatColor = sire.coatColor,
         )
     }
 

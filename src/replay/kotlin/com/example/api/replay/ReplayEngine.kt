@@ -2,6 +2,7 @@ package com.example.api.replay
 
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordUncoveredCommand
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationCommand
@@ -14,6 +15,8 @@ import com.example.api.application.studbook.breeding.SubmitCoveringReportCommand
 import com.example.api.application.studbook.breeding.SubmitCoveringReportUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalCommand
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalUseCase
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterFoalCommand
 import com.example.api.application.studbook.horse.RegisterFoalUseCase
@@ -21,14 +24,21 @@ import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.Command
+import com.example.api.domain.studbook.model.breeding.BreedingRegistration
+import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.domain.studbook.model.inspection.DnaParentageResult
 import com.example.api.replay.fixture.CoveredSeasonFixture
+import com.example.api.replay.fixture.CoveredSynthesized
+import com.example.api.replay.fixture.DomesticCoveringFixture
+import com.example.api.replay.fixture.FoalFacts
+import com.example.api.replay.fixture.FoalSynthesized
 import com.example.api.replay.fixture.HorseFacts
 import com.example.api.replay.fixture.HorseFixture
 import com.example.api.replay.fixture.HorseSynthesized
+import com.example.api.replay.fixture.OverseasCoveringFixture
 import com.example.api.replay.fixture.UncoveredSeasonFixture
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.fold
@@ -48,10 +58,12 @@ class ReplayEngine(
     private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
     private val registerBreedingRegistration: RegisterBreedingRegistrationUseCase,
     private val recordCovering: RecordCoveringUseCase,
+    private val recordOverseasCovering: RecordOverseasCoveringUseCase,
     private val recordUncovered: RecordUncoveredUseCase,
     private val submitCoveringReport: SubmitCoveringReportUseCase,
     private val reportFoaling: ReportFoalingUseCase,
     private val registerFoal: RegisterFoalUseCase,
+    private val registerBroughtInFoal: RegisterBroughtInFoalUseCase,
     private val nameHorse: NameHorseUseCase,
     private val submitBreedingReport: SubmitBreedingReportUseCase,
 ) {
@@ -84,7 +96,12 @@ class ReplayEngine(
             registerImportedHorse(actor, Command.now(importedCommand(facts, synth), clock))
         }
 
-    /** 種付を行った年の経路: seed ×2 → 繁殖登録 ×2 → 種付 → 種付成績報告 → 出生報告 → 産駒登録 → 馬名登録 → 繁殖成績報告。 */
+    /**
+     * 種付を行った年の経路: seed ×2 → 繁殖登録 ×2 → 種付 → 種付成績報告 → 出生報告 → 産駒登録 → 馬名登録 → 繁殖成績報告。
+     *
+     * 海外種付（持込馬の経路。#624）の年は、父が日本の繁殖登録を持たない外国種牡馬なので、種牡馬の seed・繁殖登録・
+     * 種付成績報告（雄側）を通らない。種付は海外種付として、産駒は持込馬として登録する。
+     */
     private fun runCovered(actor: Actor, fixture: CoveredSeasonFixture): HorseReplayOutcome {
         val session = ReplaySession(fixture)
         val facts = fixture.facts
@@ -92,85 +109,69 @@ class ReplayEngine(
         // 提出以外のドメイン日付は論理に効かないので、シーズン中の固定 Instant を使う。
         // 種付年は公開事実ではなく表示年からの換算（合成値）なので synthesized 側から取る。
         val neutralInstant: Instant = submissionInstant(LocalDate.of(synth.coveringYear, 4, 1))
+        val neutralClock = seasonClock(neutralInstant)
+        // 国内種付のときだけ種牡馬を seed する（海外種付の父は外国種牡馬で、日本の登録を持たない）。
+        val stallionSynth =
+            if (synth.covering is DomesticCoveringFixture) {
+                requireNotNull(synth.stallion) { "国内種付には種牡馬の合成値が必要: ${fixture.name}" }
+            } else {
+                null
+            }
 
         // 0. 基礎馬（種牡馬・繁殖牝馬）を seed（親不在で登録可）。
         //    産地が日本なら移行取り込み、外国産なら輸入馬経路（#633）。
-        val stallion =
-            session.step(
-                ReplayStep.REGISTER_STALLION,
-                seedHorse(actor, facts.stallion, synth.stallion, seasonClock(neutralInstant)),
-            ) ?: return session.stop()
+        val stallion = stallionSynth?.let { stallionSynthesized ->
+            val seeded =
+                session.step(
+                    ReplayStep.REGISTER_STALLION,
+                    seedHorse(actor, facts.stallion, stallionSynthesized, neutralClock),
+                ) ?: return session.stop()
+            seeded to stallionSynthesized
+        }
         val broodmare =
             session.step(
                 ReplayStep.REGISTER_BROODMARE,
-                seedHorse(actor, facts.broodmare, synth.broodmare, seasonClock(neutralInstant)),
+                seedHorse(actor, facts.broodmare, synth.broodmare, neutralClock),
             ) ?: return session.stop()
 
         // 1. 繁殖登録（雄・雌）。
-        val stallionBreeding =
+        val stallionBreeding = stallion?.let { (seeded, stallionSynthesized) ->
             session.step(
                 ReplayStep.REGISTER_STALLION_BREEDING,
-                registerBreedingRegistration(
-                    actor,
-                    Command.now(
-                        RegisterBreedingRegistrationCommand(
-                            stallion.bloodHorse.id.value,
-                            synth.stallion.breedingRegistrationNumber,
-                        ),
-                        seasonClock(neutralInstant),
-                    ),
-                ),
+                registerBreeding(actor, seeded, stallionSynthesized, neutralClock),
             ) ?: return session.stop()
+        }
         val broodmareBreeding =
             session.step(
                 ReplayStep.REGISTER_BROODMARE_BREEDING,
-                registerBreedingRegistration(
-                    actor,
-                    Command.now(
-                        RegisterBreedingRegistrationCommand(
-                            broodmare.bloodHorse.id.value,
-                            synth.broodmare.breedingRegistrationNumber,
-                        ),
-                        seasonClock(neutralInstant),
-                    ),
-                ),
+                registerBreeding(actor, broodmare, synth.broodmare, neutralClock),
             ) ?: return session.stop()
 
-        // 2. 種付記録。
+        // 2. 種付記録（国内種付／海外種付）。
         val breedingResult =
             session.step(
                 ReplayStep.RECORD_COVERING,
-                recordCovering(
-                    actor,
-                    Command.now(
-                        RecordCoveringCommand(
-                            breedingRegistrationId = broodmareBreeding.id.value,
-                            stallionRegistrationId = stallionBreeding.id.value,
-                            coveringDate = LocalDate.parse(synth.covering.coveringDate),
-                            coveringPlace = synth.covering.coveringPlace,
-                            certificateNumber = synth.covering.certificateNumber,
-                            studCertificate = synth.covering.studCertificate.toInput(),
-                        ),
-                        seasonClock(neutralInstant),
-                    ),
-                ),
+                recordCoveringOf(actor, fixture, broodmareBreeding, stallionBreeding, neutralClock),
             ) ?: return session.stop()
 
         // 3. 種付成績報告（雄側・当年 9/30 期限）。提出日を Command.issuedAt に反映。
-        session.step(
-            ReplayStep.SUBMIT_COVERING_REPORT,
-            submitCoveringReport(
-                actor,
-                Command.now(
-                    SubmitCoveringReportCommand(stallionBreeding.id.value, synth.coveringYear),
-                    seasonClock(
-                        submissionInstant(
-                            LocalDate.parse(synth.submissions.coveringReportSubmittedOn)
-                        )
+        //    海外種付の年は外国種牡馬に JAIRS の種付成績報告が無いので通らない。
+        if (stallionBreeding != null) {
+            val submittedOn =
+                requireNotNull(synth.submissions.coveringReportSubmittedOn) {
+                    "国内種付には種付成績報告の提出日が必要: ${fixture.name}"
+                }
+            session.step(
+                ReplayStep.SUBMIT_COVERING_REPORT,
+                submitCoveringReport(
+                    actor,
+                    Command.now(
+                        SubmitCoveringReportCommand(stallionBreeding.id.value, synth.coveringYear),
+                        seasonClock(submissionInstant(LocalDate.parse(submittedOn))),
                     ),
                 ),
-            ),
-        ) ?: return session.stop()
+            ) ?: return session.stop()
+        }
 
         // 4. 出生報告。
         session.step(
@@ -179,7 +180,7 @@ class ReplayEngine(
                 actor,
                 Command.now(
                     ReportFoalingCommand(breedingResult.id.value, facts.foaling.toOutcome()),
-                    seasonClock(neutralInstant),
+                    neutralClock,
                 ),
             ),
         ) ?: return session.stop()
@@ -192,21 +193,13 @@ class ReplayEngine(
             val registeredFoal =
                 session.step(
                     ReplayStep.REGISTER_FOAL,
-                    registerFoal(
+                    registerFoalOf(
                         actor,
-                        Command.now(
-                            RegisterFoalCommand(
-                                breedingResultId = breedingResult.id.value,
-                                sex = Sex.valueOf(foalFacts.sex),
-                                coatColor = CoatColor.valueOf(foalFacts.coatColor),
-                                breedType = BreedType.valueOf(foalFacts.breedType),
-                                breeder = foalFacts.breeder,
-                                microchipNumber = foalSynth.microchipNumber,
-                                dnaParentage = DnaParentageResult.valueOf(foalSynth.dnaParentage),
-                                registrationNumber = foalSynth.pedigreeRegistrationNumber,
-                            ),
-                            seasonClock(neutralInstant),
-                        ),
+                        synth,
+                        breedingResult,
+                        foalFacts,
+                        foalSynth,
+                        neutralClock,
                     ),
                 ) ?: return session.stop()
 
@@ -218,7 +211,7 @@ class ReplayEngine(
                         actor,
                         Command.now(
                             NameHorseCommand(registeredFoal.bloodHorse.id.value, foalName),
-                            seasonClock(neutralInstant),
+                            neutralClock,
                         ),
                     ),
                 ) ?: return session.stop()
@@ -242,6 +235,113 @@ class ReplayEngine(
         ) ?: return session.stop()
 
         return session.complete()
+    }
+
+    /** seed 済みの基礎馬を繁殖登録する。 */
+    private fun registerBreeding(
+        actor: Actor,
+        horse: RegisteredBloodHorse,
+        synth: HorseSynthesized,
+        clock: Clock,
+    ): Result<BreedingRegistration, Any> =
+        registerBreedingRegistration(
+            actor,
+            Command.now(
+                RegisterBreedingRegistrationCommand(
+                    horse.bloodHorse.id.value,
+                    synth.breedingRegistrationNumber,
+                ),
+                clock,
+            ),
+        )
+
+    /** 種付を記録する。国内種付は種牡馬の繁殖登録で、海外種付は外国種牡馬の公開事実で父を指す（#624）。 */
+    private fun recordCoveringOf(
+        actor: Actor,
+        fixture: CoveredSeasonFixture,
+        broodmareBreeding: BreedingRegistration,
+        stallionBreeding: BreedingRegistration?,
+        clock: Clock,
+    ): Result<BreedingResult, Any> =
+        when (val covering = fixture.synthesized.covering) {
+            is DomesticCoveringFixture ->
+                recordCovering(
+                    actor,
+                    Command.now(
+                        RecordCoveringCommand(
+                            breedingRegistrationId = broodmareBreeding.id.value,
+                            stallionRegistrationId = checkNotNull(stallionBreeding).id.value,
+                            coveringDate = LocalDate.parse(covering.coveringDate),
+                            coveringPlace = covering.coveringPlace,
+                            certificateNumber = covering.certificateNumber,
+                            studCertificate = covering.studCertificate.toInput(),
+                        ),
+                        clock,
+                    ),
+                )
+            is OverseasCoveringFixture ->
+                recordOverseasCovering(
+                    actor,
+                    Command.now(
+                        overseasCoveringCommand(
+                            broodmareBreeding.id.value,
+                            fixture.facts.stallion,
+                            covering,
+                        ),
+                        clock,
+                    ),
+                )
+        }
+
+    /** 産駒を血統登録する。国内種付の産駒は内国産馬、海外種付の産駒は持込馬として登録する（#624）。 */
+    private fun registerFoalOf(
+        actor: Actor,
+        synth: CoveredSynthesized,
+        breedingResult: BreedingResult,
+        foalFacts: FoalFacts,
+        foalSynth: FoalSynthesized,
+        clock: Clock,
+    ): Result<RegisteredBloodHorse, Any> {
+        val sex = Sex.valueOf(foalFacts.sex)
+        val coatColor = CoatColor.valueOf(foalFacts.coatColor)
+        val breedType = BreedType.valueOf(foalFacts.breedType)
+        val dnaParentage = DnaParentageResult.valueOf(foalSynth.dnaParentage)
+        return when (synth.covering) {
+            is DomesticCoveringFixture ->
+                registerFoal(
+                    actor,
+                    Command.now(
+                        RegisterFoalCommand(
+                            breedingResultId = breedingResult.id.value,
+                            sex = sex,
+                            coatColor = coatColor,
+                            breedType = breedType,
+                            breeder = foalFacts.breeder,
+                            microchipNumber = foalSynth.microchipNumber,
+                            dnaParentage = dnaParentage,
+                            registrationNumber = foalSynth.pedigreeRegistrationNumber,
+                        ),
+                        clock,
+                    ),
+                )
+            is OverseasCoveringFixture ->
+                registerBroughtInFoal(
+                    actor,
+                    Command.now(
+                        RegisterBroughtInFoalCommand(
+                            breedingResultId = breedingResult.id.value,
+                            sex = sex,
+                            coatColor = coatColor,
+                            breedType = breedType,
+                            breeder = foalFacts.breeder,
+                            microchipNumber = foalSynth.microchipNumber,
+                            dnaParentage = dnaParentage,
+                            registrationNumber = foalSynth.pedigreeRegistrationNumber,
+                        ),
+                        clock,
+                    ),
+                )
+        }
     }
 
     /**

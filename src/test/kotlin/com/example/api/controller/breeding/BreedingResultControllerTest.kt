@@ -10,6 +10,9 @@ import com.example.api.application.studbook.breeding.GetBreedingResultUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringCommand
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringUseCase
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringUseCaseError
 import com.example.api.application.studbook.breeding.RecordUncoveredCommand
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
@@ -32,6 +35,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingRegion
 import com.example.api.domain.studbook.model.breeding.CoveringValidityError
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
+import com.example.api.domain.studbook.model.breeding.RecordOverseasCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
 import com.example.api.domain.studbook.model.breeding.ValidityPeriod
@@ -67,6 +71,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BreedingResultControllerTest(val mockMvc: MockMvc) {
     @MockkBean private lateinit var recordCovering: RecordCoveringUseCase
+    @MockkBean private lateinit var recordOverseasCovering: RecordOverseasCoveringUseCase
     @MockkBean private lateinit var recordUncovered: RecordUncoveredUseCase
     @MockkBean private lateinit var reportFoaling: ReportFoalingUseCase
     @MockkBean private lateinit var submitReport: SubmitBreedingReportUseCase
@@ -105,6 +110,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             {
                 "breeding_registration_id": "11111111-1111-1111-1111-111111111111",
                 "covering": {
+                    "type": "DOMESTIC",
                     "stallion_registration_id": "22222222-2222-2222-2222-222222222222",
                     "covering_date": "2024-04-01",
                     "covering_place": "北海道",
@@ -330,6 +336,188 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.breeding_year")
                 .isEqualTo(2024)
+        }
+    }
+
+    @Nested
+    inner class RecordOverseasCoveringCase {
+        private val uri = "/api/worlds/{worldId}/breedingResults"
+
+        /** デシリアライズに通る正しい海外種付のリクエストボディ。ユースケースはモックのため中身の整合は問われない。 */
+        private val validBody =
+            """
+            {
+                "breeding_registration_id": "11111111-1111-1111-1111-111111111111",
+                "covering": {
+                    "type": "OVERSEAS",
+                    "sire": {
+                        "name": "Danehill",
+                        "stud_book_country": "アメリカ",
+                        "breed_type": "THOROUGHBRED",
+                        "coat_color": "BAY"
+                    },
+                    "covering_date": "1999-04-10",
+                    "covering_country": "アイルランド",
+                    "proof_number": "IRL-1999-0001"
+                }
+            }
+            """
+                .trimIndent()
+
+        private fun stubError(error: RecordOverseasCoveringUseCaseError) {
+            every {
+                recordOverseasCovering(
+                    any<Actor>(),
+                    any<Command<RecordOverseasCoveringCommand>>(),
+                )
+            } returns Err(error)
+        }
+
+        @Test
+        fun `正常な入力で 201 Created と海外種付の繁殖成績が返り、入力がコマンドへ写ること`() {
+            val captured = mutableListOf<Command<RecordOverseasCoveringCommand>>()
+            every { recordOverseasCovering(any<Actor>(), capture(captured)) } returns
+                Ok(BreedingFixture.overseasBreedingResult())
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .extractingPath("$.covering_type")
+                .isEqualTo("OVERSEAS")
+
+            val payload = captured.single().payload
+            assert(
+                payload.breedingRegistrationId ==
+                    UUID.fromString("11111111-1111-1111-1111-111111111111")
+            )
+            assert(payload.sire.name == "Danehill")
+            assert(payload.sire.studBookCountry == "アメリカ")
+            assert(payload.sire.breedType == BreedType.THOROUGHBRED)
+            assert(payload.sire.coatColor == CoatColor.BAY)
+            assert(payload.coveringDate == LocalDate.of(1999, 4, 10))
+            assert(payload.coveringCountry == "アイルランド")
+            assert(payload.proofNumber == "IRL-1999-0001")
+        }
+
+        @Test
+        fun `種付の type が欠けると 400 が返ること`() {
+            val body = validBody.replace("\"type\": \"OVERSEAS\",", "")
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+        }
+
+        @Test
+        fun `外国種牡馬の馬名がブランクなら 400 と problem+json が返ること`() {
+            stubError(RecordOverseasCoveringUseCaseError.BlankSireName)
+
+            assertBadRequest("blank-foreign-sire-name")
+        }
+
+        @Test
+        fun `外国種牡馬の登録機関の国がブランクなら 400 と problem+json が返ること`() {
+            stubError(RecordOverseasCoveringUseCaseError.BlankSireStudBookCountry)
+
+            assertBadRequest("blank-foreign-sire-stud-book-country")
+        }
+
+        @Test
+        fun `種付国がブランクなら 400 と problem+json が返ること`() {
+            stubError(RecordOverseasCoveringUseCaseError.BlankCoveringCountry)
+
+            assertBadRequest("blank-covering-country")
+        }
+
+        @Test
+        fun `種付事実の証明の番号がブランクなら 400 と problem+json が返ること`() {
+            stubError(RecordOverseasCoveringUseCaseError.BlankProofNumber)
+
+            assertBadRequest("blank-foreign-covering-proof-number")
+        }
+
+        @Test
+        fun `BreedingRegistrationNotFound で 422 と breedingRegistrationId 付きの problem+json が返ること`() {
+            val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
+            stubError(RecordOverseasCoveringUseCaseError.BreedingRegistrationNotFound(id))
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.breeding_registration_id")
+                .isEqualTo(id.toString())
+        }
+
+        @Test
+        fun `前提条件違反（NotBroodmare）が 422 と problem+json に変換されること`() {
+            stubError(
+                RecordOverseasCoveringUseCaseError.PreconditionViolated(
+                    RecordOverseasCoveringError.NotBroodmare
+                )
+            )
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("not-broodmare")
+        }
+
+        @Test
+        fun `重複記録（AlreadyRecordedForYear）が 409 と既存成績のIDつきの problem+json に変換されること`() {
+            val existing = BreedingFixture.breedingResult()
+            stubError(
+                RecordOverseasCoveringUseCaseError.PreconditionViolated(
+                    RecordOverseasCoveringError.AlreadyRecordedForYear(Year.of(1999), existing.id)
+                )
+            )
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CONFLICT)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.existing_breeding_result_id")
+                .isEqualTo(existing.id.value.toString())
+        }
+
+        private fun assertBadRequest(errorCode: String) {
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo(errorCode)
         }
     }
 

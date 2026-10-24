@@ -3,6 +3,7 @@ package com.example.api.controller.breeding
 import com.example.api.application.studbook.breeding.GetBreedingResultQuery
 import com.example.api.application.studbook.breeding.GetBreedingResultUseCase
 import com.example.api.application.studbook.breeding.RecordCoveringUseCase
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringUseCase
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
 import com.example.api.application.studbook.breeding.ReportFoalingUseCase
@@ -10,10 +11,13 @@ import com.example.api.application.studbook.breeding.SubmitBreedingReportCommand
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCase
 import com.example.api.controller.CurrentActor
 import com.example.api.controller.breeding.problem.toProblemDetail
+import com.example.api.controller.breeding.request.DomesticCoveringRequest
+import com.example.api.controller.breeding.request.OverseasCoveringRequest
 import com.example.api.controller.breeding.request.RecordBreedingResultRequest
 import com.example.api.controller.breeding.request.ReportFoalingRequest
 import com.example.api.controller.breeding.request.toCoveringCommand
 import com.example.api.controller.breeding.request.toOutcome
+import com.example.api.controller.breeding.request.toOverseasCoveringCommand
 import com.example.api.controller.breeding.request.toUncoveredCommand
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Actor
@@ -51,6 +55,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class BreedingResultController(
     private val recordCovering: RecordCoveringUseCase,
+    private val recordOverseasCovering: RecordOverseasCoveringUseCase,
     private val recordUncovered: RecordUncoveredUseCase,
     private val reportFoaling: ReportFoalingUseCase,
     private val submitReport: SubmitBreedingReportUseCase,
@@ -106,7 +111,8 @@ class BreedingResultController(
         summary = "繁殖成績の年次レコードを起こす（種付記録／種付せず）",
         description =
             "繁殖登録済みの牝馬の年次成績を起こす。リクエストの covering が非 null なら種付を記録し（分娩結果は未報告）、" +
-                "null なら種付せず（その年に種付しなかった）を記録する。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+                "null なら種付せず（その年に種付しなかった）を記録する。種付は判別子 type で国内種付（DOMESTIC）と" +
+                "海外種付（OVERSEAS。持込馬の経路で、父は外国種牡馬）を分ける。業務ルール違反時は RFC 9457 形式の problem+json を返す。",
         tags = ["BreedingResult"],
         responses =
             [
@@ -123,7 +129,7 @@ class BreedingResultController(
                 ),
                 ApiResponse(
                     responseCode = "400",
-                    description = "入力値が不正（種付証明書番号がブランク、種付せずなのに breeding_year が欠けるなど）",
+                    description = "入力値が不正（種付証明書番号がブランク、種付の type が欠ける、種付せずなのに breeding_year が欠けるなど）",
                     content =
                         [
                             Content(
@@ -165,19 +171,25 @@ class BreedingResultController(
         @RequestBody
         request: RecordBreedingResultRequest,
     ): BreedingResultResponse {
-        val covering = request.covering
-        return if (covering != null) {
-            recordCovering(actor, Command.now(request.toCoveringCommand(covering), clock))
-                .mapError { it.toProblemDetail() }
-                .orThrowProblem()
-                .toResponse()
-        } else {
-            val command = request.toUncoveredCommand().orThrowProblem()
-            recordUncovered(actor, Command.now(command, clock))
-                .mapError { it.toProblemDetail() }
-                .orThrowProblem()
-                .toResponse()
-        }
+        val result =
+            when (val covering = request.covering) {
+                is DomesticCoveringRequest ->
+                    recordCovering(actor, Command.now(request.toCoveringCommand(covering), clock))
+                        .mapError { it.toProblemDetail() }
+                is OverseasCoveringRequest ->
+                    recordOverseasCovering(
+                            actor,
+                            Command.now(request.toOverseasCoveringCommand(covering), clock),
+                        )
+                        .mapError { it.toProblemDetail() }
+                null -> {
+                    val command = request.toUncoveredCommand().orThrowProblem()
+                    recordUncovered(actor, Command.now(command, clock)).mapError {
+                        it.toProblemDetail()
+                    }
+                }
+            }
+        return result.orThrowProblem().toResponse()
     }
 
     @Operation(

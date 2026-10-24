@@ -45,6 +45,7 @@
       "breedingRegistrationNumber": "BR-0000743110"
     },
     "covering": {
+      "type": "DOMESTIC",
       "coveringDate": "2008-04-20",
       "coveringPlace": "北海道",
       "certificateNumber": "CVR-2008-0002",

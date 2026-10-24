@@ -5,6 +5,7 @@ import com.example.api.domain.shared.Actor
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.replay.fixture.CoveredSeasonFixture
+import com.example.api.replay.fixture.DomesticCoveringFixture
 import com.example.api.replay.fixture.FixtureLoader
 import com.example.api.replay.fixture.StudCertificateFixture
 import com.example.api.support.PostgresContainerSupport
@@ -46,7 +47,7 @@ class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainer
         certificate: (StudCertificateFixture) -> StudCertificateFixture
     ): CoveredSeasonFixture {
         val anchor = FixtureLoader.load("01-imported-normal.json") as CoveredSeasonFixture
-        val covering = anchor.synthesized.covering
+        val covering = anchor.synthesized.covering as DomesticCoveringFixture
         return anchor.copy(
             synthesized =
                 anchor.synthesized.copy(

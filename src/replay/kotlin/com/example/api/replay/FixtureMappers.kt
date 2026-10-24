@@ -1,5 +1,7 @@
 package com.example.api.replay
 
+import com.example.api.application.studbook.breeding.ForeignSireInput
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringCommand
 import com.example.api.application.studbook.breeding.StudCertificateInput
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseCommand
 import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
@@ -11,12 +13,14 @@ import com.example.api.replay.fixture.FixtureSources
 import com.example.api.replay.fixture.FoalingFixture
 import com.example.api.replay.fixture.HorseFacts
 import com.example.api.replay.fixture.HorseSynthesized
+import com.example.api.replay.fixture.OverseasCoveringFixture
 import com.example.api.replay.fixture.StudCertificateFixture
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.UUID
 
 private val TOKYO: ZoneId = ZoneId.of("Asia/Tokyo")
 
@@ -150,6 +154,31 @@ fun carriedOverCommand(
         breeder = facts.breeder,
         microchipNumber = synth.microchipNumber,
         registrationNumber = synth.pedigreeRegistrationNumber,
+    )
+
+/**
+ * 海外種付の入力を作る（持込馬の経路。#624）。
+ *
+ * 父は日本の繁殖登録を持たない外国種牡馬なので seed せず、公開事実（[stallion]）を外国種牡馬の属性として渡す。 登録機関の国は出生国（JBIS
+ * の「デインヒル(USA)」の国名）で代える。合成しているのは種付日と種付事実の証明の番号だけ。
+ */
+fun overseasCoveringCommand(
+    breedingRegistrationId: UUID,
+    stallion: HorseFacts,
+    covering: OverseasCoveringFixture,
+): RecordOverseasCoveringCommand =
+    RecordOverseasCoveringCommand(
+        breedingRegistrationId = breedingRegistrationId,
+        sire =
+            ForeignSireInput(
+                name = requireNotNull(stallion.name) { "海外種付の外国種牡馬には name が必要: $stallion" },
+                studBookCountry = stallion.originCountry,
+                breedType = BreedType.valueOf(stallion.breedType),
+                coatColor = CoatColor.valueOf(stallion.coatColor),
+            ),
+        coveringDate = LocalDate.parse(covering.coveringDate),
+        coveringCountry = covering.coveringCountry,
+        proofNumber = covering.proofNumber,
     )
 
 /** 暦日を Asia/Tokyo の正午の [Instant] に写す（提出日時の Command.issuedAt 用。締切 VO は Asia/Tokyo で暦日へ戻す）。 */

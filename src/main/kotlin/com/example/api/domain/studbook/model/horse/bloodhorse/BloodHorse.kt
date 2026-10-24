@@ -76,9 +76,10 @@ sealed interface RegisterInStudBookError {
  * 父・母を引数で受け取る生成ファクトリ [create] がその場で自己検証する（Jockey.create と同じく、検証を満たさなければ生成しない）。 コンストラクタは private
  * とし、生成は [create] / [createBroughtIn] / [createImported] / [createCarriedOver] のみに限る。
  *
- * 出自（内国産か輸入か移行取り込みか）は [origin] に集約する。内国産馬は父・母の軽種馬ID（[Origin.Domestic]）を、 父母が当システムに存在しない個体
+ * 出自（内国産か輸入か移行取り込みか持込馬か）は [origin] に集約する。内国産馬は父・母の軽種馬ID（[Origin.Domestic]）を、 父母が当システムに存在しない個体
  * （輸入馬・基礎輸入馬）は原産国・揚陸日（[Origin.Imported]）を、先行原簿に血統記録済みの移行取り込みは追加の属性を持たない（[Origin.CarriedOver]）。
- * 三者は相互排他であり、sealed [Origin] で型として強制する（ADR-0020）。 内国産馬の生成は [create]、輸入馬の生成は
+ * 持込馬は父である外国種牡馬の属性と母の軽種馬ID（[Origin.BroughtIn]）を持つ（ADR-0087）。 四者は相互排他であり、sealed [Origin]
+ * で型として強制する（ADR-0020）。 内国産馬の生成は [create]、持込馬の生成は [createBroughtIn]、輸入馬の生成は
  * [createImported]、移行取り込みの生成は [createCarriedOver] が担い、経路を分ける。
  *
  * 状態はイミュータブルに扱う。出生時は血統登録のみで馬名を持たず（[name] は null）、後日の「馬名登録」で一度だけ命名される。 命名は [assignName] が 馬名を持つ新しい

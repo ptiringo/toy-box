@@ -53,6 +53,7 @@
       "breedingRegistrationNumber": "BR-0001113658"
     },
     "covering": {
+      "type": "DOMESTIC",
       "coveringDate": "2020-03-05",
       "coveringPlace": "北海道",
       "certificateNumber": "CVR-2020-0005",

@@ -2,11 +2,13 @@ package com.example.api.controller.horse.problem
 
 import com.example.api.application.studbook.horse.BloodHorseNotFound
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalUseCaseError
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCaseError
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
+import com.example.api.domain.studbook.service.horse.RegisterBroughtInFoalError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
@@ -265,6 +267,87 @@ fun RegisterCarriedOverHorseUseCaseError.toProblemDetail(): ProblemDetail =
                 title = "Breeder is blank",
                 detail = "breeder は空であってはいけません。",
             )
+    }
+
+/**
+ * [RegisterBroughtInFoalUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail]
+ * に変換する。
+ *
+ * - VO 検証エラーは入力不正として 400 Bad Request
+ * - 申請された血統登録番号が既に採番済みは、原簿の既存登録番号と衝突するため 409 Conflict
+ * - ボディ内で参照する繁殖成績・その繁殖登録・母の不在と、ドメイン前提条件違反は、整った入力だが意味的に処理できないため 422 Unprocessable
+ *   Entity（api-design.md「404 vs 422」）。繁殖成績の不在は、照会・分娩報告のパス対象不在（404 `breeding-result-not-found`）と
+ *   ステータスが違うので `errorCode` を共用せず、ボディ参照を表す限定語を付ける
+ */
+fun RegisterBroughtInFoalUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        RegisterBroughtInFoalUseCaseError.InvalidRegistrationNumber ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-registration-number",
+                title = "Invalid registration number",
+                detail = "registration_number は空であってはいけません。",
+            )
+        is RegisterBroughtInFoalUseCaseError.RegistrationNumberAlreadyTaken ->
+            registrationNumberAlreadyTaken(registrationNumber)
+        RegisterBroughtInFoalUseCaseError.InvalidMicrochipNumber ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "invalid-microchip-number",
+                title = "Invalid microchip number",
+                detail = "microchip_number は 15 桁の数字でなければなりません。",
+            )
+        RegisterBroughtInFoalUseCaseError.BlankBreeder ->
+            problem(
+                status = HttpStatus.BAD_REQUEST,
+                code = "blank-breeder",
+                title = "Breeder is blank",
+                detail = "breeder は空であってはいけません。",
+            )
+        is RegisterBroughtInFoalUseCaseError.BreedingResultNotFound ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
+                    code = "referenced-breeding-result-not-found",
+                    title = "Referenced breeding result not found",
+                    detail = "産駒が生じた繁殖成績として指定された繁殖成績が存在しません。",
+                )
+                .apply { setProperty("breeding_result_id", breedingResultId) }
+        is RegisterBroughtInFoalUseCaseError.BreedingRegistrationNotFound ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
+                    code = "breeding-registration-not-found",
+                    title = "Breeding registration not found",
+                    detail = "繁殖成績が紐づく繁殖登録が存在しません。",
+                )
+                .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
+        is RegisterBroughtInFoalUseCaseError.DamNotFound ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
+                    code = "dam-not-found",
+                    title = "Dam not found",
+                    detail = "繁殖登録の繁殖牝馬として参照される軽種馬が存在しません。",
+                )
+                .apply { setProperty("dam_id", damId) }
+        is RegisterBroughtInFoalUseCaseError.PreconditionViolated -> cause.toProblemDetail()
+    }
+
+private fun RegisterBroughtInFoalError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        is RegisterBroughtInFoalError.NotOverseasCovering ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
+                code = "not-overseas-covering",
+                title = "Covering is not overseas",
+                detail = "繁殖成績の種付が海外種付ではありません。国内種付の産駒は持込馬として登録できません。",
+            )
+        is RegisterBroughtInFoalError.NotLiveFoal ->
+            problem(
+                status = HttpStatus.UNPROCESSABLE_CONTENT,
+                code = "foaling-outcome-not-live-foal",
+                title = "Foaling outcome is not a live foal",
+                detail = "繁殖成績の分娩結果が生産として報告されていないため、登録できる産駒がありません。",
+            )
+        is RegisterBroughtInFoalError.RegistrationFailed -> cause.toProblemDetail()
     }
 
 /**

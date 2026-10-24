@@ -18,9 +18,10 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 /**
  * 実在馬の公開記録を繁殖ワークフローへ一周流し、停止点＝モデルの綻びを突合レポートに書き出す。
  *
- * **停止はテストの失敗ではなく「発見」**なので、停止そのものは assert しない （全フィクスチャを流す最後のテストがその契約を体現する）。例外は 2 つ。
+ * **停止はテストの失敗ではなく「発見」**なので、停止そのものは assert しない （全フィクスチャを流す最後のテストがその契約を体現する）。例外は 3 つ。
  *
- * `01-imported-normal` は両親とも輸入馬＝事実どおりの seed 経路で入れられるため、一周完了を回帰アンカーとして固定する。
+ * `01-imported-normal` は両親とも輸入馬＝事実どおりの seed 経路で入れられるため、一周完了を回帰アンカーとして固定する。 `04-imported-covering`
+ * も、外国種牡馬を外国種牡馬のまま入力できるようになった（#624）ため、持込馬としての一周完了を固定する。
  * 分岐（馬名登録の有無・産駒登録の有無）を検証するテストは、「◯◯の段階が無いこと」が手前の停止でも 成立してしまう空振りを避けるため、判断地点への到達を前提条件として明示する。
  * ただしこの前提条件も `assert` にはしない。将来モデル側の綻びが直って分岐地点より手前で停止するように
  * なった場合、それ自体は「発見」でありビルド失敗にしてはならないため、`assumeTrue` で表現し、到達しなければ テストは失敗ではなく skipped として可視化する（内国産馬の
@@ -54,6 +55,40 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
             outcome.steps
                 .map { it.step }
                 .containsAll(listOf(ReplayStep.REGISTER_FOAL, ReplayStep.NAME_FOAL))
+        )
+    }
+
+    @Test
+    fun `海外種付の年は持込馬として一周し、種牡馬の seed・繁殖登録・種付成績報告を通らない`() {
+        val outcome = engine.run(actor, FixtureLoader.load("04-imported-covering.json"))
+
+        // 持込馬の経路（#624）の回帰アンカー。外国種牡馬を日本の繁殖登録に載せる捏造をやめた
+        // うえで一周することを固定する。
+        assert(outcome.stoppedAt == null) {
+            "想定外の停止: ${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
+        }
+        assert(outcome.steps.all { it.ok })
+        assert(
+            outcome.steps
+                .map { it.step }
+                .containsAll(
+                    listOf(
+                        ReplayStep.RECORD_COVERING,
+                        ReplayStep.REGISTER_FOAL,
+                        ReplayStep.NAME_FOAL,
+                        ReplayStep.SUBMIT_BREEDING_REPORT,
+                    )
+                )
+        )
+        assert(
+            outcome.steps.none {
+                it.step in
+                    listOf(
+                        ReplayStep.REGISTER_STALLION,
+                        ReplayStep.REGISTER_STALLION_BREEDING,
+                        ReplayStep.SUBMIT_COVERING_REPORT,
+                    )
+            }
         )
     }
 

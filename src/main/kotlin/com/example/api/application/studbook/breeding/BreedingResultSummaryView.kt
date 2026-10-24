@@ -23,7 +23,7 @@ import org.jmolecules.architecture.cqrs.QueryModel
  * 分娩結果が未報告（outcome == null）の行は [maresCovered]（分母）にのみ計上され、[conceived] / [liveFoals] には含まれない。
  * したがって年内の分娩結果が全て報告されるまで、[conceptionRate] / [productionRate] は報告済み時点までの暫定値となる。
  *
- * @property stallionId 種牡馬の生 UUID（`covering.stallionId`）
+ * @property stallionId 種牡馬の生 UUID（国内種付の `Covering.Domestic.stallionId`。海外種付は集計の対象外）
  * @property breedingYear 種付年
  */
 @QueryModel
