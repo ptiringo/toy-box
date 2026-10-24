@@ -67,6 +67,9 @@ data class CoveredFacts(
  *
  * [originCountry] は内国産馬なら「日本」。JBIS の産地から分かる事実なので、輸入馬・内国産馬のいずれでも必ず書く （書き忘れは読み込み時に落ちる）。seed
  * の経路はこの事実から導出する: 「日本」なら移行取り込み、 それ以外なら輸入馬経路（#633。導出の根拠は FixtureMappers.isDomestic の KDoc）。
+ *
+ * [name] は海外種付の外国種牡馬だけが持つ（JBIS の表記は「デインヒル(USA)」だが、外国の血統登録機関に登録された名で持つ）。 日本の繁殖登録を持たない外国種牡馬は seed
+ * しないため、馬名を事実として渡す先は外国種牡馬の入力に限られる（#624）。
  */
 data class HorseFacts(
     val sex: String,
@@ -75,6 +78,7 @@ data class HorseFacts(
     val dateOfBirth: String,
     val breeder: String,
     val originCountry: String,
+    val name: String? = null,
 )
 
 /**
@@ -101,11 +105,14 @@ data class FoalFacts(
  *
  * [coveringYear] は種付年。JBIS の年軸は産駒の生年なので、[CoveredFacts.displayedYear] から 1 を引いて求めた
  * 換算値であり、公開された事実ではない。
+ *
+ * [stallion] は国内種付（[DomesticCoveringFixture]）のときだけ持つ。海外種付（[OverseasCoveringFixture]）の父は
+ * 日本の繁殖登録を持たない外国種牡馬で、seed しないため識別子の合成も要らない（#624）。
  */
 data class CoveredSynthesized(
     val notes: List<String>,
     val coveringYear: Int,
-    val stallion: HorseSynthesized,
+    val stallion: HorseSynthesized? = null,
     val broodmare: HorseSynthesized,
     val covering: CoveringFixture,
     val submissions: CoveredSubmissions,
@@ -132,12 +139,33 @@ data class FoalSynthesized(
     val pedigreeRegistrationNumber: String,
 )
 
-data class CoveringFixture(
-    val coveringDate: String,
+/** 種付の合成値。国内種付と海外種付（持込馬の経路）は証明の体系が別物なので sealed とし、JSON は "type" で読み分ける （#624）。 */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = DomesticCoveringFixture::class, name = "DOMESTIC"),
+    JsonSubTypes.Type(value = OverseasCoveringFixture::class, name = "OVERSEAS"),
+)
+sealed interface CoveringFixture {
+    val coveringDate: String
+}
+
+/** 国内種付（JSON: "type": "DOMESTIC"）。種付場所・種付証明書・種畜証明書を持つ。 */
+data class DomesticCoveringFixture(
+    override val coveringDate: String,
     val coveringPlace: String,
     val certificateNumber: String,
     val studCertificate: StudCertificateFixture,
-)
+) : CoveringFixture
+
+/**
+ * 海外種付（JSON: "type": "OVERSEAS"）。種付国と、種付国の血統登録機関が発行した種付事実の証明の番号を持つ。 父の属性は [CoveredFacts.stallion]
+ * の公開事実から取る（馬名・品種・毛色・登録機関の国＝出生国）。
+ */
+data class OverseasCoveringFixture(
+    override val coveringDate: String,
+    val coveringCountry: String,
+    val proofNumber: String,
+) : CoveringFixture
 
 data class StudCertificateFixture(
     val number: String,
@@ -146,9 +174,13 @@ data class StudCertificateFixture(
     val validPeriodEnd: String,
 )
 
-/** 種付を行った年の提出日。雄側（種付成績報告・当年 9/30 期限）と雌側（繁殖成績報告・翌年 5/31 期限）。 */
+/**
+ * 種付を行った年の提出日。雄側（種付成績報告・当年 9/30 期限）と雌側（繁殖成績報告・翌年 5/31 期限）。
+ *
+ * 海外種付の年は雄側の種付成績報告が存在しない（外国種牡馬は JAIRS に種付成績を報告しない）ため [coveringReportSubmittedOn] を持たない。
+ */
 data class CoveredSubmissions(
-    val coveringReportSubmittedOn: String,
+    val coveringReportSubmittedOn: String? = null,
     val breedingReportSubmittedOn: String,
 )
 
