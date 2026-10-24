@@ -2,12 +2,14 @@ package com.example.api.controller.breeding.problem
 
 import com.example.api.application.studbook.breeding.BreedingResultNotFound
 import com.example.api.application.studbook.breeding.RecordCoveringUseCaseError
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringUseCaseError
 import com.example.api.application.studbook.breeding.RecordUncoveredUseCaseError
 import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
 import com.example.api.application.studbook.breeding.SubmitBreedingReportUseCaseError
 import com.example.api.controller.problem
 import com.example.api.domain.studbook.model.breeding.CoveringValidityError
 import com.example.api.domain.studbook.model.breeding.RecordCoveringError
+import com.example.api.domain.studbook.model.breeding.RecordOverseasCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
 import org.springframework.http.HttpStatus
@@ -148,6 +150,74 @@ private fun CoveringValidityError.toProblemDetail(): ProblemDetail =
                     setProperty("covering_place", coveringPlace.value)
                     setProperty("valid_regions", validRegions.map { it.value })
                 }
+    }
+
+/**
+ * [RecordOverseasCoveringUseCaseError] を RFC 9457 (`application/problem+json`) の [ProblemDetail]
+ * に変換する。
+ *
+ * 国内種付（[RecordCoveringUseCaseError]）と対称に、VO 検証エラーは入力不正として 400 Bad Request、繁殖登録の不在・ 登録ロールの前提条件違反は
+ * 422 Unprocessable Entity、同一繁殖年の重複記録は状態の競合として 409 Conflict とする。
+ * 繁殖登録の不在・重複記録・繁殖牝馬でないは国内種付と意味もステータスも同じなので `errorCode` を共用する。
+ */
+fun RecordOverseasCoveringUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        RecordOverseasCoveringUseCaseError.BlankSireName ->
+            badRequest(
+                "blank-foreign-sire-name",
+                "Foreign sire name is blank",
+                "covering.sire.name は空であってはいけません。",
+            )
+        RecordOverseasCoveringUseCaseError.BlankSireStudBookCountry ->
+            badRequest(
+                "blank-foreign-sire-stud-book-country",
+                "Foreign sire stud book country is blank",
+                "covering.sire.stud_book_country は空であってはいけません。",
+            )
+        RecordOverseasCoveringUseCaseError.BlankCoveringCountry ->
+            badRequest(
+                "blank-covering-country",
+                "Covering country is blank",
+                "covering.covering_country は空であってはいけません。",
+            )
+        RecordOverseasCoveringUseCaseError.BlankProofNumber ->
+            badRequest(
+                "blank-foreign-covering-proof-number",
+                "Foreign covering proof number is blank",
+                "covering.proof_number は空であってはいけません。",
+            )
+        is RecordOverseasCoveringUseCaseError.BreedingRegistrationNotFound ->
+            problem(
+                    status = HttpStatus.UNPROCESSABLE_CONTENT,
+                    code = "breeding-registration-not-found",
+                    title = "Breeding registration not found",
+                    detail = "種付対象として指定された繁殖登録が存在しません。",
+                )
+                .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
+        is RecordOverseasCoveringUseCaseError.PreconditionViolated ->
+            when (val violation = cause) {
+                RecordOverseasCoveringError.NotBroodmare ->
+                    problem(
+                        status = HttpStatus.UNPROCESSABLE_CONTENT,
+                        code = "not-broodmare",
+                        title = "Registration is not a broodmare",
+                        detail = "種付対象として指定された繁殖登録のロールが繁殖牝馬ではありません。",
+                    )
+                is RecordOverseasCoveringError.AlreadyRecordedForYear ->
+                    problem(
+                            status = HttpStatus.CONFLICT,
+                            code = "breeding-result-already-recorded-for-year",
+                            title = "Breeding result already recorded for the year",
+                            detail = "この繁殖牝馬には指定された繁殖年の繁殖成績が既に記録されています。",
+                        )
+                        .apply {
+                            setProperty("breeding_year", violation.year.value)
+                            setProperty(
+                                "existing_breeding_result_id",
+                                violation.existingBreedingResultId.value,
+                            )
+                        }
+            }
     }
 
 /**

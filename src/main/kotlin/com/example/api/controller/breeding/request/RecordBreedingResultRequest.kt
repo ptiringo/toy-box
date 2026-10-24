@@ -1,9 +1,16 @@
 package com.example.api.controller.breeding.request
 
+import com.example.api.application.studbook.breeding.ForeignSireInput
 import com.example.api.application.studbook.breeding.RecordCoveringCommand
+import com.example.api.application.studbook.breeding.RecordOverseasCoveringCommand
 import com.example.api.application.studbook.breeding.RecordUncoveredCommand
 import com.example.api.application.studbook.breeding.StudCertificateInput
+import com.example.api.controller.horse.BreedTypeDto
+import com.example.api.controller.horse.CoatColorDto
+import com.example.api.controller.horse.toDomain
 import com.example.api.controller.problem
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -37,7 +44,28 @@ data class RecordBreedingResultRequest(
 /**
  * 種付の入力（[RecordBreedingResultRequest.covering]）。
  *
- * 繁殖牝馬・種牡馬はいずれも登録済みの繁殖登録IDで参照する。VO で表す項目（種付場所・種付証明書番号・種畜証明書）は 素の値で受け取り、ユースケースで検証する。
+ * 国内種付（[DomesticCoveringRequest]）と海外種付（[OverseasCoveringRequest]）の相互排他を、判別子 `type`（`DOMESTIC` /
+ * `OVERSEAS`）を持つ discriminated union として受ける（ADR-0020 の入れ子 `oneOf`。応答の `covering_type`
+ * と同じ値）。判別子は必須で、欠けると Jackson が型を解決できず 400
+ * になる。両者は証明の体系が別物（国内は種畜証明書と種付証明書、海外は種付国の血統登録機関の証明）で共通する属性が種付日しか無いため、平置きの nullable で表さない（ADR-0087）。
+ */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = DomesticCoveringRequest::class, name = "DOMESTIC"),
+    JsonSubTypes.Type(value = OverseasCoveringRequest::class, name = "OVERSEAS"),
+)
+@Schema(
+    description = "種付の入力（国内種付=DOMESTIC / 海外種付=OVERSEAS の discriminated union）",
+    oneOf = [DomesticCoveringRequest::class, OverseasCoveringRequest::class],
+    discriminatorProperty = "type",
+)
+sealed interface CoveringRequest {
+    /** 種付日。繁殖年はここから導出する。 */
+    val coveringDate: LocalDate
+}
+
+/**
+ * 国内種付の入力。繁殖牝馬・種牡馬はいずれも登録済みの繁殖登録IDで参照する。VO で表す項目（種付場所・種付証明書番号・ 種畜証明書）は素の値で受け取り、ユースケースで検証する。
  *
  * @property stallionRegistrationId 配合相手の種牡馬の繁殖登録ID
  * @property coveringDate 種付日
@@ -45,17 +73,50 @@ data class RecordBreedingResultRequest(
  * @property certificateNumber 種付証明書番号
  * @property studCertificate 種牡馬の種畜証明書（種付の有効性検証の与件）
  */
-@Schema(description = "種付の入力")
-data class CoveringRequest(
+@Schema(description = "国内種付の入力")
+data class DomesticCoveringRequest(
     val stallionRegistrationId: UUID,
-    val coveringDate: LocalDate,
+    override val coveringDate: LocalDate,
     val coveringPlace: String,
     val certificateNumber: String,
     val studCertificate: StudCertificateRequest,
+) : CoveringRequest
+
+/**
+ * 海外種付（持込馬の経路）の入力。父は日本の繁殖登録を持たない外国種牡馬なので、ID ではなく属性で受け取る。 種畜証明書の検証は持込馬に適用されないため受け取らない（登録規程 第15条柱書）。
+ *
+ * @property sire 父である外国種牡馬
+ * @property coveringDate 種付日
+ * @property coveringCountry 種付が行われた国
+ * @property proofNumber 種付国の血統登録機関が発行した種付事実の証明の番号（登録規程 第8条第1項第4号）
+ */
+@Schema(description = "海外種付の入力")
+data class OverseasCoveringRequest(
+    val sire: ForeignSireRequest,
+    override val coveringDate: LocalDate,
+    val coveringCountry: String,
+    val proofNumber: String,
+) : CoveringRequest
+
+/**
+ * 外国種牡馬の入力（[OverseasCoveringRequest.sire]）。品種・毛色は wire enum で受け取り（ADR-0007）、馬名・
+ * 登録機関の国は素の文字列で受け取ってユースケースで検証する。
+ *
+ * @property name 馬名（外国の血統登録機関に登録された名）
+ * @property studBookCountry 登録している血統登録機関の国
+ * @property breedType 品種
+ * @property coatColor 毛色
+ */
+@Schema(description = "外国種牡馬の入力")
+data class ForeignSireRequest(
+    val name: String,
+    val studBookCountry: String,
+    val breedType: BreedTypeDto,
+    val coatColor: CoatColorDto,
 )
 
 /**
- * 種畜証明書の入力（[CoveringRequest.studCertificate]）。各項目は素の値で受け取り、ユースケースで VO 検証する。
+ * 種畜証明書の入力（[DomesticCoveringRequest.studCertificate]）。各項目は素の値で受け取り、ユースケースで VO 検証する。
  *
  * @property number 種畜証明書番号
  * @property validRegions 有効区域名（1 つ以上）
@@ -70,9 +131,9 @@ data class StudCertificateRequest(
     val validPeriodEnd: LocalDate,
 )
 
-/** 種付ありの入力を種付記録ユースケースの入力コマンドへ変換する。 */
+/** 国内種付の入力を種付記録ユースケースの入力コマンドへ変換する。 */
 fun RecordBreedingResultRequest.toCoveringCommand(
-    covering: CoveringRequest
+    covering: DomesticCoveringRequest
 ): RecordCoveringCommand =
     RecordCoveringCommand(
         breedingRegistrationId = breedingRegistrationId,
@@ -87,6 +148,24 @@ fun RecordBreedingResultRequest.toCoveringCommand(
                 validPeriodStart = covering.studCertificate.validPeriodStart,
                 validPeriodEnd = covering.studCertificate.validPeriodEnd,
             ),
+    )
+
+/** 海外種付の入力を海外種付記録ユースケースの入力コマンドへ変換する。 */
+fun RecordBreedingResultRequest.toOverseasCoveringCommand(
+    covering: OverseasCoveringRequest
+): RecordOverseasCoveringCommand =
+    RecordOverseasCoveringCommand(
+        breedingRegistrationId = breedingRegistrationId,
+        sire =
+            ForeignSireInput(
+                name = covering.sire.name,
+                studBookCountry = covering.sire.studBookCountry,
+                breedType = covering.sire.breedType.toDomain(),
+                coatColor = covering.sire.coatColor.toDomain(),
+            ),
+        coveringDate = covering.coveringDate,
+        coveringCountry = covering.coveringCountry,
+        proofNumber = covering.proofNumber,
     )
 
 /**

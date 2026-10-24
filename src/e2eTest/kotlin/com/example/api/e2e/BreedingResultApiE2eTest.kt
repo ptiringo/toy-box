@@ -134,6 +134,7 @@ class BreedingResultApiE2eTest(val restTestClient: RestTestClient) : PostgresCon
                         "breeding_registration_id" to broodmareRegistrationId,
                         "covering" to
                             mapOf(
+                                "type" to "DOMESTIC",
                                 "stallion_registration_id" to stallionRegistrationId,
                                 "covering_date" to "2024-04-01",
                                 "covering_place" to "北海道",
