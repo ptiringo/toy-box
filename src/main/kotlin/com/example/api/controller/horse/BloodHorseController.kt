@@ -4,12 +4,14 @@ import com.example.api.application.studbook.horse.GetBloodHorseQuery
 import com.example.api.application.studbook.horse.GetBloodHorseUseCase
 import com.example.api.application.studbook.horse.ListBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCase
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalUseCase
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterImportedHorseUseCase
 import com.example.api.application.studbook.horse.RegisterInStudBookUseCase
 import com.example.api.controller.CurrentActor
 import com.example.api.controller.horse.problem.toProblemDetail
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
+import com.example.api.controller.horse.request.RegisterBroughtInFoalRequest
 import com.example.api.controller.horse.request.RegisterCarriedOverHorseRequest
 import com.example.api.controller.horse.request.RegisterHorseNameRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
@@ -45,8 +47,8 @@ import org.springframework.web.bind.annotation.RestController
  * 父母不明の輸入馬は前提条件が 大きく異なるため、コレクションへのカスタムメソッド
  * `:registerImported`（[AIP-136](https://google.aip.dev/136)）として
  * 登録経路を分ける。また、先行する登録原簿に血統登録済みの馬をシステム境界で取り込む移行経路として
- * `:registerCarriedOver`（[AIP-136](https://google.aip.dev/136)）を提供する。エラーレスポンスは RFC 9457 (Problem
- * Details) 形式で返す。
+ * `:registerCarriedOver`（[AIP-136](https://google.aip.dev/136)）を、海外種付の産駒（持込馬）を報告済みの繁殖成績から 登録する経路として
+ * `:registerBroughtIn`（#624）を提供する。エラーレスポンスは RFC 9457 (Problem Details) 形式で返す。
  *
  * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
  * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
@@ -56,6 +58,7 @@ class BloodHorseController(
     private val registerInStudBook: RegisterInStudBookUseCase,
     private val registerImportedHorse: RegisterImportedHorseUseCase,
     private val registerCarriedOverHorse: RegisterCarriedOverHorseUseCase,
+    private val registerBroughtInFoal: RegisterBroughtInFoalUseCase,
     private val nameHorse: NameHorseUseCase,
     private val listBloodHorses: ListBloodHorsesUseCase,
     private val getBloodHorse: GetBloodHorseUseCase,
@@ -280,6 +283,77 @@ class BloodHorseController(
         request: RegisterCarriedOverHorseRequest,
     ): BloodHorseResponse =
         registerCarriedOverHorse(actor, Command.now(request.toCommand(), clock))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
+
+    @Operation(
+        summary = "持込馬を血統登録する",
+        description =
+            "海外種付の繁殖成績に生産として報告された産駒を、持込馬として血統登録し、誕生した軽種馬を返す。" +
+                "父（外国種牡馬）・母・生年月日は繁殖成績から定まるため受け取らない。" +
+                "業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+        tags = ["BloodHorse"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "201",
+                    description = "血統登録成功（登録された軽種馬リソースを返す）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = BloodHorseResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "400",
+                    description = "入力値が不正（登録番号・マイクロチップ・生産者など）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "409",
+                    description = "血統登録番号が既に他の軽種馬に採番済み",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "422",
+                    description =
+                        "繁殖成績・繁殖登録・母が存在しない、種付が海外種付でない、分娩結果が生産でない、" +
+                            "または母が雌でない・品種や毛色が整合しないなどの前提条件を満たさない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/api/worlds/{worldId}/bloodHorses:registerBroughtIn")
+    fun registerBroughtIn(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
+        @OperationRequestBody(description = "血統登録する持込馬の登録申請フォーム")
+        @RequestBody
+        request: RegisterBroughtInFoalRequest,
+    ): BloodHorseResponse =
+        registerBroughtInFoal(actor, Command.now(request.toCommand(), clock))
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()

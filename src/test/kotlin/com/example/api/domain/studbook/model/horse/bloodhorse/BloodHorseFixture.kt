@@ -131,6 +131,17 @@ object BloodHorseFixture {
             )
             .unwrap()
 
+    /** 既定値を持つ持込馬の [BloodHorse]（父が外国種牡馬の [Origin.BroughtIn]）を生成する。 */
+    fun broughtInBloodHorse(): BloodHorse =
+        BloodHorse.createBroughtIn(
+                sire = foreignSire(),
+                dam = bloodHorse(sex = Sex.FEMALE),
+                entry = studBookEntry(sex = Sex.FEMALE),
+                inspection = inspection(),
+                registrationNumber = PedigreeRegistrationNumber.create("2000104567").unwrap(),
+            )
+            .unwrap()
+
     /** 既定値（Danehill・アメリカ・サラブレッド・鹿毛）を持つ外国種牡馬を生成する。必要な属性のみ上書きする。 */
     fun foreignSire(
         name: String = "Danehill",

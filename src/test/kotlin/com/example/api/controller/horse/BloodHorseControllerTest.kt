@@ -10,6 +10,9 @@ import com.example.api.application.studbook.horse.ListBloodHorsesUseCase
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalCommand
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalUseCase
+import com.example.api.application.studbook.horse.RegisterBroughtInFoalUseCaseError
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseCommand
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCase
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseUseCaseError
@@ -23,6 +26,7 @@ import com.example.api.application.studbook.horse.RegisteredBloodHorse
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.ActorArgumentResolver
 import com.example.api.controller.horse.request.RegisterBloodHorseRequest
+import com.example.api.controller.horse.request.RegisterBroughtInFoalRequest
 import com.example.api.controller.horse.request.RegisterCarriedOverHorseRequest
 import com.example.api.controller.horse.request.RegisterImportedHorseRequest
 import com.example.api.domain.iam.model.account.AccountRepository
@@ -39,6 +43,8 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.example.api.domain.studbook.model.inspection.DnaParentageResult
+import com.example.api.domain.studbook.service.horse.RegisterBroughtInFoalError
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
@@ -73,6 +79,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
     @MockkBean private lateinit var registerImportedHorse: RegisterImportedHorseUseCase
     @MockkBean private lateinit var nameHorse: NameHorseUseCase
     @MockkBean private lateinit var registerCarriedOverHorse: RegisterCarriedOverHorseUseCase
+    @MockkBean private lateinit var registerBroughtInFoal: RegisterBroughtInFoalUseCase
     @MockkBean private lateinit var listBloodHorses: ListBloodHorsesUseCase
     @MockkBean private lateinit var getBloodHorse: GetBloodHorseUseCase
 
@@ -654,6 +661,166 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("blank-origin-country")
+        }
+    }
+
+    @Nested
+    inner class RegisterBroughtInCase {
+        private val uri = "/api/worlds/{worldId}/bloodHorses:registerBroughtIn"
+        private val breedingResultId = UUID.fromString("33333333-3333-3333-3333-333333333333")
+
+        /** 父母・生年月日を持たず、繁殖成績IDで産駒を指す持込馬のリクエストボディ。実アプリと同じ [jsonMapper] で組み立てる。 */
+        private val validBody =
+            jsonMapper.writeValueAsString(
+                RegisterBroughtInFoalRequest(
+                    breedingResultId = breedingResultId,
+                    sex = SexDto.FEMALE,
+                    coatColor = CoatColorDto.BAY,
+                    breedType = BreedTypeDto.THOROUGHBRED,
+                    breeder = "ノーザンファーム",
+                    microchipNumber = "392140000000003",
+                    dnaParentage = DnaParentageResultDto.CONSISTENT,
+                    registrationNumber = "2000104567",
+                )
+            )
+
+        private fun stubError(error: RegisterBroughtInFoalUseCaseError) {
+            every {
+                registerBroughtInFoal(any<Actor>(), any<Command<RegisterBroughtInFoalCommand>>())
+            } returns Err(error)
+        }
+
+        private fun postAndExpect(status: HttpStatus, errorCode: String) {
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(status)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo(errorCode)
+        }
+
+        @Test
+        fun `正常な入力で 201 Created と出自 BROUGHT_IN が返り、入力がコマンドへ写ること`() {
+            val saved =
+                RegisteredBloodHorse(
+                    BloodHorseFixture.broughtInBloodHorse(),
+                    BloodHorseFixture.inspection(),
+                )
+            val captured = mutableListOf<Command<RegisterBroughtInFoalCommand>>()
+            every { registerBroughtInFoal(any<Actor>(), capture(captured)) } returns Ok(saved)
+
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .extractingPath("$.origin.type")
+                .isEqualTo("BROUGHT_IN")
+
+            val payload = captured.single().payload
+            assert(payload.breedingResultId == breedingResultId)
+            assert(payload.sex == Sex.FEMALE)
+            assert(payload.coatColor == CoatColor.BAY)
+            assert(payload.breedType == BreedType.THOROUGHBRED)
+            assert(payload.breeder == "ノーザンファーム")
+            assert(payload.microchipNumber == "392140000000003")
+            assert(payload.dnaParentage == DnaParentageResult.CONSISTENT)
+            assert(payload.registrationNumber == "2000104567")
+        }
+
+        @Test
+        fun `InvalidRegistrationNumber で 400 と problem+json が返ること`() {
+            stubError(RegisterBroughtInFoalUseCaseError.InvalidRegistrationNumber)
+
+            postAndExpect(HttpStatus.BAD_REQUEST, "invalid-registration-number")
+        }
+
+        @Test
+        fun `RegistrationNumberAlreadyTaken で 409 と血統登録側と同じ errorCode が返ること`() {
+            stubError(
+                RegisterBroughtInFoalUseCaseError.RegistrationNumberAlreadyTaken("2000104567")
+            )
+
+            postAndExpect(HttpStatus.CONFLICT, "registration-number-already-taken")
+        }
+
+        @Test
+        fun `InvalidMicrochipNumber で 400 と problem+json が返ること`() {
+            stubError(RegisterBroughtInFoalUseCaseError.InvalidMicrochipNumber)
+
+            postAndExpect(HttpStatus.BAD_REQUEST, "invalid-microchip-number")
+        }
+
+        @Test
+        fun `BlankBreeder で 400 と problem+json が返ること`() {
+            stubError(RegisterBroughtInFoalUseCaseError.BlankBreeder)
+
+            postAndExpect(HttpStatus.BAD_REQUEST, "blank-breeder")
+        }
+
+        @Test
+        fun `ボディで指す繁殖成績の不在は 404 用と別の errorCode を持つ 422 になること`() {
+            // 照会・分娩報告のパス対象不在（404 breeding-result-not-found）と同じ type を 422 に使わない（api-design.md）。
+            stubError(RegisterBroughtInFoalUseCaseError.BreedingResultNotFound(breedingResultId))
+
+            postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "referenced-breeding-result-not-found")
+        }
+
+        @Test
+        fun `BreedingRegistrationNotFound で 422 と problem+json が返ること`() {
+            stubError(RegisterBroughtInFoalUseCaseError.BreedingRegistrationNotFound(generateId()))
+
+            postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "breeding-registration-not-found")
+        }
+
+        @Test
+        fun `DamNotFound で 422 と problem+json が返ること`() {
+            stubError(RegisterBroughtInFoalUseCaseError.DamNotFound(generateId()))
+
+            postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "dam-not-found")
+        }
+
+        @Test
+        fun `国内種付の成績を指すと 422 not-overseas-covering が返ること`() {
+            stubError(
+                RegisterBroughtInFoalUseCaseError.PreconditionViolated(
+                    RegisterBroughtInFoalError.NotOverseasCovering(null)
+                )
+            )
+
+            postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "not-overseas-covering")
+        }
+
+        @Test
+        fun `分娩結果が生産でないと 422 foaling-outcome-not-live-foal が返ること`() {
+            stubError(
+                RegisterBroughtInFoalUseCaseError.PreconditionViolated(
+                    RegisterBroughtInFoalError.NotLiveFoal(null)
+                )
+            )
+
+            postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "foaling-outcome-not-live-foal")
+        }
+
+        @Test
+        fun `委譲先の前提条件違反は血統登録側と同じ errorCode の 422 になること`() {
+            stubError(
+                RegisterBroughtInFoalUseCaseError.PreconditionViolated(
+                    RegisterBroughtInFoalError.RegistrationFailed(
+                        RegisterInStudBookError.BreedMismatch
+                    )
+                )
+            )
+
+            postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "breed-mismatch")
         }
     }
 
