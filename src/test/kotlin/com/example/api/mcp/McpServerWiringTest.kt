@@ -84,6 +84,15 @@ class McpServerWiringTest : PostgresContainerSupport() {
         assert(undocumented.isEmpty())
     }
 
+    @Test
+    fun `公開する全MCPツールの引数にaccountId相当が無い`() {
+        // MCP には認証が無く、accountId は設定から解決する（ADR-0073）。ツール引数で受け取れるようにすると、
+        // 呼び出し側が任意のアカウントを名乗れてテナント分離が破れる（#752）。実際に届く入力スキーマで確認する。
+        val accountLike = accountLikeToolParameters(context)
+
+        assert(accountLike.isEmpty())
+    }
+
     companion object {
         /**
          * Spring AI が公開する `List<McpServerFeatures.SyncToolSpecification>` Bean を取り出す。
@@ -128,6 +137,31 @@ class McpServerWiringTest : PostgresContainerSupport() {
                     }
                     .keys
                     .map { name -> "${spec.tool().name()}.$name" }
+            }
+
+        /** 公開ツールの入力スキーマから、アカウントを指定できてしまう引数を拾う（判定は [accountLikeParameters]）。 */
+        fun accountLikeToolParameters(context: ApplicationContext): List<String> =
+            accountLikeParameters(
+                toolSpecifications(context).associate { spec ->
+                    spec.tool().name() to spec.tool().inputSchema()
+                }
+            )
+
+        /** 引数名にアカウント（`accountId` / `account_id`）や認証主体（`subjectId`）を表す語を含むものを禁じる。 */
+        private val accountLikeName = Regex("(?i)account|subject")
+
+        /**
+         * ツール名 → 入力スキーマの対応から、引数名が [accountLikeName] に当たるものを `<ツール名>.<引数名>` の形で拾う。
+         *
+         * 判定をコンテキストから切り離しているのは、違反するスキーマを与えて検出側を常設テストで確かめるため （[McpToolParameterScanTest]）。
+         */
+        fun accountLikeParameters(inputSchemas: Map<String, Map<*, *>>): List<String> =
+            inputSchemas.flatMap { (toolName, schema) ->
+                val properties = schema["properties"] as? Map<*, *> ?: emptyMap<Any, Any>()
+                properties.keys
+                    .map { it.toString() }
+                    .filter { accountLikeName.containsMatchIn(it) }
+                    .map { name -> "$toolName.$name" }
             }
     }
 }
