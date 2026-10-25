@@ -1,9 +1,11 @@
 package com.example.api.architecture
 
 import com.example.api.ApiApplication
+import com.example.api.domain.shared.Entity
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
+import com.tngtech.archunit.lang.ArchRule
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
@@ -20,7 +22,8 @@ import org.jmolecules.event.annotation.DomainEvent
  * ドメインモデリング（DDD ビルディングブロック）に関する規約を強制するテスト。
  *
  * jMolecules で表明した役割の整合性・ビルディングブロックの配置・集約のイミュータビリティ・読み取りモデルの配置を 検証する。規約の全体像と意図は
- * `.claude/rules/architecture.md` を参照。メタテストは [AggregateNotDataClassRuleTest] にある。
+ * `.claude/rules/architecture.md` を参照。メタテストは [AggregateNotDataClassRuleTest] /
+ * [BuildingBlockAnnotationRuleTest] にある。
  */
 @AnalyzeClasses(
     packagesOf = [ApiApplication::class],
@@ -34,6 +37,42 @@ class DomainModelingRulesTest {
      * 系を参照しない、等を検証する。
      */
     @ArchTest val dddBuildingBlocks = JMoleculesDddRules.all()
+
+    /**
+     * [Entity] を継承する型は `@AggregateRoot` か `@Entity` を付けること（#737）。
+     *
+     * [dddBuildingBlocksResideInDomainModel] は「アノテーションが付いている → domain.*.model に居ろ」の向きしか
+     * 課さないため、付け忘れた集約は静かに DDD ビルディングブロックの外へ落ち、[dddBuildingBlocks] の検査（識別子の必須化・ 集約間参照の ID
+     * 化など）からも漏れる。ID 同一性と楽観ロックの基底である [Entity] の継承は集約・エンティティにしか 現れない構造上の手がかりなので、これを入口に逆向きを課す。
+     */
+    @ArchTest
+    val entitySubtypesAreAnnotatedAsAggregateOrEntity =
+        classes()
+            .that()
+            .areAssignableTo(Entity::class.java)
+            .and()
+            .doNotHaveFullyQualifiedName(Entity::class.java.name)
+            .should()
+            .beAnnotatedWith(AggregateRoot::class.java)
+            .orShould()
+            .beAnnotatedWith(DddEntity::class.java)
+            .because("Entity を継承する型は集約かエンティティであり、jMolecules で役割を表明する（#737）")
+
+    /**
+     * ドメインの inline value class は `@ValueObject` を付けること（#737）。
+     *
+     * ドメインの `@JvmInline value class` は ID 値クラスを含めて値オブジェクトとしてだけ使っている（architecture.md の DDD
+     * ビルディングブロック表）。付け忘れると [dddBuildingBlocks] の「値オブジェクトは集約を参照しない」等から漏れる。
+     */
+    @ArchTest val inlineValueClassesAreValueObjects = inlineValueClassesAreValueObjects(DOMAIN)
+
+    /**
+     * ドメインモデルの `〜Repository` interface は jMolecules の `@Repository` を付けること（#737）。
+     *
+     * 永続化ポートは名前を `〜Repository` とする規約で、#706 の `WorldScopedPortSignature`（detekt）も同じ名前を 対象判定の入口の 1
+     * つにしている。アノテーションを付け忘れると [dddBuildingBlocks] とユビキタス言語カタログから漏れる。
+     */
+    @ArchTest val repositoryPortsAreAnnotated = repositoryPortsAreAnnotated(DOMAIN_MODEL)
 
     /**
      * 値オブジェクト以外の DDD ビルディングブロックはドメインモデルリングに置くこと。
@@ -153,3 +192,35 @@ class DomainModelingRulesTest {
             .callMethodWhere(readsEntityVersionOfAnotherClass)
             .because("version は楽観ロックの永続化メタデータであり、業務判断（分岐・比較）に使わない（ADR-0047）")
 }
+
+/**
+ * [packageIdentifier] 配下の `@JvmInline value class` が `@ValueObject` を付けていることを検証するルールを組む。
+ *
+ * 対象パッケージを引数に取るのは、メタテスト（[BuildingBlockAnnotationRuleTest]）がドメイン外に置いた違反フィクスチャへ同じ ルールを当てるため。本番の
+ * `@ArchTest` は [DOMAIN] を渡す。
+ */
+internal fun inlineValueClassesAreValueObjects(packageIdentifier: String): ArchRule =
+    classes()
+        .that()
+        .resideInAPackage(packageIdentifier)
+        .and()
+        .areAnnotatedWith(JvmInline::class.java)
+        .should()
+        .beAnnotatedWith(ValueObject::class.java)
+        .because("ドメインの inline value class は値オブジェクトであり、jMolecules で役割を表明する（#737）")
+
+/**
+ * [packageIdentifier] 配下で名前が `Repository` で終わる interface が jMolecules の `@Repository` を付けていることを
+ * 検証するルールを組む。対象パッケージを引数に取る理由は [inlineValueClassesAreValueObjects] と同じ。本番は [DOMAIN_MODEL] を渡す。
+ */
+internal fun repositoryPortsAreAnnotated(packageIdentifier: String): ArchRule =
+    classes()
+        .that()
+        .resideInAPackage(packageIdentifier)
+        .and()
+        .areInterfaces()
+        .and()
+        .haveSimpleNameEndingWith("Repository")
+        .should()
+        .beAnnotatedWith(DddRepository::class.java)
+        .because("永続化ポートは jMolecules の @Repository で役割を表明する（#737）")
