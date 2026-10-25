@@ -46,6 +46,20 @@ Flyway は各マイグレーションを 1 トランザクションで適用す�
 - nullable 列は素の `UNIQUE (col)` でよい（PostgreSQL は NULL 同士を衝突とみなさない）。partial index は不要。
 - 命名は `uq_<table>_<columns>`。
 
+## nullable 列を比較する CHECK は IS NOT NULL を前置する（#983）
+
+`outcome_type = 'LIVE_FOAL'` や `<> 'NOT_COVERED'` のような比較は、列が NULL のとき FALSE ではなく
+**NULL** を返し、`OR` 全体も NULL になる。**CHECK は NULL を違反とみなさない**ため、比較だけで書くと
+「判別子が NULL の不整合行」が DB 単独では素通りする（V24 の `covering_type`、V26 の `outcome_type` で
+2 度踏んだ）。
+
+- nullable 列を `=` / `<>` で比べる枝には `col IS NOT NULL AND col = '...'` と前置する。NULL を許す枝では
+  `(col IS NULL OR col <> '...')` のように NULL の扱いを明示する。
+- **負例の契約テストを必ず置く**（不整合行を Row で直接 `save` し `DataIntegrityViolationException` を
+  期待する）。式を読んでも NULL の伝播は見落としやすく、推定ではなく実測で確かめる（先例:
+  `JdbcBreedingResultRepositoryContractTest` の「〜なのに区分がNULLの行はCHECK制約で拒否される」）。
+- NOT NULL 列（例: `origin_type` / `parentage_type`）の比較はこの問題が起きないので不要。
+
 ## DDL は PostgreSQL 専用構文でよい
 
 H2 は #451 で全面脱却済み。ローカル・CI・テスト・本番のすべてが PostgreSQL であり、DDL を H2 互換に

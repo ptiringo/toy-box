@@ -503,6 +503,36 @@ class JdbcBreedingResultRepositoryContractTest(
     }
 
     @Test
+    fun `種付なしなのに区分がNULLの行はCHECK制約で拒否される`() {
+        // 種付せずの年は区分が NOT_COVERED でなければならない。outcome_type を = で比べるだけだと NULL の行で
+        // 比較結果が NULL になり CHECK を素通りするため、IS NOT NULL を前置して塞いでいる（#983）
+        val row = uncoveredRow().copy(outcomeType = null)
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `区分がNULLなのに分娩日を持つ行はCHECK制約で拒否される`() {
+        // 分娩日を持てるのは生産（LIVE_FOAL）だけ。区分が未報告（NULL）の行に分娩日があるのは不整合で、
+        // = 比較だけでは NULL の行を素通りするため IS NOT NULL を前置して塞いでいる（#983）
+        val row =
+            BreedingResultRow(
+                worldId = worldId.value,
+                id = generateId(),
+                breedingRegistrationId = seeder.seedRegistrationRow(),
+                breedingYear = 2024,
+                coveringType = "DOMESTIC",
+                coveringStallionId = seeder.seedHorseRow(sex = "MALE"),
+                coveringDate = LocalDate.of(2024, 4, 1),
+                coveringCertificateNumber = "C-2024-0001",
+                outcomeType = null,
+                outcomeFoalingDate = LocalDate.of(2025, 3, 20),
+            )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
     fun `種付せずの行にcovering_typeを持たせるとCHECK制約で拒否される`() {
         val row = uncoveredRow().copy(coveringType = "DOMESTIC")
 
