@@ -7,8 +7,8 @@ import com.example.api.domain.studbook.model.breeding.RetirementReason
  * 繁殖登録リソースの wire enum 群。
  *
  * ドメイン enum（[BreedingRole] / [RetirementReason]）を HTTP 契約へ直接晒さず、契約専用の `〜Dto` enum を adapter 層に置いて
- * [toApi] の網羅 `when` でマッピングする（ドメイン側の列挙子リネームが契約を無言で壊すのを防ぐ。ADR-0007）。 現状は response の露出のみだが、wire enum
- * は将来 request とも共有しうるためリソース root に置く。
+ * [toApi] / [toDomain] の網羅 `when` でマッピングする（ドメイン側の列挙子リネームが契約を無言で壊すのを防ぐ。ADR-0007）。
+ * [RetirementReasonDto] は response と供用停止 `:retire` の request で共有するため、リソース root に置く。
  */
 
 /** 繁殖登録によって付与されるロールの wire 表現（[BreedingRole] の契約専用 enum）。 */
@@ -45,4 +45,12 @@ fun RetirementReason.toApi(): RetirementReasonDto =
         RetirementReason.DEATH -> RetirementReasonDto.DEATH
         RetirementReason.USE_CHANGE -> RetirementReasonDto.USE_CHANGE
         RetirementReason.OTHER -> RetirementReasonDto.OTHER
+    }
+
+/** wire 表現 [RetirementReasonDto] をドメインの [RetirementReason] へマッピングする（供用停止 `:retire` の入力）。 */
+fun RetirementReasonDto.toDomain(): RetirementReason =
+    when (this) {
+        RetirementReasonDto.DEATH -> RetirementReason.DEATH
+        RetirementReasonDto.USE_CHANGE -> RetirementReason.USE_CHANGE
+        RetirementReasonDto.OTHER -> RetirementReason.OTHER
     }

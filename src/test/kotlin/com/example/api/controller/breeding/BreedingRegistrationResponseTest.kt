@@ -35,4 +35,10 @@ class BreedingRegistrationResponseTest {
         assert(response.retirement?.reason == RetirementReasonDto.DEATH)
         assert(response.retirement?.occurredOn == occurredOn)
     }
+
+    @Test
+    fun `供用停止の事由は全列挙子が wire 表現とドメインの間で往復すること`() {
+        RetirementReason.entries.forEach { reason -> assert(reason.toApi().toDomain() == reason) }
+        RetirementReasonDto.entries.forEach { dto -> assert(dto.toDomain().toApi() == dto) }
+    }
 }

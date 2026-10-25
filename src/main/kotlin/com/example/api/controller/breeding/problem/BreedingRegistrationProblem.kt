@@ -2,6 +2,8 @@ package com.example.api.controller.breeding.problem
 
 import com.example.api.application.studbook.breeding.BreedingRegistrationNotFound
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationUseCaseError
+import com.example.api.controller.breeding.toApi
 import com.example.api.controller.problem
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -65,3 +67,42 @@ fun BreedingRegistrationNotFound.toProblemDetail(): ProblemDetail =
             detail = "指定された ID の繁殖登録は存在しません。",
         )
         .apply { setProperty("breeding_registration_id", id) }
+
+/**
+ * [RetireBreedingRegistrationUseCaseError] を RFC 9457 の [ProblemDetail] に変換する。
+ *
+ * - 供用停止の対象（URL パスの繁殖登録）の不在は 404 Not Found。照会の対象不在と同じくパス上の対象不在なので、 `registration-not-found` を共用して
+ *   `detail` だけ変える（api-design.md「リソース不在のステータス（404 vs 422）」）
+ * - 二重供用停止（既に供用停止済み）は状態の競合として 409 Conflict。既に記録されている事由と発生日を拡張プロパティで返す
+ * - 更新競合（楽観ロック）は状態の競合として 409 Conflict
+ */
+fun RetireBreedingRegistrationUseCaseError.toProblemDetail(): ProblemDetail =
+    when (this) {
+        is RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound ->
+            problem(
+                    status = HttpStatus.NOT_FOUND,
+                    code = "registration-not-found",
+                    title = "Breeding registration not found",
+                    detail = "供用停止の対象として指定された繁殖登録が存在しません。",
+                )
+                .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
+        is RetireBreedingRegistrationUseCaseError.AlreadyRetired ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "breeding-registration-already-retired",
+                    title = "Breeding registration already retired",
+                    detail = "対象の繁殖登録は既に供用停止済みのため、重ねて供用停止はできません。",
+                )
+                .apply {
+                    setProperty("current_reason", current.reason.toApi())
+                    setProperty("current_occurred_on", current.occurredOn)
+                }
+        is RetireBreedingRegistrationUseCaseError.ConcurrentModification ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "concurrent-modification",
+                    title = "Concurrent modification",
+                    detail = "対象の繁殖登録が他の更新と競合しました。最新の状態を取得してやり直してください。",
+                )
+                .apply { setProperty("breeding_registration_id", breedingRegistrationId) }
+    }

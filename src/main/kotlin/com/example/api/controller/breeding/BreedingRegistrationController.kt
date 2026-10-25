@@ -3,9 +3,11 @@ package com.example.api.controller.breeding
 import com.example.api.application.studbook.breeding.GetBreedingRegistrationQuery
 import com.example.api.application.studbook.breeding.GetBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationUseCase
 import com.example.api.controller.CurrentActor
 import com.example.api.controller.breeding.problem.toProblemDetail
 import com.example.api.controller.breeding.request.RegisterBreedingRegistrationRequest
+import com.example.api.controller.breeding.request.RetireBreedingRegistrationRequest
 import com.example.api.controller.breeding.request.toCommand
 import com.example.api.controller.orThrowProblem
 import com.example.api.domain.shared.Actor
@@ -32,9 +34,10 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 繁殖登録リソースの HTTP アダプター。
  *
- * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/breedingRegistrations` に対する Create（繁殖登録の成立）
- * を提供する。繁殖登録は 種付記録・種付せず・分娩報告・供用停止といった繁殖の書き込み経路の起点であり、この Create が その起点を開通させる。 エラーレスポンスは RFC 9457
- * (Problem Details) 形式で返す。
+ * Google AIP のリソース指向設計に従い、コレクション `/api/worlds/{worldId}/breedingRegistrations` に対する
+ * Create（繁殖登録の成立）・ Get と、個々の繁殖登録に対するカスタムメソッド `:retire`（供用停止。AIP-136）を提供する。繁殖登録は
+ * 種付記録・種付せず・分娩報告・供用停止といった 繁殖の書き込み経路の起点であり、この Create が その起点を開通させる。 エラーレスポンスは RFC 9457 (Problem
+ * Details) 形式で返す。
  *
  * 世界スコープ（`/api/worlds/{worldId}/...`、ADR-0067）配下に居る。ハンドラの `worldId` は OpenAPI に path parameter
  * を出すための宣言で、値の解決は `ActorArgumentResolver` がパスから行う。
@@ -43,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController
 class BreedingRegistrationController(
     private val registerBreedingRegistration: RegisterBreedingRegistrationUseCase,
     private val getBreedingRegistration: GetBreedingRegistrationUseCase,
+    private val retireBreedingRegistration: RetireBreedingRegistrationUseCase,
     private val clock: Clock,
 ) {
     @Operation(
@@ -145,6 +149,80 @@ class BreedingRegistrationController(
         request: RegisterBreedingRegistrationRequest,
     ): BreedingRegistrationResponse =
         registerBreedingRegistration(actor, Command.now(request.toCommand(), clock))
+            .mapError { it.toProblemDetail() }
+            .orThrowProblem()
+            .toResponse()
+
+    @Operation(
+        operationId = "retireBreedingRegistration",
+        summary = "繁殖登録を供用停止する",
+        description =
+            "供用中の繁殖登録に供用停止の事由と発生日を記録し、更新後の繁殖登録リソースを返す。" +
+                "供用停止は一度だけ行え、二重供用停止や対象不在などの業務ルール違反時は RFC 9457 形式の problem+json を返す。",
+        tags = ["BreedingRegistration"],
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "供用停止成功（更新後の繁殖登録リソースを返す）",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = BreedingRegistrationResponse::class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "400",
+                    description = "入力値が不正（未知の事由・発生日の欠落など）",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "供用停止の対象の繁殖登録が存在しない",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "409",
+                    description = "既に供用停止済み（二重供用停止）、または他の更新と競合した",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ProblemDetail::class),
+                                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                            )
+                        ],
+                ),
+            ],
+    )
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/api/worlds/{worldId}/breedingRegistrations/{breedingRegistrationId}:retire")
+    fun retire(
+        @Parameter(description = "操作対象の世界のID") @PathVariable worldId: UUID,
+        @Parameter(hidden = true) @CurrentActor actor: Actor,
+        @Parameter(description = "供用停止する繁殖登録の生 UUID") @PathVariable breedingRegistrationId: UUID,
+        @OperationRequestBody(description = "供用停止の事由と発生日")
+        @RequestBody
+        request: RetireBreedingRegistrationRequest,
+    ): BreedingRegistrationResponse =
+        retireBreedingRegistration(
+                actor,
+                Command.now(request.toCommand(breedingRegistrationId), clock),
+            )
             .mapError { it.toProblemDetail() }
             .orThrowProblem()
             .toResponse()
