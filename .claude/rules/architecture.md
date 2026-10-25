@@ -131,6 +131,11 @@ class Command<T>(val payload: T, val issuedAt: Instant)
   - `@Entity` / `@AggregateRoot` は `@Identity` 付き識別子を持つ
   - **他の集約への参照は ID 値クラス（または `Association`）経由のみ**。集約オブジェクトを直接フィールドに持ってはならない（例: `Stallion` は `BloodHorse` ではなく `BloodHorseId` を持つ）
   - `@ValueObject` は Entity / AggregateRoot を参照しない
+- **付け忘れも検出する**（#737）。上の配置ルールは「付いている → `domain.*.model` に居ろ」の向きしか課さず、付け忘れた型は静かにビルディングブロックの外へ落ちて `JMoleculesDddRules` の検査からも漏れる。そこで、偽陽性の出ない構造上の手がかりを入口に逆向きを 3 本課す（`DomainModelingRulesTest`。空振りしないことは `BuildingBlockAnnotationRuleTest` が違反フィクスチャで担保）:
+  - `domain.shared.Entity` を継承する型 → `@AggregateRoot` か `@Entity`（`entitySubtypesAreAnnotatedAsAggregateOrEntity`）
+  - `domain..` の `@JvmInline value class` → `@ValueObject`（`inlineValueClassesAreValueObjects`）
+  - `domain..model..` の名前が `Repository` で終わる interface → jMolecules の `@Repository`（`repositoryPortsAreAnnotated`）
+- **付け忘れを検出できない範囲（レビュー担保）**: ドメインイベント（`@DomainEvent`）は構造上の手がかりが無い（`StateTransition<A, E>` の `E` は kotlin-result の `Result` が inline value class のため型引数がバイトコードに残らない）。enum / sealed の値オブジェクト（`Sex` / `FoalingOutcome` 等）は現状アノテーションを付けておらず、規約としても要求していない。`Entity` を継承しない集約・`Repository` で終わらない永続化ポートといった命名・構造の逸脱も素通りする
 - 軽量 CQRS の読みモデル `@QueryModel`（`org.jmolecules.architecture.cqrs`）は DDD ビルディングブロックではなく **CQRS アーキテクチャ注釈**。`domain.*.model` ではなく `application` に置き、ArchUnit `queryModelsResideInApplication` で強制する（読み取り経路の全体方針は「レイヤー依存ルール」の「読み取り経路（軽量 CQRS / L2）」、決定経緯は [ADR-0031](../../docs/adr/0031-lightweight-cqrs-read-model.md)）
 
 ## その他の強制ルール
