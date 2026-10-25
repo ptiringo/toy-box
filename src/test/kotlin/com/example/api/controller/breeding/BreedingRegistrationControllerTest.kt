@@ -8,6 +8,9 @@ import com.example.api.application.studbook.breeding.GetBreedingRegistrationUseC
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationCommand
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCase
 import com.example.api.application.studbook.breeding.RegisterBreedingRegistrationUseCaseError
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationCommand
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationUseCase
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationUseCaseError
 import com.example.api.config.ClockConfiguration
 import com.example.api.controller.ActorArgumentResolver
 import com.example.api.domain.iam.model.account.AccountRepository
@@ -17,13 +20,17 @@ import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
+import com.example.api.domain.studbook.model.breeding.BreedingRegistration
 import com.example.api.domain.studbook.model.breeding.BreedingRetirement
 import com.example.api.domain.studbook.model.breeding.BreedingRole
 import com.example.api.domain.studbook.model.breeding.RetirementReason
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.unwrap
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.slot
 import java.time.LocalDate
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
@@ -50,6 +57,8 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     private lateinit var registerBreedingRegistration: RegisterBreedingRegistrationUseCase
 
     @MockkBean private lateinit var getBreedingRegistration: GetBreedingRegistrationUseCase
+
+    @MockkBean private lateinit var retireBreedingRegistration: RetireBreedingRegistrationUseCase
 
     // WebMvcConfig（CurrentAccountArgumentResolver）が全 @WebMvcTest スライスへ自動で載るため必要（本テストの検証対象ではない）。
     @MockkBean private lateinit var accounts: AccountRepository
@@ -222,5 +231,110 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
             .bodyJson()
             .extractingPath("$.blood_horse_id")
             .isEqualTo(id.toString())
+    }
+
+    private val retireUri = "/api/worlds/{worldId}/breedingRegistrations/{id}:retire"
+
+    private val registrationId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+
+    /** デシリアライズに通る正しい供用停止リクエストボディ。 */
+    private val retireBody =
+        """
+        {
+            "reason": "USE_CHANGE",
+            "occurred_on": "2025-03-01"
+        }
+        """
+            .trimIndent()
+
+    private fun stubRetire(
+        result: Result<BreedingRegistration, RetireBreedingRegistrationUseCaseError>
+    ) {
+        every {
+            retireBreedingRegistration(
+                any<Actor>(),
+                any<Command<RetireBreedingRegistrationCommand>>(),
+            )
+        } returns result
+    }
+
+    private fun postRetire(body: String = retireBody) =
+        tester
+            .post()
+            .uri(retireUri, worldId, registrationId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .assertThat()
+
+    @Test
+    fun `供用停止で 200 と供用停止を記録した繁殖登録リソースが返りパスとボディがコマンドへ渡ること`() {
+        val retired =
+            BreedingFixture.breedingRegistration()
+                .retire(RetirementReason.USE_CHANGE, LocalDate.of(2025, 3, 1))
+                .unwrap()
+        val captured = slot<Command<RetireBreedingRegistrationCommand>>()
+        every { retireBreedingRegistration(any<Actor>(), capture(captured)) } returns Ok(retired)
+
+        postRetire()
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.retirement.reason")
+            .isEqualTo("USE_CHANGE")
+
+        val payload = captured.captured.payload
+        assert(payload.breedingRegistrationId == registrationId)
+        assert(payload.reason == RetirementReason.USE_CHANGE)
+        assert(payload.occurredOn == LocalDate.of(2025, 3, 1))
+    }
+
+    @Test
+    fun `供用停止の事由が未知の値なら 400 が返ること`() {
+        postRetire(retireBody.replace("USE_CHANGE", "EXPORT")).hasStatus(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    fun `供用停止の対象が不在なら 404 と problem+json が返ること`() {
+        stubRetire(
+            Err(RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound(registrationId))
+        )
+
+        postRetire()
+            .hasStatus(HttpStatus.NOT_FOUND)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("registration-not-found")
+    }
+
+    @Test
+    fun `既に供用停止済みなら 409 と現在の供用停止付きの problem+json が返ること`() {
+        stubRetire(
+            Err(
+                RetireBreedingRegistrationUseCaseError.AlreadyRetired(
+                    BreedingRetirement(RetirementReason.DEATH, LocalDate.of(2024, 12, 1))
+                )
+            )
+        )
+
+        val response = postRetire()
+        response.hasStatus(HttpStatus.CONFLICT).hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+        response
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("breeding-registration-already-retired")
+        response.bodyJson().extractingPath("$.current_reason").isEqualTo("DEATH")
+    }
+
+    @Test
+    fun `更新が競合したら 409 と concurrent-modification が返ること`() {
+        stubRetire(
+            Err(RetireBreedingRegistrationUseCaseError.ConcurrentModification(registrationId))
+        )
+
+        postRetire()
+            .hasStatus(HttpStatus.CONFLICT)
+            .bodyJson()
+            .extractingPath("$.error_code")
+            .isEqualTo("concurrent-modification")
     }
 }

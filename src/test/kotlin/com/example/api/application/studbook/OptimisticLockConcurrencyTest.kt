@@ -3,6 +3,9 @@ package com.example.api.application.studbook
 import com.example.api.application.studbook.breeding.ReportFoalingCommand
 import com.example.api.application.studbook.breeding.ReportFoalingUseCase
 import com.example.api.application.studbook.breeding.ReportFoalingUseCaseError
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationCommand
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationUseCase
+import com.example.api.application.studbook.breeding.RetireBreedingRegistrationUseCaseError
 import com.example.api.application.studbook.horse.NameHorseCommand
 import com.example.api.application.studbook.horse.NameHorseUseCase
 import com.example.api.application.studbook.horse.NameHorseUseCaseError
@@ -12,9 +15,11 @@ import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
+import com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository
 import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultRepository
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.RetirementReason
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -28,6 +33,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.CyclicBarrier
@@ -60,8 +66,10 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 class OptimisticLockConcurrencyTest(
     private val nameHorse: NameHorseUseCase,
     private val reportFoaling: ReportFoalingUseCase,
+    private val retireBreedingRegistration: RetireBreedingRegistrationUseCase,
     private val bloodHorses: BloodHorseRepository,
     private val breedingResults: BreedingResultRepository,
+    private val breedingRegistrations: BreedingRegistrationRepository,
     private val inspectionRows: HorseInspectionSpringDataRepository,
     private val horseRows: BloodHorseSpringDataRepository,
     private val registrationRows: BreedingRegistrationSpringDataRepository,
@@ -136,6 +144,41 @@ class OptimisticLockConcurrencyTest(
         assert(breedingResults.findById(worldId, breedingResult.id)?.outcome != null)
     }
 
+    @Test
+    fun `同じ繁殖登録を並行に供用停止しても例外は漏れず負けた側は業務エラーになる`() {
+        val registration =
+            BreedingFixture.breedingRegistration(
+                broodmare = seededHorse(Sex.FEMALE, "MARE"),
+                registrationNumber = "B-MARE-${generateId()}",
+            )
+        seeder.seedRegistration(registration)
+
+        val results =
+            concurrently<Result<*, RetireBreedingRegistrationUseCaseError>> { index ->
+                retireBreedingRegistration(
+                    actor,
+                    Command(
+                        RetireBreedingRegistrationCommand(
+                            registration.id.value,
+                            RETIREMENT_REASONS[index % RETIREMENT_REASONS.size],
+                            LocalDate.of(2025, 3, index + 1),
+                        ),
+                        Instant.now(),
+                    ),
+                )
+            }
+
+        val errors = results.mapNotNull { it.getError() }
+        assert(errors.size == THREADS - 1)
+        assert(
+            errors.all {
+                it is RetireBreedingRegistrationUseCaseError.ConcurrentModification ||
+                    it is RetireBreedingRegistrationUseCaseError.AlreadyRetired
+            }
+        )
+        assert(breedingRegistrations.findById(worldId, registration.id)?.retirement != null)
+    }
+
     /**
      * 全スレッドの発火点を揃えて [task] を同時に走らせ、各スレッドの結果を返す。
      *
@@ -205,5 +248,8 @@ class OptimisticLockConcurrencyTest(
                 FoalingOutcome.Stillbirth,
                 FoalingOutcome.NeonatalDeath,
             )
+
+        /** スレッドごとに別の事由で供用停止する（発生日もスレッドごとにずらす）。 */
+        val RETIREMENT_REASONS = RetirementReason.entries
     }
 }

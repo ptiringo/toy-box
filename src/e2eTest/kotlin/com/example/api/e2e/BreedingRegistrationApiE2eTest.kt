@@ -112,4 +112,75 @@ class BreedingRegistrationApiE2eTest(val restTestClient: RestTestClient) :
             .jsonPath("$.retirement")
             .isEmpty
     }
+
+    @Test
+    fun `供用停止した繁殖登録は照会で供用停止が見え、重ねての供用停止は 409 になる`() {
+        val horseId =
+            restTestClient.registerImportedHorse(
+                worldId = worldId,
+                sex = "MALE",
+                registrationNumber = "E2E-BR-SIRE-001",
+                microchipNumber = "392140000020002",
+            )
+        val createdBody =
+            restTestClient
+                .post()
+                .uri("/api/worlds/{worldId}/breedingRegistrations", worldId)
+                .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("blood_horse_id" to horseId, "registration_number" to "E2E-BR-0002"))
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .returnResult()
+                .responseBody
+        val registrationId = JsonPath.read<String>(String(createdBody!!), "$.id")
+        val retireUri = "/api/worlds/{worldId}/breedingRegistrations/{id}:retire"
+        val retireBody = mapOf("reason" to "USE_CHANGE", "occurred_on" to "2025-03-01")
+
+        // 供用停止（繁殖登録にとって初めての update 経路。楽観ロック付きで実 DB を更新する）。
+        restTestClient
+            .post()
+            .uri(retireUri, worldId, registrationId)
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(retireBody)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.retirement.reason")
+            .isEqualTo("USE_CHANGE")
+
+        // 照会（読み取り経路）にも供用停止が反映されていること。
+        restTestClient
+            .get()
+            .uri("/api/worlds/{worldId}/breedingRegistrations/{id}", worldId, registrationId)
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.retirement.reason")
+            .isEqualTo("USE_CHANGE")
+            .jsonPath("$.retirement.occurred_on")
+            .isEqualTo("2025-03-01")
+
+        // 供用停止は一度だけ。再停止は状態の競合として 409。
+        restTestClient
+            .post()
+            .uri(retireUri, worldId, registrationId)
+            .header(HttpHeaders.AUTHORIZATION, TestJwt.bearerToken())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("reason" to "DEATH", "occurred_on" to "2025-04-01"))
+            .exchange()
+            .expectStatus()
+            .isEqualTo(409)
+            .expectBody()
+            .jsonPath("$.error_code")
+            .isEqualTo("breeding-registration-already-retired")
+            .jsonPath("$.current_reason")
+            .isEqualTo("USE_CHANGE")
+    }
 }

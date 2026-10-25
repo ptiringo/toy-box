@@ -10,7 +10,7 @@ import java.util.UUID
 /**
  * 繁殖登録リソースの表現（HTTP 契約）。
  *
- * 繁殖登録に対する操作（登録の Create、将来の供用停止 `:retire` カスタムメソッド #408）は、 [AIP-133](https://google.aip.dev/133) /
+ * 繁殖登録に対する操作（登録の Create、供用停止の `:retire` カスタムメソッド）は、 [AIP-133](https://google.aip.dev/133) /
  * [AIP-136](https://google.aip.dev/136) に倣い一律でこのリソース表現全体を返す （[ADR-0008]
  * の単一リソース表現）。供用停止前は未設定になりうる属性（[retirement]）は null で表す。 ロール・事由はドメイン enum を晒さず wire enum
  * （[BreedingRoleDto] / [RetirementReasonDto]）で公開する（ADR-0007）。
