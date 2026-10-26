@@ -10,6 +10,7 @@ import com.tngtech.archunit.core.domain.JavaMethod
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
+import com.tngtech.archunit.lang.ArchRule
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
@@ -47,26 +48,13 @@ class OnionLayerRulesTest {
             .adapter("mcp", MCP)
 
     /**
-     * domain 層はフレームワークに依存しないこと。
+     * domain 層が依存してよい外部ライブラリは許可リスト（[DOMAIN_ALLOWED_DEPENDENCIES]）に限ること。
      *
-     * Jackson は **2 系と 3 系でルートパッケージが割れている**ため両方を列挙する。本プロジェクトが使う Jackson 3 の core / databind は
-     * `tools.jackson..`（`ObjectMapper` 等）だが、アノテーション（`@JsonTypeInfo` 等）は 3 系でも
-     * `com.fasterxml.jackson.annotation` に据え置かれており、実際に controller の DTO が import している。
-     * 片方だけの列挙では取りこぼす（#754）。
+     * 以前は禁止フレームワークを列挙する denylist だったため、列挙に無いライブラリ（slf4j / HikariCP / MCP SDK 等）は 素通りした（#784。#754 の
+     * Jackson 3 の取りこぼしも同じ構造）。許可リストなら列挙漏れは「正当な依存が弾かれて 赤くなる」向きに壊れ、気づける。規約文（architecture.md
+     * のリング表「純粋ライブラリのみ」）とも向きが揃う。
      */
-    @ArchTest
-    val domainIsFrameworkFree =
-        noClasses()
-            .that()
-            .resideInAPackage(DOMAIN)
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage(
-                "org.springframework..",
-                "jakarta..",
-                "com.fasterxml.jackson..",
-                "tools.jackson..",
-            )
+    @ArchTest val domainIsFrameworkFree = domainDependsOnlyOnAllowedLibraries(DOMAIN)
 
     /**
      * ドメインサービス（`domain.*.service`）は Kotlin のトップレベル関数で書くこと。
@@ -161,3 +149,39 @@ private val takesCommandAsLastParameter =
     DescribedPredicate.describe<JavaMethod>("最終引数に Command 封筒を取る") { method ->
         method.rawParameterTypes.lastOrNull()?.isEquivalentTo(Command::class.java) == true
     }
+
+/**
+ * domain 層が依存してよいパッケージの許可リスト（#784）。
+ *
+ * - `java..` / `kotlin..`: JDK と Kotlin 標準ライブラリ（`kotlin.jvm.internal` 等のコンパイラ生成コードの依存先を含む）
+ * - `org.jetbrains.annotations..`: Kotlin コンパイラが nullability を表すために自動で付ける注釈
+ * - `com.github.michaelbull..`（kotlin-result）/ `org.jmolecules..`（jMolecules）/
+ *   `com.fasterxml.uuid..` （java-uuid-generator）: architecture.md のリング表が domainModel に許す純粋ライブラリ
+ *
+ * 新しいライブラリを domain に入れるときは、ここと architecture.md の表を同時に更新する。
+ */
+internal val DOMAIN_ALLOWED_DEPENDENCIES =
+    arrayOf(
+        DOMAIN,
+        "java..",
+        "kotlin..",
+        "org.jetbrains.annotations..",
+        "com.github.michaelbull..",
+        "org.jmolecules..",
+        "com.fasterxml.uuid..",
+    )
+
+/**
+ * [packageIdentifier] 配下が [DOMAIN_ALLOWED_DEPENDENCIES] だけに依存することを検証するルールを組む。
+ *
+ * 対象パッケージを引数に取るのは、メタテスト（[DomainDependencyAllowlistRuleTest]）がドメイン外に置いた違反フィクスチャへ 同じルールを当てるため。本番は
+ * [DOMAIN] を渡す。フィクスチャ自身のパッケージは許可リストに無いので、自己参照で落ちないよう 対象パッケージも許可に加える。
+ */
+internal fun domainDependsOnlyOnAllowedLibraries(packageIdentifier: String): ArchRule =
+    classes()
+        .that()
+        .resideInAPackage(packageIdentifier)
+        .should()
+        .onlyDependOnClassesThat()
+        .resideInAnyPackage(packageIdentifier, *DOMAIN_ALLOWED_DEPENDENCIES)
+        .because("domain はフレームワーク非依存に保ち、依存してよいのは純粋ライブラリの許可リストだけ（#784）")

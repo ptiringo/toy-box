@@ -35,6 +35,7 @@ paths:
 | adapter (persistence) | `infrastructure` | 内側すべて | 可 |
 | adapter (mcp) | `mcp` | 内側すべて | 可 |
 
+- **domain（model / service とも）が依存してよい外部パッケージは許可リストで強制する**（#784）。出所は `OnionLayerRulesTest.kt` の `DOMAIN_ALLOWED_DEPENDENCIES`（上表の純粋ライブラリに加え、JDK `java..` / Kotlin 標準 `kotlin..` / Kotlin コンパイラが付ける `org.jetbrains.annotations..`）。以前は禁止フレームワークを列挙する denylist で、列挙に無い slf4j / HikariCP 等が素通りした（実測済み）。**domain に新しいライブラリを入れるときは許可リストと上表を同時に更新する**（更新を忘れると `check` が落ちる向きに壊れる）
 - **ドメインサービスはドメインモデルにのみ依存でき、その逆（モデル→サービス）は禁止**
 - アダプター同士（`controller` ⇔ `infrastructure` ⇔ `mcp`）の参照は禁止
 - `@RestController` は `controller`、`@Service` は `application`、Spring の `@Repository`（ポート実装）は `infrastructure` に置く
