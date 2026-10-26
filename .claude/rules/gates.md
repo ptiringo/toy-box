@@ -26,6 +26,11 @@ paths:
 
 「何を壊せば FAIL するはずか」を先に決めてから壊す。想定どおりに落ちなければ、落ちない理由が分かるまでゲートは未完成とみなす。このとき**そもそも違反が成立しているか**を先に疑う。壊し方を間違えると「ゲートが空振りしている」ではなく「違反になっていないので落ちない」を見ることになり、正しいゲートを壊れていると誤診する（実測: 下の Claude hook の例を `.md` の行末空白で試すと exit 0 になる。`.editorconfig` が `[*.md] trim_trailing_whitespace = false` としているため違反ではない。`.kt` で試せば exit 2 で発火する）。
 
+もう 1 つの誤診の型は、**検査そのものが走っていない**のに結果だけ読むことである。仕込みのせいでコンパイルが落ちると、テストは 1 件も走らない。それでも `build/test-results/` には**前回の XML が残っている**ので、そこを読むと「失敗 0 件」に見え、正しいゲートを空振りと誤診する（#752 / PR #996 で実測。`JockeyMcpTools` のシグネチャを変えたら既存の `JockeyMcpToolsTest` が `compileTestKotlin` で落ちていた）。
+
+- 仕込みは**既存の呼び出し側をコンパイルエラーにしない形**にする（引数を足すならデフォルト値を付ける、依存はコンストラクタではなくメソッド引数で足す）
+- XML を読む前に `rm -rf build/test-results/test` で消し、Gradle の exit code を見る。非ゼロなら XML ではなくログの `FAILED` タスクと `^e:`（コンパイルエラー）を先に確かめる
+
 - **ArchUnit**: 許可パッケージ定数を一時的に bogus 値へ変えるか、規約を守っているコードのアノテーションを外し、テストが FAIL することを確かめてから戻す。`noClasses().should()` はマッチが 0 件なら違反 0 件＝パスするため、述語のバグは無言の偽陰性になる。Kotlin 固有の空振り原因（inline value class のメソッド名マングリング・companion object の owner）は `.claude/rules/architecture.md` の「ArchUnit で Kotlin の呼び出しを縛るときの空振り」にある
 - **detekt カスタムルール**: `detekt-test` の `rule.lint(...)` に違反スニペットを食わせ、`findings` が期待どおり出ることと、適合コードでは出ないことの両方を見る（先例: `ActorScopedUseCaseTest` / `WorldScopedPortSignatureTest`）
 - **Claude hook**: hook は stdin の JSON で駆動するので、想定するペイロードを流し込んで単体実行し、exit code と stderr を見る。
