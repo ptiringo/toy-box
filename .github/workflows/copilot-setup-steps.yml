@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up mise
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         # MISE_ENV=ci はジョブの env で与える（理由は上の env ブロックのコメント）。
         with:
           # `mise install` の代わりに `mise bootstrap` を走らせ、[tools] の導入に続けて
@@ -42,7 +42,7 @@ jobs:
           bootstrap: true
 
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version-file: ".java-version"
           distribution: "temurin"
