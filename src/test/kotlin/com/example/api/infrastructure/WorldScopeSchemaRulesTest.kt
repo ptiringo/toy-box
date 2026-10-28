@@ -18,8 +18,12 @@ import org.springframework.jdbc.core.JdbcTemplate
  * はテナントの根であり世界に属さない）と Flyway の内部管理 テーブルだけ。
  *
  * 列の存在だけでなく `NOT NULL` まで見る。列を足して制約を忘れると（V18 の途中段階で止まると）、 行がどの世界にも属さないまま入れてしまうため。あわせて `world_id`
- * を書き換える UPDATE を拒否するトリガの有無（#727 / ADR-0081）と、`iam.world(id)` への FK の 有無（#905）も見る。集約間の複合 FK
- * の有無は対象外。
+ * を書き換える UPDATE を拒否するトリガの有無（#727 / ADR-0081）と、`iam.world(id)` への FK の 有無（#905）も見る。
+ *
+ * 集約間の参照（#911）は 2 本で見る。世界スコープのテーブル同士の FK は `world_id` 同士を対応させた複合 FK で あること（単一列 FK
+ * だと他人の世界の行を参照できる）と、`〜_id` 列がその複合 FK で覆われていること（FK の張り忘れ）。 どのテーブルがどの集約を参照すべきかはスキーマから導けないため、後者は列名
+ * `〜_id` を参照列の目印にしている。 参照ではない `〜_id` 列は [NON_REFERENCE_ID_COLUMNS] に理由付きで列挙する。名前が `〜_id`
+ * で終わらない参照列は素通りする（レビュー担保）。
  *
  * `pg_tables` は通常テーブルとパーティションテーブルのみを列挙し、view / materialized view / foreign table は含まない。読み取りモデル（軽量
  * CQRS の Read Model）をマテビューで実装した場合、そのマテビューは このゲートの対象外になり静かに素通りする（レビュー担保）。
@@ -57,6 +61,38 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
             "iam.world(id) への FK（ON DELETE CASCADE・検証済み）を持たないテーブル: $violations。" +
                 "FK が無いと他人の世界の行を参照できる（.claude/rules/migrations.md / ADR-0067）"
         }
+    }
+
+    @Test
+    fun `世界スコープのテーブル同士の FK は world_id 同士を対応させた複合 FK である`() {
+        val violations = jdbc.queryForList(FOREIGN_KEYS_NOT_PAIRING_WORLD_ID, String::class.java)
+
+        assert(violations.isEmpty()) {
+            "world_id 同士を対応させていない（または未検証の）集約間 FK: $violations。" +
+                "(world_id, 〜_id) → (world_id, id) で張らないと他人の世界の行を参照できる" +
+                "（.claude/rules/migrations.md / ADR-0067）"
+        }
+    }
+
+    @Test
+    fun `世界スコープのテーブルの 〜_id 列は world_id を含む複合 FK で覆われている`() {
+        val violations =
+            jdbc.queryForList(ID_COLUMNS_WITHOUT_COMPOSITE_FOREIGN_KEY, String::class.java)
+
+        assert(violations.isEmpty()) {
+            "複合 FK で覆われていない 〜_id 列: $violations。" +
+                "集約の参照なら (world_id, 〜_id) の FK を張り、参照でないなら NON_REFERENCE_ID_COLUMNS に理由付きで足す（#911）"
+        }
+    }
+
+    @Test
+    fun `集約間の参照の検査対象を列挙できている`() {
+        // 上の 2 本も「対象なし＝違反なし」で静かに通る。FK と 〜_id 列の列挙が全滅していないことを確かめる
+        val foreignKeys = jdbc.queryForList(TARGET_FOREIGN_KEYS, String::class.java)
+        val idColumns = jdbc.queryForList(TARGET_ID_COLUMNS, String::class.java)
+
+        assert(foreignKeys.isNotEmpty())
+        assert(idColumns.isNotEmpty())
     }
 
     @Test
@@ -177,6 +213,116 @@ class WorldScopeSchemaRulesTest : PostgresContainerSupport() {
                     AND a.attname = 'world_id'
                     AND con.confdeltype = 'c'
                     AND con.convalidated
+            )
+            ORDER BY 1
+            """
+                .trimIndent()
+        /**
+         * 世界スコープのテーブルにある `〜_id` 列のうち、集約の参照ではないもの（`<schema>.<table>.<column>`）。
+         *
+         * - `shared.idempotency_record.resource_id`: 冪等キーが指すリソースは種類が 1 つに定まらない（ADR-0072）ため FK を張らない
+         */
+        val NON_REFERENCE_ID_COLUMNS = listOf("shared.idempotency_record.resource_id")
+
+        /**
+         * 参照元・参照先がどちらも世界スコープ（[TARGET_TABLES_CTE] の対象）である FK。
+         *
+         * `iam.world` への FK や世界スコープ外への参照はここに入らない。#911 が「単一列 FK の禁止」案で懸念した、 世界に属さない参照の巻き込みを避けるため。
+         */
+        val TARGET_FOREIGN_KEYS_CTE =
+            """
+            $TARGET_TABLES_CTE,
+            fk AS (
+                SELECT con.oid, con.conname, con.conrelid, con.confrelid, con.conkey, con.confkey,
+                    con.convalidated
+                FROM pg_constraint con
+                    JOIN target src
+                        ON con.conrelid = format('%I.%I', src.schemaname, src.tablename)::regclass
+                    JOIN target dst
+                        ON con.confrelid = format('%I.%I', dst.schemaname, dst.tablename)::regclass
+                WHERE con.contype = 'f'
+            ),
+            paired AS (
+                SELECT fk.*
+                FROM fk
+                WHERE fk.convalidated
+                    AND EXISTS (
+                        SELECT 1
+                        FROM unnest(fk.conkey, fk.confkey) AS k (src_attnum, dst_attnum)
+                            JOIN pg_attribute sa
+                                ON sa.attrelid = fk.conrelid AND sa.attnum = k.src_attnum
+                            JOIN pg_attribute da
+                                ON da.attrelid = fk.confrelid AND da.attnum = k.dst_attnum
+                        WHERE sa.attname = 'world_id' AND da.attname = 'world_id'
+                    )
+            )
+            """
+                .trimIndent()
+
+        /** 世界スコープのテーブル同士の FK（列挙の空振り検知用）。 */
+        val TARGET_FOREIGN_KEYS =
+            """
+            $TARGET_FOREIGN_KEYS_CTE
+            SELECT format('%s.%s', fk.conrelid::regclass, fk.conname)
+            FROM fk
+            ORDER BY 1
+            """
+                .trimIndent()
+
+        /**
+         * 世界スコープのテーブル同士の FK のうち、`world_id` 同士を対応させていないもの、または未検証のもの（#911）。
+         *
+         * 対応は `conkey` と `confkey` を**位置で**突き合わせて見る。列の集合に `world_id` が含まれるだけでは足りず、 参照元の `world_id`
+         * が参照先の `world_id` に対応していなければ、世界をまたぐ参照を防げない。
+         */
+        val FOREIGN_KEYS_NOT_PAIRING_WORLD_ID =
+            """
+            $TARGET_FOREIGN_KEYS_CTE
+            SELECT format('%s.%s', fk.conrelid::regclass, fk.conname)
+            FROM fk
+            WHERE fk.oid NOT IN (SELECT oid FROM paired)
+            ORDER BY 1
+            """
+                .trimIndent()
+
+        /** 世界スコープのテーブルにある `〜_id` 列（`world_id` と [NON_REFERENCE_ID_COLUMNS] を除く）。 */
+        val TARGET_ID_COLUMNS_CTE =
+            """
+            $TARGET_FOREIGN_KEYS_CTE,
+            id_column AS (
+                SELECT format('%I.%I', t.schemaname, t.tablename)::regclass AS relid,
+                    format('%I.%I.%I', t.schemaname, t.tablename, c.column_name) AS qualified,
+                    c.column_name
+                FROM target t
+                    JOIN information_schema.columns c
+                        ON c.table_schema = t.schemaname AND c.table_name = t.tablename
+                WHERE c.column_name LIKE '%\_id' ESCAPE '\'
+                    AND c.column_name <> 'world_id'
+                    AND format('%I.%I.%I', t.schemaname, t.tablename, c.column_name)
+                        NOT IN (${NON_REFERENCE_ID_COLUMNS.joinToString { "'$it'" }})
+            )
+            """
+                .trimIndent()
+
+        /** 検査対象の `〜_id` 列（列挙の空振り検知用）。 */
+        val TARGET_ID_COLUMNS =
+            """
+            $TARGET_ID_COLUMNS_CTE
+            SELECT qualified FROM id_column ORDER BY 1
+            """
+                .trimIndent()
+
+        /** `〜_id` 列のうち、`world_id` を対応させた検証済みの複合 FK（[TARGET_FOREIGN_KEYS_CTE] の paired）に含まれないもの。 */
+        val ID_COLUMNS_WITHOUT_COMPOSITE_FOREIGN_KEY =
+            """
+            $TARGET_ID_COLUMNS_CTE
+            SELECT ic.qualified
+            FROM id_column ic
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM paired p
+                    JOIN pg_attribute a ON a.attrelid = p.conrelid AND a.attnum = ANY (p.conkey)
+                WHERE p.conrelid = ic.relid AND a.attname = ic.column_name
             )
             ORDER BY 1
             """
