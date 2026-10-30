@@ -87,8 +87,11 @@ Flyway のチェックサムはコメントを含むファイル全体から計�
 検査するため、**列・NOT NULL・FK・トリガのいずれを忘れても `./gradlew check` が落ちる**。テーブルの列挙は
 自動なので規約テスト側を手で更新する必要はない。FK は `ON DELETE CASCADE` であることと VALIDATE 済みで
 あることまで見る（世界の削除で配下が消えることを `DeleteWorldUseCase` が前提にしているため／`NOT VALID` の
-まま VALIDATE を忘れると既存行が未検証で残るため）。**ただし集約間の複合 FK（`(world_id, id)` で別の集約を
-参照するもの）の有無は検査していない**（レビュー担保）。FK の張り方は V19
+まま VALIDATE を忘れると既存行が未検証で残るため）。**集約間の参照も同じテストが見る**（#911）。世界スコープの
+テーブル同士の FK は `world_id` 同士を位置で対応させた検証済みの複合 FK（`(world_id, 〜_id)` →
+`(world_id, id)`）でなければ落ち、`〜_id` 列がその複合 FK で覆われていなければ落ちる（FK の張り忘れ）。
+集約の参照ではない `〜_id` 列は `WorldScopeSchemaRulesTest.NON_REFERENCE_ID_COLUMNS` に理由付きで足す。
+名前が `〜_id` で終わらない参照列は検出できない（レビュー担保）。FK の張り方は V19
 （`V19__enforce_world_scope_constraints.sql`）、トリガの張り方は V23（`V23__reject_world_id_update.sql`）を
 参照する。
 
