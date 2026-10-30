@@ -58,3 +58,21 @@ spend cap は Cloud Run のみが対象。Artifact Registry（イメージ蓄積
 - spend cap 到達時は Cloud Run が 5xx を返す（可用性より課金停止を優先する設計）。本番相当の可用性を求める段階になったら、金額と「止める/知らせるのみ」の方針を見直す。
 - 課金の見張りの出所が Terraform（¥3,000）と手設定（¥500）の 2 つに分かれた。役割は分担できているが、片方が Terraform の外にある以上、変更が state に反映されず気づかれない経路が残る。一本化するなら既存 budget を `infra/` へ import する。
 - budget の実在確認には `gcloud billing budgets list --billing-account=<id> --billing-project=ptiringo-toy-box` が要る。`--billing-project`（クォータプロジェクト）を省くと、ADC が gcloud 共有プロジェクトを見に行き `SERVICE_DISABLED` で失敗する。
+
+## 追補（2026-10-31）: Prisma Postgres は Free プランで課金が $0 に固定されている（#798）
+
+本文の「spend cap が守らない範囲」で管轄外とした Prisma Postgres の請求を、Prisma Console と公式ドキュメントで確認した。**GCP 側のような設定の追加は行わない**。Free プランである限り課金は発生しないためである。
+
+### 確認した事実（2026-10-31 時点）
+
+- **プラン**: 対象ワークスペース（プロジェクト `toy-box` のみ）は Free プランで、請求額は $0.00。[料金ページ](https://www.prisma.io/pricing) は Free の spend limit を「Fixed at $0, no card required」と記載している。
+- **枠と使用量**: 枠は 200,000 operations/月・ストレージ 2 GiB。2026 年 10 月の使用量は 3,973 operations。[ADR-0044](0044-adopt-prisma-postgres-for-production-db.md) の「約 10 万 operations/月」は同 ADR の決定時点の値で、現行値の出所は上記の料金ページである。
+- **設定項目**: Console の Billing / Usage 画面に、spend limit や課金アラートを設定する欄は無かった。それ以外の設定画面は確認していない。
+- **operations 超過時の挙動**: [FAQ](https://www.prisma.io/docs/postgres/faq) によれば、DB は読み書きを受け付けなくなる。再開するには有料プランへ上げるか、翌月のリセットを待つ。ブロック中もデータは削除されない。ワークスペースごとに 1 回だけ、24 時間の猶予期間を有効化できる。
+- **確認できなかったこと**: Free のストレージ超過時の挙動は FAQ に記載が無い。FAQ は Console に警告が出るとしているが、発動条件とメール通知の有無は分からない。
+
+### 結果・影響
+
+- Prisma Postgres の課金は暴走しないが、リスクは請求額ではなく**可用性**に置き換わる。operations が枠を超えると本番 DB が読み書きを拒否し、API が月末まで障害になりうる。
+- この停止を事前に知らせる経路は確認できていない。GCP 側の spend cap / budget alert は Prisma の使用量を見ないため、ここでは鳴らない。
+- **再検討条件**: 有料プランへ上げるときは、spend limit の値とアラートをその場で決める。料金ページと検索で得た要約とで対象プランの記述が食い違っていたため、値を決める前に Console で実際の挙動を確認する。
