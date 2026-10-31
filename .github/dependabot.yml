@@ -5,12 +5,13 @@ version: 2
 # - 例外的に高リスク・手作業を伴う依存（Spring Boot / Kotlin プラグイン）は個別・専用グループに分離する。
 #
 # cooldown 方針（#716）:
-# - リリース直後の欠陥版を掴むリスクと、短命なパッチの往復 PR を減らすため、全 4 エコシステムに揃えて置く。
+# - リリース直後の欠陥版を掴むリスクと、短命なパッチの往復 PR を減らすため、全エコシステムに置く。
 #   cooldown は version update 専用で security update には効かないため、延ばしても脆弱性修正は遅れない。
 # - 未設定でも version update には既定 3 日の cooldown がかかる。ここでの上乗せは major / minor のみで、
 #   patch は semver-patch-days を書かず既定 3 日のままにする（小さな修正まで待たせない）。
 # - semver-major-days / semver-minor-days は SemVer 対応マネージャ限定で、gradle と npm でしか使えない。
 #   github-actions / terraform は粒度を指定できないため default-days で一律に置く（minor 相当の 7 日）。
+#   docker も粒度を指定できないが、例外として 3 日にする（理由は該当エントリのコメント）。
 updates:
   # Enable updates for Gradle dependencies
   - package-ecosystem: "gradle"
@@ -113,6 +114,17 @@ updates:
           - "patch"
         patterns:
           - "*"
+
+  # bootBuildImage の Paketo builder を追う。Dockerfile はバージョンの宣言専用で、ビルドには使わない（ADR-0088）。
+  - package-ecosystem: "docker"
+    directory: "/gradle/paketo-builder"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # docker も SemVer 粒度の cooldown 非対応。builder の更新は JRE と OS のセキュリティ更新の経路でもあり、
+    # 7 日にすると週次の間隔と合わせて最長 2 週間ほど遅れるため、patch の既定と同じ 3 日で置く。
+    cooldown:
+      default-days: 3
 
   # Enable updates for Terraform providers
   - package-ecosystem: "terraform"
