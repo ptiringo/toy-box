@@ -22,10 +22,9 @@ resource "google_monitoring_uptime_check_config" "api_health" {
   }
 
   http_check {
-    path         = "/actuator/health"
-    port         = 443
-    use_ssl      = true
-    validate_ssl = true
+    path    = "/actuator/health"
+    port    = 443
+    use_ssl = true
 
     # サービスは --no-allow-unauthenticated なので、Monitoring のサービスエージェントの ID トークンで呼ぶ。
     # 呼び出しに要る run.routes.invoke は、このエージェントのロール
