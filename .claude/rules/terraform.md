@@ -37,7 +37,7 @@ infra/
 - **identity-platform**: 認証の委譲先（email/password + authorized_domains。[ADR-0064](../../docs/adr/0064-authn-via-identity-platform-authz-in-app.md)）
 - **local-readonly**: ローカル作業用の `roles/viewer` のみの SA と impersonation 許可（[ADR-0036](../../docs/adr/0036-gcp-operation-guardrails.md)）
 - **prisma-postgres**: 本番 DB（Prisma Postgres）と接続情報を格納する Secret Manager（[ADR-0044](../../docs/adr/0044-adopt-prisma-postgres-for-production-db.md)）
-- **uptime**: `/actuator/health` の uptime check と失敗時のアラート。Cloud Run サービス本体は `deploy.yml` が管理するので data で URL を読むだけで、呼び出し権限も足さない（Monitoring のサービスエージェントのロールに含まれる。[ADR-0089](../../docs/adr/0089-production-monitoring-uptime-and-deploy-failure.md)）
+- **uptime**: `/actuator/health` の uptime check と失敗時のアラート。Cloud Run サービス本体は `deploy.yml` が管理するので名前で指すだけで、呼び出し権限も足さない（Monitoring のサービスエージェントのロールに含まれる。[ADR-0089](../../docs/adr/0089-production-monitoring-uptime-and-deploy-failure.md)）
 
 ## 変数の供給
 
