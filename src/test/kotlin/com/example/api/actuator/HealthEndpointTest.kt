@@ -5,6 +5,7 @@ import com.example.api.support.TestJwtDecoderConfiguration
 import org.junit.jupiter.api.Test
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.TestConstructor.AutowireMode
@@ -21,7 +22,16 @@ import org.springframework.test.web.servlet.client.RestTestClient
 @AutoConfigureRestTestClient
 @Import(TestJwtDecoderConfiguration::class)
 @TestConstructor(autowireMode = AutowireMode.ALL)
-class HealthEndpointTest(val restTestClient: RestTestClient) : PostgresContainerSupport() {
+class HealthEndpointTest(
+    val restTestClient: RestTestClient,
+    val applicationContext: ApplicationContext,
+) : PostgresContainerSupport() {
+    // uptime check はこのエンドポイントで DB の停止も検知する前提に立つ（ADR-0089）。
+    @Test
+    fun `ヘルスチェックの判定にDBが含まれる`() {
+        assert(applicationContext.containsBean("dbHealthContributor"))
+    }
+
     @Test
     fun `ヘルスエンドポイントを呼び出すとUPステータスが返される`() {
         restTestClient

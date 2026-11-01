@@ -93,3 +93,21 @@ module "audit" {
 
   depends_on = [google_project_service.project["monitoring"]]
 }
+
+# サービス本体は deploy.yml が管理するので data で読む。data.google_project と同じ理由（#834）で、
+# depends_on を持つモジュールの内側ではなくルートで宣言する。
+data "google_cloud_run_v2_service" "api" {
+  name     = "api"
+  location = "asia-northeast1"
+}
+
+# 本番の停止の検知。#1018 / ADR-0089。
+module "uptime" {
+  source = "./modules/uptime"
+
+  project_id              = "ptiringo-toy-box"
+  host                    = trimprefix(data.google_cloud_run_v2_service.api.uri, "https://")
+  notification_channel_id = module.audit.notification_channel_id
+
+  depends_on = [google_project_service.project["monitoring"]]
+}
