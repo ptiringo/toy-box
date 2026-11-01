@@ -98,3 +98,4 @@
 | [0086](0086-dprint-plugins-via-npm-with-cooldown.md) | dprint プラグインを npm 指定子でピンし、更新時に公開後 7 日の cooldown を置く | Accepted |
 | [0087](0087-brought-in-horse-modeling.md) | 持込馬を sealed な種付と出自のバリアントで表し、外国種牡馬は値として埋め込む | Accepted |
 | [0088](0088-track-paketo-builder-with-dependabot.md) | Paketo builder をバージョン固定のまま Dependabot で週次更新する | Accepted |
+| [0089](0089-production-monitoring-uptime-and-deploy-failure.md) | 本番の監視をサービス停止とデプロイ失敗の検知から始める | Accepted |
