@@ -11,11 +11,13 @@ resource "google_monitoring_uptime_check_config" "api_health" {
   # 未指定だと全リージョンから確認して回数が増える。API が要求する最小の 3 地点に絞る。
   selected_regions = ["ASIA_PACIFIC", "EUROPE", "USA_OREGON"]
 
+  # サービスエージェント認証は uptime_url では API に拒否されるので、Cloud Run を直接の対象にする。
   monitored_resource {
-    type = "uptime_url"
+    type = "cloud_run_revision"
     labels = {
-      project_id = var.project_id
-      host       = var.host
+      project_id   = var.project_id
+      service_name = var.service_name
+      location     = var.location
     }
   }
 
@@ -45,7 +47,7 @@ resource "google_monitoring_alert_policy" "api_down" {
     condition_threshold {
       filter = join(" AND ", [
         "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\"",
-        "resource.type=\"uptime_url\"",
+        "resource.type=\"cloud_run_revision\"",
         "metric.label.check_id=\"${google_monitoring_uptime_check_config.api_health.uptime_check_id}\"",
       ])
 

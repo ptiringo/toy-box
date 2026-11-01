@@ -3,8 +3,13 @@ variable "project_id" {
   type        = string
 }
 
-variable "host" {
-  description = "確認対象の Cloud Run サービスのホスト名（スキームなし）"
+variable "service_name" {
+  description = "確認対象の Cloud Run サービス名"
+  type        = string
+}
+
+variable "location" {
+  description = "確認対象の Cloud Run サービスのリージョン"
   type        = string
 }
 
