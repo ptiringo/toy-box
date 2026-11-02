@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.core.env.Environment
 import org.springframework.core.env.Profiles
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -22,8 +24,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver
  * `JwtDecoder` Bean で差し替えられる）。
  *
  * **認可（何をしてよいか）はフィルタ層で判断しない。** ロール・権限の出所は自前 DB であり、認可は application
- * 層が担う。したがってここでの規則は「[PUBLIC_ENDPOINTS] は誰でも / それ以外は認証済みなら通す」の 2 種類だけで、認証済みユーザーが 403
- * になる経路は存在しない（`AccessDeniedHandler` を置いていないのはこのため）。
+ * 層が担う。したがってここでの規則は「[HEALTH_ENDPOINT] と [PUBLIC_ENDPOINTS] は誰でも / それ以外は認証済みなら通す」の 2 種類だけで、認証済みユーザーが
+ * 403 になる経路は存在しない（`AccessDeniedHandler` を置いていないのはこのため）。
  *
  * 本クラスが `config` ではなく adapter リング（`controller`）に居るのは、401 の RFC 9457 応答を組み立てる [problem] ビルダが adapter
  * リングにあるため。内側のリングから参照すると ArchUnit の `onionLayers` に違反する。 HTTP セキュリティは adapter の関心事でもあり、配置としても正しい。
@@ -35,6 +37,24 @@ import org.springframework.web.servlet.HandlerExceptionResolver
 @Configuration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 class SecurityConfig {
+
+    /**
+     * ヘルスチェック専用のチェーン。
+     *
+     * `permitAll` だけでは足りない。Bearer トークンの検証は認可判定より前に走るので、検証できないトークンが付いていると 401 になる。 uptime check は
+     * Cloud Run を通るために Google の ID トークンを載せてくるため（ADR-0089）、このパスではトークンを見ない。
+     */
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    fun healthFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http {
+            securityMatcher(HEALTH_ENDPOINT)
+            csrf { disable() }
+            sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
+            authorizeHttpRequests { authorize(anyRequest, permitAll) }
+        }
+        return http.build()
+    }
 
     @Bean
     fun securityFilterChain(
@@ -73,15 +93,16 @@ class SecurityConfig {
     ): AuthenticationEntryPoint = ProblemAuthenticationEntryPoint(resolver)
 
     companion object {
+        /** Cloud Run のヘルスチェックがトークンを持てないので、認証を要求しない（ADR-0064）。 */
+        private const val HEALTH_ENDPOINT = "/actuator/health"
+
         /**
          * 認証を要求しないエンドポイント。運用・CI が壊れるものだけに絞る（ADR-0064）。
-         * - actuator の health: Cloud Run のヘルスチェックがトークンを持てない
          * - OpenAPI ドキュメントと Swagger UI: `generateOpenApiDocs` が forked bootRun 経由で取得するため、 認証を掛けると
          *   OpenAPI lint の CI ゲート（`lintOpenApiDocs`）が壊れる
          */
         private val PUBLIC_ENDPOINTS =
             listOf(
-                "/actuator/health",
                 "/v3/api-docs",
                 "/v3/api-docs/**",
                 "/swagger-ui.html",

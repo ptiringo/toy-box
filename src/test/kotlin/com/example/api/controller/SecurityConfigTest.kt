@@ -132,6 +132,19 @@ class SecurityConfigTest(val restTestClient: RestTestClient) : PostgresContainer
     }
 
     @Test
+    fun `ヘルスチェックは検証できないトークンが付いていても 200 を返す`() {
+        // uptime check は Cloud Run を通るために Google の ID トークンを載せてくる（ADR-0089）。
+        // 発行者が Identity Platform ではないので、検証に回すと 401 になり本番の停止と区別できない。
+        restTestClient
+            .get()
+            .uri("/actuator/health")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer not-a-valid-jwt")
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
+
+    @Test
     fun `OpenAPI ドキュメントは認証なしで 200 を返す`() {
         // 認証を掛けると generateOpenApiDocs（forked bootRun 経由）が失敗し OpenAPI lint の CI ゲートが壊れる。
         restTestClient.get().uri("/v3/api-docs").exchange().expectStatus().isOk
