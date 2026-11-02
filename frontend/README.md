@@ -46,6 +46,7 @@ Vite dev server が `/api/*` を `http://localhost:8080`（バックエンド）
 
 1. **ローカル DB（PostgreSQL）**: バックの datasource は実行環境が外部供給する（[ADR-0044](../docs/adr/0044-adopt-prisma-postgres-for-production-db.md)）。ローカルに Postgres を1つ用意し、`SPRING_DATASOURCE_URL` / `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` を渡す。Flyway が起動時にスキーマを作る。
 2. **バックエンド起動**（リポジトリルートで）:
+
    ```bash
    GCP_PROJECT_ID=<実テナントの projectId> ./gradlew bootRun   # :8080
    ```
@@ -80,14 +81,14 @@ Emulator 向けの Firebase 設定は `frontend/.env.e2e`（**コミット済み
 
 ## スクリプト
 
-| コマンド | 内容 |
-|---|---|
-| `npm run dev` | Vite dev server（:5173、`/api`→:8080 proxy） |
-| `npm run build` | 型チェック（`tsc -b`）＋ 本番ビルド（`vite build`） |
-| `npm run lint` | Biome で lint |
-| `npm run format` | Biome で整形 |
-| `npm run test` | Vitest（API クライアント・認証・ルーティングガード・一覧） |
-| `npm run test:e2e` | Playwright のブラウザ E2E（Docker が要る。下記「自動のブラウザ E2E」） |
+| コマンド           | 内容                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `npm run dev`      | Vite dev server（:5173、`/api`→:8080 proxy）                                                     |
+| `npm run build`    | 型チェック（`tsc -b`）＋ 本番ビルド（`vite build`）                                              |
+| `npm run lint`     | Biome で lint                                                                                    |
+| `npm run format`   | Biome で整形                                                                                     |
+| `npm run test`     | Vitest（API クライアント・認証・ルーティングガード・一覧）                                       |
+| `npm run test:e2e` | Playwright のブラウザ E2E（Docker が要る。下記「自動のブラウザ E2E」）                           |
 | `npm run emulator` | Firebase Auth Emulator 単体起動（:9099）。E2E のデバッグ用で、通常は `test:e2e` が自分で起動する |
 
 CI（`.github/workflows/frontend.yml`）と lefthook の pre-commit が `frontend/**` の変更時に lint/build/test を回す（`test:e2e` はゲート外で、独立ワークフロー `.github/workflows/browser-e2e.yml` が回す）。
