@@ -58,6 +58,8 @@
 - **呼び出し権限は足していない**。Monitoring のサービスエージェントのロール（`roles/monitoring.notificationServiceAgent`）に `run.routes.invoke` が含まれている。
 - **`/actuator/health` では Bearer トークンを検証しない**。uptime check は Cloud Run を通るために Google の ID トークンを載せてくる。Spring の Bearer 検証は認可判定より前に走るので、`permitAll` でも発行者の違いで 401 になった。専用のフィルタチェーンで検証を外した（`SecurityConfig`）。Cloud Run の IAM は引き続き効いている。
 
+- **監視対象のラベルに空の `configuration_name` と `revision_name` を書いている**。API がこの 2 つを補って返すので、書かないと plan のたびに check の作り直しが計画される。
+
 これらはいずれも `plan` では検出できず、apply するか実際に check を動かして初めて分かった。
 
 ### 未確認事項の結果
