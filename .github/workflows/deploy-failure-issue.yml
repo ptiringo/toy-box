@@ -1,0 +1,53 @@
+# デプロイ結果の Issue 化ワークフロー
+#
+# 目的: Deploy API の失敗を GitHub Issue として残す（#1019 / ADR-0089）。本体は
+# scripts/report-deploy-result.sh にある。
+#
+# deploy.yml に失敗時のジョブを足すのではなく別のワークフローにしているのは、ワークフローごと
+# 起動に失敗した場合（startup_failure）や、environment の保護で止まった場合も拾うため。
+#
+# Project #4 への追加は、Project 側の組み込みの自動追加（label:deploy-failure）が行う。
+# GITHUB_TOKEN はユーザー所有の Project を操作できない。
+
+name: Deploy Failure Issue
+
+on:
+  # workflow_run で起動したワークフローは、既定ブランチの定義とコードで動く。PR から書き換えられない。
+  workflow_run: # zizmor: ignore[dangerous-triggers] 対象の Deploy API は push（main）と手動実行でしか動かない。チェックアウトするのも既定ブランチで、run 側の成果物は読まない
+    workflows: ["Deploy API"]
+    types: [completed]
+
+# 同時に 2 つ失敗すると、どちらも「開いた Issue が無い」と判断して 2 つ立てうる。直列にする。
+concurrency:
+  group: deploy-failure-issue
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    name: Report Deploy Result
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 素の bash と gh だけで動くのでツールのインストールは要らない（gh はランナーに入っている）。
+      # `${{ }}` をシェルへ直接展開しないよう、環境変数を経由して渡す。
+      - name: Report deploy result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          EVENT: ${{ github.event.workflow_run.event }}
+          ASSIGNEE: ${{ github.repository_owner }}
+        run: scripts/report-deploy-result.sh
