@@ -73,3 +73,11 @@
 
 - **Prisma の operations**: uptime check の問い合わせが数えられるかは測っていない。#1017 の枠消費の把握と合わせて見る。
 - **Cloud Run の費用**: 請求額では確かめていない。CPU を常時割り当てにしていないので、1 日 288 回、1 回 0.3 秒以下の応答なら増加はわずかと見込んでいる。
+
+## 追補（2026-11-03）: デプロイ失敗の Issue 化（#1019）の形
+
+- **新しいワークフローで受ける**: `.github/workflows/deploy-failure-issue.yml` が `workflow_run` で Deploy API の完了を受け、`scripts/report-deploy-result.sh` を動かす。失敗（`failure` / `timed_out` / `startup_failure`）で Issue を立て、リポジトリの所有者に割り当てて通知を飛ばす。
+- **Issue は増やさない**: ラベル `deploy-failure` の Issue が開いていれば、新しく立てずに失敗を追記する。デプロイが成功したら復旧を追記するが、自動では閉じない。原因を確かめないまま閉じるのを避けるためである。
+- **Project #4 への追加は、Project の組み込みの自動追加に任せる**。`GITHUB_TOKEN` はユーザー所有の Project を操作できない。PAT をシークレットに置く案も検討したが、得られるのは Priority の自動設定だけで、全リポジトリに書き込めるトークンを置く代償に見合わないと判断した。
+  - 設定は Project の UI にしかない。Project #4 の Workflows にある「Auto-add to project」で、対象はこのリポジトリ、条件は `is:issue label:deploy-failure`。Free プランでは自動追加を 1 つしか作れないので、この枠を使っている。
+  - Priority は付かないので、立った後に手で付ける。追加されなかった場合は、`/issue-ops` の突き合わせ（open なのに Project に無い Issue）で見つかる。
