@@ -14,10 +14,13 @@ resource "google_monitoring_uptime_check_config" "api_health" {
   # サービスエージェント認証は uptime_url では API に拒否されるので、Cloud Run を直接の対象にする。
   monitored_resource {
     type = "cloud_run_revision"
+    # 空の 2 つは API が補って返す値。書かないと plan のたびに差分が出て、check が作り直される。
     labels = {
-      project_id   = var.project_id
-      service_name = var.service_name
-      location     = var.location
+      project_id         = var.project_id
+      service_name       = var.service_name
+      location           = var.location
+      configuration_name = ""
+      revision_name      = ""
     }
   }
 
