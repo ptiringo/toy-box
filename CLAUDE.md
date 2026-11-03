@@ -92,7 +92,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 認証は GCP Identity Platform に委譲し、この API は **OAuth2 リソースサーバとして ID トークン（JWT）を検証するだけ**とする（資格情報を保持しない）。設定は `SecurityConfig`（**`controller` パッケージ**に置く。RFC 9457 の `problem()` ビルダが adapter リングにあり、内側から参照するとオニオン規約に反するため）と `application.yml` の `spring.security.oauth2.resourceserver.jwt.issuer-uri` / `.audiences`。issuer が OIDC discovery を公開しているため `JwtDecoder` は自前で書かない。決定経緯は [ADR-0064](docs/adr/0064-authn-via-identity-platform-authz-in-app.md)。
 
-- **`permitAll` は運用・CI が壊れるエンドポイントに限る**: `/actuator/health`（Cloud Run のヘルスチェック）、`/v3/api-docs` 配下と Swagger UI（`generateOpenApiDocs` が forked bootRun 経由で取得するため、認証を掛けると OpenAPI lint のゲートが壊れる）、MCP エンドポイント（**`local` プロファイル限定**。既定では `spring.ai.mcp.server.enabled: false` で口ごと開かない。[ADR-0073](docs/adr/0073-mcp-adapter-local-only-world-scoped.md)）。それ以外は `authenticated`
+- **`permitAll` は運用・CI が壊れるエンドポイントに限る**: `/actuator/health`（Cloud Run のヘルスチェックと uptime check。Google の ID トークンが付くので、専用チェーンで Bearer 検証も外す。[ADR-0089](docs/adr/0089-production-monitoring-uptime-and-deploy-failure.md)）、`/v3/api-docs` 配下と Swagger UI（`generateOpenApiDocs` が forked bootRun 経由で取得するため、認証を掛けると OpenAPI lint のゲートが壊れる）、MCP エンドポイント（**`local` プロファイル限定**。既定では `spring.ai.mcp.server.enabled: false` で口ごと開かない。[ADR-0073](docs/adr/0073-mcp-adapter-local-only-world-scoped.md)）。それ以外は `authenticated`
   （`/api/worlds` も `/api/me:provision` も含む）。
 - **認可（何をしてよいか）はフィルタ層で判断しない**。ロール・権限の出所は自前 DB で、認可は application 層が担う。
   自前 DB に持たせる中身は「ロールと権限」ではなく**「プレイヤーごとの世界（セーブデータ）の所有関係」**（テナント
