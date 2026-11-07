@@ -49,7 +49,8 @@ esac
 
 open_issue=$(gh issue list --label "${LABEL}" --state open --limit 1 --json number --jq '.[0].number // empty')
 
-run_line="- run: ${RUN_URL}（attempt ${RUN_ATTEMPT}）
+# URL の直後に全角文字を続けると、GitHub の自動リンクがそこまで URL に含めて壊れる（#1034 で実測）。
+run_line="- run: ${RUN_URL} （attempt ${RUN_ATTEMPT}）
 - コミット: ${HEAD_SHA}
 - ブランチ: ${HEAD_BRANCH}（${EVENT}）"
 
