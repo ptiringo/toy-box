@@ -70,3 +70,17 @@ ADR-0078 のアラートと違い、**サービスアカウントの操作も対
 - 検知 2 は IAM の変更だけを見る。Cloud Run の IAM が空のまま、アプリの認証を破られた場合は拾えない。
 - Identity Platform のサインアップは開いたままである。API を一般に公開するときに、定期レポートと合わせて見直す。
 - Firebase が自動で作ったサービスアカウント `firebase-adminsdk-fbsvc` は、プロジェクト全体の `roles/iam.serviceAccountTokenCreator` を持つ。理屈の上では owner のサービスアカウントになりすませるが、鍵がなく、使えるのは Google の内部だけなので、今回は変えていない。
+
+## 追補（2026-11-08）: 検知の実装（#1038）
+
+`infra/modules/audit/main.tf` に、ログベースのアラートを 2 本足した（`costly_operation` / `public_access_granted`）。通知は既存のメールの通知チャネルを使う。
+
+### 決定時の実測の訂正
+
+Decision の「API の有効化は過去 400 日で 11 件」は誤りだった。数えたときの取得上限（200 件）を Cloud Run の `SetIamPolicy` が埋め、途中で打ち切られていた。正しくは 20 件（1 回の操作が 2 件ずつ記録される）で、5 分の通知のまとめを通すと通知は 6 回ほどになる。許容できるという判断は変わらない。
+
+### 決定時に想定していなかった点
+
+- **検知 1 の対象**: API の有効化、Compute Engine の VM 作成（v1 / beta）、App Engine のバージョン作成の 3 つにした。App Engine の API は有効なまま残っていた。GKE や Cloud SQL など、ほかの高くつくサービスの API は無効なので、使うには API の有効化を通る。
+- **検知 2 の経路が 1 つ多い**: Cloud Run は IAM を変えなくても、invoker の IAM チェックを外す設定（v1 は annotation `run.googleapis.com/invoker-iam-disabled`、v2 は `invokerIamDisabled`）で公開できる。これはデプロイと同じサービスの更新として記録されるので、`SetIamPolicy` だけを見ていると素通りする。両方の形を条件に入れた。
+- **IAM の記録の形**: プロジェクトの `SetIamPolicy` はポリシー全体と差分（`serviceData.policyDelta`）の両方を、Cloud Run のものはポリシー全体だけを記録する。どちらも `request.policy.bindings[].members` に載るので、同じ条件で拾える。
