@@ -471,10 +471,9 @@ openApi {
         // local プロファイルが forked bootRun（OpenAPI 生成専用）へ静かに波及し、生成される openapi.json が
         // ローカル限定の状態（MCP 有効等）を反映してしまう。
         args.set(listOf("--server.port=8090"))
-        // forked プロセスの既定 workingDir（build/tmp/forkedSpringBootRun）には compose.yaml が無く、
-        // spring-boot-docker-compose がそこを探して見つからず起動失敗する。プロジェクトルートを指定して
-        // ローカル bootRun と同じく compose.yaml を発見できるようにする。
-        workingDir.set(layout.projectDirectory)
+        // workingDir は指定しない。プラグイン 2.x は bootRun と同じくプロジェクトルートで起動するため、
+        // spring-boot-docker-compose は compose.yaml をそのまま発見できる（1.9.0 では既定が
+        // build/tmp/forkedSpringBootRun で、明示指定が要った）。
     }
 }
 
@@ -509,16 +508,4 @@ tasks.register<Exec>("lintOpenApiDocs") {
         "--no-banner",
         "build/openapi.json",
     )
-}
-
-// springdoc-openapi-gradle-plugin（gradle-execfork-plugin 経由）は Task を直接プロパティとして
-// 保持するため Configuration Cache と非互換（org.gradle.api.Task はシリアライズ不可）。
-// org.gradle.configuration-cache.problems=fail のもとでは通常のビルドが丸ごと失敗するため、
-// 関連タスクを個別に非対応と宣言し、これらのタスクだけ CC を使わず実行させる。
-listOf("forkedSpringBootRun", "generateOpenApiDocs", "forkedSpringBootStop").forEach { taskName ->
-    tasks.named(taskName) {
-        notCompatibleWithConfigurationCache(
-            "springdoc-openapi-gradle-plugin(gradle-execfork-plugin) が Task を直接保持し CC 非対応のため"
-        )
-    }
 }
