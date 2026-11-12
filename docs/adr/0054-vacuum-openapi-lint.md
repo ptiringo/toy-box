@@ -4,6 +4,8 @@
 - Date: 2026-07-06
 - Deciders: Matsui
 
+> 注: 本文の「forked bootRun」は **決定当時の springdoc-openapi-gradle-plugin 1.9.0** の仕組み（execfork プラグインの `forkedSpringBootRun` / `forkedSpringBootStop` タスク）を指す。その後 2.1.0 へ上げた（2026-11-12）。2.x ではこれらのタスクが無くなり、`generateOpenApiDocs` 自身が `bootRun` の設定でアプリを別プロセスとして起動・停止する。本 ADR の決定（vacuum の採用・生成物をコミットしない・CI の独立ワークフローでゲートする）は変わらない。移行で変わったのはビルド構成だけで、Configuration Cache 非対応の宣言と `customBootRun` の `workingDir` 指定が不要になり、`apiDocsUrl` のポートを別プロセスが既に使っていると起動前に失敗するようになった。**現行の構成の出所は `build.gradle.kts`**。
+
 ## Context（背景・課題）
 
 Issue #327。OpenAPI ドキュメントは springdoc-openapi によるランタイム生成（`/v3/api-docs`）で、
