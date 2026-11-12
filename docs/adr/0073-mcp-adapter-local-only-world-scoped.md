@@ -4,6 +4,8 @@
 - Date: 2026-08-11
 - Deciders: ptiringo
 
+> 注: Consequences の「今回踏んだ罠」が引用するプラグイン実装は **決定当時の springdoc-openapi-gradle-plugin 1.9.0 のもの**。その後 2.1.0 へ上げた（2026-11-12）。2.x は `forkedSpringBootRun` / `forkedSpringBootStop` タスクを廃止し `generateOpenApiDocs` 自身がアプリを別プロセスで起動・停止するが、**`customBootRun` の `args` / `systemProperties` を「非空なら `bootRun` 側を置き換える／空・未指定なら `bootRun` 側へフォールバックする」規則は 2.1.0 でも同じ**（`OpenApiGradlePlugin.kt` の `configureApplication` で確認）。`bootRun` 側を `args` で渡す打ち消しが効くことは 2.1.0 でも実測した（生成用アプリのログが `No active profile set`）。`systemProperty` で渡した場合の波及と `emptyMap()` が効かない点は、2.1.0 ではソース上の確認のみで実測していない。**現行の構成の出所は `build.gradle.kts`**。
+
 ## Context（背景・課題）
 
 [ADR-0035](0035-mcp-interface-adapter.md) で adapter リングに追加した `mcp` パッケージは、#704（既存
