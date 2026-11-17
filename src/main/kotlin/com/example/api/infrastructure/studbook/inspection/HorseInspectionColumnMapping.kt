@@ -29,8 +29,8 @@ internal fun toParentageDetermination(
                 DnaParentageResult.valueOf(
                     checkNotNull(dnaParentageResult) {
                         "DNA 判定結果が欠落しています: parentage_type=$parentageType"
-                    }
-                )
+                    },
+                ),
             )
         PARENTAGE_BY_BLOOD_TYPE -> ParentageDetermination.ByBloodType
         PARENTAGE_BY_OVERSEAS_INSTITUTION -> ParentageDetermination.ByOverseasInstitution

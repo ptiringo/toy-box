@@ -68,7 +68,7 @@ class JdbcWorldRepository(
         jdbcClient
             .sql(
                 "INSERT INTO iam.world (id, account_id, name, version) " +
-                    "VALUES (:id, :accountId, :name, :version)"
+                    "VALUES (:id, :accountId, :name, :version)",
             )
             .param("id", world.id.value)
             .param("accountId", world.accountId.value)
@@ -94,7 +94,7 @@ class JdbcWorldRepository(
             jdbcClient
                 .sql(
                     "UPDATE iam.world SET name = :name, version = :next " +
-                        "WHERE id = :id AND version = :version"
+                        "WHERE id = :id AND version = :version",
                 )
                 .param("name", world.name.value)
                 .param("next", next)
@@ -118,7 +118,7 @@ class JdbcWorldRepository(
             .sql(
                 "INSERT INTO iam.world (id, account_id, name, version) " +
                     "VALUES (:id, :accountId, :name, :version) " +
-                    "ON CONFLICT (account_id, name) DO NOTHING"
+                    "ON CONFLICT (account_id, name) DO NOTHING",
             )
             .param("id", world.id.value)
             .param("accountId", accountId.value)

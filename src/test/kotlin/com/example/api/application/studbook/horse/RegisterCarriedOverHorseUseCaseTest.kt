@@ -41,7 +41,7 @@ class RegisterCarriedOverHorseUseCaseTest {
         )
 
     private fun command(
-        payload: RegisterCarriedOverHorseCommand
+        payload: RegisterCarriedOverHorseCommand,
     ): Command<RegisterCarriedOverHorseCommand> = Command(payload, Instant.now())
 
     /** 審査ポートのスタブ。`save` は引数（確定済み審査）をそのまま返す。 */
@@ -84,7 +84,7 @@ class RegisterCarriedOverHorseUseCaseTest {
             val result = useCase(actor, command(validPayload().copy(registrationNumber = "")))
 
             assert(
-                result.getError() == RegisterCarriedOverHorseUseCaseError.InvalidRegistrationNumber
+                result.getError() == RegisterCarriedOverHorseUseCaseError.InvalidRegistrationNumber,
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }

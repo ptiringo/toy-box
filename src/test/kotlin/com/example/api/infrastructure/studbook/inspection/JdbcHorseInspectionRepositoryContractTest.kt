@@ -32,7 +32,7 @@ import org.springframework.test.context.TestConstructor.AutowireMode
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class JdbcHorseInspectionRepositoryContractTest(
-    private val rows: HorseInspectionSpringDataRepository
+    private val rows: HorseInspectionSpringDataRepository,
 ) : PostgresContainerSupport() {
     // WorldId は value class で lateinit を付けられないため、生 UUID を保持して都度包む
     private lateinit var worldIdValue: UUID

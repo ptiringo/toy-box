@@ -56,8 +56,8 @@ fun FoalingFixture.toOutcome(): FoalingOutcome {
         FoalingOutcomeName.LiveFoal ->
             FoalingOutcome.LiveFoal(
                 LocalDate.parse(
-                    requireNotNull(foalingDate) { "LiveFoal には foalingDate が必要: $this" }
-                )
+                    requireNotNull(foalingDate) { "LiveFoal には foalingDate が必要: $this" },
+                ),
             )
         FoalingOutcomeName.NotConceived -> FoalingOutcome.NotConceived
         FoalingOutcomeName.Abortion -> FoalingOutcome.Abortion
@@ -132,7 +132,7 @@ fun importedCommand(facts: HorseFacts, synth: HorseSynthesized): RegisterImporte
         originCountry = facts.originCountry,
         landingDate =
             LocalDate.parse(
-                requireNotNull(synth.landingDate) { "輸入馬経路の seed には landingDate が必要: $facts" }
+                requireNotNull(synth.landingDate) { "輸入馬経路の seed には landingDate が必要: $facts" },
             ),
         registrationNumber = synth.pedigreeRegistrationNumber,
     )

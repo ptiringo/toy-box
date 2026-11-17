@@ -103,7 +103,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                             whiteMarkings = "左後一白",
                             nosePrint = null,
                         ),
-                )
+                ),
             )
 
         @Test
@@ -146,7 +146,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                         "parentage": { "type": "NOT_APPLICABLE" }
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
@@ -177,7 +177,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                         }
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .assertThat()
                 .hasStatus(HttpStatus.CREATED)
@@ -217,7 +217,7 @@ class HorseInspectionControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMa
                         "parentage": { "type": "BY_RUMOR" }
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .assertThat()
                 .hasStatus(HttpStatus.BAD_REQUEST)

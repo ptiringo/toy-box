@@ -29,7 +29,7 @@ class ReleaseAlbumTest {
                     Track(TrackNumber.create(1).unwrap(), TrackTitle.create("Time flies").unwrap()),
                     Track(TrackNumber.create(2).unwrap(), TrackTitle.create("僕は僕を好きになる").unwrap()),
                     Track(TrackNumber.create(3).unwrap(), TrackTitle.create("Sing Out!").unwrap()),
-                )
+                ),
             )
             .unwrap()
     private val headlineTrackNumber = TrackNumber.create(1).unwrap()
@@ -117,8 +117,8 @@ class ReleaseAlbumTest {
         assert(
             error ==
                 ReleaseAlbumError.InvalidSenbatsu(
-                    FormationError.DuplicateMember(setOf(duplicated.id))
-                )
+                    FormationError.DuplicateMember(setOf(duplicated.id)),
+                ),
         )
     }
 
@@ -132,7 +132,7 @@ class ReleaseAlbumTest {
 
         assert(
             error ==
-                ReleaseAlbumError.InvalidTrackComposition(AlbumError.HeadlineTrackNotInTracklist)
+                ReleaseAlbumError.InvalidTrackComposition(AlbumError.HeadlineTrackNotInTracklist),
         )
     }
 
@@ -181,7 +181,10 @@ class ReleaseAlbumTest {
 
         assert(
             error ==
-                ReleaseAlbumError.InvalidNonSenbatsuTrack(underTrack1, FormationError.CenterMissing)
+                ReleaseAlbumError.InvalidNonSenbatsuTrack(
+                    underTrack1,
+                    FormationError.CenterMissing,
+                ),
         )
     }
 
@@ -278,8 +281,8 @@ class ReleaseAlbumTest {
         assert(
             error ==
                 ReleaseAlbumError.InvalidTrackComposition(
-                    AlbumError.NonSenbatsuTrackIsHeadline(setOf(headlineTrackNumber))
-                )
+                    AlbumError.NonSenbatsuTrackIsHeadline(setOf(headlineTrackNumber)),
+                ),
         )
     }
 }

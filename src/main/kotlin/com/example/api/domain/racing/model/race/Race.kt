@@ -14,7 +14,7 @@ import org.jmolecules.ddd.annotation.ValueObject
 @AggregateRoot
 class Race(
     /** レース名 */
-    val name: String
+    val name: String,
 ) : Entity<RaceId>() {
     /** レースID */
     @field:Identity override val id = RaceId(generateId())

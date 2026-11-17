@@ -63,7 +63,7 @@ class JockeyController(
                             Content(
                                 schema = Schema(implementation = JockeyResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -74,7 +74,7 @@ class JockeyController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -85,7 +85,7 @@ class JockeyController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -96,7 +96,7 @@ class JockeyController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -144,7 +144,7 @@ class JockeyController(
                             Content(
                                 schema = Schema(implementation = JockeyResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -155,7 +155,7 @@ class JockeyController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],

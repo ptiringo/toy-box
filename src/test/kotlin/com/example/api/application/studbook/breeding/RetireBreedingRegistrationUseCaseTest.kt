@@ -32,7 +32,7 @@ class RetireBreedingRegistrationUseCaseTest {
     private val occurredOn = LocalDate.of(2025, 3, 1)
 
     private fun command(
-        payload: RetireBreedingRegistrationCommand
+        payload: RetireBreedingRegistrationCommand,
     ): Command<RetireBreedingRegistrationCommand> = Command(payload, Instant.now())
 
     @Nested
@@ -55,7 +55,7 @@ class RetireBreedingRegistrationUseCaseTest {
                                 registration.id.value,
                                 RetirementReason.USE_CHANGE,
                                 occurredOn,
-                            )
+                            ),
                         ),
                     )
                     .unwrap()
@@ -83,13 +83,13 @@ class RetireBreedingRegistrationUseCaseTest {
                 useCase(
                     actor,
                     command(
-                        RetireBreedingRegistrationCommand(id, RetirementReason.DEATH, occurredOn)
+                        RetireBreedingRegistrationCommand(id, RetirementReason.DEATH, occurredOn),
                     ),
                 )
 
             assert(
                 result.getError() ==
-                    RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound(id)
+                    RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound(id),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -115,12 +115,12 @@ class RetireBreedingRegistrationUseCaseTest {
                             retired.id.value,
                             RetirementReason.OTHER,
                             LocalDate.of(2025, 4, 1),
-                        )
+                        ),
                     ),
                 )
 
             assert(
-                result.getError() == RetireBreedingRegistrationUseCaseError.AlreadyRetired(first)
+                result.getError() == RetireBreedingRegistrationUseCaseError.AlreadyRetired(first),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -143,15 +143,15 @@ class RetireBreedingRegistrationUseCaseTest {
                             registration.id.value,
                             RetirementReason.DEATH,
                             occurredOn,
-                        )
+                        ),
                     ),
                 )
 
             assert(
                 result.getError() ==
                     RetireBreedingRegistrationUseCaseError.ConcurrentModification(
-                        registration.id.value
-                    )
+                        registration.id.value,
+                    ),
             )
         }
     }

@@ -40,9 +40,9 @@ class MeController(private val provisionMe: ProvisionMeUseCase, private val cloc
                             Content(
                                 schema = Schema(implementation = MeResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
-                )
+                ),
             ],
     )
     @PostMapping("/api/me:provision")

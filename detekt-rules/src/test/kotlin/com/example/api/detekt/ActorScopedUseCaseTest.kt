@@ -23,7 +23,7 @@ class ActorScopedUseCaseTest {
                     operator fun invoke(command: Command<RegisterFoalCommand>): Unit = Unit
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -41,7 +41,7 @@ class ActorScopedUseCaseTest {
                     operator fun invoke(query: GetJockeyQuery): JockeyView? = null
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -58,7 +58,7 @@ class ActorScopedUseCaseTest {
                     operator fun invoke(): List<BloodHorseView> = emptyList()
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -78,7 +78,7 @@ class ActorScopedUseCaseTest {
                     ): Unit = Unit
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -98,7 +98,7 @@ class ActorScopedUseCaseTest {
                     ): JockeyView? = null
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -119,7 +119,7 @@ class ActorScopedUseCaseTest {
                     ): Unit = Unit
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -137,7 +137,7 @@ class ActorScopedUseCaseTest {
                         RegisterFoalCommand(request)
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -154,7 +154,7 @@ class ActorScopedUseCaseTest {
                     private fun toCommand(request: String): String = request
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())

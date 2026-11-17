@@ -132,7 +132,7 @@ class RecordOverseasCoveringUseCase(
                 .findById(actor.worldId, BreedingRegistrationId(input.breedingRegistrationId))
                 .toResultOr {
                     RecordOverseasCoveringUseCaseError.BreedingRegistrationNotFound(
-                        input.breedingRegistrationId
+                        input.breedingRegistrationId,
                     )
                 }
                 .bind()
@@ -157,7 +157,7 @@ class RecordOverseasCoveringUseCase(
 
     /** 外国種牡馬の生入力を各 VO 検証して [ForeignSire] を組み立てる。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildForeignSire(
-        input: ForeignSireInput
+        input: ForeignSireInput,
     ): Result<ForeignSire, RecordOverseasCoveringUseCaseError> = binding {
         val name =
             ForeignSireName.create(input.name)

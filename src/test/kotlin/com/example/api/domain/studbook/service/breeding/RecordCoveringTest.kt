@@ -88,7 +88,7 @@ class RecordCoveringTest {
 
         assert(
             result.getError() ==
-                RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
+                RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id),
         )
     }
 
@@ -195,7 +195,7 @@ class RecordCoveringTest {
         assert(error is RecordCoveringError.InvalidCovering)
         assert(
             (error as RecordCoveringError.InvalidCovering).cause
-                is CoveringValidityError.OutsideValidRegion
+                is CoveringValidityError.OutsideValidRegion,
         )
     }
 }

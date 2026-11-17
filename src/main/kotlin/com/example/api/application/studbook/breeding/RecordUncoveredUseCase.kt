@@ -70,7 +70,7 @@ class RecordUncoveredUseCase(
                 .findById(actor.worldId, BreedingRegistrationId(input.breedingRegistrationId))
                 .toResultOr {
                     RecordUncoveredUseCaseError.BreedingRegistrationNotFound(
-                        input.breedingRegistrationId
+                        input.breedingRegistrationId,
                     )
                 }
                 .bind()

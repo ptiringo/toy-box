@@ -147,7 +147,7 @@ class JdbcBloodHorseQueriesContractTest(
                 originType = "DOMESTIC",
                 sireId = sireId,
                 damId = damId,
-            )
+            ),
         )
     }
 
@@ -165,7 +165,7 @@ class JdbcBloodHorseQueriesContractTest(
                 breeder = "社台ファーム",
                 inspectionId = seeder.seedInspectionRow(),
                 originType = "CARRIED_OVER",
-            )
+            ),
         )
     }
 
@@ -190,7 +190,7 @@ class JdbcBloodHorseQueriesContractTest(
                 foreignSireStudBookCountry = "アメリカ",
                 foreignSireBreedType = "THOROUGHBRED",
                 foreignSireCoatColor = "BAY",
-            )
+            ),
         )
 
         val view = queries.findById(worldId, BloodHorseId(id))
@@ -201,7 +201,7 @@ class JdbcBloodHorseQueriesContractTest(
                 Origin.BroughtIn(
                     sire = BloodHorseFixture.foreignSire(),
                     damId = BloodHorseId(damId),
-                )
+                ),
         )
     }
 }

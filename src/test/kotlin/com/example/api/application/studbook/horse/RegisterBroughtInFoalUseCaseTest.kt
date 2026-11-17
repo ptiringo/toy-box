@@ -117,7 +117,7 @@ class RegisterBroughtInFoalUseCaseTest {
             val bloodHorse = registered.bloodHorse
             assert(
                 bloodHorse.origin ==
-                    Origin.BroughtIn(sire = BloodHorseFixture.foreignSire(), damId = w.dam.id)
+                    Origin.BroughtIn(sire = BloodHorseFixture.foreignSire(), damId = w.dam.id),
             )
             assert(bloodHorse.dateOfBirth.value == foalingDate)
             assert(bloodHorse.inspectionId == registered.inspection.id)
@@ -148,7 +148,7 @@ class RegisterBroughtInFoalUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterBroughtInFoalUseCaseError.RegistrationNumberAlreadyTaken("2000104567")
+                    RegisterBroughtInFoalUseCaseError.RegistrationNumberAlreadyTaken("2000104567"),
             )
             w.assertNothingSaved()
         }
@@ -189,7 +189,7 @@ class RegisterBroughtInFoalUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterBroughtInFoalUseCaseError.BreedingResultNotFound(missing)
+                    RegisterBroughtInFoalUseCaseError.BreedingResultNotFound(missing),
             )
             w.assertNothingSaved()
         }
@@ -206,8 +206,8 @@ class RegisterBroughtInFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterBroughtInFoalUseCaseError.BreedingRegistrationNotFound(
-                        w.breedingRegistration.id.value
-                    )
+                        w.breedingRegistration.id.value,
+                    ),
             )
             w.assertNothingSaved()
         }
@@ -220,7 +220,7 @@ class RegisterBroughtInFoalUseCaseTest {
             val result = w.useCase()(actor, command(w.breedingResult.id.value))
 
             assert(
-                result.getError() == RegisterBroughtInFoalUseCaseError.DamNotFound(w.dam.id.value)
+                result.getError() == RegisterBroughtInFoalUseCaseError.DamNotFound(w.dam.id.value),
             )
             w.assertNothingSaved()
         }
@@ -242,8 +242,8 @@ class RegisterBroughtInFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterBroughtInFoalUseCaseError.PreconditionViolated(
-                        RegisterBroughtInFoalError.NotOverseasCovering(domestic.covering)
-                    )
+                        RegisterBroughtInFoalError.NotOverseasCovering(domestic.covering),
+                    ),
             )
             w.assertNothingSaved()
         }
@@ -262,9 +262,9 @@ class RegisterBroughtInFoalUseCaseTest {
                 result.getError() ==
                     RegisterBroughtInFoalUseCaseError.PreconditionViolated(
                         RegisterBroughtInFoalError.RegistrationFailed(
-                            RegisterInStudBookError.BreedMismatch
-                        )
-                    )
+                            RegisterInStudBookError.BreedMismatch,
+                        ),
+                    ),
             )
             w.assertNothingSaved()
         }

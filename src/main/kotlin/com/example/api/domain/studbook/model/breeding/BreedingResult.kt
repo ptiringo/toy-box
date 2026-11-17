@@ -347,7 +347,7 @@ private constructor(
                         covering =
                             Covering.Overseas(sire, coveringDate, coveringCountry, proofNumber),
                         outcome = null,
-                    )
+                    ),
                 )
             }
 
@@ -380,7 +380,7 @@ private constructor(
                         breedingYear = breedingYear,
                         covering = null,
                         outcome = FoalingOutcome.NotCovered,
-                    )
+                    ),
                 )
             }
 

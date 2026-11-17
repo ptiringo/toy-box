@@ -82,7 +82,7 @@ class SubmitCoveringReportUseCase(
                 )
                 .toResultOr {
                     SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(
-                        input.stallionBreedingRegistrationId
+                        input.stallionBreedingRegistrationId,
                     )
                 }
                 .bind()

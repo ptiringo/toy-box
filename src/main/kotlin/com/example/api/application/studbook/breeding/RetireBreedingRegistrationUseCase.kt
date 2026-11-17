@@ -72,7 +72,7 @@ sealed interface RetireBreedingRegistrationUseCaseError {
  */
 @Service
 class RetireBreedingRegistrationUseCase(
-    private val breedingRegistrationRepository: BreedingRegistrationRepository
+    private val breedingRegistrationRepository: BreedingRegistrationRepository,
 ) {
     @Transactional
     operator fun invoke(
@@ -86,7 +86,7 @@ class RetireBreedingRegistrationUseCase(
                 .findById(actor.worldId, BreedingRegistrationId(input.breedingRegistrationId))
                 .toResultOr {
                     RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound(
-                        input.breedingRegistrationId
+                        input.breedingRegistrationId,
                     )
                 }
                 .bind()
@@ -101,7 +101,7 @@ class RetireBreedingRegistrationUseCase(
             .save(actor.worldId, retired)
             .mapError { _: UpdateConflict ->
                 RetireBreedingRegistrationUseCaseError.ConcurrentModification(
-                    input.breedingRegistrationId
+                    input.breedingRegistrationId,
                 )
             }
             .bind()

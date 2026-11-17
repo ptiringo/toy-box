@@ -20,7 +20,7 @@ value class PedigreeRegistrationNumber private constructor(val value: String) {
     companion object {
         /** ブランクでないことを検証して [PedigreeRegistrationNumber] を生成する。 */
         fun create(
-            value: String
+            value: String,
         ): Result<PedigreeRegistrationNumber, BlankPedigreeRegistrationNumber> =
             createNonBlank(value, BlankPedigreeRegistrationNumber, ::PedigreeRegistrationNumber)
     }

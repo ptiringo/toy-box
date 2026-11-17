@@ -84,7 +84,7 @@ class CoveringReportApiE2eTest(val restTestClient: RestTestClient) : PostgresCon
                     mapOf(
                         "stallion_breeding_registration_id" to stallionRegistrationId,
                         "covering_year" to 2024,
-                    )
+                    ),
                 )
                 .exchange()
                 .expectStatus()

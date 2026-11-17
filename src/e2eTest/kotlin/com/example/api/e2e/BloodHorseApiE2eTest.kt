@@ -90,7 +90,7 @@ class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
                         "microchip_number" to "392140000000456",
                         "dna_parentage" to "CONSISTENT",
                         "registration_number" to "E2E-FOAL-001",
-                    )
+                    ),
                 )
                 .exchange()
                 .expectStatus()
@@ -153,7 +153,7 @@ class BloodHorseApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
                         "origin_country" to "アイルランド",
                         "landing_date" to "2020-09-01",
                         "registration_number" to registrationNumber,
-                    )
+                    ),
                 )
                 .exchange()
                 .expectStatus()

@@ -45,7 +45,7 @@ class PostgresContainerSupportTest(
     @Order(2)
     fun `テストが書き込んだ行はそのテストの中では見える`() {
         jockeyRows.save(
-            JockeyRow(id = generateId(), worldId = createWorld(), firstName = "武", lastName = "豊")
+            JockeyRow(id = generateId(), worldId = createWorld(), firstName = "武", lastName = "豊"),
         )
 
         assert(jockeyRows.count() == 1L)

@@ -80,7 +80,7 @@ class BreedingRegistrationTest {
 
         assert(
             result.getError() ==
-                AlreadyRetired(BreedingRetirement(RetirementReason.DEATH, occurredOn))
+                AlreadyRetired(BreedingRetirement(RetirementReason.DEATH, occurredOn)),
         )
         assert(retired.retirement == BreedingRetirement(RetirementReason.DEATH, occurredOn))
     }

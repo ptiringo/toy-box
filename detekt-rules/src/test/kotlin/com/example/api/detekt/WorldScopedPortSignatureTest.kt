@@ -24,7 +24,7 @@ class WorldScopedPortSignatureTest {
                     fun findById(id: JockeyId): Jockey?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -43,7 +43,7 @@ class WorldScopedPortSignatureTest {
                     fun save(worldId: WorldId, jockey: Jockey): Jockey
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -64,7 +64,7 @@ class WorldScopedPortSignatureTest {
                     ): Jockey?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -82,7 +82,7 @@ class WorldScopedPortSignatureTest {
                     fun countAll(): Int
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -99,7 +99,7 @@ class WorldScopedPortSignatureTest {
                     fun findById(id: JockeyId): JockeyView?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -118,7 +118,7 @@ class WorldScopedPortSignatureTest {
                     fun findBySubjectId(subjectId: SubjectId): Account?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -135,7 +135,7 @@ class WorldScopedPortSignatureTest {
                     fun findAllByAccountId(accountId: AccountId): List<WorldView>
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -153,7 +153,7 @@ class WorldScopedPortSignatureTest {
                     fun findById(id: MatchId): Match?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -170,7 +170,7 @@ class WorldScopedPortSignatureTest {
                     fun accepts(name: String): Boolean
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -189,7 +189,7 @@ class WorldScopedPortSignatureTest {
                     fun findByFirstName(firstName: String): JockeyRow?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -207,7 +207,7 @@ class WorldScopedPortSignatureTest {
                     fun findById(id: RaceId): Race?
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())

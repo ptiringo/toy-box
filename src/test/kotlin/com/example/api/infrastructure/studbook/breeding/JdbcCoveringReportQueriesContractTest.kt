@@ -62,7 +62,7 @@ class JdbcCoveringReportQueriesContractTest(
                 stallionBreedingRegistrationId = registrationId,
                 coveringYear = 2024,
                 submittedOn = submittedOn,
-            )
+            ),
         )
         return id
     }

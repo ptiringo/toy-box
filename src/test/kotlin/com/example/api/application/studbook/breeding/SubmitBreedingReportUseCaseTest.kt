@@ -81,7 +81,7 @@ class SubmitBreedingReportUseCaseTest {
 
             assert(
                 result.getError() ==
-                    SubmitBreedingReportUseCaseError.BreedingResultNotFound(breedingResultId)
+                    SubmitBreedingReportUseCaseError.BreedingResultNotFound(breedingResultId),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -101,8 +101,8 @@ class SubmitBreedingReportUseCaseTest {
             assert(
                 result.getError() ==
                     SubmitBreedingReportUseCaseError.PreconditionViolated(
-                        SubmitBreedingReportError.OutcomeNotRecorded
-                    )
+                        SubmitBreedingReportError.OutcomeNotRecorded,
+                    ),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -122,8 +122,8 @@ class SubmitBreedingReportUseCaseTest {
             assert(
                 result.getError() ==
                     SubmitBreedingReportUseCaseError.PreconditionViolated(
-                        SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1))
-                    )
+                        SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1)),
+                    ),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -143,7 +143,7 @@ class SubmitBreedingReportUseCaseTest {
 
             assert(
                 result.getError() ==
-                    SubmitBreedingReportUseCaseError.ConcurrentModification(reported.id.value)
+                    SubmitBreedingReportUseCaseError.ConcurrentModification(reported.id.value),
             )
         }
     }

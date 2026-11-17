@@ -30,7 +30,7 @@ class SingleTest {
                         TrackNumber.create(3).unwrap(),
                         TrackTitle.create("会いたかったかもしれない").unwrap(),
                     ),
-                )
+                ),
             )
             .unwrap()
     private val headlineTrackNumber = TrackNumber.create(1).unwrap()
@@ -129,7 +129,7 @@ class SingleTest {
 
         assert(
             error ==
-                SingleError.NonSenbatsuTrackNotInTracklist(setOf(TrackNumber.create(9).unwrap()))
+                SingleError.NonSenbatsuTrackNotInTracklist(setOf(TrackNumber.create(9).unwrap())),
         )
     }
 
@@ -147,7 +147,7 @@ class SingleTest {
                 .getError()
 
         assert(
-            error == SingleError.NonSenbatsuTrackIsHeadline(setOf(TrackNumber.create(1).unwrap()))
+            error == SingleError.NonSenbatsuTrackIsHeadline(setOf(TrackNumber.create(1).unwrap())),
         )
     }
 
@@ -165,7 +165,7 @@ class SingleTest {
                 .getError()
 
         assert(
-            error == SingleError.DuplicateNonSenbatsuTrack(setOf(TrackNumber.create(2).unwrap()))
+            error == SingleError.DuplicateNonSenbatsuTrack(setOf(TrackNumber.create(2).unwrap())),
         )
     }
 }

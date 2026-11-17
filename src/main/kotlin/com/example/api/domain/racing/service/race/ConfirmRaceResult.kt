@@ -8,7 +8,7 @@ import com.github.michaelbull.result.Result
 /** レースの確定 */
 @Suppress("unused")
 fun confirmRaceResult(
-    raceResult: RaceResult
+    raceResult: RaceResult,
 ): Result<ConfirmRaceResultEvent, ConfirmRaceResultError> {
     TODO()
 }

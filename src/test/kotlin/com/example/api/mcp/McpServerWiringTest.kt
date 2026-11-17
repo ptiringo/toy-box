@@ -105,7 +105,7 @@ class McpServerWiringTest : PostgresContainerSupport() {
          * 前提）ではなく全 Bean を合算する）。
          */
         fun toolSpecifications(
-            context: ApplicationContext
+            context: ApplicationContext,
         ): List<McpServerFeatures.SyncToolSpecification> {
             val toolSpecsType =
                 ResolvableType.forClassWithGenerics(
@@ -144,7 +144,7 @@ class McpServerWiringTest : PostgresContainerSupport() {
             accountLikeParameters(
                 toolSpecifications(context).associate { spec ->
                     spec.tool().name() to spec.tool().inputSchema()
-                }
+                },
             )
 
         /** 引数名にアカウント（`accountId` / `account_id`）や認証主体（`subjectId`）を表す語を含むものを禁じる。 */

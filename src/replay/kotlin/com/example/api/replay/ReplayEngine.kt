@@ -227,8 +227,8 @@ class ReplayEngine(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
                         submissionInstant(
-                            LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
-                        )
+                            LocalDate.parse(synth.submissions.breedingReportSubmittedOn),
+                        ),
                     ),
                 ),
             ),
@@ -406,8 +406,8 @@ class ReplayEngine(
                     SubmitBreedingReportCommand(breedingResult.id.value),
                     seasonClock(
                         submissionInstant(
-                            LocalDate.parse(synth.submissions.breedingReportSubmittedOn)
-                        )
+                            LocalDate.parse(synth.submissions.breedingReportSubmittedOn),
+                        ),
                     ),
                 ),
             ),

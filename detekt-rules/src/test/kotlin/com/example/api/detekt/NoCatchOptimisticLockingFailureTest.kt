@@ -27,7 +27,7 @@ class NoCatchOptimisticLockingFailureTest {
                         "conflict"
                     }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -48,7 +48,7 @@ class NoCatchOptimisticLockingFailureTest {
                         e.message ?: "conflict"
                     }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -69,7 +69,7 @@ class NoCatchOptimisticLockingFailureTest {
                         "conflict"
                     }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -88,7 +88,7 @@ class NoCatchOptimisticLockingFailureTest {
                     return "ok"
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -109,7 +109,7 @@ class NoCatchOptimisticLockingFailureTest {
                         "duplicated"
                     }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -130,7 +130,7 @@ class NoCatchOptimisticLockingFailureTest {
                         "conflict"
                     }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())

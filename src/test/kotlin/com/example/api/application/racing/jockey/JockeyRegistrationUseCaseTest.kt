@@ -65,7 +65,7 @@ class JockeyRegistrationUseCaseTest {
 
             assert(
                 result.getError() ==
-                    JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankFirstName)
+                    JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankFirstName),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -79,7 +79,7 @@ class JockeyRegistrationUseCaseTest {
 
             assert(
                 result.getError() ==
-                    JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankLastName)
+                    JockeyRegistrationError.InvalidJockey(JockeyValidationError.BlankLastName),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }

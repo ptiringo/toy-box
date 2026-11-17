@@ -42,7 +42,7 @@ class CoatColorTest {
         // 第9条(2)イ は栃栗毛を栗毛に含める
         assert(!CoatColor.CHESTNUT.violatesChestnutRule(CoatColor.CHESTNUT, CoatColor.CHESTNUT))
         assert(
-            !CoatColor.DARK_CHESTNUT.violatesChestnutRule(CoatColor.CHESTNUT, CoatColor.CHESTNUT)
+            !CoatColor.DARK_CHESTNUT.violatesChestnutRule(CoatColor.CHESTNUT, CoatColor.CHESTNUT),
         )
     }
 

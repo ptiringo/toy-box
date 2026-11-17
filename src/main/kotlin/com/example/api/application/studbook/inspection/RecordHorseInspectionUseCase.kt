@@ -44,7 +44,7 @@ data class RecordHorseInspectionCommand(
  */
 @Service
 class RecordHorseInspectionUseCase(
-    private val horseInspectionRepository: HorseInspectionRepository
+    private val horseInspectionRepository: HorseInspectionRepository,
 ) {
     @Transactional
     operator fun invoke(

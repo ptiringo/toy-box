@@ -21,7 +21,7 @@ value class BreedingRegistrationNumber private constructor(val value: String) {
     companion object {
         /** ブランクでないことを検証して [BreedingRegistrationNumber] を生成する。 */
         fun create(
-            value: String
+            value: String,
         ): Result<BreedingRegistrationNumber, BlankBreedingRegistrationNumber> =
             createNonBlank(value, BlankBreedingRegistrationNumber, ::BreedingRegistrationNumber)
     }

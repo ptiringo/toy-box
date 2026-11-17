@@ -123,7 +123,7 @@ class JdbcBreedingResultRepository(
             coveringPlace = coveringPlace?.let { BreedingRegion.create(it).orThrow() },
             certificateNumber =
                 CoveringCertificateNumber.create(
-                        checkNotNull(coveringCertificateNumber) { "種付証明書番号が欠落: id=$id" }
+                        checkNotNull(coveringCertificateNumber) { "種付証明書番号が欠落: id=$id" },
                     )
                     .orThrow(),
         )

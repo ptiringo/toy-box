@@ -68,7 +68,7 @@ class ControllerContractRulesTest {
             .haveRawType(isDomainEnum)
             .because(
                 "HTTP 契約はドメイン enum を wire に直接晒さず、controller 層の 〜Dto enum へ" +
-                    "マッピングする（ADR-0007）。列挙子リネームによる契約破壊を防ぐ"
+                    "マッピングする（ADR-0007）。列挙子リネームによる契約破壊を防ぐ",
             )
 
     /**

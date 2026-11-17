@@ -125,7 +125,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                 microchipNumber = "392140000000001",
                 dnaParentage = DnaParentageResultDto.CONSISTENT,
                 registrationNumber = "2023104567",
-            )
+            ),
         )
 
     @Nested
@@ -144,7 +144,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                         dateOfBirth = LocalDate.of(2020, 4, 10),
                         breeder = "Coolmore",
                         name = null,
-                    )
+                    ),
                 )
 
             val body =
@@ -275,8 +275,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.SireNotMale
-                    )
+                        RegisterInStudBookError.SireNotMale,
+                    ),
                 )
 
             tester
@@ -319,8 +319,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.DamNotFemale
-                    )
+                        RegisterInStudBookError.DamNotFemale,
+                    ),
                 )
 
             tester
@@ -343,8 +343,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.ParentageNotConfirmed
-                    )
+                        RegisterInStudBookError.ParentageNotConfirmed,
+                    ),
                 )
 
             tester
@@ -367,8 +367,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.BreedMismatch
-                    )
+                        RegisterInStudBookError.BreedMismatch,
+                    ),
                 )
 
             tester
@@ -391,8 +391,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.GrayFoalFromNonGrayParents
-                    )
+                        RegisterInStudBookError.GrayFoalFromNonGrayParents,
+                    ),
                 )
 
             tester
@@ -415,8 +415,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.NonChestnutFoalFromChestnutParents
-                    )
+                        RegisterInStudBookError.NonChestnutFoalFromChestnutParents,
+                    ),
                 )
 
             tester
@@ -597,7 +597,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     originCountry = "アイルランド",
                     landingDate = LocalDate.of(2024, 9, 1),
                     registrationNumber = "2020900001",
-                )
+                ),
             )
 
         @Test
@@ -681,7 +681,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     microchipNumber = "392140000000003",
                     dnaParentage = DnaParentageResultDto.CONSISTENT,
                     registrationNumber = "2000104567",
-                )
+                ),
             )
 
         private fun stubError(error: RegisterBroughtInFoalUseCaseError) {
@@ -746,7 +746,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         @Test
         fun `RegistrationNumberAlreadyTaken で 409 と血統登録側と同じ errorCode が返ること`() {
             stubError(
-                RegisterBroughtInFoalUseCaseError.RegistrationNumberAlreadyTaken("2000104567")
+                RegisterBroughtInFoalUseCaseError.RegistrationNumberAlreadyTaken("2000104567"),
             )
 
             postAndExpect(HttpStatus.CONFLICT, "registration-number-already-taken")
@@ -792,8 +792,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         fun `国内種付の成績を指すと 422 not-overseas-covering が返ること`() {
             stubError(
                 RegisterBroughtInFoalUseCaseError.PreconditionViolated(
-                    RegisterBroughtInFoalError.NotOverseasCovering(null)
-                )
+                    RegisterBroughtInFoalError.NotOverseasCovering(null),
+                ),
             )
 
             postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "not-overseas-covering")
@@ -803,8 +803,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         fun `分娩結果が生産でないと 422 foaling-outcome-not-live-foal が返ること`() {
             stubError(
                 RegisterBroughtInFoalUseCaseError.PreconditionViolated(
-                    RegisterBroughtInFoalError.NotLiveFoal(null)
-                )
+                    RegisterBroughtInFoalError.NotLiveFoal(null),
+                ),
             )
 
             postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "foaling-outcome-not-live-foal")
@@ -815,9 +815,9 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             stubError(
                 RegisterBroughtInFoalUseCaseError.PreconditionViolated(
                     RegisterBroughtInFoalError.RegistrationFailed(
-                        RegisterInStudBookError.BreedMismatch
-                    )
-                )
+                        RegisterInStudBookError.BreedMismatch,
+                    ),
+                ),
             )
 
             postAndExpect(HttpStatus.UNPROCESSABLE_CONTENT, "breed-mismatch")
@@ -839,7 +839,7 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
                     breeder = "ノーザンファーム",
                     microchipNumber = "392140000000003",
                     registrationNumber = "2002100501",
-                )
+                ),
             )
 
         @Test
@@ -879,8 +879,8 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
             } returns
                 Err(
                     RegisterCarriedOverHorseUseCaseError.RegistrationNumberAlreadyTaken(
-                        "2002100501"
-                    )
+                        "2002100501",
+                    ),
                 )
 
             tester

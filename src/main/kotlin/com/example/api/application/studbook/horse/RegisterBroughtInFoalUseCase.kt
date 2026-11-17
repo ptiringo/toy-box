@@ -159,7 +159,7 @@ class RegisterBroughtInFoalUseCase(
                 .findById(actor.worldId, breedingResult.breedingRegistrationId)
                 .toResultOr {
                     RegisterBroughtInFoalUseCaseError.BreedingRegistrationNotFound(
-                        breedingResult.breedingRegistrationId.value
+                        breedingResult.breedingRegistrationId.value,
                     )
                 }
                 .bind()
@@ -187,7 +187,7 @@ class RegisterBroughtInFoalUseCase(
 
     /** 仔馬の個体識別を組み立てる（生産者を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildFoalIdentity(
-        input: RegisterBroughtInFoalCommand
+        input: RegisterBroughtInFoalCommand,
     ): Result<FoalIdentity, RegisterBroughtInFoalUseCaseError> = binding {
         val breeder =
             Breeder.create(input.breeder)
@@ -203,7 +203,7 @@ class RegisterBroughtInFoalUseCase(
 
     /** 審査を組み立てる（マイクロチップ番号を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildInspection(
-        input: RegisterBroughtInFoalCommand
+        input: RegisterBroughtInFoalCommand,
     ): Result<HorseInspection, RegisterBroughtInFoalUseCaseError> = binding {
         val microchipNumber =
             MicrochipNumber.create(input.microchipNumber)

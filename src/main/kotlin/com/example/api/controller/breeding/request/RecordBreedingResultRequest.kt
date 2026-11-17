@@ -133,7 +133,7 @@ data class StudCertificateRequest(
 
 /** 国内種付の入力を種付記録ユースケースの入力コマンドへ変換する。 */
 fun RecordBreedingResultRequest.toCoveringCommand(
-    covering: DomesticCoveringRequest
+    covering: DomesticCoveringRequest,
 ): RecordCoveringCommand =
     RecordCoveringCommand(
         breedingRegistrationId = breedingRegistrationId,
@@ -152,7 +152,7 @@ fun RecordBreedingResultRequest.toCoveringCommand(
 
 /** 海外種付の入力を海外種付記録ユースケースの入力コマンドへ変換する。 */
 fun RecordBreedingResultRequest.toOverseasCoveringCommand(
-    covering: OverseasCoveringRequest
+    covering: OverseasCoveringRequest,
 ): RecordOverseasCoveringCommand =
     RecordOverseasCoveringCommand(
         breedingRegistrationId = breedingRegistrationId,
@@ -182,13 +182,13 @@ fun RecordBreedingResultRequest.toUncoveredCommand():
                 code = "missing-breeding-year",
                 title = "Missing breeding year",
                 detail = "種付せず（covering 無し）のときは breeding_year が必須です。",
-            )
+            ),
         )
     } else {
         Ok(
             RecordUncoveredCommand(
                 breedingRegistrationId = breedingRegistrationId,
                 breedingYear = Year.of(breedingYear),
-            )
+            ),
         )
     }

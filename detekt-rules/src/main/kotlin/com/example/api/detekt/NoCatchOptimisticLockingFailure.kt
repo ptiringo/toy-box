@@ -52,7 +52,7 @@ class NoCatchOptimisticLockingFailure(config: Config) :
                         "UnexpectedRollbackException になる（409 が 500 になる）。" +
                         "update 経路は infrastructure.shared の lockRowIfVersionMatches で版を突き合わせること" +
                         "（.claude/rules/architecture.md）。",
-                )
+                ),
             )
         }
     }

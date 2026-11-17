@@ -161,7 +161,7 @@ class RegisterFoalUseCase(
                 .findById(actor.worldId, breedingResult.breedingRegistrationId)
                 .toResultOr {
                     RegisterFoalUseCaseError.BreedingRegistrationNotFound(
-                        breedingResult.breedingRegistrationId.value
+                        breedingResult.breedingRegistrationId.value,
                     )
                 }
                 .bind()
@@ -191,7 +191,7 @@ class RegisterFoalUseCase(
 
     /** 仔馬の個体識別を組み立てる（生産者を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildFoalIdentity(
-        input: RegisterFoalCommand
+        input: RegisterFoalCommand,
     ): Result<FoalIdentity, RegisterFoalUseCaseError> = binding {
         val breeder =
             Breeder.create(input.breeder)
@@ -207,7 +207,7 @@ class RegisterFoalUseCase(
 
     /** 審査を組み立てる（マイクロチップ番号を VO 検証）。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildInspection(
-        input: RegisterFoalCommand
+        input: RegisterFoalCommand,
     ): Result<HorseInspection, RegisterFoalUseCaseError> = binding {
         val microchipNumber =
             MicrochipNumber.create(input.microchipNumber)
@@ -237,7 +237,7 @@ class RegisterFoalUseCase(
             breedingResult.covering
                 .toResultOr {
                     RegisterFoalUseCaseError.PreconditionViolated(
-                        RegisterFoalError.NotLiveFoal(breedingResult.outcome)
+                        RegisterFoalError.NotLiveFoal(breedingResult.outcome),
                     )
                 }
                 .bind()
@@ -247,8 +247,8 @@ class RegisterFoalUseCase(
                 is Covering.Overseas ->
                     Err(
                             RegisterFoalUseCaseError.PreconditionViolated(
-                                RegisterFoalError.NotDomesticCovering
-                            )
+                                RegisterFoalError.NotDomesticCovering,
+                            ),
                         )
                         .bind()
             }

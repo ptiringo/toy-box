@@ -50,12 +50,12 @@ class RecordOverseasCoveringUseCaseTest {
         )
 
     private fun command(
-        payload: RecordOverseasCoveringCommand
+        payload: RecordOverseasCoveringCommand,
     ): Command<RecordOverseasCoveringCommand> = Command(payload, Instant.now())
 
     /** 繁殖牝馬の繁殖登録が引き当たり、同年の既存成績が無い正常系の土台を組む。 */
     private class Wiring(
-        val registration: BreedingRegistration = BreedingFixture.breedingRegistration()
+        val registration: BreedingRegistration = BreedingFixture.breedingRegistration(),
     ) {
         val registrationRepository =
             mockk<BreedingRegistrationRepository> {
@@ -95,7 +95,7 @@ class RecordOverseasCoveringUseCaseTest {
     @Nested
     inner class ValidationFailureCase {
         private fun recordWith(
-            transform: (RecordOverseasCoveringCommand) -> RecordOverseasCoveringCommand
+            transform: (RecordOverseasCoveringCommand) -> RecordOverseasCoveringCommand,
         ): Pair<Wiring, RecordOverseasCoveringUseCaseError?> {
             val w = Wiring()
             val result =
@@ -147,7 +147,7 @@ class RecordOverseasCoveringUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RecordOverseasCoveringUseCaseError.BreedingRegistrationNotFound(missing)
+                    RecordOverseasCoveringUseCaseError.BreedingRegistrationNotFound(missing),
             )
             verify(exactly = 0) { w.breedingResultRepository.save(worldId, any()) }
         }
@@ -164,8 +164,8 @@ class RecordOverseasCoveringUseCaseTest {
             assert(
                 result.getError() ==
                     RecordOverseasCoveringUseCaseError.PreconditionViolated(
-                        RecordOverseasCoveringError.NotBroodmare
-                    )
+                        RecordOverseasCoveringError.NotBroodmare,
+                    ),
             )
             verify(exactly = 0) { w.breedingResultRepository.save(worldId, any()) }
         }
@@ -190,8 +190,8 @@ class RecordOverseasCoveringUseCaseTest {
                         RecordOverseasCoveringError.AlreadyRecordedForYear(
                             Year.of(1999),
                             existing.id,
-                        )
-                    )
+                        ),
+                    ),
             )
             verify(exactly = 0) { w.breedingResultRepository.save(worldId, any()) }
         }

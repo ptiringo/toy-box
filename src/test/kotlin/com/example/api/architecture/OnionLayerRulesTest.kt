@@ -94,7 +94,7 @@ class OnionLayerRulesTest {
                 resideInAPackage("org.springframework..")
                     .and(not(resideInAPackage("org.springframework.stereotype..")))
                     .and(not(resideInAPackage("org.springframework.transaction.annotation..")))
-                    .and(not(type(ApplicationEventPublisher::class.java)))
+                    .and(not(type(ApplicationEventPublisher::class.java))),
             )
 
     /** ユースケース（@Service）は application 層に置くこと。 */

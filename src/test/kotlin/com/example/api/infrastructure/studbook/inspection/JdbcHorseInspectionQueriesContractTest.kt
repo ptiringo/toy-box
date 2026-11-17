@@ -61,7 +61,7 @@ class JdbcHorseInspectionQueriesContractTest(
                 featureHairWhorl = "頭部正中",
                 featureWhiteMarkings = "左後一白",
                 featureNosePrint = "渦紋",
-            )
+            ),
         )
 
         val view = queries.findById(worldId, HorseInspectionId(id))
@@ -82,7 +82,7 @@ class JdbcHorseInspectionQueriesContractTest(
                 id = id,
                 microchipNumber = "392140000000002",
                 parentageType = "BY_BLOOD_TYPE",
-            )
+            ),
         )
 
         val view = queries.findById(worldId, HorseInspectionId(id))
@@ -100,12 +100,12 @@ class JdbcHorseInspectionQueriesContractTest(
                 id = id,
                 microchipNumber = "392140000000003",
                 parentageType = "BY_OVERSEAS_INSTITUTION",
-            )
+            ),
         )
 
         assert(
             queries.findById(worldId, HorseInspectionId(id))!!.parentage ==
-                ParentageDetermination.ByOverseasInstitution
+                ParentageDetermination.ByOverseasInstitution,
         )
     }
 
@@ -118,12 +118,12 @@ class JdbcHorseInspectionQueriesContractTest(
                 id = id,
                 microchipNumber = "392140000000004",
                 parentageType = "NOT_APPLICABLE",
-            )
+            ),
         )
 
         assert(
             queries.findById(worldId, HorseInspectionId(id))!!.parentage ==
-                ParentageDetermination.NotApplicable
+                ParentageDetermination.NotApplicable,
         )
     }
 

@@ -122,7 +122,7 @@ class RegisterFoalTest {
 
         assert(
             result.getError() ==
-                RegisterFoalError.RegistrationFailed(RegisterInStudBookError.SireNotMale)
+                RegisterFoalError.RegistrationFailed(RegisterInStudBookError.SireNotMale),
         )
     }
 }

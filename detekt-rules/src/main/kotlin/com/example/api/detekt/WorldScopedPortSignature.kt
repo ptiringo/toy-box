@@ -56,7 +56,7 @@ class WorldScopedPortSignature(config: Config) :
                 Entity.from(function),
                 "${declaration.name}.${function.name} は第 1 引数に WorldId を取っていない。" +
                     "永続化ポートは世界（テナント）のスコープを引数で受け取ること（ADR-0067 / #706）。",
-            )
+            ),
         )
     }
 

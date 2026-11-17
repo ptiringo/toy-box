@@ -24,11 +24,12 @@ class McpToolParameterScanTest {
                     "bad_tool" to schema("worldId", "accountId"),
                     "snake_tool" to schema("account_id"),
                     "subject_tool" to schema("subjectId"),
-                )
+                ),
             )
 
         assert(
-            found == listOf("bad_tool.accountId", "snake_tool.account_id", "subject_tool.subjectId")
+            found ==
+                listOf("bad_tool.accountId", "snake_tool.account_id", "subject_tool.subjectId"),
         )
     }
 
@@ -36,7 +37,7 @@ class McpToolParameterScanTest {
     fun `worldIdなどアカウントを指定しない引数だけのツールは検出しないこと`() {
         val found =
             accountLikeParameters(
-                mapOf("get_jockey" to schema("worldId", "jockeyId"), "list_worlds" to schema())
+                mapOf("get_jockey" to schema("worldId", "jockeyId"), "list_worlds" to schema()),
             )
 
         assert(found.isEmpty())

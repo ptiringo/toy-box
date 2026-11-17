@@ -149,7 +149,7 @@ class RegisterFoalUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterFoalUseCaseError.RegistrationNumberAlreadyTaken("2024104567")
+                    RegisterFoalUseCaseError.RegistrationNumberAlreadyTaken("2024104567"),
             )
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
         }
@@ -197,7 +197,7 @@ class RegisterFoalUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterFoalUseCaseError.BreedingResultNotFound(breedingResultId)
+                    RegisterFoalUseCaseError.BreedingResultNotFound(breedingResultId),
             )
         }
 
@@ -213,8 +213,8 @@ class RegisterFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterFoalUseCaseError.BreedingRegistrationNotFound(
-                        w.breedingRegistration.id.value
-                    )
+                        w.breedingRegistration.id.value,
+                    ),
             )
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
         }
@@ -249,7 +249,7 @@ class RegisterFoalUseCaseTest {
             val w = Wiring()
             val overseas =
                 BreedingFixture.overseasBreedingResult(
-                        broodmareRegistration = w.breedingRegistration
+                        broodmareRegistration = w.breedingRegistration,
                     )
                     .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2000, 3, 21)))
                     .unwrap()
@@ -260,8 +260,8 @@ class RegisterFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterFoalUseCaseError.PreconditionViolated(
-                        RegisterFoalError.NotDomesticCovering
-                    )
+                        RegisterFoalError.NotDomesticCovering,
+                    ),
             )
             verify(exactly = 0) { w.bloodHorseRepository.findById(worldId, any()) }
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
@@ -283,8 +283,8 @@ class RegisterFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterFoalUseCaseError.PreconditionViolated(
-                        RegisterFoalError.NotLiveFoal(null)
-                    )
+                        RegisterFoalError.NotLiveFoal(null),
+                    ),
             )
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
         }
@@ -294,7 +294,7 @@ class RegisterFoalUseCaseTest {
             val w = Wiring()
             val uncovered =
                 BreedingFixture.uncoveredBreedingResult(
-                    broodmareRegistration = w.breedingRegistration
+                    broodmareRegistration = w.breedingRegistration,
                 )
             every { w.breedingResultRepository.findById(worldId, uncovered.id) } returns uncovered
 
@@ -303,8 +303,8 @@ class RegisterFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterFoalUseCaseError.PreconditionViolated(
-                        RegisterFoalError.NotLiveFoal(FoalingOutcome.NotCovered)
-                    )
+                        RegisterFoalError.NotLiveFoal(FoalingOutcome.NotCovered),
+                    ),
             )
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
         }
@@ -321,8 +321,8 @@ class RegisterFoalUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterFoalUseCaseError.PreconditionViolated(
-                        RegisterFoalError.RegistrationFailed(RegisterInStudBookError.SireNotMale)
-                    )
+                        RegisterFoalError.RegistrationFailed(RegisterInStudBookError.SireNotMale),
+                    ),
             )
             verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
         }

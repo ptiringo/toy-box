@@ -37,6 +37,6 @@ class GeneralCodingRulesTest {
             .callMethod(UUID::class.java, "randomUUID")
             .because(
                 "ID は domain.shared.generateId()（UUIDv7 相当のタイムベース生成）経由で生成する。" +
-                    "永続化時のインデックス局所性のため UUID.randomUUID() の直接呼び出しは禁止（ADR-0005）"
+                    "永続化時のインデックス局所性のため UUID.randomUUID() の直接呼び出しは禁止（ADR-0005）",
             )
 }

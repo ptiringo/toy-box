@@ -37,7 +37,7 @@ fun RestTestClient.registerImportedHorse(
                     "origin_country" to "アイルランド",
                     "landing_date" to "2020-09-01",
                     "registration_number" to registrationNumber,
-                )
+                ),
             )
             .exchange()
             .expectStatus()
@@ -70,7 +70,7 @@ fun RestTestClient.registerBreedingRegistration(
                 mapOf(
                     "blood_horse_id" to horseId,
                     "registration_number" to breedingRegistrationNumber,
-                )
+                ),
             )
             .exchange()
             .expectStatus()

@@ -222,7 +222,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         fun `前提条件違反（NotStallion）が 422 と problem+json に変換されること`() {
             every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
-                    RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
+                    RecordCoveringUseCaseError.PreconditionViolated(
+                        RecordCoveringError.NotStallion,
+                    ),
                 )
 
             tester
@@ -243,8 +245,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
-                        RecordCoveringError.NotBroodmare
-                    )
+                        RecordCoveringError.NotBroodmare,
+                    ),
                 )
 
             tester
@@ -271,9 +273,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                             CoveringValidityError.OutsideValidPeriod(
                                 LocalDate.of(2024, 4, 1),
                                 period,
-                            )
-                        )
-                    )
+                            ),
+                        ),
+                    ),
                 )
 
             tester
@@ -297,9 +299,9 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
                         RecordCoveringError.InvalidCovering(
-                            CoveringValidityError.OutsideValidRegion(aomori, setOf(hokkaido))
-                        )
-                    )
+                            CoveringValidityError.OutsideValidRegion(aomori, setOf(hokkaido)),
+                        ),
+                    ),
                 )
 
             tester
@@ -321,8 +323,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             every { recordCovering(any<Actor>(), any<Command<RecordCoveringCommand>>()) } returns
                 Err(
                     RecordCoveringUseCaseError.PreconditionViolated(
-                        RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
-                    )
+                        RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id),
+                    ),
                 )
 
             tester
@@ -393,7 +395,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             val payload = captured.single().payload
             assert(
                 payload.breedingRegistrationId ==
-                    UUID.fromString("11111111-1111-1111-1111-111111111111")
+                    UUID.fromString("11111111-1111-1111-1111-111111111111"),
             )
             assert(payload.sire.name == "Danehill")
             assert(payload.sire.studBookCountry == "アメリカ")
@@ -467,8 +469,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
         fun `前提条件違反（NotBroodmare）が 422 と problem+json に変換されること`() {
             stubError(
                 RecordOverseasCoveringUseCaseError.PreconditionViolated(
-                    RecordOverseasCoveringError.NotBroodmare
-                )
+                    RecordOverseasCoveringError.NotBroodmare,
+                ),
             )
 
             tester
@@ -489,8 +491,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             val existing = BreedingFixture.breedingResult()
             stubError(
                 RecordOverseasCoveringUseCaseError.PreconditionViolated(
-                    RecordOverseasCoveringError.AlreadyRecordedForYear(Year.of(1999), existing.id)
-                )
+                    RecordOverseasCoveringError.AlreadyRecordedForYear(Year.of(1999), existing.id),
+                ),
             )
 
             tester
@@ -560,7 +562,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .uri(uri, worldId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    """{ "breeding_registration_id": "11111111-1111-1111-1111-111111111111" }"""
+                    """{ "breeding_registration_id": "11111111-1111-1111-1111-111111111111" }""",
                 )
                 .assertThat()
                 .hasStatus(HttpStatus.BAD_REQUEST)
@@ -594,8 +596,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             every { recordUncovered(any<Actor>(), any<Command<RecordUncoveredCommand>>()) } returns
                 Err(
                     RecordUncoveredUseCaseError.PreconditionViolated(
-                        RecordUncoveredError.NotBroodmare
-                    )
+                        RecordUncoveredError.NotBroodmare,
+                    ),
                 )
 
             tester
@@ -617,8 +619,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             every { recordUncovered(any<Actor>(), any<Command<RecordUncoveredCommand>>()) } returns
                 Err(
                     RecordUncoveredUseCaseError.PreconditionViolated(
-                        RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id)
-                    )
+                        RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id),
+                    ),
                 )
 
             tester
@@ -701,8 +703,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             every { reportFoaling(any<Actor>(), any<Command<ReportFoalingCommand>>()) } returns
                 Err(
                     ReportFoalingUseCaseError.AlreadyReported(
-                        FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20))
-                    )
+                        FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
+                    ),
                 )
 
             tester
@@ -808,8 +810,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             } returns
                 Err(
                     SubmitBreedingReportUseCaseError.PreconditionViolated(
-                        SubmitBreedingReportError.OutcomeNotRecorded
-                    )
+                        SubmitBreedingReportError.OutcomeNotRecorded,
+                    ),
                 )
 
             tester
@@ -830,8 +832,8 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
             } returns
                 Err(
                     SubmitBreedingReportUseCaseError.PreconditionViolated(
-                        SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1))
-                    )
+                        SubmitBreedingReportError.ReportAlreadySubmitted(LocalDate.of(2025, 5, 1)),
+                    ),
                 )
 
             tester
@@ -898,7 +900,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                         foreignSire = null,
                         coveringCountry = null,
                         proofNumber = null,
-                    )
+                    ),
                 )
 
             tester
@@ -935,7 +937,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                             ),
                         coveringCountry = "アイルランド",
                         proofNumber = "IE-1999-0004",
-                    )
+                    ),
                 )
 
             val body = tester.get().uri(uri, worldId, id).assertThat().hasStatusOk().bodyJson()
@@ -966,7 +968,7 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                         foreignSire = null,
                         coveringCountry = null,
                         proofNumber = null,
-                    )
+                    ),
                 )
 
             tester

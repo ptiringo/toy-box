@@ -54,7 +54,7 @@ class JdbcAccountRepository(
             .sql(
                 "INSERT INTO iam.account (id, subject_id, version) " +
                     "VALUES (:id, :subjectId, :version) " +
-                    "ON CONFLICT (subject_id) DO NOTHING"
+                    "ON CONFLICT (subject_id) DO NOTHING",
             )
             .param("id", account.id.value)
             .param("subjectId", subjectId.value)

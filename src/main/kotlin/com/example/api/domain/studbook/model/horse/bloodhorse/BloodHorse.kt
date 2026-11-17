@@ -124,7 +124,7 @@ private constructor(
      *   [HorseAlreadyNamed]
      */
     fun assignName(
-        horseName: HorseName
+        horseName: HorseName,
     ): Result<StateTransition<BloodHorse, HorseNamed>, HorseAlreadyNamed> {
         val current = name
         return if (current != null) {
@@ -191,7 +191,7 @@ private constructor(
                         inspection,
                         registrationNumber,
                         Origin.Domestic(sireId = sire.id, damId = dam.id),
-                    )
+                    ),
                 )
             }
         }
@@ -228,7 +228,7 @@ private constructor(
                         inspection,
                         registrationNumber,
                         Origin.BroughtIn(sire = sire, damId = dam.id),
-                    )
+                    ),
                 )
             }
         }

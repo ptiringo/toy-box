@@ -56,7 +56,7 @@ class StudbookSeeder(
                 id = id,
                 microchipNumber = "392140000000001",
                 parentageType = "NOT_APPLICABLE",
-            )
+            ),
         )
         return id
     }
@@ -85,7 +85,7 @@ class StudbookSeeder(
                 originType = "IMPORTED",
                 originCountry = "アイルランド",
                 landingDate = LocalDate.of(2024, 9, 1),
-            )
+            ),
         )
         return id
     }
@@ -108,7 +108,7 @@ class StudbookSeeder(
                 registeredHorseId =
                     seedHorseRow(sex = if (role == "STALLION") "MALE" else "FEMALE"),
                 breedingRole = role,
-            )
+            ),
         )
         return id
     }

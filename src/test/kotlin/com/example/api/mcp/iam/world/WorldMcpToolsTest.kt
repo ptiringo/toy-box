@@ -38,7 +38,7 @@ class WorldMcpToolsTest {
                 listOf(
                     WorldMcpResult(id = first.toString(), name = "はじまりの世界"),
                     WorldMcpResult(id = second.toString(), name = "やり直し牧場"),
-                )
+                ),
         )
     }
 

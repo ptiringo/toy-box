@@ -44,7 +44,7 @@ class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainer
 
     /** 回帰アンカーの種畜証明だけを差し替える（他の値はすべて元のまま）。 */
     private fun anchorWithStudCertificate(
-        certificate: (StudCertificateFixture) -> StudCertificateFixture
+        certificate: (StudCertificateFixture) -> StudCertificateFixture,
     ): CoveredSeasonFixture {
         val anchor = FixtureLoader.load("01-imported-normal.json") as CoveredSeasonFixture
         val covering = anchor.synthesized.covering as DomesticCoveringFixture
@@ -52,8 +52,8 @@ class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainer
             synthesized =
                 anchor.synthesized.copy(
                     covering =
-                        covering.copy(studCertificate = certificate(covering.studCertificate))
-                )
+                        covering.copy(studCertificate = certificate(covering.studCertificate)),
+                ),
         )
     }
 
@@ -107,7 +107,7 @@ class ReplayStopBranchTest(private val engine: ReplayEngine) : PostgresContainer
                         ReplayStep.NAME_FOAL,
                         ReplayStep.SUBMIT_BREEDING_REPORT,
                     )
-            }
+            },
         )
     }
 }

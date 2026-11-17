@@ -64,7 +64,7 @@ class NameHorseUseCaseTest {
             // 保存成功後に HorseNamed が発行されること
             verify(exactly = 1) {
                 eventPublisher.publishEvent(
-                    match<HorseNamed> { it.bloodHorseId == horse.id && it.name.value == "オグリキャップ" }
+                    match<HorseNamed> { it.bloodHorseId == horse.id && it.name.value == "オグリキャップ" },
                 )
             }
         }
@@ -157,7 +157,7 @@ class NameHorseUseCaseTest {
 
             assert(
                 result.getError() ==
-                    NameHorseUseCaseError.InspectionNotFound(horse.inspectionId.value)
+                    NameHorseUseCaseError.InspectionNotFound(horse.inspectionId.value),
             )
             // 審査が欠落した場合、改名済みの集約は保存しない（エラーなのに命名状態だけ永続化されるのを防ぐ）
             verify(exactly = 0) { repository.save(worldId, any()) }
@@ -178,7 +178,7 @@ class NameHorseUseCaseTest {
             val result = useCase(actor, command(horse.id.value, "オグリキャップ"))
 
             assert(
-                result.getError() == NameHorseUseCaseError.ConcurrentModification(horse.id.value)
+                result.getError() == NameHorseUseCaseError.ConcurrentModification(horse.id.value),
             )
             // 保存に失敗した以上、イベントは発行しない
             verify(exactly = 0) { eventPublisher.publishEvent(any()) }

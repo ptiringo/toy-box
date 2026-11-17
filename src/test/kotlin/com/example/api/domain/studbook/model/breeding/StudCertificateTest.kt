@@ -54,7 +54,7 @@ class StudCertificateTest {
         val result = certificate.authorizes(LocalDate.of(2024, 4, 1), aomori)
 
         assert(
-            result.getError() == CoveringValidityError.OutsideValidRegion(aomori, setOf(hokkaido))
+            result.getError() == CoveringValidityError.OutsideValidRegion(aomori, setOf(hokkaido)),
         )
     }
 

@@ -54,7 +54,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
         assert(
             outcome.steps
                 .map { it.step }
-                .containsAll(listOf(ReplayStep.REGISTER_FOAL, ReplayStep.NAME_FOAL))
+                .containsAll(listOf(ReplayStep.REGISTER_FOAL, ReplayStep.NAME_FOAL)),
         )
     }
 
@@ -77,8 +77,8 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
                         ReplayStep.REGISTER_FOAL,
                         ReplayStep.NAME_FOAL,
                         ReplayStep.SUBMIT_BREEDING_REPORT,
-                    )
-                )
+                    ),
+                ),
         )
         assert(
             outcome.steps.none {
@@ -88,7 +88,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
                         ReplayStep.REGISTER_STALLION_BREEDING,
                         ReplayStep.SUBMIT_COVERING_REPORT,
                     )
-            }
+            },
         )
     }
 
@@ -144,7 +144,7 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
                         ReplayStep.REGISTER_FOAL,
                         ReplayStep.NAME_FOAL,
                     )
-            }
+            },
         )
     }
 

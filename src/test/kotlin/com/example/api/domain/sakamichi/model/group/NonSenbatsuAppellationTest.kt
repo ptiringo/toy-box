@@ -24,7 +24,7 @@ class NonSenbatsuAppellationTest {
     fun `101文字は長すぎて InvalidNonSenbatsuAppellation を返す`() {
         assert(
             NonSenbatsuAppellation.create("あ".repeat(101)).getError() ==
-                InvalidNonSenbatsuAppellation
+                InvalidNonSenbatsuAppellation,
         )
     }
 

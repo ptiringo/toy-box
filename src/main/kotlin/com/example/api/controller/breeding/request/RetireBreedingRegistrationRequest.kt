@@ -24,7 +24,7 @@ data class RetireBreedingRegistrationRequest(
 
 /** リクエストを、パスで指定された繁殖登録に対する供用停止ユースケースの入力コマンドへ変換する。 */
 fun RetireBreedingRegistrationRequest.toCommand(
-    breedingRegistrationId: UUID
+    breedingRegistrationId: UUID,
 ): RetireBreedingRegistrationCommand =
     RetireBreedingRegistrationCommand(
         breedingRegistrationId = breedingRegistrationId,

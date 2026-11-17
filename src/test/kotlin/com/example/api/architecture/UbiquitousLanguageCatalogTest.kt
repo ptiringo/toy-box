@@ -61,7 +61,7 @@ class UbiquitousLanguageCatalogTest {
         return byContext.entries.joinToString(separator = "\n\n") { (context, contextTerms) ->
             val rows =
                 contextTerms.sortedWith(compareBy({ it.kind.order }, { it.name })).joinToString(
-                    separator = "\n"
+                    separator = "\n",
                 ) {
                     "| ${it.name} | ${it.kind.label} | ${it.pkg} |"
                 }
@@ -104,7 +104,7 @@ class UbiquitousLanguageCatalogTest {
                 facade.methods
                     .filter { method ->
                         method.modifiers.containsAll(
-                            listOf(JavaModifier.PUBLIC, JavaModifier.STATIC)
+                            listOf(JavaModifier.PUBLIC, JavaModifier.STATIC),
                         ) && !method.name.contains('$')
                     }
                     .map {
