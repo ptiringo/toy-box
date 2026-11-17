@@ -80,7 +80,7 @@ internal fun actorIsBuiltOnlyByFactory(packageIdentifier: String): ArchRule =
         .callCodeUnitWhere(constructsOrCopiesActor)
         .because(
             "MCP では Actor を McpActorFactory だけが組む。" +
-                "直接組むと所有確認（existsOwnedBy）を迂回できる（#752 / ADR-0073）"
+                "直接組むと所有確認（existsOwnedBy）を迂回できる（#752 / ADR-0073）",
         )
 
 /**

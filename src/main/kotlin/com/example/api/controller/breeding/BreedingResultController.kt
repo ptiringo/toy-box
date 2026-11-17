@@ -79,7 +79,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = BreedingResultResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -90,7 +90,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -124,7 +124,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = BreedingResultResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -135,7 +135,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -146,7 +146,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -157,7 +157,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -208,7 +208,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = BreedingResultResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -219,7 +219,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -230,7 +230,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -241,7 +241,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -282,7 +282,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = BreedingResultResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -293,7 +293,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -304,7 +304,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -315,7 +315,7 @@ class BreedingResultController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],

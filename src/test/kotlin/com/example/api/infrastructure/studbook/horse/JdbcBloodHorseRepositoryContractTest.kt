@@ -110,14 +110,14 @@ class JdbcBloodHorseRepositoryContractTest(
                 BloodHorseFixture.bloodHorse(
                     sex = Sex.MALE,
                     registrationNumber = "SIRE-${generateId()}",
-                )
+                ),
             )
         val dam =
             seeder.seedHorse(
                 BloodHorseFixture.bloodHorse(
                     sex = Sex.FEMALE,
                     registrationNumber = "DAM-${generateId()}",
-                )
+                ),
             )
         val foal =
             BloodHorse.create(
@@ -357,7 +357,7 @@ class JdbcBloodHorseRepositoryContractTest(
             repository.existsByRegistrationNumber(
                 worldId,
                 PedigreeRegistrationNumber.create("2023104567").unwrap(),
-            )
+            ),
         )
     }
 
@@ -371,7 +371,7 @@ class JdbcBloodHorseRepositoryContractTest(
             !repository.existsByRegistrationNumber(
                 worldId,
                 PedigreeRegistrationNumber.create("9999999999").unwrap(),
-            )
+            ),
         )
     }
 
@@ -385,7 +385,7 @@ class JdbcBloodHorseRepositoryContractTest(
             !repository.existsByRegistrationNumber(
                 WorldId(createWorld()),
                 PedigreeRegistrationNumber.create("2023104567").unwrap(),
-            )
+            ),
         )
     }
 
@@ -531,7 +531,7 @@ class JdbcBloodHorseRepositoryContractTest(
                 BloodHorseFixture.bloodHorse(
                     sex = Sex.FEMALE,
                     registrationNumber = "DAM-${generateId()}",
-                )
+                ),
             )
         val sire = BloodHorseFixture.foreignSire()
         val foal =

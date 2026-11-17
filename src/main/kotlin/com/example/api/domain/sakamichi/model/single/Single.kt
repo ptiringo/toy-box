@@ -117,7 +117,7 @@ private constructor(
                             headlineTrackNumber = headlineTrackNumber,
                             senbatsu = senbatsu,
                             nonSenbatsuTracks = nonSenbatsuTracks,
-                        )
+                        ),
                     )
             }
         }

@@ -71,7 +71,7 @@ class SubmitCoveringReportTest {
 
         assert(
             result.getError() ==
-                SubmitCoveringReportError.AlreadySubmittedForYear(Year.of(2024), existing.id)
+                SubmitCoveringReportError.AlreadySubmittedForYear(Year.of(2024), existing.id),
         )
     }
 

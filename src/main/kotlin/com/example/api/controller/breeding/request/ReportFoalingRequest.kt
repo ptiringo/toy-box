@@ -40,7 +40,7 @@ fun ReportFoalingRequest.toOutcome(): Result<FoalingOutcome, ProblemDetail> =
                     code = "foaling-outcome-not-reportable",
                     title = "Foaling outcome not reportable",
                     detail = "種付せず（NOT_COVERED）は分娩結果として報告できません。",
-                )
+                ),
             )
         FoalingOutcomeDto.LIVE_FOAL ->
             if (foalingDate == null) {
@@ -50,7 +50,7 @@ fun ReportFoalingRequest.toOutcome(): Result<FoalingOutcome, ProblemDetail> =
                         code = "missing-foaling-date",
                         title = "Missing foaling date",
                         detail = "生産（LIVE_FOAL）のときは foaling_date が必須です。",
-                    )
+                    ),
                 )
             } else {
                 Ok(FoalingOutcome.LiveFoal(foalingDate))

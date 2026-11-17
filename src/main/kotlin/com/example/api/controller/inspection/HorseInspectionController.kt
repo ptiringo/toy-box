@@ -60,7 +60,7 @@ class HorseInspectionController(
                             Content(
                                 schema = Schema(implementation = HorseInspectionResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -71,7 +71,7 @@ class HorseInspectionController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -105,7 +105,7 @@ class HorseInspectionController(
                             Content(
                                 schema = Schema(implementation = HorseInspectionResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -116,7 +116,7 @@ class HorseInspectionController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],

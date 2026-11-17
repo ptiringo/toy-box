@@ -45,7 +45,7 @@ fun submitCoveringReport(
         )
     if (existingForYear != null) {
         return Err(
-            SubmitCoveringReportError.AlreadySubmittedForYear(coveringYear, existingForYear.id)
+            SubmitCoveringReportError.AlreadySubmittedForYear(coveringYear, existingForYear.id),
         )
     }
     return CoveringReport.create(stallionRegistration, coveringYear, submittedOn)

@@ -57,7 +57,7 @@ class BloodHorseCreateTest {
         val entry = BloodHorseFixture.studBookEntry()
         val inspection =
             BloodHorseFixture.inspection(
-                parentage = ParentageDetermination.ByDna(DnaParentageResult.UNTESTED)
+                parentage = ParentageDetermination.ByDna(DnaParentageResult.UNTESTED),
             )
 
         val result = BloodHorse.create(sire, dam, entry, inspection, registrationNumber)

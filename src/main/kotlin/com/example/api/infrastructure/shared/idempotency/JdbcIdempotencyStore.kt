@@ -31,7 +31,7 @@ class JdbcIdempotencyStore(private val jdbcClient: JdbcClient) : IdempotencyStor
                 "INSERT INTO shared.idempotency_record " +
                     "(world_id, idempotency_key, request_fingerprint, created_at) " +
                     "VALUES (:worldId, :key, :fingerprint, now()) " +
-                    "ON CONFLICT (world_id, idempotency_key) DO NOTHING"
+                    "ON CONFLICT (world_id, idempotency_key) DO NOTHING",
             )
             .param("worldId", worldId.value)
             .param("key", key)
@@ -44,7 +44,7 @@ class JdbcIdempotencyStore(private val jdbcClient: JdbcClient) : IdempotencyStor
         jdbcClient
             .sql(
                 "UPDATE shared.idempotency_record SET resource_id = :resourceId " +
-                    "WHERE world_id = :worldId AND idempotency_key = :key"
+                    "WHERE world_id = :worldId AND idempotency_key = :key",
             )
             .param("resourceId", resourceId)
             .param("worldId", worldId.value)
@@ -56,7 +56,7 @@ class JdbcIdempotencyStore(private val jdbcClient: JdbcClient) : IdempotencyStor
         jdbcClient
             .sql(
                 "SELECT request_fingerprint, resource_id FROM shared.idempotency_record " +
-                    "WHERE world_id = :worldId AND idempotency_key = :key FOR UPDATE"
+                    "WHERE world_id = :worldId AND idempotency_key = :key FOR UPDATE",
             )
             .param("worldId", worldId.value)
             .param("key", key)

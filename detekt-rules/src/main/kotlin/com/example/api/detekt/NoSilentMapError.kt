@@ -44,7 +44,7 @@ class NoSilentMapError(config: Config) :
                     Entity.from(expression),
                     "mapError のラムダが変換元エラーを参照も型明示もしていない。エラーを参照するか、" +
                         "パラメータの型を明示すること（_: 変換元エラー型 ->。.claude/rules/error-handling.md）。",
-                )
+                ),
             )
         }
     }

@@ -78,7 +78,7 @@ class RecordCoveringUseCaseTest {
                             validPayload(
                                 broodmareRegistration.id.value,
                                 stallionRegistration.id.value,
-                            )
+                            ),
                         ),
                     )
                     .unwrap()
@@ -108,7 +108,7 @@ class RecordCoveringUseCaseTest {
                     actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
-                            .copy(certificateNumber = "")
+                            .copy(certificateNumber = ""),
                     ),
                 )
 
@@ -129,7 +129,7 @@ class RecordCoveringUseCaseTest {
                 useCase(
                     actor,
                     command(
-                        validPayload(UUID.randomUUID(), UUID.randomUUID()).copy(coveringPlace = "")
+                        validPayload(UUID.randomUUID(), UUID.randomUUID()).copy(coveringPlace = ""),
                     ),
                 )
 
@@ -151,7 +151,7 @@ class RecordCoveringUseCaseTest {
                 useCase(
                     actor,
                     command(
-                        payload.copy(studCertificate = payload.studCertificate.copy(number = ""))
+                        payload.copy(studCertificate = payload.studCertificate.copy(number = "")),
                     ),
                 )
 
@@ -175,8 +175,8 @@ class RecordCoveringUseCaseTest {
                     command(
                         payload.copy(
                             studCertificate =
-                                payload.studCertificate.copy(validRegions = listOf("北海道", ""))
-                        )
+                                payload.studCertificate.copy(validRegions = listOf("北海道", "")),
+                        ),
                     ),
                 )
 
@@ -200,8 +200,8 @@ class RecordCoveringUseCaseTest {
                     command(
                         payload.copy(
                             studCertificate =
-                                payload.studCertificate.copy(validRegions = emptyList())
-                        )
+                                payload.studCertificate.copy(validRegions = emptyList()),
+                        ),
                     ),
                 )
 
@@ -228,8 +228,8 @@ class RecordCoveringUseCaseTest {
                                 payload.studCertificate.copy(
                                     validPeriodStart = LocalDate.of(2024, 12, 31),
                                     validPeriodEnd = LocalDate.of(2024, 1, 1),
-                                )
-                        )
+                                ),
+                        ),
                     ),
                 )
 
@@ -254,7 +254,7 @@ class RecordCoveringUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RecordCoveringUseCaseError.BreedingRegistrationNotFound(breedingRegistrationId)
+                    RecordCoveringUseCaseError.BreedingRegistrationNotFound(breedingRegistrationId),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
@@ -282,7 +282,7 @@ class RecordCoveringUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RecordCoveringUseCaseError.StallionRegistrationNotFound(stallionRegistrationId)
+                    RecordCoveringUseCaseError.StallionRegistrationNotFound(stallionRegistrationId),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
@@ -313,13 +313,15 @@ class RecordCoveringUseCaseTest {
                         validPayload(
                             broodmareRegistration.id.value,
                             notStallionRegistration.id.value,
-                        )
+                        ),
                     ),
                 )
 
             assert(
                 result.getError() ==
-                    RecordCoveringUseCaseError.PreconditionViolated(RecordCoveringError.NotStallion)
+                    RecordCoveringUseCaseError.PreconditionViolated(
+                        RecordCoveringError.NotStallion,
+                    ),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
@@ -353,15 +355,15 @@ class RecordCoveringUseCaseTest {
                 useCase(
                     actor,
                     command(
-                        validPayload(broodmareRegistration.id.value, stallionRegistration.id.value)
+                        validPayload(broodmareRegistration.id.value, stallionRegistration.id.value),
                     ),
                 )
 
             assert(
                 result.getError() ==
                     RecordCoveringUseCaseError.PreconditionViolated(
-                        RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id)
-                    )
+                        RecordCoveringError.AlreadyRecordedForYear(Year.of(2024), existing.id),
+                    ),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }

@@ -29,7 +29,7 @@ class JdbcHorseInspectionQueries(private val jdbcClient: JdbcClient) : HorseInsp
                 FROM studbook.horse_inspection
                 WHERE id = :id AND world_id = :worldId
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("id", id.value)
             .param("worldId", worldId.value)

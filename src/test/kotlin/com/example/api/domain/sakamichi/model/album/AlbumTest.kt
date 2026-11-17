@@ -35,7 +35,7 @@ class AlbumTest {
                         TrackNumber.create(2).getOrThrow { AssertionError("n") },
                         TrackTitle.create("僕は僕を好きになる").getOrThrow { AssertionError("t") },
                     ),
-                )
+                ),
             )
             .getOrThrow { AssertionError("fixture tracklist should be valid") }
 
@@ -86,7 +86,8 @@ class AlbumTest {
                 .getOrThrow { AssertionError("valid album") }
 
         assert(
-            album.headlineTitle == TrackTitle.create("僕は僕を好きになる").getOrThrow { AssertionError("t") }
+            album.headlineTitle ==
+                TrackTitle.create("僕は僕を好きになる").getOrThrow { AssertionError("t") },
         )
     }
 
@@ -167,7 +168,7 @@ class AlbumTest {
                             TrackNumber.create(3).getOrThrow { AssertionError("n") },
                             TrackTitle.create("なんとなく、目が合う").getOrThrow { AssertionError("t") },
                         ),
-                    )
+                    ),
                 )
                 .getOrThrow { AssertionError("fixture tracklist should be valid") }
         val tracks = listOf(nonSenbatsuTrack(2), nonSenbatsuTrack(3))
@@ -202,8 +203,8 @@ class AlbumTest {
         assert(
             error ==
                 AlbumError.NonSenbatsuTrackIsHeadline(
-                    setOf(TrackNumber.create(2).getOrThrow { AssertionError("n") })
-                )
+                    setOf(TrackNumber.create(2).getOrThrow { AssertionError("n") }),
+                ),
         )
     }
 
@@ -223,8 +224,8 @@ class AlbumTest {
         assert(
             error ==
                 AlbumError.NonSenbatsuTrackNotInTracklist(
-                    setOf(TrackNumber.create(9).getOrThrow { AssertionError("n") })
-                )
+                    setOf(TrackNumber.create(9).getOrThrow { AssertionError("n") }),
+                ),
         )
     }
 
@@ -244,8 +245,8 @@ class AlbumTest {
         assert(
             error ==
                 AlbumError.DuplicateNonSenbatsuTrack(
-                    setOf(TrackNumber.create(1).getOrThrow { AssertionError("n") })
-                )
+                    setOf(TrackNumber.create(1).getOrThrow { AssertionError("n") }),
+                ),
         )
     }
 }

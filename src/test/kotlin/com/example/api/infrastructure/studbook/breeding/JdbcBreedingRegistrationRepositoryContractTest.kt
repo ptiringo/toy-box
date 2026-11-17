@@ -216,7 +216,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
 
         assert(conflicted.getError() == UpdateConflict)
         assert(
-            repository.findById(worldId, inserted.id)?.retirement?.reason == RetirementReason.DEATH
+            repository.findById(worldId, inserted.id)?.retirement?.reason == RetirementReason.DEATH,
         )
     }
 
@@ -303,7 +303,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
             !repository.existsByRegistrationNumber(
                 worldId,
                 BreedingRegistrationNumber.create("B-9999-9999").unwrap(),
-            )
+            ),
         )
     }
 
@@ -327,7 +327,7 @@ class JdbcBreedingRegistrationRepositoryContractTest(
         // 別個体・同じ繁殖登録番号
         val other =
             seeder.seedHorse(
-                BloodHorseFixture.bloodHorse(sex = Sex.MALE, registrationNumber = "2018101111")
+                BloodHorseFixture.bloodHorse(sex = Sex.MALE, registrationNumber = "2018101111"),
             )
 
         assertThrows<DataIntegrityViolationException> {

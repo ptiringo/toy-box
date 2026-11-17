@@ -67,12 +67,12 @@ class WorldController(
                             Content(
                                 array =
                                     ArraySchema(
-                                        schema = Schema(implementation = WorldResponse::class)
+                                        schema = Schema(implementation = WorldResponse::class),
                                     ),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
-                )
+                ),
             ],
     )
     @GetMapping("/api/worlds")
@@ -94,7 +94,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = WorldResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -105,7 +105,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -116,7 +116,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -149,7 +149,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = WorldResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -160,7 +160,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -171,7 +171,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -182,7 +182,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -216,7 +216,7 @@ class WorldController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],

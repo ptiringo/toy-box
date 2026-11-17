@@ -57,7 +57,7 @@ class RecordUncoveredTest {
 
         assert(
             result.getError() ==
-                RecordUncoveredError.AlreadyRecordedForYear(breedingYear, existing.id)
+                RecordUncoveredError.AlreadyRecordedForYear(breedingYear, existing.id),
         )
     }
 
@@ -76,7 +76,7 @@ class RecordUncoveredTest {
 
         assert(
             result.getError() ==
-                RecordUncoveredError.AlreadyRecordedForYear(breedingYear, existingCovered.id)
+                RecordUncoveredError.AlreadyRecordedForYear(breedingYear, existingCovered.id),
         )
     }
 

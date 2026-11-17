@@ -25,7 +25,7 @@ class JdbcWorldQueries(private val jdbcClient: JdbcClient) : WorldQueries {
         jdbcClient
             .sql(
                 "SELECT EXISTS(SELECT 1 FROM iam.world " +
-                    "WHERE id = :worldId AND account_id = :accountId)"
+                    "WHERE id = :worldId AND account_id = :accountId)",
             )
             .param("worldId", worldId.value)
             .param("accountId", accountId.value)

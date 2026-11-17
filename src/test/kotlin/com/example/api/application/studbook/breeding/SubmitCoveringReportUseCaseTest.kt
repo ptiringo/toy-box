@@ -118,7 +118,7 @@ class SubmitCoveringReportUseCaseTest {
 
             assert(
                 result.getError() ==
-                    SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(unknownId)
+                    SubmitCoveringReportUseCaseError.StallionRegistrationNotFound(unknownId),
             )
             verify(exactly = 0) { reportRepository.save(worldId, any()) }
         }
@@ -152,8 +152,8 @@ class SubmitCoveringReportUseCaseTest {
             assert(
                 result.getError() ==
                     SubmitCoveringReportUseCaseError.PreconditionViolated(
-                        SubmitCoveringReportError.NotStallion
-                    )
+                        SubmitCoveringReportError.NotStallion,
+                    ),
             )
             verify(exactly = 0) { reportRepository.save(worldId, any()) }
         }
@@ -196,8 +196,8 @@ class SubmitCoveringReportUseCaseTest {
                         SubmitCoveringReportError.AlreadySubmittedForYear(
                             Year.of(2024),
                             existing.id,
-                        )
-                    )
+                        ),
+                    ),
             )
             verify(exactly = 0) { reportRepository.save(worldId, any()) }
         }

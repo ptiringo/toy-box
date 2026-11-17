@@ -33,11 +33,11 @@ class CoveringReportDeadlineTest {
         // UTC 14:59:59 = JST 23:59:59（同日 9/30）／ UTC 15:00:00 = JST 翌日 0:00:00（10/1）
         assert(
             CoveringReportDeadline.submissionDateOf(Instant.parse("2024-09-30T14:59:59Z")) ==
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
         )
         assert(
             CoveringReportDeadline.submissionDateOf(Instant.parse("2024-09-30T15:00:00Z")) ==
-                LocalDate.of(2024, 10, 1)
+                LocalDate.of(2024, 10, 1),
         )
     }
 }

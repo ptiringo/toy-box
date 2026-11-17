@@ -93,7 +93,7 @@ class JdbcBreedingResultRepositoryContractTest(
                         BloodHorseFixture.bloodHorse(
                             sex = Sex.FEMALE,
                             registrationNumber = "MARE-${generateId()}",
-                        )
+                        ),
                     ),
                 registrationNumber = "B-MARE-${generateId()}",
             )
@@ -104,7 +104,7 @@ class JdbcBreedingResultRepositoryContractTest(
                         BloodHorseFixture.bloodHorse(
                             sex = Sex.MALE,
                             registrationNumber = "SIRE-${generateId()}",
-                        )
+                        ),
                     ),
                 registrationNumber = "B-SIRE-${generateId()}",
             )
@@ -125,13 +125,13 @@ class JdbcBreedingResultRepositoryContractTest(
                         BloodHorseFixture.bloodHorse(
                             sex = Sex.FEMALE,
                             registrationNumber = "MARE-${generateId()}",
-                        )
+                        ),
                     ),
                 registrationNumber = "B-MARE-${generateId()}",
             )
         seeder.seedRegistration(broodmareRegistration)
         return BreedingFixture.uncoveredBreedingResult(
-            broodmareRegistration = broodmareRegistration
+            broodmareRegistration = broodmareRegistration,
         )
     }
 
@@ -261,7 +261,7 @@ class JdbcBreedingResultRepositoryContractTest(
                 worldId,
                 result.breedingRegistrationId,
                 Year.of(2099),
-            ) == null
+            ) == null,
         )
     }
 
@@ -548,7 +548,7 @@ class JdbcBreedingResultRepositoryContractTest(
                         BloodHorseFixture.bloodHorse(
                             sex = Sex.FEMALE,
                             registrationNumber = "MARE-${generateId()}",
-                        )
+                        ),
                     ),
                 registrationNumber = "B-MARE-${generateId()}",
             )

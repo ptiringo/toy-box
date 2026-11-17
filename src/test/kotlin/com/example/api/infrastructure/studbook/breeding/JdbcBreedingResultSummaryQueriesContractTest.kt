@@ -107,7 +107,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
                 covered(stallion, 2024, "NOT_CONCEIVED"), // 受胎× 生産×
                 covered(stallion, 2024, null), // 未報告: 分母のみ
                 covered(stallion, 2024, "TWIN_ABORTION"), // 受胎○ 生産×（双子流産）
-            )
+            ),
         )
         // 除外されるべき行
         rows.save(notCovered(2024)) // 種付せず → 分母に入らない
@@ -136,7 +136,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
             listOf(
                 covered(stallion, 2024, "LIVE_FOAL", LocalDate.of(2025, 3, 1)),
                 covered(stallion, 2023, "NOT_CONCEIVED"),
-            )
+            ),
         )
 
         val years = queries.findByStallion(worldId, BloodHorseId(stallion)).map { it.breedingYear }
@@ -168,7 +168,7 @@ class JdbcBreedingResultSummaryQueriesContractTest(
                 coveringProofNumber = "IE-2024-0001",
                 outcomeType = "LIVE_FOAL",
                 outcomeFoalingDate = LocalDate.of(2025, 3, 2),
-            )
+            ),
         )
 
         val summaries = queries.findByStallion(worldId, BloodHorseId(stallion))

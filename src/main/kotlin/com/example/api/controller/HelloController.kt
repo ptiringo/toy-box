@@ -25,9 +25,9 @@ class HelloController {
                             Content(
                                 schema = Schema(implementation = HelloResponse::class),
                                 mediaType = "application/json",
-                            )
+                            ),
                         ],
-                )
+                ),
             ],
     )
     @GetMapping("/api/hello")

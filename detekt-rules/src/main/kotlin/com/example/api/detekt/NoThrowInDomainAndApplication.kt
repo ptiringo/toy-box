@@ -32,7 +32,7 @@ class NoThrowInDomainAndApplication(config: Config) :
                     Entity.from(expression),
                     "ドメイン / アプリケーション層では throw しないこと。業務エラーは Result<V, E> で返し、" +
                         "プログラミングエラーは require / check を使う（.claude/rules/error-handling.md）。",
-                )
+                ),
             )
         }
     }

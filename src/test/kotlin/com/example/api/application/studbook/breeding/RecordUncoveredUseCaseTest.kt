@@ -54,7 +54,7 @@ class RecordUncoveredUseCaseTest {
                 useCase(
                         actor,
                         command(
-                            RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024))
+                            RecordUncoveredCommand(broodmareRegistration.id.value, Year.of(2024)),
                         ),
                     )
                     .unwrap()
@@ -89,7 +89,9 @@ class RecordUncoveredUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RecordUncoveredUseCaseError.BreedingRegistrationNotFound(breedingRegistrationId)
+                    RecordUncoveredUseCaseError.BreedingRegistrationNotFound(
+                        breedingRegistrationId,
+                    ),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
@@ -119,8 +121,8 @@ class RecordUncoveredUseCaseTest {
             assert(
                 result.getError() ==
                     RecordUncoveredUseCaseError.PreconditionViolated(
-                        RecordUncoveredError.NotBroodmare
-                    )
+                        RecordUncoveredError.NotBroodmare,
+                    ),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }
@@ -159,8 +161,8 @@ class RecordUncoveredUseCaseTest {
             assert(
                 result.getError() ==
                     RecordUncoveredUseCaseError.PreconditionViolated(
-                        RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id)
-                    )
+                        RecordUncoveredError.AlreadyRecordedForYear(Year.of(2024), existing.id),
+                    ),
             )
             verify(exactly = 0) { breedingResultRepository.save(worldId, any()) }
         }

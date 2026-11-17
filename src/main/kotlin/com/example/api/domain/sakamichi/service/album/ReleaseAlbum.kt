@@ -60,7 +60,7 @@ fun releaseAlbum(
         inBoth.isNotEmpty() -> Err(ReleaseAlbumError.MembersInBothFormations(inBoth))
         else ->
             Formation.create(
-                    lineup.map { (position, member) -> FormationSlot(position, member.id) }
+                    lineup.map { (position, member) -> FormationSlot(position, member.id) },
                 )
                 .mapError { ReleaseAlbumError.InvalidSenbatsu(it) }
                 .andThen { senbatsu ->
@@ -86,13 +86,13 @@ fun releaseAlbum(
  * @return 構築済みの [NonSenbatsuTrack] の並び、または不変条件違反を wrap した [ReleaseAlbumError]
  */
 private fun buildNonSenbatsuTracks(
-    inputs: List<Pair<TrackNumber, Lineup>>
+    inputs: List<Pair<TrackNumber, Lineup>>,
 ): Result<List<NonSenbatsuTrack>, ReleaseAlbumError> {
     val initial: Result<List<NonSenbatsuTrack>, ReleaseAlbumError> = Ok(emptyList())
     return inputs.fold(initial) { acc, (trackNumber, lineup) ->
         acc.andThen { built ->
             Formation.create(
-                    lineup.map { (position, member) -> FormationSlot(position, member.id) }
+                    lineup.map { (position, member) -> FormationSlot(position, member.id) },
                 )
                 .mapError { ReleaseAlbumError.InvalidNonSenbatsuTrack(trackNumber, it) }
                 .map { formation -> built + NonSenbatsuTrack(trackNumber, formation) }

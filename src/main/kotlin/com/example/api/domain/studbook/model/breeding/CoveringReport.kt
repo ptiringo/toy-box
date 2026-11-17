@@ -104,7 +104,7 @@ private constructor(
                         stallionRegistrationId = stallionRegistration.id,
                         coveringYear = coveringYear,
                         submittedOn = submittedOn,
-                    )
+                    ),
                 )
             }
 

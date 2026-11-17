@@ -7,14 +7,14 @@ class BreedTypeTest {
     @Test
     fun `サラブレッドは両親ともサラブレッドのとき整合すること`() {
         assert(
-            BreedType.THOROUGHBRED.isConsistentWith(BreedType.THOROUGHBRED, BreedType.THOROUGHBRED)
+            BreedType.THOROUGHBRED.isConsistentWith(BreedType.THOROUGHBRED, BreedType.THOROUGHBRED),
         )
     }
 
     @Test
     fun `サラブレッドは父母のいずれかが非サラブレッドだと不整合になること`() {
         assert(
-            !BreedType.THOROUGHBRED.isConsistentWith(BreedType.ANGLO_ARAB, BreedType.THOROUGHBRED)
+            !BreedType.THOROUGHBRED.isConsistentWith(BreedType.ANGLO_ARAB, BreedType.THOROUGHBRED),
         )
         assert(!BreedType.THOROUGHBRED.isConsistentWith(BreedType.THOROUGHBRED, BreedType.ARAB))
         assert(!BreedType.THOROUGHBRED.isConsistentWith(BreedType.ARAB, BreedType.ARAB))

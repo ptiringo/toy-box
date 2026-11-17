@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class BreedingResultSummaryController(
-    private val listBreedingResultSummaries: ListBreedingResultSummariesUseCase
+    private val listBreedingResultSummaries: ListBreedingResultSummariesUseCase,
 ) {
     @Operation(
         summary = "種牡馬の繁殖成績の年次集計を取得する",
@@ -52,13 +52,13 @@ class BreedingResultSummaryController(
                                         schema =
                                             Schema(
                                                 implementation =
-                                                    BreedingResultSummaryResponse::class
-                                            )
+                                                    BreedingResultSummaryResponse::class,
+                                            ),
                                     ),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
-                )
+                ),
             ],
     )
     @GetMapping("/api/worlds/{worldId}/breedingResultSummaries")

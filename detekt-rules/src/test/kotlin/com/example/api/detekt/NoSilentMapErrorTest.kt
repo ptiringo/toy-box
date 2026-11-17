@@ -23,7 +23,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, BlankValue>): Result<Value, UseCaseError> =
                     result.mapError { UseCaseError.InvalidValue }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -40,7 +40,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, RecordError>): Result<Value, UseCaseError> =
                     result.mapError { UseCaseError.PreconditionViolated(it) }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -58,7 +58,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, BlankValue>): Result<Value, UseCaseError> =
                     result.mapError { UseCaseError.InvalidValues(names.map { it.value }) }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -74,7 +74,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, BlankValue>): Result<Value, UseCaseError> =
                     result.mapError { _ -> UseCaseError.InvalidValue }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -90,7 +90,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, BlankValue>): Result<Value, UseCaseError> =
                     result.mapError { cause -> UseCaseError.InvalidValue }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -107,7 +107,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, BlankValue>): Result<Value, UseCaseError> =
                     result.mapError { _: BlankValue -> UseCaseError.InvalidValue }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -123,7 +123,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, RecordError>): Result<Value, UseCaseError> =
                     result.mapError { cause -> UseCaseError.PreconditionViolated(cause) }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -140,7 +140,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, RecordError>): Result<Value, UseCaseError> =
                     result.mapError { names.map { n -> UseCaseError.Violated(n, it) }.first() }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -156,7 +156,7 @@ class NoSilentMapErrorTest {
                 fun fallback(result: Result<Value, BlankValue>): Value =
                     result.getOrElse { Value.DEFAULT }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -173,7 +173,7 @@ class NoSilentMapErrorTest {
                 fun convert(result: Result<Value, BlankValue>): Result<Value, UseCaseError> =
                     result.mapError(::toUseCaseError)
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())

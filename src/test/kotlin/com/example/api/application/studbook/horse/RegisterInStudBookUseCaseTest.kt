@@ -96,7 +96,7 @@ class RegisterInStudBookUseCaseTest {
                     actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
-                            .copy(registrationNumber = "")
+                            .copy(registrationNumber = ""),
                     ),
                 )
 
@@ -117,7 +117,7 @@ class RegisterInStudBookUseCaseTest {
                     actor,
                     command(
                         validPayload(UUID.randomUUID(), UUID.randomUUID())
-                            .copy(microchipNumber = "123")
+                            .copy(microchipNumber = "123"),
                     ),
                 )
 
@@ -137,7 +137,7 @@ class RegisterInStudBookUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken("2023104567")
+                    RegisterInStudBookUseCaseError.RegistrationNumberAlreadyTaken("2023104567"),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -199,8 +199,8 @@ class RegisterInStudBookUseCaseTest {
             assert(
                 result.getError() ==
                     RegisterInStudBookUseCaseError.PreconditionViolated(
-                        RegisterInStudBookError.SireNotMale
-                    )
+                        RegisterInStudBookError.SireNotMale,
+                    ),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }

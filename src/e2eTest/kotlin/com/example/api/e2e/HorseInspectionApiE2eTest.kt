@@ -78,7 +78,7 @@ class HorseInspectionApiE2eTest(val restTestClient: RestTestClient) : PostgresCo
                         "parentage" to
                             mapOf("type" to "BY_DNA", "dna_parentage_result" to "CONSISTENT"),
                         "features" to mapOf("hair_whorl" to "頭部正中", "white_markings" to "流星"),
-                    )
+                    ),
                 )
                 .exchange()
                 .expectStatus()

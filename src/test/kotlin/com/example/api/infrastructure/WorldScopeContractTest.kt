@@ -23,7 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate
  * 等）の追随をマッピングに任せ、検証したい制約だけを浮かび上がらせるため。
  */
 @org.springframework.boot.test.context.SpringBootTest(
-    webEnvironment = org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE
+    webEnvironment = org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE,
 )
 class WorldScopeContractTest : PostgresContainerSupport() {
 
@@ -43,7 +43,7 @@ class WorldScopeContractTest : PostgresContainerSupport() {
                 worldId = worldId,
                 microchipNumber = "39214%09d".format(microchipSequence),
                 parentageType = "NOT_APPLICABLE",
-            )
+            ),
         )
         return id
     }
@@ -74,7 +74,7 @@ class WorldScopeContractTest : PostgresContainerSupport() {
                 damId = damId,
                 originCountry = if (domestic) null else "アイルランド",
                 landingDate = if (domestic) null else LocalDate.of(2025, 1, 10),
-            )
+            ),
         )
         return id
     }

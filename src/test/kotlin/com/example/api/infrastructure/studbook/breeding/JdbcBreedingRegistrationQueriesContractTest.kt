@@ -103,7 +103,7 @@ class JdbcBreedingRegistrationQueriesContractTest(
                 breedingRole = "STALLION",
                 retirementReason = "DEATH",
                 retirementOccurredOn = LocalDate.of(2025, 3, 1),
-            )
+            ),
         )
     }
 }

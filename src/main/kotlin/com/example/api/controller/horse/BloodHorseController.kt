@@ -81,13 +81,13 @@ class BloodHorseController(
                                     ArraySchema(
                                         schema =
                                             Schema(
-                                                implementation = BloodHorseSummaryResponse::class
-                                            )
+                                                implementation = BloodHorseSummaryResponse::class,
+                                            ),
                                     ),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
-                )
+                ),
             ],
     )
     @GetMapping("/api/worlds/{worldId}/bloodHorses")
@@ -112,7 +112,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -123,7 +123,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -154,7 +154,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -165,7 +165,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -176,7 +176,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -211,7 +211,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -222,7 +222,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -257,7 +257,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -268,7 +268,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -304,7 +304,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -315,7 +315,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -326,7 +326,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -339,7 +339,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],
@@ -372,7 +372,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = BloodHorseResponse::class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -383,7 +383,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -394,7 +394,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
                 ApiResponse(
@@ -405,7 +405,7 @@ class BloodHorseController(
                             Content(
                                 schema = Schema(implementation = ProblemDetail::class),
                                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                            )
+                            ),
                         ],
                 ),
             ],

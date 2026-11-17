@@ -32,7 +32,7 @@ class ReleaseSingleTest {
                         TrackNumber.create(3).unwrap(),
                         TrackTitle.create("会いたかったかもしれない").unwrap(),
                     ),
-                )
+                ),
             )
             .unwrap()
     private val headlineTrackNumber = TrackNumber.create(1).unwrap()
@@ -140,8 +140,8 @@ class ReleaseSingleTest {
         assert(
             error ==
                 ReleaseSingleError.InvalidSenbatsu(
-                    FormationError.DuplicateMember(setOf(duplicated.id))
-                )
+                    FormationError.DuplicateMember(setOf(duplicated.id)),
+                ),
         )
     }
 
@@ -155,7 +155,7 @@ class ReleaseSingleTest {
 
         assert(
             error ==
-                ReleaseSingleError.InvalidTrackComposition(SingleError.HeadlineTrackNotInTracklist)
+                ReleaseSingleError.InvalidTrackComposition(SingleError.HeadlineTrackNotInTracklist),
         )
     }
 
@@ -277,7 +277,7 @@ class ReleaseSingleTest {
                 ReleaseSingleError.InvalidNonSenbatsuTrack(
                     underTrack1,
                     FormationError.CenterMissing,
-                )
+                ),
         )
     }
 
@@ -293,8 +293,8 @@ class ReleaseSingleTest {
         assert(
             error ==
                 ReleaseSingleError.InvalidTrackComposition(
-                    SingleError.NonSenbatsuTrackIsHeadline(setOf(headlineTrackNumber))
-                )
+                    SingleError.NonSenbatsuTrackIsHeadline(setOf(headlineTrackNumber)),
+                ),
         )
     }
 }

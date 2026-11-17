@@ -173,7 +173,7 @@ class WorldScopeApiE2eTest(val restTestClient: RestTestClient) : PostgresContain
                         "origin_country" to "アイルランド",
                         "landing_date" to "2020-09-01",
                         "registration_number" to registrationNumber,
-                    )
+                    ),
                 )
                 .exchange()
                 .expectStatus()

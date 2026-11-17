@@ -40,7 +40,7 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
                 FROM studbook.breeding_result
                 WHERE id = :id AND world_id = :worldId
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("id", id.value)
             .param("worldId", worldId.value)

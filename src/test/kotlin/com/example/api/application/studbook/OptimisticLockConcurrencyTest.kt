@@ -113,7 +113,7 @@ class OptimisticLockConcurrencyTest(
             errors.all {
                 it is NameHorseUseCaseError.ConcurrentModification ||
                     it is NameHorseUseCaseError.AlreadyNamed
-            }
+            },
         )
         assert(bloodHorses.findById(worldId, horse.id)?.name != null)
     }
@@ -139,7 +139,7 @@ class OptimisticLockConcurrencyTest(
             errors.all {
                 it is ReportFoalingUseCaseError.ConcurrentModification ||
                     it is ReportFoalingUseCaseError.AlreadyReported
-            }
+            },
         )
         assert(breedingResults.findById(worldId, breedingResult.id)?.outcome != null)
     }
@@ -174,7 +174,7 @@ class OptimisticLockConcurrencyTest(
             errors.all {
                 it is RetireBreedingRegistrationUseCaseError.ConcurrentModification ||
                     it is RetireBreedingRegistrationUseCaseError.AlreadyRetired
-            }
+            },
         )
         assert(breedingRegistrations.findById(worldId, registration.id)?.retirement != null)
     }
@@ -227,7 +227,7 @@ class OptimisticLockConcurrencyTest(
             BloodHorseFixture.bloodHorse(
                 sex = sex,
                 registrationNumber = "$prefix-${generateId()}",
-            )
+            ),
         )
 
     private companion object {

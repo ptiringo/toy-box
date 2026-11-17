@@ -65,7 +65,7 @@ class RecordOverseasCoveringTest {
                                     LocalDate.of(1999, 1, 1),
                                     LocalDate.of(1999, 12, 31),
                                 )
-                                .unwrap()
+                                .unwrap(),
                     ),
             )
         val repository =
@@ -92,7 +92,7 @@ class RecordOverseasCoveringTest {
 
         assert(
             result.getError() ==
-                RecordOverseasCoveringError.AlreadyRecordedForYear(Year.of(1999), existing.id)
+                RecordOverseasCoveringError.AlreadyRecordedForYear(Year.of(1999), existing.id),
         )
     }
 }

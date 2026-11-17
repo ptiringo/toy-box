@@ -31,7 +31,7 @@ data class BreedingRegistrationNotFound(val id: UUID)
  */
 @Service
 class GetBreedingRegistrationUseCase(
-    private val breedingRegistrationQueries: BreedingRegistrationQueries
+    private val breedingRegistrationQueries: BreedingRegistrationQueries,
 ) {
     operator fun invoke(
         actor: Actor,

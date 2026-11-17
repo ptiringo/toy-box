@@ -42,7 +42,7 @@ class RegisterImportedHorseUseCaseTest {
         )
 
     private fun command(
-        payload: RegisterImportedHorseCommand
+        payload: RegisterImportedHorseCommand,
     ): Command<RegisterImportedHorseCommand> = Command(payload, Instant.now())
 
     /** 審査ポートのスタブ。`save` は引数（確定済み審査）をそのまま返す。 */
@@ -116,7 +116,7 @@ class RegisterImportedHorseUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken("2020900001")
+                    RegisterImportedHorseUseCaseError.RegistrationNumberAlreadyTaken("2020900001"),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }

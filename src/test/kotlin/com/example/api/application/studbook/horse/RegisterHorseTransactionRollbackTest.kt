@@ -81,7 +81,7 @@ class RegisterHorseTransactionRollbackTest(
         @Bean
         @Primary
         fun failingBloodHorseRepository(
-            delegate: JdbcBloodHorseRepository
+            delegate: JdbcBloodHorseRepository,
         ): FailingBloodHorseRepository = FailingBloodHorseRepository(delegate)
     }
 

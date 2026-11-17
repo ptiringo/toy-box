@@ -147,7 +147,7 @@ class BreedingResultApiE2eTest(val restTestClient: RestTestClient) : PostgresCon
                                         "valid_period_end" to "2024-12-31",
                                     ),
                             ),
-                    )
+                    ),
                 )
                 .exchange()
                 .expectStatus()

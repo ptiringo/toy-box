@@ -85,7 +85,7 @@ class RegisterBreedingRegistrationUseCase(
             )
             .mapError {
                 RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
-                    it.number.value
+                    it.number.value,
                 )
             }
             .bind()

@@ -29,7 +29,7 @@ class JdbcJockeyQueries(private val jdbcClient: JdbcClient) : JockeyQueries {
                 FROM racing.jockey
                 WHERE id = :id AND world_id = :worldId
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("id", id.value)
             .param("worldId", worldId.value)

@@ -82,7 +82,7 @@ private constructor(
                         handedness = handedness,
                         dateOfBirth = dateOfBirth,
                         turnedProOn = turnedProOn,
-                    )
+                    ),
                 )
             } else {
                 Err(TurnedProBeforeBirth(dateOfBirth, turnedProOn))

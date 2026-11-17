@@ -28,7 +28,7 @@ private val actor = Actor(accountId = AccountId(generateId()), worldId = worldId
 
 class RegisterBreedingRegistrationUseCaseTest {
     private fun command(
-        payload: RegisterBreedingRegistrationCommand
+        payload: RegisterBreedingRegistrationCommand,
     ): Command<RegisterBreedingRegistrationCommand> = Command(payload, Instant.now())
 
     @Nested
@@ -85,7 +85,7 @@ class RegisterBreedingRegistrationUseCaseTest {
                 useCase(
                         actor,
                         command(
-                            RegisterBreedingRegistrationCommand(stallion.id.value, "B-2024-0002")
+                            RegisterBreedingRegistrationCommand(stallion.id.value, "B-2024-0002"),
                         ),
                     )
                     .unwrap()
@@ -112,7 +112,7 @@ class RegisterBreedingRegistrationUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber
+                    RegisterBreedingRegistrationUseCaseError.InvalidRegistrationNumber,
             )
             verify(exactly = 0) { breedingRegistrationRepository.save(worldId, any()) }
         }
@@ -139,7 +139,7 @@ class RegisterBreedingRegistrationUseCaseTest {
 
             val expected =
                 RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
-                    "B-2024-0001"
+                    "B-2024-0001",
                 )
             assert(result.getError() == expected)
             verify(exactly = 0) { breedingRegistrationRepository.save(worldId, any()) }
@@ -170,7 +170,7 @@ class RegisterBreedingRegistrationUseCaseTest {
 
             assert(
                 result.getError() ==
-                    RegisterBreedingRegistrationUseCaseError.HorseNotFound(bloodHorseId)
+                    RegisterBreedingRegistrationUseCaseError.HorseNotFound(bloodHorseId),
             )
             verify(exactly = 0) { breedingRegistrationRepository.save(worldId, any()) }
         }

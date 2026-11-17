@@ -21,7 +21,7 @@ value class CoveringCertificateNumber private constructor(val value: String) {
     companion object {
         /** ブランクでないことを検証して [CoveringCertificateNumber] を生成する。 */
         fun create(
-            value: String
+            value: String,
         ): Result<CoveringCertificateNumber, BlankCoveringCertificateNumber> =
             createNonBlank(value, BlankCoveringCertificateNumber, ::CoveringCertificateNumber)
     }

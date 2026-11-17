@@ -33,11 +33,11 @@ class BreedingReportDeadlineTest {
         // UTC 14:59:59 = JST 23:59:59（同日 5/31）／ UTC 15:00:00 = JST 翌日 0:00:00（6/1）
         assert(
             BreedingReportDeadline.submissionDateOf(Instant.parse("2025-05-31T14:59:59Z")) ==
-                LocalDate.of(2025, 5, 31)
+                LocalDate.of(2025, 5, 31),
         )
         assert(
             BreedingReportDeadline.submissionDateOf(Instant.parse("2025-05-31T15:00:00Z")) ==
-                LocalDate.of(2025, 6, 1)
+                LocalDate.of(2025, 6, 1),
         )
     }
 }

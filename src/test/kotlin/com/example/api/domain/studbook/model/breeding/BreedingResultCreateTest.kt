@@ -116,7 +116,7 @@ class BreedingResultCreateTest {
         assert(error is RecordCoveringError.InvalidCovering)
         assert(
             (error as RecordCoveringError.InvalidCovering).cause
-                is CoveringValidityError.OutsideValidPeriod
+                is CoveringValidityError.OutsideValidPeriod,
         )
     }
 
@@ -140,7 +140,7 @@ class BreedingResultCreateTest {
         assert(error is RecordCoveringError.InvalidCovering)
         assert(
             (error as RecordCoveringError.InvalidCovering).cause
-                is CoveringValidityError.OutsideValidRegion
+                is CoveringValidityError.OutsideValidRegion,
         )
     }
 }

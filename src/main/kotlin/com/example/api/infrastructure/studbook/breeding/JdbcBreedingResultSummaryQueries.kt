@@ -56,7 +56,7 @@ class JdbcBreedingResultSummaryQueries(private val jdbcClient: JdbcClient) :
                 GROUP BY covering_stallion_id, breeding_year
                 ORDER BY breeding_year
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("stallionId", stallionId.value)
             .param("worldId", worldId.value)

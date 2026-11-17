@@ -41,7 +41,7 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
                 WHERE world_id = :worldId
                 ORDER BY id
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("worldId", worldId.value)
             .query { rs, _ ->
@@ -74,7 +74,7 @@ class JdbcBloodHorseQueries(private val jdbcClient: JdbcClient) : BloodHorseQuer
                     ON hi.id = bh.inspection_id AND hi.world_id = bh.world_id
                 WHERE bh.id = :id AND bh.world_id = :worldId
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("id", id.value)
             .param("worldId", worldId.value)

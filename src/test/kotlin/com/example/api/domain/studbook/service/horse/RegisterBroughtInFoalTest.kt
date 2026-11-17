@@ -55,7 +55,7 @@ class RegisterBroughtInFoalTest {
             )
 
         assert(
-            result.getError() == RegisterBroughtInFoalError.NotOverseasCovering(domestic.covering)
+            result.getError() == RegisterBroughtInFoalError.NotOverseasCovering(domestic.covering),
         )
     }
 
@@ -105,7 +105,7 @@ class RegisterBroughtInFoalTest {
 
         assert(
             result.getError() ==
-                RegisterBroughtInFoalError.RegistrationFailed(RegisterInStudBookError.DamNotFemale)
+                RegisterBroughtInFoalError.RegistrationFailed(RegisterInStudBookError.DamNotFemale),
         )
     }
 }

@@ -150,8 +150,8 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
         } returns
             Err(
                 RegisterBreedingRegistrationUseCaseError.RegistrationNumberAlreadyTaken(
-                    "B-2024-0001"
-                )
+                    "B-2024-0001",
+                ),
             )
 
         tester
@@ -180,7 +180,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
                     role = BreedingRole.STALLION,
                     retirement =
                         BreedingRetirement(RetirementReason.DEATH, LocalDate.of(2025, 3, 1)),
-                )
+                ),
             )
 
         tester
@@ -248,7 +248,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
             .trimIndent()
 
     private fun stubRetire(
-        result: Result<BreedingRegistration, RetireBreedingRegistrationUseCaseError>
+        result: Result<BreedingRegistration, RetireBreedingRegistrationUseCaseError>,
     ) {
         every {
             retireBreedingRegistration(
@@ -295,7 +295,9 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `供用停止の対象が不在なら 404 と problem+json が返ること`() {
         stubRetire(
-            Err(RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound(registrationId))
+            Err(
+                RetireBreedingRegistrationUseCaseError.BreedingRegistrationNotFound(registrationId),
+            ),
         )
 
         postRetire()
@@ -311,9 +313,9 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
         stubRetire(
             Err(
                 RetireBreedingRegistrationUseCaseError.AlreadyRetired(
-                    BreedingRetirement(RetirementReason.DEATH, LocalDate.of(2024, 12, 1))
-                )
-            )
+                    BreedingRetirement(RetirementReason.DEATH, LocalDate.of(2024, 12, 1)),
+                ),
+            ),
         )
 
         val response = postRetire()
@@ -328,7 +330,7 @@ class BreedingRegistrationControllerTest(val mockMvc: MockMvc) {
     @Test
     fun `更新が競合したら 409 と concurrent-modification が返ること`() {
         stubRetire(
-            Err(RetireBreedingRegistrationUseCaseError.ConcurrentModification(registrationId))
+            Err(RetireBreedingRegistrationUseCaseError.ConcurrentModification(registrationId)),
         )
 
         postRetire()

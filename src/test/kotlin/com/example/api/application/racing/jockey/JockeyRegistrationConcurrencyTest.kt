@@ -86,7 +86,7 @@ class JockeyRegistrationConcurrencyTest : PostgresContainerSupport() {
             .sql(
                 "INSERT INTO shared.idempotency_record " +
                     "(world_id, idempotency_key, request_fingerprint, created_at) " +
-                    "VALUES (:worldId, :key, :fingerprint, now())"
+                    "VALUES (:worldId, :key, :fingerprint, now())",
             )
             .param("worldId", actor.worldId.value)
             .param("key", key)

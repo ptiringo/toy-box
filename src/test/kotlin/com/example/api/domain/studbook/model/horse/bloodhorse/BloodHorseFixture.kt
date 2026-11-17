@@ -18,7 +18,7 @@ object BloodHorseFixture {
     /** 既定の確定済み審査を生成する。親子判定は上書き可能。 */
     fun inspection(
         parentage: ParentageDetermination =
-            ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT)
+            ParentageDetermination.ByDna(DnaParentageResult.CONSISTENT),
     ): HorseInspection =
         HorseInspection.create(
             microchipNumber = MicrochipNumber.create("392140000000001").unwrap(),

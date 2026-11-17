@@ -120,7 +120,7 @@ abstract class PostgresContainerSupport {
         connect().use { connection ->
             connection
                 .prepareStatement(
-                    "INSERT INTO iam.account (id, subject_id, version) VALUES (?, ?, 0)"
+                    "INSERT INTO iam.account (id, subject_id, version) VALUES (?, ?, 0)",
                 )
                 .use { statement ->
                     statement.setObject(1, accountId)
@@ -129,7 +129,7 @@ abstract class PostgresContainerSupport {
                 }
             connection
                 .prepareStatement(
-                    "INSERT INTO iam.world (id, account_id, name, version) VALUES (?, ?, ?, 0)"
+                    "INSERT INTO iam.world (id, account_id, name, version) VALUES (?, ?, ?, 0)",
                 )
                 .use { statement ->
                     statement.setObject(1, worldId)

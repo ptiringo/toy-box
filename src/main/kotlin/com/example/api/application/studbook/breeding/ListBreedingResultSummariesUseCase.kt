@@ -21,7 +21,7 @@ data class ListBreedingResultSummariesQuery(val stallionId: BloodHorseId)
  */
 @Service
 class ListBreedingResultSummariesUseCase(
-    private val breedingResultSummaryQueries: BreedingResultSummaryQueries
+    private val breedingResultSummaryQueries: BreedingResultSummaryQueries,
 ) {
     operator fun invoke(
         actor: Actor,

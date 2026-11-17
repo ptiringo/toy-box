@@ -48,7 +48,7 @@ class BloodHorseCreateBroughtInTest {
                 dam,
                 BloodHorseFixture.studBookEntry(),
                 BloodHorseFixture.inspection(
-                    parentage = ParentageDetermination.ByDna(DnaParentageResult.UNTESTED)
+                    parentage = ParentageDetermination.ByDna(DnaParentageResult.UNTESTED),
                 ),
                 registrationNumber,
             )

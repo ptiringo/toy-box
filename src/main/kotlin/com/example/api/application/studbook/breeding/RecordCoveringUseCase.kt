@@ -144,7 +144,7 @@ class RecordCoveringUseCase(
                 .findById(actor.worldId, BreedingRegistrationId(input.breedingRegistrationId))
                 .toResultOr {
                     RecordCoveringUseCaseError.BreedingRegistrationNotFound(
-                        input.breedingRegistrationId
+                        input.breedingRegistrationId,
                     )
                 }
                 .bind()
@@ -154,7 +154,7 @@ class RecordCoveringUseCase(
                 .findById(actor.worldId, BreedingRegistrationId(input.stallionRegistrationId))
                 .toResultOr {
                     RecordCoveringUseCaseError.StallionRegistrationNotFound(
-                        input.stallionRegistrationId
+                        input.stallionRegistrationId,
                     )
                 }
                 .bind()
@@ -180,7 +180,7 @@ class RecordCoveringUseCase(
 
     /** 種畜証明書の生入力を各 VO 検証して [StudCertificate] を組み立てる。形式不正は 400 系の入力エラーにマップする。 */
     private fun buildStudCertificate(
-        input: StudCertificateInput
+        input: StudCertificateInput,
     ): Result<StudCertificate, RecordCoveringUseCaseError> = binding {
         val number =
             StudCertificateNumber.create(input.number)
@@ -196,7 +196,7 @@ class RecordCoveringUseCase(
                     .mapError { _: BlankBreedingRegion ->
                         RecordCoveringUseCaseError.InvalidValidRegion
                     }
-                    .bind()
+                    .bind(),
             )
         }
 

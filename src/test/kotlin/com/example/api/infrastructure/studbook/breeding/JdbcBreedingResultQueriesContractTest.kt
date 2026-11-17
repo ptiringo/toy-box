@@ -80,7 +80,7 @@ class JdbcBreedingResultQueriesContractTest(
                 outcomeType = outcomeType,
                 outcomeFoalingDate = foalingDate,
                 reportSubmittedOn = reportSubmittedOn,
-            )
+            ),
         )
         return id
     }
@@ -150,7 +150,7 @@ class JdbcBreedingResultQueriesContractTest(
                 breedingRegistrationId = seeder.seedRegistrationRow(),
                 breedingYear = 2024,
                 outcomeType = "NOT_COVERED",
-            )
+            ),
         )
 
         val view = queries.findById(worldId, BreedingResultId(id))
@@ -216,7 +216,7 @@ class JdbcBreedingResultQueriesContractTest(
                 coveringForeignSireCoatColor = "BAY",
                 coveringCountry = "アイルランド",
                 coveringProofNumber = "IE-1999-0004",
-            )
+            ),
         )
 
         val view = queries.findById(worldId, BreedingResultId(id))
@@ -225,7 +225,7 @@ class JdbcBreedingResultQueriesContractTest(
         assert(view!!.coveringType == CoveringKind.OVERSEAS)
         assert(
             view.foreignSire ==
-                ForeignSireView("Danehill", "アメリカ", BreedType.THOROUGHBRED, CoatColor.BAY)
+                ForeignSireView("Danehill", "アメリカ", BreedType.THOROUGHBRED, CoatColor.BAY),
         )
         assert(view.coveringCountry == "アイルランド")
         assert(view.proofNumber == "IE-1999-0004")

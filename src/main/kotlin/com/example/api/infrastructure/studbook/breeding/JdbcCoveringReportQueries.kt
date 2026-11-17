@@ -28,7 +28,7 @@ class JdbcCoveringReportQueries(private val jdbcClient: JdbcClient) : CoveringRe
                 FROM studbook.covering_report
                 WHERE id = :id AND world_id = :worldId
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .param("id", id.value)
             .param("worldId", worldId.value)

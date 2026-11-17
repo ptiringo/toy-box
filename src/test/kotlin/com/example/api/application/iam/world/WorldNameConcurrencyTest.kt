@@ -74,7 +74,7 @@ class WorldNameConcurrencyTest : PostgresContainerSupport() {
         WorldId(
             createWorld(ownerId, Command.now(CreateWorldCommand(name), clock))
                 .getOrThrow { AssertionError(it.toString()) }
-                .id
+                .id,
         )
 
     private fun countWorlds(ownerId: AccountId): Long =
@@ -84,7 +84,7 @@ class WorldNameConcurrencyTest : PostgresContainerSupport() {
 
     private fun countWorldsNamed(ownerId: AccountId, name: String): Long =
         countWorlds(
-            "SELECT count(*) FROM iam.world WHERE account_id = :accountId AND name = :name"
+            "SELECT count(*) FROM iam.world WHERE account_id = :accountId AND name = :name",
         ) {
             it.param("accountId", ownerId.value).param("name", name)
         }

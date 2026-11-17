@@ -133,8 +133,8 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
         } returns
             Err(
                 SubmitCoveringReportUseCaseError.PreconditionViolated(
-                    SubmitCoveringReportError.NotStallion
-                )
+                    SubmitCoveringReportError.NotStallion,
+                ),
             )
 
         tester
@@ -158,8 +158,8 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
         } returns
             Err(
                 SubmitCoveringReportUseCaseError.PreconditionViolated(
-                    SubmitCoveringReportError.AlreadySubmittedForYear(Year.of(2024), existing.id)
-                )
+                    SubmitCoveringReportError.AlreadySubmittedForYear(Year.of(2024), existing.id),
+                ),
             )
 
         tester
@@ -186,7 +186,7 @@ class CoveringReportControllerTest(val mockMvc: MockMvc) {
                     coveringYear = 2024,
                     // 種付年 2024 の期限は当年 9/30。その翌日の提出は期限超過として応答に表れる。
                     submittedOn = LocalDate.of(2024, 10, 1),
-                )
+                ),
             )
 
         tester

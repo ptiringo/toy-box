@@ -24,7 +24,7 @@ class NoThrowInDomainAndApplicationTest {
                     if (name.isBlank()) throw IllegalArgumentException("blank")
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -41,7 +41,7 @@ class NoThrowInDomainAndApplicationTest {
                     throw RuntimeException("boom")
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.size == 1)
@@ -59,7 +59,7 @@ class NoThrowInDomainAndApplicationTest {
                     throw IllegalStateException("rendered as problem")
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -77,7 +77,7 @@ class NoThrowInDomainAndApplicationTest {
                     throw RuntimeException("db down")
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())
@@ -96,7 +96,7 @@ class NoThrowInDomainAndApplicationTest {
                     check(name.length < 100) { "too long" }
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         assert(findings.isEmpty())

@@ -103,7 +103,7 @@ class JdbcCoveringReportRepositoryContractTest(
     fun `findByStallionRegistrationIdAndCoveringYearで種牡馬と年から引き当てられる`() {
         val report =
             BreedingFixture.coveringReport(
-                stallionRegistration = seededStallionRegistration()
+                stallionRegistration = seededStallionRegistration(),
             ) // coveringYear=2024
         repository.save(worldId, report).unwrap()
 
@@ -121,7 +121,7 @@ class JdbcCoveringReportRepositoryContractTest(
                 worldId,
                 report.stallionRegistrationId,
                 Year.of(2099),
-            ) == null
+            ) == null,
         )
     }
 

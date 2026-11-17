@@ -169,7 +169,7 @@ class DomainModelingRulesTest {
             .haveNameMatching("component\\d+")
             .because(
                 "集約は data class を使わない。ID ベースの final equals / hashCode と衝突するため、" +
-                    "private constructor ＋手書き copy で同一性を引き継いだ新インスタンスへ写像する（ADR-0009）"
+                    "private constructor ＋手書き copy で同一性を引き継いだ新インスタンスへ写像する（ADR-0009）",
             )
 
     /**

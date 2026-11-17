@@ -125,7 +125,7 @@ class NameHorseUseCase(
                 .findById(actor.worldId, transition.aggregate.inspectionId)
                 .toResultOr {
                     NameHorseUseCaseError.InspectionNotFound(
-                        transition.aggregate.inspectionId.value
+                        transition.aggregate.inspectionId.value,
                     )
                 }
                 .bind()

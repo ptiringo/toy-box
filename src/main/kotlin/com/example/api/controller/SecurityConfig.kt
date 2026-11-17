@@ -89,7 +89,7 @@ class SecurityConfig {
      */
     @Bean
     fun problemAuthenticationEntryPoint(
-        @Qualifier("handlerExceptionResolver") resolver: HandlerExceptionResolver
+        @Qualifier("handlerExceptionResolver") resolver: HandlerExceptionResolver,
     ): AuthenticationEntryPoint = ProblemAuthenticationEntryPoint(resolver)
 
     companion object {

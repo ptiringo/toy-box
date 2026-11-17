@@ -74,7 +74,7 @@ class ReportFoalingUseCaseTest {
 
             assert(
                 result.getError() ==
-                    ReportFoalingUseCaseError.BreedingResultNotFound(breedingResultId)
+                    ReportFoalingUseCaseError.BreedingResultNotFound(breedingResultId),
             )
             verify(exactly = 0) { repository.save(worldId, any()) }
         }
@@ -113,13 +113,13 @@ class ReportFoalingUseCaseTest {
                 useCase(
                     actor,
                     command(
-                        ReportFoalingCommand(breedingResult.id.value, FoalingOutcome.NotConceived)
+                        ReportFoalingCommand(breedingResult.id.value, FoalingOutcome.NotConceived),
                     ),
                 )
 
             assert(
                 result.getError() ==
-                    ReportFoalingUseCaseError.ConcurrentModification(breedingResult.id.value)
+                    ReportFoalingUseCaseError.ConcurrentModification(breedingResult.id.value),
             )
         }
     }
