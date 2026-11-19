@@ -100,3 +100,4 @@
 | [0088](0088-track-paketo-builder-with-dependabot.md) | Paketo builder をバージョン固定のまま Dependabot で週次更新する | Accepted |
 | [0089](0089-production-monitoring-uptime-and-deploy-failure.md) | 本番の監視をサービス停止とデプロイ失敗の検知から始める | Accepted |
 | [0090](0090-misuse-detection-via-costly-operation-alerts.md) | 不正利用には、乗っ取りの予防と高くつく操作の即時検知で備える | Accepted |
+| [0091](0091-no-preflight-for-data-dependent-migrations.md) | データ依存のマイグレーションに事前検証を設けない | Accepted |
