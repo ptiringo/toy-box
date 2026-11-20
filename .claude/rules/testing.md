@@ -87,7 +87,7 @@ Spring テストの主コストは `ApplicationContext` の構築。速度の本
 `ApiApplicationTests` / `McpDisabledByDefaultTest` / `HealthEndpointTest` / `OpenApiTest` / `SecurityConfigTest` の 5 クラスは、**`RANDOM_PORT` + `@AutoConfigureRestTestClient` + `@Import(TestJwtDecoderConfiguration)` という同一キー**でコンテキストを 1 つ共有する（[ADR-0077](../../docs/adr/0077-consolidate-web-test-contexts-trading-jwt-decoder-assurance.md)）。CI 実測（各 3 回の中央値）で `:test` が 84.93s → 67.55s（**-20.5%**）になった構成であり、**どれか 1 つに `@MockkBean` / `@TestPropertySource` / 別の `@Import` を足すと、そのクラスだけ別コンテキストへ分岐して効果が失われる**。web 環境を要する `@SpringBootTest` を新しく足すときも、この 5 クラスと同じ構成に揃える。ArchUnit / detekt では強制できないのでレビューで担保する。
 
 - `RestTestClient` も JWT も使わないクラス（`ApiApplicationTests` / `McpDisabledByDefaultTest`）が `@AutoConfigureRestTestClient` と `@Import` を持つのは、**キーを一致させるためだけ**。不自然に見えても外さない。
-- 引き換えに「本番の `issuer-uri` 設定から `JwtDecoder` Bean が生成される」ことを確かめるコンテキストが無くなっている（API E2E もブラウザ E2E も decoder を差し替えるため、リポジトリ全体で担保が無い）。この穴は #813 が引き取る。
+- 引き換えに `check` の中には「本番の `issuer-uri` 設定から `JwtDecoder` Bean が生成される」ことを確かめるコンテキストが無い。これは API E2E の `JwtVerificationE2eTest` が担保する（#813）。偽の issuer（discovery と JWKS）へ `issuer-uri` だけを向け、Bean の生成に加えて RS256 署名・issuer・audience・有効期限の検証までを本番と同じ自動構成で通す。`check` には載らず、CI の `e2e-tests.yml`（required ではない）で走る。**このクラスには `TestJwtDecoderConfiguration` を `@Import` しないこと**（差し込むと本番の構成が効かなくなり、テストごと空振りする）。
 - **`@WebMvcTest` スライスの 11 個は削減対象にしない**。`controllers` 引数ごとに 1 コンテキストになるのはスライステストの機械的帰結で、束ねると「そのコントローラだけを載せる」意図が壊れる。
 - **効果は推論せず実測で確かめる**。実測では 18→17 個で -3.7〜-6.3%、17→16 個で -14.1% と、1 個あたりの効果が 2 倍以上違った（機序は未特定）。ローカルは初回コンテキスト構築の振れが大きく（同一構成で 17.5s / 36.5s、外れ値では `:test` が 74 分停止）効果より測定ノイズが大きいため、**CI（`workflow_dispatch` で 3 回）で測る**。ただし **3 回で足りるのはこの -20.5% 規模の効果に対してだけ**で、10% 前後を測るなら各 8 回が要る（後述「`:test` の速度を測り直すときは各 8 回」）。
 
@@ -133,7 +133,7 @@ API E2E と同じく **`check` / pre-push のゲート外**で、CI は独立ワ
 - **バックエンドは `bootRun` ではなく `./gradlew bootTestRun`** で起動する。test runtime classpath を使うため、
   本番成果物（`src/main`）に署名検証を迂回するコードを一切入れずに済む。**`EmulatorJwtDecoder` を `src/main` へ
   移してはならない。**
-- **射程外**: JWKS による署名検証、実 Identity Platform テナントとの疎通、WorldsPage の改名・削除、
+- **射程外**: JWKS による署名検証（API E2E の `JwtVerificationE2eTest` が担保）、実 Identity Platform テナントとの疎通、WorldsPage の改名・削除、
   エラー分岐。「ブラウザ E2E が緑 ＝ 認証が安全」とは読まないこと。
 
 ### この基盤を触るときに踏む地雷（実測済み）
