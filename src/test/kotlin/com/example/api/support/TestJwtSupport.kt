@@ -24,8 +24,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
  * のため、[TestJwtDecoderConfiguration] を `@Import` すれば HS256 の decoder が
  * 勝ち、ネットワークに出ずに署名検証だけを本物のフィルタチェーンで走らせられる。
  *
- * 裏返すと issuer / audience の検証（本番で Boot が組み立てる validator）はテストの射程外であり、`application.yml`
- * のプロパティが効いているかは検証していない。
+ * 裏返すと issuer / audience の検証（本番で Boot が組み立てる validator）はこのハーネスの射程外であり、`application.yml`
+ * のプロパティが効いているかは検証していない。そちらは `JwtVerificationE2eTest`（API E2E）が担保する（#813）。
  */
 object TestJwt {
     /** HS256 の鍵長要件（256bit 以上）を満たす、テスト専用の固定シークレット。 */
