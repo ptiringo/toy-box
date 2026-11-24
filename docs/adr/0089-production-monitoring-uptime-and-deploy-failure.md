@@ -81,3 +81,12 @@
 - **Project #4 への追加は、Project の組み込みの自動追加に任せる**。`GITHUB_TOKEN` はユーザー所有の Project を操作できない。PAT をシークレットに置く案も検討したが、得られるのは Priority の自動設定だけで、全リポジトリに書き込めるトークンを置く代償に見合わないと判断した。
   - 設定は Project の UI にしかない。Project #4 の Workflows にある「Auto-add to project」で、対象はこのリポジトリ、条件は `is:issue label:deploy-failure`。Free プランでは自動追加を 1 つしか作れないので、この枠を使っている。
   - Priority は付かないので、立った後に手で付ける。追加されなかった場合は、`/issue-ops` の突き合わせ（open なのに Project に無い Issue）で見つかる。
+
+## 追補（2026-11-25）: uptime check が Prisma の operations の枠を食い潰した（#1041）
+
+2026-11-24 07:18Z に、本番 DB（Prisma Postgres の Free プラン）が operations の月の枠（200K）に達し、接続ごと拒否されるようになった（`planLimitReached`）。リセットは 12/1 で、それまで本番の DB を使う API は止まる。
+
+- **消費の主因は uptime check の問い合わせそのものではなかった**。health のリクエストは 1 日 288 回（11/2 以降きっかり）で、消費（1 日約 8,500 回、Prisma Console の 11 月の推移）の 3% ほどにすぎない。
+- **uptime check が 5 分おきにインスタンスを起こし続け、そのあいだ HikariCP が既定値のまま DB に問い合わせ続けていた**。HikariCP 7.0.2 の既定値は、接続を常に 10 本保ち、各接続へ 2 分おきに死活確認を送り、30 分ごとに張り直す（jar の既定値を逆アセンブルで確認）。死活確認だけで 1 日 7,200 回になり、張り直しを足すと観測とほぼ一致する。uptime check を作る前の 10 月はリクエストがほぼ無く、インスタンスが止まっていたので、10 月の使用量は 3,973 回で済んでいた。
+- **対応**: `application.yml` で常に保つ接続を 0 本にし（`minimum-idle: 0`）、空いた接続を 1 分で閉じ（`idle-timeout: 60000`）、死活確認を止めた（`keepalive-time: 0`）。値は `DataSourceIdlePoolTest` が固定する。health は DB の確認を残す（今回のような DB の停止を uptime check で検知するため）。消費は health のたびの接続と問い合わせで、1 日数百回の見込み。
+- **まだ確かめていないこと**: 死活確認が operations に数えられることは直接測っていない（数字の一致による状況証拠）。12/1 のリセット後、Console で 1 日の増え方が下がったかを確かめる（#1041）。

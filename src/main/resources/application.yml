@@ -24,9 +24,19 @@ spring:
   # loginTimeout は PostgreSQL ドライバのプロパティ（単位は秒）で、接続確立フェーズにのみ効く
   # （クエリの実行時間は切らない）。値は connection-timeout と揃える運用で、一致は
   # DataSourceLoginTimeoutTest が固定する。
+  # 使っていないあいだ DB に問い合わせ続けない（#1041）。本番 DB（Prisma Postgres の Free プラン）は月の
+  # operations に上限があり、超えると接続ごと拒否されて本番が止まる。HikariCP の既定値は「接続を常に 10 本
+  # 保ち、各接続へ 2 分おきに死活確認を送り、30 分ごとに張り直す」で、uptime check（5 分おき）がインスタンスを
+  # 起こし続けるあいだ、利用が無くても 1 日約 8,500 operations を消費して 2026-11 に上限に達した。
+  # そこで常に保つ接続を 0 本にし（minimum-idle）、空いた接続は 1 分で閉じ（idle-timeout）、死活確認を止める
+  # （keepalive-time: 0）。リクエストのたびに接続を開き直すぶん遅くなるが、今の利用量では問題にならない。
+  # 値は DataSourceIdlePoolTest が固定する。
   datasource:
     hikari:
       connection-timeout: 30000
+      minimum-idle: 0
+      idle-timeout: 60000
+      keepalive-time: 0
       data-source-properties:
         loginTimeout: 30
   # マイグレーションは Flyway（plain SQL）。db/migration 配下の V*.sql を起動時に適用する。
