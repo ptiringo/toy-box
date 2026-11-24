@@ -213,7 +213,9 @@ class BreedingResultController(
                 ),
                 ApiResponse(
                     responseCode = "400",
-                    description = "入力値が不正（生産なのに分娩日が欠けているなど）",
+                    description =
+                        "入力値が不正（生産なのに分娩日が欠けている missing-foaling-date、" +
+                            "生産以外で twin_foaling_date を送った unexpected-twin-foaling-date など）",
                     content =
                         [
                             Content(
