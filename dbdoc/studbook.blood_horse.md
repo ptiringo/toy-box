@@ -23,25 +23,32 @@
 | origin_country | varchar(255) |  | true |  |  | 原産国（輸入のみ） |
 | landing_date | date |  | true |  |  | 輸入上陸日（輸入のみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
-| world_id | uuid |  | false | [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.horse_inspection](studbook.horse_inspection.md) | この行が属する世界（セーブデータ）のID |
+| world_id | uuid |  | false | [studbook.breeding_registration](studbook.breeding_registration.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_result](studbook.breeding_result.md) [studbook.horse_inspection](studbook.horse_inspection.md) | この行が属する世界（セーブデータ）のID |
 | foreign_sire_name | varchar(255) |  | true |  |  | 父である外国種牡馬の馬名（持込馬のみ） |
 | foreign_sire_stud_book_country | varchar(255) |  | true |  |  | 父である外国種牡馬を登録している血統登録機関の国（持込馬のみ） |
 | foreign_sire_breed_type | varchar(32) |  | true |  |  | 父である外国種牡馬の品種（持込馬のみ） |
 | foreign_sire_coat_color | varchar(32) |  | true |  |  | 父である外国種牡馬の毛色（持込馬のみ） |
+| bred_from_breeding_result_id | uuid |  | true |  | [studbook.breeding_result](studbook.breeding_result.md) | 生まれた繁殖成績（内国産・持込馬で繁殖成績から登録したときのみ） |
+| bred_from_position | varchar(16) |  | true |  |  | 繁殖成績の中での枠（PRIMARY=様式の表の産駒 / TWIN=双子のもう一頭） |
 
 ## Constraints
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
+| chk_blood_horse_bred_from_origin | CHECK | CHECK (((bred_from_breeding_result_id IS NULL) OR ((origin_type)::text = ANY ((ARRAY['DOMESTIC'::character varying, 'BROUGHT_IN'::character varying])::text[])))) |
+| chk_blood_horse_bred_from_pair | CHECK | CHECK ((((bred_from_breeding_result_id IS NULL) AND (bred_from_position IS NULL)) OR ((bred_from_breeding_result_id IS NOT NULL) AND (bred_from_position IS NOT NULL)))) |
+| chk_blood_horse_bred_from_position | CHECK | CHECK (((bred_from_position IS NULL) OR ((bred_from_position)::text = ANY ((ARRAY['PRIMARY'::character varying, 'TWIN'::character varying])::text[])))) |
 | chk_blood_horse_origin | CHECK | CHECK (((((origin_type)::text = 'DOMESTIC'::text) AND (sire_id IS NOT NULL) AND (dam_id IS NOT NULL) AND (origin_country IS NULL) AND (landing_date IS NULL) AND (foreign_sire_name IS NULL) AND (foreign_sire_stud_book_country IS NULL) AND (foreign_sire_breed_type IS NULL) AND (foreign_sire_coat_color IS NULL)) OR (((origin_type)::text = 'IMPORTED'::text) AND (origin_country IS NOT NULL) AND (landing_date IS NOT NULL) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (foreign_sire_name IS NULL) AND (foreign_sire_stud_book_country IS NULL) AND (foreign_sire_breed_type IS NULL) AND (foreign_sire_coat_color IS NULL)) OR (((origin_type)::text = 'CARRIED_OVER'::text) AND (sire_id IS NULL) AND (dam_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL) AND (foreign_sire_name IS NULL) AND (foreign_sire_stud_book_country IS NULL) AND (foreign_sire_breed_type IS NULL) AND (foreign_sire_coat_color IS NULL)) OR (((origin_type)::text = 'BROUGHT_IN'::text) AND (dam_id IS NOT NULL) AND (foreign_sire_name IS NOT NULL) AND (foreign_sire_stud_book_country IS NOT NULL) AND (foreign_sire_breed_type IS NOT NULL) AND (foreign_sire_coat_color IS NOT NULL) AND (sire_id IS NULL) AND (origin_country IS NULL) AND (landing_date IS NULL)))) |
 | blood_horse_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | fk_blood_horse_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
 | fk_blood_horse_dam | FOREIGN KEY | FOREIGN KEY (world_id, dam_id) REFERENCES studbook.blood_horse(world_id, id) |
 | fk_blood_horse_sire | FOREIGN KEY | FOREIGN KEY (world_id, sire_id) REFERENCES studbook.blood_horse(world_id, id) |
 | uq_blood_horse_world_id_id | UNIQUE | UNIQUE (world_id, id) |
+| fk_blood_horse_bred_from_breeding_result | FOREIGN KEY | FOREIGN KEY (world_id, bred_from_breeding_result_id) REFERENCES studbook.breeding_result(world_id, id) |
 | fk_blood_horse_inspection | FOREIGN KEY | FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id) |
 | uq_blood_horse_name | UNIQUE | UNIQUE (world_id, name) |
 | uq_blood_horse_registration_number | UNIQUE | UNIQUE (world_id, registration_number) |
+| uq_blood_horse_bred_from | UNIQUE | UNIQUE (world_id, bred_from_breeding_result_id, bred_from_position) |
 
 ## Indexes
 
@@ -54,6 +61,7 @@
 | ix_blood_horse_dam_id | CREATE INDEX ix_blood_horse_dam_id ON studbook.blood_horse USING btree (world_id, dam_id) |
 | uq_blood_horse_name | CREATE UNIQUE INDEX uq_blood_horse_name ON studbook.blood_horse USING btree (world_id, name) |
 | uq_blood_horse_registration_number | CREATE UNIQUE INDEX uq_blood_horse_registration_number ON studbook.blood_horse USING btree (world_id, registration_number) |
+| uq_blood_horse_bred_from | CREATE UNIQUE INDEX uq_blood_horse_bred_from ON studbook.blood_horse USING btree (world_id, bred_from_breeding_result_id, bred_from_position) |
 
 ## Triggers
 
@@ -72,6 +80,7 @@ erDiagram
 "studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
 "studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id)"
 "studbook.blood_horse" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
+"studbook.blood_horse" }o--|| "studbook.breeding_result" : "FOREIGN KEY (world_id, bred_from_breeding_result_id) REFERENCES studbook.breeding_result(world_id, id)"
 
 "studbook.blood_horse" {
   uuid id
@@ -94,6 +103,8 @@ erDiagram
   varchar_255_ foreign_sire_stud_book_country
   varchar_32_ foreign_sire_breed_type
   varchar_32_ foreign_sire_coat_color
+  uuid bred_from_breeding_result_id FK
+  varchar_16_ bred_from_position
 }
 "studbook.breeding_registration" {
   uuid id
@@ -125,6 +136,7 @@ erDiagram
   varchar_32_ covering_foreign_sire_coat_color
   varchar_255_ covering_country
   varchar_255_ covering_proof_number
+  date outcome_twin_foaling_date
 }
 "studbook.horse_inspection" {
   uuid id

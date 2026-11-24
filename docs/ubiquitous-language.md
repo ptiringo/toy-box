@@ -51,6 +51,8 @@
 | Breeder | 生産者 | 値オブジェクト | 個体を生産した者。 | — |
 | FoalIdentity | 仔馬の個体識別 | 値オブジェクト | 産駒の個体識別情報。 | — |
 | Sex | 性 | （enum） | 雄（`MALE`）/ 雌（`FEMALE`）。父=雄・母=雌の前提検証、および繁殖ロール（`BreedingRole`）の決定に用いる。 | jMolecules 非付与のためカタログには出ない |
+| FoalSlot | 登録枠 | 値オブジェクト | 産駒が生まれた繁殖成績（`BreedingResultId`）と、その中での枠（`FoalPosition`）。`BloodHorse.bredFrom` として持ち、1 つの繁殖成績から登録できる頭数を数える（[ADR-0092](adr/0092-twin-live-foals-and-foal-slots.md)）。 | 繁殖成績を経ない登録（輸入馬・移行取り込み・直接の血統登録）は持たない |
+| FoalPosition | 登録枠の位置 | （enum） | `PRIMARY`（様式第14号表「産駒あり」の産駒）／`TWIN`（裏「双子の繁殖成績」のもう一頭）。 | jMolecules 非付与のためカタログには出ない |
 
 #### 繁殖（breeding サブドメイン）
 
@@ -74,7 +76,8 @@
 | BreedingRegion | 区域（有効区域／種付場所） | 値オブジェクト | 種畜証明書の有効区域、および種付が行われた場所を表す名前付きの値。有効性は集合メンバーシップで判定（区域の包含関係はモデル対象外）。 | — |
 | CoveringValidityError | 種付有効性違反 | 値オブジェクト（sealed） | 種付が種畜証明書の有効区域外（`OutsideValidRegion`）／有効期間外（`OutsideValidPeriod`）であることを表す。 | sealed 親型は jMolecules 非付与のためカタログには出ない |
 | FoalingOutcome | 分娩結果 | 値オブジェクト（sealed） | 種付した繁殖牝馬がその年に迎えた帰結。生産（`LiveFoal`）と産駒なし各区分の sealed 語彙。 | sealed 親型自体は jMolecules 非付与（カタログには variant のみ出る） |
-| FoalingOutcome.LiveFoal | 生産（産駒あり） | 値オブジェクト | 分娩により生存産駒を得た帰結。血統登録（`BloodHorse.create`）の入力に接続する。 | — |
+| FoalingOutcome.LiveFoal | 生産（産駒あり） | 値オブジェクト | 分娩により生存産駒を得た帰結。血統登録（`BloodHorse.create`）の入力に接続する。双子として生産された場合はもう一頭（`twin`）を持ち、登録できる産駒の上限（`foalLimit`）が 1 頭から 2 頭になる（[ADR-0092](adr/0092-twin-live-foals-and-foal-slots.md)）。 | — |
+| TwinFoal | 双子のもう一頭 | 値オブジェクト | 双子として生産された産駒のもう一頭の分娩日。様式第14号裏「双子の繁殖成績」欄にあたる。 | 禁止: 双子流産・双子死産・双子生後直死（産駒なしの区分）と混同しない |
 | BreedingRegistrationNumber | 繁殖登録番号 | 値オブジェクト | 繁殖登録に交付される番号。繁殖登録原簿の中で一意（登録規程 第5条）。一意性の範囲は世界（セーブデータ）に閉じる。血統登録番号とは別の採番空間。 | — |
 | BreedingResultSummaryView | 繁殖成績年次集計 | 読み取りモデル（@QueryModel） | (種牡馬, 種付年) 単位の繁殖成績。様式第2号（繁殖登録原簿〈雄〉）に対応。種付雌馬数・受胎数・生産数・受胎率・生産率を持つ。 | 軽量 CQRS（L2）の読みモデルのため application 層に置く |
 | 種付雌馬数 | 種付雌馬数 | 集計値 | その種牡馬がその年に種付けした雌馬数（`covering` を持つ年次成績の件数）。 | — |
@@ -105,6 +108,7 @@
 
 | 用語（関数） | 和名 | 定義 |
 | --- | --- | --- |
+| allocateFoalSlot | 登録枠の割り当て | 生産の繁殖成績から次に登録する産駒の枠を割り当てる。双子なら `PRIMARY` → `TWIN`、そうでなければ `PRIMARY` のみで、空きがなければ割り当てない（[ADR-0092](adr/0092-twin-live-foals-and-foal-slots.md)）。 |
 | registerFoal | 生産産駒を登録する | 生産（`LiveFoal`）を起点に、父母を解決して `BloodHorse.create` へ接続する。 |
 
 ### racing コンテキスト（競馬・JRA）
@@ -275,6 +279,7 @@ graph LR
 | DateOfBirth | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | DnaParentageResult | 値オブジェクト | domain.studbook.model.inspection |
 | FoalIdentity | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| FoalSlot | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | FoalingOutcome.Abortion | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.LiveFoal | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.NeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
@@ -308,6 +313,7 @@ graph LR
 | StudBookEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | StudCertificate | 値オブジェクト | domain.studbook.model.breeding |
 | StudCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
+| TwinFoal | 値オブジェクト | domain.studbook.model.breeding |
 | ValidityPeriod | 値オブジェクト | domain.studbook.model.breeding |
 | BloodHorseRepository | リポジトリポート | domain.studbook.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
@@ -315,9 +321,11 @@ graph LR
 | CoveringReportRepository | リポジトリポート | domain.studbook.model.breeding |
 | HorseInspectionRepository | リポジトリポート | domain.studbook.model.inspection |
 | HorseNamed | ドメインイベント | domain.studbook.model.horse.bloodhorse |
+| allocateFoalSlot | ドメインサービス | domain.studbook.service.horse |
 | ensureBreedingRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.breeding |
 | ensurePedigreeRegistrationNumberAvailable | ドメインサービス | domain.studbook.service.horse |
 | findExistingForYear | ドメインサービス | domain.studbook.service.breeding |
+| foalingDateOf | ドメインサービス | domain.studbook.service.horse |
 | nameHorse | ドメインサービス | domain.studbook.service.horse |
 | recordCovering | ドメインサービス | domain.studbook.service.breeding |
 | recordOverseasCovering | ドメインサービス | domain.studbook.service.breeding |

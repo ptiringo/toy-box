@@ -48,6 +48,7 @@ data class BreedingResultRow(
     @Column("covering_proof_number") val coveringProofNumber: String? = null,
     @Column("outcome_type") val outcomeType: String? = null,
     @Column("outcome_foaling_date") val outcomeFoalingDate: LocalDate? = null,
+    @Column("outcome_twin_foaling_date") val outcomeTwinFoalingDate: LocalDate? = null,
     @Column("report_submitted_on") val reportSubmittedOn: LocalDate? = null,
     @Version @Column("version") val version: Long? = null,
 )

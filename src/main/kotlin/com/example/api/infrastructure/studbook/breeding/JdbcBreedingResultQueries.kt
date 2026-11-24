@@ -7,6 +7,7 @@ import com.example.api.application.studbook.breeding.ForeignSireView
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.infrastructure.studbook.horse.foreignSireOf
 import java.sql.ResultSet
 import java.time.LocalDate
@@ -36,7 +37,8 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
                     covering_foreign_sire_name, covering_foreign_sire_stud_book_country,
                     covering_foreign_sire_breed_type, covering_foreign_sire_coat_color,
                     covering_country, covering_proof_number,
-                    outcome_type, outcome_foaling_date, report_submitted_on
+                    outcome_type, outcome_foaling_date, outcome_twin_foaling_date,
+                    report_submitted_on
                 FROM studbook.breeding_result
                 WHERE id = :id AND world_id = :worldId
                 """
@@ -110,10 +112,13 @@ class JdbcBreedingResultQueries(private val jdbcClient: JdbcClient) : BreedingRe
         // 折られない形にしている（壊れ行でしか通らない行を独立させると常に未カバーになるため）。
         val id = getObject("id", UUID::class.java)
         val foalingDate = getObject("outcome_foaling_date", LocalDate::class.java)
+        val twin = getObject("outcome_twin_foaling_date", LocalDate::class.java)?.let(::TwinFoal)
         return when (val outcomeType = getString("outcome_type")) {
             null -> null
-            OutcomeType.LIVE_FOAL ->
-                FoalingOutcome.LiveFoal(checkNotNull(foalingDate) { "生産の分娩日が欠落: id=$id" })
+            OutcomeType.LIVE_FOAL -> {
+                val date = checkNotNull(foalingDate) { "生産の分娩日が欠落: id=$id" }
+                FoalingOutcome.LiveFoal(date, twin)
+            }
             OutcomeType.NOT_CONCEIVED -> FoalingOutcome.NotConceived
             OutcomeType.ABORTION -> FoalingOutcome.Abortion
             OutcomeType.TWIN_ABORTION -> FoalingOutcome.TwinAbortion

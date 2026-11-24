@@ -8,6 +8,7 @@ import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
 import com.example.api.infrastructure.studbook.StudbookSeeder
@@ -199,6 +200,25 @@ class JdbcBreedingResultRepositoryContractTest(
         assert(found!!.covering != null)
         // 生産（LiveFoal）は判別子＋分娩日で往復する
         assert(found.outcome == FoalingOutcome.LiveFoal(foalingDate))
+    }
+
+    @Test
+    fun `双子の生産を報告した成績はもう一頭の分娩日ごと往復できる`() {
+        val outcome =
+            FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 1), TwinFoal(LocalDate.of(2025, 3, 2)))
+        val reported = seededBreedingResult().recordFoaling(outcome).unwrap()
+
+        repository.save(worldId, reported).unwrap()
+
+        assert(repository.findById(worldId, reported.id)!!.outcome == outcome)
+    }
+
+    @Test
+    fun `生産以外なのにもう一頭の分娩日を持つ行はCHECK制約で拒否される`() {
+        // もう一頭の分娩日を持てるのは生産（LIVE_FOAL）だけ。区分が NULL の行でも素通りしないことを見る（#983 と同じ書き方）
+        val notCovered = uncoveredRow().copy(outcomeTwinFoalingDate = LocalDate.of(2025, 3, 2))
+
+        assertThrows<DataIntegrityViolationException> { rows.save(notCovered) }
     }
 
     @Test

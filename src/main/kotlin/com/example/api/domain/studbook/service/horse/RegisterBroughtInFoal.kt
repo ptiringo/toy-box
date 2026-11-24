@@ -6,6 +6,7 @@ import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.DateOfBirth
 import com.example.api.domain.studbook.model.horse.bloodhorse.FoalIdentity
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalPosition
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.inspection.HorseInspection
@@ -30,6 +31,7 @@ import com.github.michaelbull.result.mapError
  * @param foalIdentity 申請者が持ち込む仔馬自身の個体識別情報（生年月日を除く）
  * @param inspection 確定済みの個体識別・親子判定審査
  * @param registrationNumber 交付される血統登録番号
+ * @param takenPositions この繁殖成績から登録済みの産駒が占めている枠（上位で永続化ポートから読んで渡す。#625）
  * @return 生成された [BloodHorse]（出自は持込馬）、または前提条件違反を表す [RegisterBroughtInFoalError]
  */
 fun registerBroughtInFoal(
@@ -38,6 +40,7 @@ fun registerBroughtInFoal(
     foalIdentity: FoalIdentity,
     inspection: HorseInspection,
     registrationNumber: PedigreeRegistrationNumber,
+    takenPositions: Set<FoalPosition>,
 ): Result<BloodHorse, RegisterBroughtInFoalError> {
     val covering = breedingResult.covering
     val outcome = breedingResult.outcome
@@ -46,9 +49,16 @@ fun registerBroughtInFoal(
             Err(RegisterBroughtInFoalError.NotOverseasCovering(covering))
         outcome !is FoalingOutcome.LiveFoal -> Err(RegisterBroughtInFoalError.NotLiveFoal(outcome))
         else -> {
-            val entry = foalIdentity.toStudBookEntry(DateOfBirth(outcome.foalingDate))
-            BloodHorse.createBroughtIn(covering.sire, dam, entry, inspection, registrationNumber)
-                .mapError { RegisterBroughtInFoalError.RegistrationFailed(it) }
+            val slot = allocateFoalSlot(breedingResult.id, outcome, takenPositions)
+            if (slot == null) {
+                Err(RegisterBroughtInFoalError.FoalLimitReached(outcome.foalLimit))
+            } else {
+                val dateOfBirth = DateOfBirth(outcome.foalingDateOf(slot.position))
+                val entry = foalIdentity.toStudBookEntry(dateOfBirth)
+                val sire = covering.sire
+                BloodHorse.createBroughtIn(sire, dam, entry, inspection, registrationNumber, slot)
+                    .mapError { RegisterBroughtInFoalError.RegistrationFailed(it) }
+            }
         }
     }
 }
@@ -72,6 +82,13 @@ sealed interface RegisterBroughtInFoalError {
      * @property current 報告されている分娩結果。未報告なら null
      */
     data class NotLiveFoal(val current: FoalingOutcome?) : RegisterBroughtInFoalError
+
+    /**
+     * その繁殖成績から登録できる産駒の上限（双子なら 2 頭・そうでなければ 1 頭）に達している（#625 / ADR-0092）。
+     *
+     * @property limit その繁殖成績の上限
+     */
+    data class FoalLimitReached(val limit: Int) : RegisterBroughtInFoalError
 
     /** 委譲先の血統登録（[BloodHorse.createBroughtIn]）の前提条件違反を wrap したもの。 */
     data class RegistrationFailed(val cause: RegisterInStudBookError) : RegisterBroughtInFoalError

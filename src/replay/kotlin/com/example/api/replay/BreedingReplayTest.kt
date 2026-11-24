@@ -93,6 +93,21 @@ class BreedingReplayTest(private val engine: ReplayEngine) : PostgresContainerSu
     }
 
     @Test
+    fun `双子の生産は 2 頭とも産駒登録して命名する`() {
+        val outcome = engine.run(actor, FixtureLoader.load("03-twins.json"))
+
+        // 分岐地点（出生報告）に到達していなければ「停止＝発見」なので失敗にせず skip する。
+        assumeTrue(outcome.steps.any { it.step == ReplayStep.REPORT_FOALING && it.ok }) {
+            "出生報告に到達しないまま停止: " +
+                "stoppedAt=${outcome.stoppedAt} / ${outcome.stopReason} / steps=${outcome.steps}"
+        }
+        // 双子の 2 頭目（TWIN 枠）が登録枠の上限で弾かれず通ること（#625）
+        val registered = outcome.steps.filter { it.step == ReplayStep.REGISTER_FOAL }
+        assert(registered.size == 2 && registered.all { it.ok }) { "steps=${outcome.steps}" }
+        assert(outcome.steps.count { it.step == ReplayStep.NAME_FOAL && it.ok } == 2)
+    }
+
+    @Test
     fun `未命名の産駒では馬名登録の段階を実行しない`() {
         val outcome = engine.run(actor, FixtureLoader.load("05-unnamed-foal.json"))
 

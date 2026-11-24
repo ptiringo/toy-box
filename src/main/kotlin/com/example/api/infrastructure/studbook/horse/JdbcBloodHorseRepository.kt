@@ -2,6 +2,7 @@ package com.example.api.infrastructure.studbook.horse
 
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.WorldId
+import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
@@ -9,6 +10,8 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.Breeder
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.DateOfBirth
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalPosition
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalSlot
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.LandingDate
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
@@ -83,6 +86,22 @@ class JdbcBloodHorseRepository(
         number: PedigreeRegistrationNumber,
     ): Boolean = rows.existsByWorldIdAndRegistrationNumber(worldId.value, number.value)
 
+    override fun findBredFromPositions(
+        worldId: WorldId,
+        breedingResultId: BreedingResultId,
+    ): Set<FoalPosition> =
+        jdbcClient
+            .sql(
+                "SELECT bred_from_position FROM $TABLE " +
+                    "WHERE world_id = :worldId AND bred_from_breeding_result_id = :resultId",
+            )
+            .param("worldId", worldId.value)
+            .param("resultId", breedingResultId.value)
+            .query(String::class.java)
+            .list()
+            .map { checkNotNull(it) { "登録枠が欠落: $breedingResultId" }.toFoalPosition() }
+            .toSet()
+
     /**
      * 永続化モデルからドメイン集約を再構成する（検証・採番なし）。
      *
@@ -101,8 +120,16 @@ class JdbcBloodHorseRepository(
             inspectionId = HorseInspectionId(inspectionId),
             origin = toOrigin(),
             name = name?.let { HorseName.create(it).orThrow() },
+            bredFrom = toBredFrom(),
             version = version,
         )
+
+    /** 逆リンクの 2 列から [FoalSlot] を復元する（繁殖成績を経ない登録なら null）。 */
+    private fun BloodHorseRow.toBredFrom(): FoalSlot? {
+        val resultId = bredFromBreedingResultId ?: return null
+        val position = checkNotNull(bredFromPosition) { "登録枠が欠落: id=$id" }
+        return FoalSlot(BreedingResultId(resultId), position.toFoalPosition())
+    }
 
     /** 判別子と各バリアント列から sealed [Origin] を復元する。 */
     private fun BloodHorseRow.toOrigin(): Origin =
@@ -148,6 +175,8 @@ class JdbcBloodHorseRepository(
                 inspectionId = inspectionId.value,
                 name = name?.value,
                 originType = "",
+                bredFromBreedingResultId = bredFrom?.breedingResultId?.value,
+                bredFromPosition = bredFrom?.position?.toColumn(),
                 version = version,
             )
         return when (val o = origin) {

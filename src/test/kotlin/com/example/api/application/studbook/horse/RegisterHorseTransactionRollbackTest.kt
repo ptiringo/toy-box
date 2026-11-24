@@ -6,12 +6,14 @@ import com.example.api.domain.shared.Command
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalPosition
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -186,4 +188,9 @@ class FailingBloodHorseRepository(private val delegate: BloodHorseRepository) :
         worldId: WorldId,
         number: PedigreeRegistrationNumber,
     ): Boolean = delegate.existsByRegistrationNumber(worldId, number)
+
+    override fun findBredFromPositions(
+        worldId: WorldId,
+        breedingResultId: BreedingResultId,
+    ): Set<FoalPosition> = delegate.findBredFromPositions(worldId, breedingResultId)
 }

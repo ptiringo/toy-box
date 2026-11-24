@@ -347,6 +347,14 @@ private fun RegisterBroughtInFoalError.toProblemDetail(): ProblemDetail =
                 title = "Foaling outcome is not a live foal",
                 detail = "繁殖成績の分娩結果が生産として報告されていないため、登録できる産駒がありません。",
             )
+        is RegisterBroughtInFoalError.FoalLimitReached ->
+            problem(
+                    status = HttpStatus.CONFLICT,
+                    code = "foal-limit-reached",
+                    title = "Foal limit reached",
+                    detail = "この繁殖成績から登録できる産駒の頭数（双子なら 2 頭、そうでなければ 1 頭）に達しています。",
+                )
+                .apply { setProperty("limit", limit) }
         is RegisterBroughtInFoalError.RegistrationFailed -> cause.toProblemDetail()
     }
 

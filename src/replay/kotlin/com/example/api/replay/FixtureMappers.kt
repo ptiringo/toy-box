@@ -6,6 +6,7 @@ import com.example.api.application.studbook.breeding.StudCertificateInput
 import com.example.api.application.studbook.horse.RegisterCarriedOverHorseCommand
 import com.example.api.application.studbook.horse.RegisterImportedHorseCommand
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -58,6 +59,7 @@ fun FoalingFixture.toOutcome(): FoalingOutcome {
                 LocalDate.parse(
                     requireNotNull(foalingDate) { "LiveFoal には foalingDate が必要: $this" },
                 ),
+                twinFoalingDate?.let { TwinFoal(LocalDate.parse(it)) },
             )
         FoalingOutcomeName.NotConceived -> FoalingOutcome.NotConceived
         FoalingOutcomeName.Abortion -> FoalingOutcome.Abortion
@@ -96,6 +98,7 @@ fun FixtureSources.toSourceRefs(): List<SourceRef> =
         SourceRef("繁殖成績", breedingRecord),
         stallion?.let { SourceRef("種牡馬", it) },
         foal?.let { SourceRef("産駒", it) },
+        twinFoal?.let { SourceRef("産駒（双子のもう一頭）", it) },
     )
 
 /** 種付証明フィクスチャを [StudCertificateInput] に写す。 */

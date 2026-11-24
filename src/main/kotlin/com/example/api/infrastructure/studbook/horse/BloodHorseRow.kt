@@ -44,5 +44,7 @@ data class BloodHorseRow(
     @Column("foreign_sire_stud_book_country") val foreignSireStudBookCountry: String? = null,
     @Column("foreign_sire_breed_type") val foreignSireBreedType: String? = null,
     @Column("foreign_sire_coat_color") val foreignSireCoatColor: String? = null,
+    @Column("bred_from_breeding_result_id") val bredFromBreedingResultId: UUID? = null,
+    @Column("bred_from_position") val bredFromPosition: String? = null,
     @Version @Column("version") val version: Long? = null,
 )

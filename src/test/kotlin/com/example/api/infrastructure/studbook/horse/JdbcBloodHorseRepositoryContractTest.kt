@@ -3,9 +3,12 @@ package com.example.api.infrastructure.studbook.horse
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
+import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalPosition
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalSlot
 import com.example.api.domain.studbook.model.horse.bloodhorse.HorseName
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
@@ -417,6 +420,108 @@ class JdbcBloodHorseRepositoryContractTest(
         otherSeeder.seedInspectionFor(sameNumber)
 
         assert(repository.save(otherWorldId, sameNumber).unwrap().id == sameNumber.id)
+    }
+
+    /** 内国産の産駒を、指定の繁殖成績と枠に紐づけて永続化して返す（#625）。 */
+    private fun savedFoalBredFrom(slot: FoalSlot): BloodHorse {
+        val base = namedDomesticFoal()
+        val withSlot =
+            BloodHorse.reconstitute(
+                id = BloodHorseId(generateId()),
+                registrationNumber =
+                    PedigreeRegistrationNumber.create("FOAL-${generateId()}").unwrap(),
+                sex = base.sex,
+                coatColor = base.coatColor,
+                breedType = base.breedType,
+                dateOfBirth = base.dateOfBirth,
+                breeder = base.breeder,
+                inspectionId = base.inspectionId,
+                origin = base.origin,
+                name = null,
+                bredFrom = slot,
+                version = null,
+            )
+        return repository.save(worldId, withSlot).unwrap()
+    }
+
+    @Test
+    fun `繁殖成績の登録枠は往復できる`() {
+        val slot = FoalSlot(BreedingResultId(seeder.seedBreedingResultRow()), FoalPosition.TWIN)
+
+        val saved = savedFoalBredFrom(slot)
+
+        assert(repository.findById(worldId, saved.id)!!.bredFrom == slot)
+    }
+
+    @Test
+    fun `登録済みの枠を繁殖成績ごとに返す`() {
+        val resultId = BreedingResultId(seeder.seedBreedingResultRow())
+        savedFoalBredFrom(FoalSlot(resultId, FoalPosition.PRIMARY))
+        savedFoalBredFrom(FoalSlot(resultId, FoalPosition.TWIN))
+        // 別の繁殖成績の枠は数えない
+        savedFoalBredFrom(
+            FoalSlot(BreedingResultId(seeder.seedBreedingResultRow()), FoalPosition.PRIMARY),
+        )
+
+        val positions = repository.findBredFromPositions(worldId, resultId)
+
+        assert(positions == setOf(FoalPosition.PRIMARY, FoalPosition.TWIN))
+        // 世界をまたいでは引けない
+        assert(repository.findBredFromPositions(WorldId(createWorld()), resultId).isEmpty())
+    }
+
+    @Test
+    fun `同じ繁殖成績の同じ枠への二重insertはUNIQUE制約で拒否される`() {
+        // ドメインサービスの枠の割り当てをすり抜ける並行登録の backstop（#625）
+        val resultId = seeder.seedBreedingResultRow()
+        rows.save(
+            domesticRow().copy(bredFromBreedingResultId = resultId, bredFromPosition = "PRIMARY"),
+        )
+        val duplicate =
+            domesticRow()
+                .copy(
+                    registrationNumber = "DUP-${generateId()}",
+                    bredFromBreedingResultId = resultId,
+                    bredFromPosition = "PRIMARY",
+                )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(duplicate) }
+    }
+
+    @Test
+    fun `輸入馬なのに登録枠を持つ行はCHECK制約で拒否される`() {
+        val row =
+            domesticRow()
+                .copy(
+                    originType = "IMPORTED",
+                    sireId = null,
+                    damId = null,
+                    originCountry = "アイルランド",
+                    landingDate = LocalDate.of(2024, 9, 1),
+                    bredFromBreedingResultId = seeder.seedBreedingResultRow(),
+                    bredFromPosition = "PRIMARY",
+                )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `繁殖成績IDだけを持ち枠を持たない行はCHECK制約で拒否される`() {
+        val row = domesticRow().copy(bredFromBreedingResultId = seeder.seedBreedingResultRow())
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
+    }
+
+    @Test
+    fun `未知の枠の値を持つ行はCHECK制約で拒否される`() {
+        val row =
+            domesticRow()
+                .copy(
+                    bredFromBreedingResultId = seeder.seedBreedingResultRow(),
+                    bredFromPosition = "THIRD",
+                )
+
+        assertThrows<DataIntegrityViolationException> { rows.save(row) }
     }
 
     /** 持込馬（BROUGHT_IN）の整合した行。CHECK 制約を満たす最小行。 */

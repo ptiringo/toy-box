@@ -1,6 +1,7 @@
 package com.example.api.replay.fixture
 
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.replay.FoalingOutcomeName
 import com.example.api.replay.submissionInstant
 import com.example.api.replay.toFixtureName
@@ -16,6 +17,15 @@ class FixtureMappersTest {
         val outcome = FoalingFixture("LiveFoal", "2002-03-25").toOutcome()
 
         assert(outcome == FoalingOutcome.LiveFoal(LocalDate.of(2002, 3, 25)))
+    }
+
+    @Test
+    fun `twinFoalingDate があれば TwinFoal を持つ LiveFoal になる`() {
+        val outcome =
+            FoalingFixture("LiveFoal", "1991-03-20", twinFoalingDate = "1991-03-20").toOutcome()
+
+        val twin = TwinFoal(LocalDate.of(1991, 3, 20))
+        assert(outcome == FoalingOutcome.LiveFoal(LocalDate.of(1991, 3, 20), twin))
     }
 
     @Test

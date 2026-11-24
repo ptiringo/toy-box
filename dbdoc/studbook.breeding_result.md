@@ -8,7 +8,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | uuid |  | false |  |  | 識別子（外部採番の UUIDv7） |
+| id | uuid |  | false | [studbook.blood_horse](studbook.blood_horse.md) |  | 識別子（外部採番の UUIDv7） |
 | breeding_registration_id | uuid |  | false |  | [studbook.breeding_registration](studbook.breeding_registration.md) | 対象の繁殖登録 ID |
 | breeding_year | integer |  | false |  |  | 繁殖年（java.time.Year の int 値） |
 | covering_stallion_id | uuid |  | true |  | [studbook.blood_horse](studbook.blood_horse.md) | 種付種牡馬 ID（国内種付のみ。それ以外は NULL） |
@@ -19,7 +19,7 @@
 | outcome_foaling_date | date |  | true |  |  | 分娩日（生産 LIVE_FOAL のときのみ） |
 | version | bigint |  | false |  |  | 楽観ロック用バージョン（新規判定の NULL はエンティティ側のみ。保存済み行は常に非 NULL） |
 | report_submitted_on | date |  | true |  |  | 繁殖成績報告書（様式第14号）の提出日（未提出は NULL） |
-| world_id | uuid |  | false |  | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_registration](studbook.breeding_registration.md) | この行が属する世界（セーブデータ）のID |
+| world_id | uuid |  | false | [studbook.blood_horse](studbook.blood_horse.md) | [iam.world](iam.world.md) [studbook.blood_horse](studbook.blood_horse.md) [studbook.breeding_registration](studbook.breeding_registration.md) | この行が属する世界（セーブデータ）のID |
 | covering_type | varchar(16) |  | true |  |  | 種付の判別子（DOMESTIC=国内種付/OVERSEAS=海外種付。種付なしは NULL） |
 | covering_foreign_sire_name | varchar(255) |  | true |  |  | 外国種牡馬の馬名（海外種付のみ） |
 | covering_foreign_sire_stud_book_country | varchar(255) |  | true |  |  | 外国種牡馬を登録している血統登録機関の国（海外種付のみ） |
@@ -27,6 +27,7 @@
 | covering_foreign_sire_coat_color | varchar(32) |  | true |  |  | 外国種牡馬の毛色（海外種付のみ） |
 | covering_country | varchar(255) |  | true |  |  | 種付が行われた国（海外種付のみ） |
 | covering_proof_number | varchar(255) |  | true |  |  | 種付国の血統登録機関が発行した種付事実の証明の番号（海外種付のみ） |
+| outcome_twin_foaling_date | date |  | true |  |  | 双子のもう一頭の分娩日（生産 LIVE_FOAL で双子のときのみ。様式第14号裏「双子の繁殖成績」） |
 
 ## Constraints
 
@@ -36,6 +37,7 @@
 | chk_breeding_result_foaling_date | CHECK | CHECK (((outcome_foaling_date IS NULL) OR ((outcome_type IS NOT NULL) AND ((outcome_type)::text = 'LIVE_FOAL'::text)))) |
 | chk_breeding_result_outcome_covering | CHECK | CHECK ((((covering_date IS NULL) AND (outcome_type IS NOT NULL) AND ((outcome_type)::text = 'NOT_COVERED'::text)) OR ((covering_date IS NOT NULL) AND ((outcome_type IS NULL) OR ((outcome_type)::text <> 'NOT_COVERED'::text))))) |
 | chk_breeding_result_report_needs_outcome | CHECK | CHECK (((report_submitted_on IS NULL) OR (outcome_type IS NOT NULL))) |
+| chk_breeding_result_twin_foaling_date | CHECK | CHECK (((outcome_twin_foaling_date IS NULL) OR ((outcome_type IS NOT NULL) AND ((outcome_type)::text = 'LIVE_FOAL'::text)))) |
 | breeding_result_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | uq_breeding_result_registration_year | UNIQUE | UNIQUE (breeding_registration_id, breeding_year) |
 | fk_breeding_result_world | FOREIGN KEY | FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE |
@@ -64,6 +66,7 @@
 ```mermaid
 erDiagram
 
+"studbook.blood_horse" }o--|| "studbook.breeding_result" : "FOREIGN KEY (world_id, bred_from_breeding_result_id) REFERENCES studbook.breeding_result(world_id, id)"
 "studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
 "studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
 "studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
@@ -88,16 +91,7 @@ erDiagram
   varchar_32_ covering_foreign_sire_coat_color
   varchar_255_ covering_country
   varchar_255_ covering_proof_number
-}
-"studbook.breeding_registration" {
-  uuid id
-  varchar_255_ registration_number
-  uuid registered_horse_id FK
-  varchar_32_ breeding_role
-  varchar_32_ retirement_reason
-  date retirement_occurred_on
-  bigint version
-  uuid world_id FK
+  date outcome_twin_foaling_date
 }
 "studbook.blood_horse" {
   uuid id
@@ -120,6 +114,18 @@ erDiagram
   varchar_255_ foreign_sire_stud_book_country
   varchar_32_ foreign_sire_breed_type
   varchar_32_ foreign_sire_coat_color
+  uuid bred_from_breeding_result_id FK
+  varchar_16_ bred_from_position
+}
+"studbook.breeding_registration" {
+  uuid id
+  varchar_255_ registration_number
+  uuid registered_horse_id FK
+  varchar_32_ breeding_role
+  varchar_32_ retirement_reason
+  date retirement_occurred_on
+  bigint version
+  uuid world_id FK
 }
 "iam.world" {
   uuid id

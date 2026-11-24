@@ -3,6 +3,7 @@ package com.example.api.controller.breeding.request
 import com.example.api.controller.breeding.FoalingOutcomeDto
 import com.example.api.controller.problem
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -20,9 +21,14 @@ import org.springframework.http.ProblemDetail
  *
  * @property outcome 分娩結果の区分
  * @property foalingDate 分娩日。生産のときは必須、それ以外は無視される
+ * @property twinFoalingDate 双子のもう一頭の分娩日（様式第14号裏「双子の繁殖成績」）。生産で双子のときだけ送る。 生産以外で送ると 400（#625）
  */
 @Schema(description = "分娩結果報告リクエスト")
-data class ReportFoalingRequest(val outcome: FoalingOutcomeDto, val foalingDate: LocalDate?)
+data class ReportFoalingRequest(
+    val outcome: FoalingOutcomeDto,
+    val foalingDate: LocalDate?,
+    val twinFoalingDate: LocalDate? = null,
+)
 
 /**
  * リクエストボディをドメインの分娩結果へ変換する。
@@ -30,8 +36,25 @@ data class ReportFoalingRequest(val outcome: FoalingOutcomeDto, val foalingDate:
  * 生産（[FoalingOutcomeDto.LIVE_FOAL]）は分娩日が必須であり、欠けている場合は入力不正として 400 を表す [ProblemDetail]
  * を返す。産駒なしの各区分は分娩日を持たない（指定されても無視する）。種付せず （[FoalingOutcomeDto.NOT_COVERED]）は種付を伴わない年次成績の区分であり分娩結果報告
  * （`:reportFoaling`）では 受け付けない（別経路で記録する）。入力不正として 400 を返す。
+ *
+ * 双子のもう一頭の分娩日（[ReportFoalingRequest.twinFoalingDate]）は生産のときだけ受け付ける。産駒なしの区分の分娩日は従来どおり無視するが、
+ * もう一頭の分娩日は双子の生産という申告そのものなので、生産以外で送られたら黙って捨てずに 400 を返す。
  */
 fun ReportFoalingRequest.toOutcome(): Result<FoalingOutcome, ProblemDetail> =
+    when {
+        twinFoalingDate != null && outcome != FoalingOutcomeDto.LIVE_FOAL ->
+            Err(
+                problem(
+                    status = HttpStatus.BAD_REQUEST,
+                    code = "unexpected-twin-foaling-date",
+                    title = "Unexpected twin foaling date",
+                    detail = "twin_foaling_date は生産（LIVE_FOAL）のときだけ指定できます。",
+                ),
+            )
+        else -> outcomeOf()
+    }
+
+private fun ReportFoalingRequest.outcomeOf(): Result<FoalingOutcome, ProblemDetail> =
     when (outcome) {
         FoalingOutcomeDto.NOT_COVERED ->
             Err(
@@ -53,7 +76,7 @@ fun ReportFoalingRequest.toOutcome(): Result<FoalingOutcome, ProblemDetail> =
                     ),
                 )
             } else {
-                Ok(FoalingOutcome.LiveFoal(foalingDate))
+                Ok(FoalingOutcome.LiveFoal(foalingDate, twinFoalingDate?.let(::TwinFoal)))
             }
         FoalingOutcomeDto.NOT_CONCEIVED -> Ok(FoalingOutcome.NotConceived)
         FoalingOutcomeDto.ABORTION -> Ok(FoalingOutcome.Abortion)

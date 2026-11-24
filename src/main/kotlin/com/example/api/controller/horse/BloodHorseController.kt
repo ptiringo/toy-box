@@ -320,7 +320,9 @@ class BloodHorseController(
                 ),
                 ApiResponse(
                     responseCode = "409",
-                    description = "血統登録番号が既に他の軽種馬に採番済み",
+                    description =
+                        "血統登録番号が既に他の軽種馬に採番済み（registration-number-already-taken）、" +
+                            "または繁殖成績から登録できる頭数（双子なら 2 頭・そうでなければ 1 頭）を超えた（foal-limit-reached）",
                     content =
                         [
                             Content(

@@ -2,6 +2,7 @@ package com.example.api.domain.studbook.model.horse.bloodhorse
 
 import com.example.api.domain.shared.UpdateConflict
 import com.example.api.domain.shared.WorldId
+import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.github.michaelbull.result.Result
 import org.jmolecules.ddd.annotation.Repository
 
@@ -43,4 +44,14 @@ interface BloodHorseRepository {
      * [com.example.api.domain.studbook.model.breeding.BreedingRegistrationRepository] が受け持つ。
      */
     fun existsByRegistrationNumber(worldId: WorldId, number: PedigreeRegistrationNumber): Boolean
+
+    /**
+     * 指定の世界の中で、その繁殖成績から登録済みの産駒が占めている枠を返す（登録頭数の上限の照合用。#625）。
+     *
+     * 双子なら 2 頭・そうでなければ 1 頭という上限を、登録のたびに数えるために使う。登録済みが無ければ空集合。
+     */
+    fun findBredFromPositions(
+        worldId: WorldId,
+        breedingResultId: BreedingResultId,
+    ): Set<FoalPosition>
 }
