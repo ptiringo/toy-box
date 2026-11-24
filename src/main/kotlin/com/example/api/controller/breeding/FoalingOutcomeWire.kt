@@ -49,15 +49,20 @@ enum class FoalingOutcomeDto {
  *
  * @property kind 分娩結果の区分
  * @property foalingDate 分娩日。生産（[FoalingOutcomeDto.LIVE_FOAL]）のときのみ非 null
+ * @property twinFoalingDate 双子のもう一頭の分娩日。生産で双子のときのみ非 null（#625）
  */
 @Schema(description = "分娩結果のリソース表現")
-data class FoalingOutcomeResponse(val kind: FoalingOutcomeDto, val foalingDate: LocalDate?)
+data class FoalingOutcomeResponse(
+    val kind: FoalingOutcomeDto,
+    val foalingDate: LocalDate?,
+    val twinFoalingDate: LocalDate? = null,
+)
 
 /** ドメインの分娩結果を HTTP 契約のリソース表現へ変換する。 */
 fun FoalingOutcome.toResponse(): FoalingOutcomeResponse =
     when (this) {
         is FoalingOutcome.LiveFoal ->
-            FoalingOutcomeResponse(FoalingOutcomeDto.LIVE_FOAL, foalingDate)
+            FoalingOutcomeResponse(FoalingOutcomeDto.LIVE_FOAL, foalingDate, twin?.foalingDate)
         FoalingOutcome.NotConceived -> FoalingOutcomeResponse(FoalingOutcomeDto.NOT_CONCEIVED, null)
         FoalingOutcome.Abortion -> FoalingOutcomeResponse(FoalingOutcomeDto.ABORTION, null)
         FoalingOutcome.TwinAbortion -> FoalingOutcomeResponse(FoalingOutcomeDto.TWIN_ABORTION, null)

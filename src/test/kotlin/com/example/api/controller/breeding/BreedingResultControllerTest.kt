@@ -38,6 +38,7 @@ import com.example.api.domain.studbook.model.breeding.RecordCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordOverseasCoveringError
 import com.example.api.domain.studbook.model.breeding.RecordUncoveredError
 import com.example.api.domain.studbook.model.breeding.SubmitBreedingReportError
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.domain.studbook.model.breeding.ValidityPeriod
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
@@ -46,6 +47,7 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.slot
 import java.time.LocalDate
 import java.time.Year
 import java.util.UUID
@@ -677,6 +679,75 @@ class BreedingResultControllerTest(val mockMvc: MockMvc) {
                 .bodyJson()
                 .extractingPath("$.error_code")
                 .isEqualTo("missing-foaling-date")
+        }
+
+        @Test
+        fun `双子の生産を報告するともう一頭の分娩日がコマンドに渡ること`() {
+            val captured = slot<Command<ReportFoalingCommand>>()
+            val twin = TwinFoal(LocalDate.of(2025, 3, 21))
+            val reported =
+                BreedingFixture.breedingResult()
+                    .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20), twin))
+                    .unwrap()
+            every { reportFoaling(any<Actor>(), capture(captured)) } returns Ok(reported)
+
+            tester
+                .post()
+                .uri(uri, worldId, breedingResultId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    |{ "outcome": "LIVE_FOAL", "foaling_date": "2025-03-20",
+                    |"twin_foaling_date": "2025-03-21" }
+                    """
+                        .trimMargin(),
+                )
+                .assertThat()
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                .extractingPath("$.outcome.twin_foaling_date")
+                .isEqualTo("2025-03-21")
+            assert(
+                captured.captured.payload.outcome ==
+                    FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20), twin),
+            )
+        }
+
+        @Test
+        fun `生産以外でもう一頭の分娩日を送ると 400 unexpected-twin-foaling-date`() {
+            tester
+                .post()
+                .uri(uri, worldId, breedingResultId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{ "outcome": "STILLBIRTH", "twin_foaling_date": "2025-03-21" }""")
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.error_code")
+                .isEqualTo("unexpected-twin-foaling-date")
+        }
+
+        @Test
+        fun `もう一頭の分娩日を省略した生産の報告は従来どおり受け付けること`() {
+            val captured = slot<Command<ReportFoalingCommand>>()
+            val reported =
+                BreedingFixture.breedingResult()
+                    .recordFoaling(FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)))
+                    .unwrap()
+            every { reportFoaling(any<Actor>(), capture(captured)) } returns Ok(reported)
+
+            tester
+                .post()
+                .uri(uri, worldId, breedingResultId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(liveFoalBody)
+                .assertThat()
+                .hasStatus(HttpStatus.OK)
+            assert(
+                captured.captured.payload.outcome ==
+                    FoalingOutcome.LiveFoal(LocalDate.of(2025, 3, 20)),
+            )
         }
 
         @Test

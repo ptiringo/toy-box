@@ -3,6 +3,7 @@ package com.example.api.controller.breeding
 import com.example.api.controller.breeding.request.ReportFoalingRequest
 import com.example.api.controller.breeding.request.toOutcome
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
 import java.time.LocalDate
@@ -74,5 +75,46 @@ class FoalingOutcomeWireTest {
 
         assert(problem != null)
         assert(problem?.properties?.get("error_code") == "foaling-outcome-not-reportable")
+    }
+
+    @Test
+    fun `双子の生産は twin_foaling_date を返す`() {
+        val outcome =
+            FoalingOutcome.LiveFoal(LocalDate.of(1991, 3, 20), TwinFoal(LocalDate.of(1991, 3, 21)))
+
+        val response = outcome.toResponse()
+
+        assert(response.twinFoalingDate == LocalDate.of(1991, 3, 21))
+        assert(response.foalingDate == LocalDate.of(1991, 3, 20))
+    }
+
+    @Test
+    fun `もう一頭の分娩日を伴う生産の報告は双子の LiveFoal になる`() {
+        val request =
+            ReportFoalingRequest(
+                FoalingOutcomeDto.LIVE_FOAL,
+                LocalDate.of(1991, 3, 20),
+                twinFoalingDate = LocalDate.of(1991, 3, 21),
+            )
+
+        val twin = TwinFoal(LocalDate.of(1991, 3, 21))
+        assert(
+            request.toOutcome().get() == FoalingOutcome.LiveFoal(LocalDate.of(1991, 3, 20), twin),
+        )
+    }
+
+    @Test
+    fun `生産以外でもう一頭の分娩日を送ると unexpected-twin-foaling-date`() {
+        val request =
+            ReportFoalingRequest(
+                FoalingOutcomeDto.STILLBIRTH,
+                null,
+                twinFoalingDate = LocalDate.of(1991, 3, 21),
+            )
+
+        val problem = request.toOutcome().getError()!!
+
+        assert(problem.status == 400)
+        assert(problem.properties?.get("error_code") == "unexpected-twin-foaling-date")
     }
 }

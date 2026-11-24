@@ -800,6 +800,26 @@ class BloodHorseControllerTest(val mockMvc: MockMvc, val jsonMapper: JsonMapper)
         }
 
         @Test
+        fun `登録枠が埋まっていると 409 foal-limit-reached と limit が返ること`() {
+            stubError(
+                RegisterBroughtInFoalUseCaseError.PreconditionViolated(
+                    RegisterBroughtInFoalError.FoalLimitReached(2),
+                ),
+            )
+
+            postAndExpect(HttpStatus.CONFLICT, "foal-limit-reached")
+            tester
+                .post()
+                .uri(uri, worldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validBody)
+                .assertThat()
+                .bodyJson()
+                .extractingPath("$.limit")
+                .isEqualTo(2)
+        }
+
+        @Test
         fun `分娩結果が生産でないと 422 foaling-outcome-not-live-foal が返ること`() {
             stubError(
                 RegisterBroughtInFoalUseCaseError.PreconditionViolated(
