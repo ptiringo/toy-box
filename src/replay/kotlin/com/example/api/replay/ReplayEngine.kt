@@ -187,9 +187,13 @@ class ReplayEngine(
 
         // 5. 産駒血統登録 → 6. 馬名登録（LiveFoal かつ産駒情報があるときのみ）。
         //    未命名の産駒（JBIS 上も馬名が付いていない）は馬名登録を行わない。
-        val foalFacts = facts.foal
-        val foalSynth = synth.foal
-        if (foalFacts != null && foalSynth != null) {
+        //    双子の生産はもう一頭（twinFoal）も同じ手順で登録する（2 頭目は TWIN 枠。#625）。
+        val foals =
+            listOfNotNull(
+                facts.foal?.let { f -> synth.foal?.let { f to it } },
+                facts.twinFoal?.let { f -> synth.twinFoal?.let { f to it } },
+            )
+        for ((foalFacts, foalSynth) in foals) {
             val registeredFoal =
                 session.step(
                     ReplayStep.REGISTER_FOAL,

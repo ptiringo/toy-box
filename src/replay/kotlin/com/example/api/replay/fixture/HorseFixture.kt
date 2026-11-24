@@ -46,6 +46,7 @@ data class FixtureSources(
     val breedingRecord: String,
     val stallion: String? = null,
     val foal: String? = null,
+    val twinFoal: String? = null,
 )
 
 /**
@@ -60,6 +61,7 @@ data class CoveredFacts(
     val broodmare: HorseFacts,
     val foaling: FoalingFixture,
     val foal: FoalFacts? = null,
+    val twinFoal: FoalFacts? = null,
 )
 
 /**
@@ -83,13 +85,18 @@ data class HorseFacts(
 
 /**
  * [outcome] は分娩結果（FoalingOutcome）の区分名（"LiveFoal" / "NotConceived" 等）。foalingDate は LiveFoal のみ。
+ * [twinFoalingDate] は双子の生産のときだけ持つ、もう一頭の分娩日（#625）。
  *
  * JBIS は不受胎・流産・死産をすべて「産駒なし」に丸めるため、LiveFoal 以外の区分の選択は事実ではなく 合成の判断である（[CoveredSynthesized.notes]
  * に記す）。
  *
  * 種付せず（NotCovered）は分娩結果ではないのでここには現れない。種付なしの年はフィクスチャの kind で表す。
  */
-data class FoalingFixture(val outcome: String, val foalingDate: String? = null)
+data class FoalingFixture(
+    val outcome: String,
+    val foalingDate: String? = null,
+    val twinFoalingDate: String? = null,
+)
 
 /** 生産駒の公開事実。[name] が null なら未命名（血統登録のみで馬名登録が未了）。 */
 data class FoalFacts(
@@ -117,6 +124,7 @@ data class CoveredSynthesized(
     val covering: CoveringFixture,
     val submissions: CoveredSubmissions,
     val foal: FoalSynthesized? = null,
+    val twinFoal: FoalSynthesized? = null,
 )
 
 /**
