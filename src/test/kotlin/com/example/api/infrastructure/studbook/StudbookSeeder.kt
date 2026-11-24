@@ -91,6 +91,26 @@ class StudbookSeeder(
     }
 
     /**
+     * 任意 ID の繁殖成績行（種付せずの最小構成）を繁殖登録行ごと作り ID を返す（生 Row の bred_from_breeding_result_id 用）。
+     *
+     * 逆リンクの FK を満たすことだけが目的なので、区分の意味（生産かどうか）は問わない。
+     */
+    fun seedBreedingResultRow(id: UUID = generateId()): UUID {
+        jdbcClient
+            .sql(
+                "INSERT INTO studbook.breeding_result " +
+                    "(id, world_id, breeding_registration_id, breeding_year, " +
+                    "outcome_type, version) " +
+                    "VALUES (:id, :worldId, :registrationId, 2024, 'NOT_COVERED', 0)",
+            )
+            .param("id", id)
+            .param("worldId", worldId.value)
+            .param("registrationId", seedRegistrationRow())
+            .update()
+        return id
+    }
+
+    /**
      * 任意 ID の繁殖登録行を対象馬・審査行ごと作り ID を返す（生 Row の breeding_registration_id 用）。
      *
      * 登録番号の既定値は ID から導いて衝突しないようにする（[seedHorseRow] と同じ理由。UNIQUE は V22）。

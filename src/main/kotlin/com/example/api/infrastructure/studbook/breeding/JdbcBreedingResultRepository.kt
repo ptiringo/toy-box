@@ -11,6 +11,7 @@ import com.example.api.domain.studbook.model.breeding.Covering
 import com.example.api.domain.studbook.model.breeding.CoveringCertificateNumber
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
 import com.example.api.domain.studbook.model.breeding.ForeignCoveringProofNumber
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseId
 import com.example.api.domain.studbook.model.horse.bloodhorse.OriginCountry
 import com.example.api.infrastructure.shared.lockRowIfVersionMatches
@@ -133,8 +134,10 @@ class JdbcBreedingResultRepository(
     private fun BreedingResultRow.toOutcome(): FoalingOutcome? =
         when (outcomeType) {
             null -> null
-            OutcomeType.LIVE_FOAL ->
-                FoalingOutcome.LiveFoal(checkNotNull(outcomeFoalingDate) { "生産の分娩日が欠落: id=$id" })
+            OutcomeType.LIVE_FOAL -> {
+                val foalingDate = checkNotNull(outcomeFoalingDate) { "生産の分娩日が欠落: id=$id" }
+                FoalingOutcome.LiveFoal(foalingDate, outcomeTwinFoalingDate?.let(::TwinFoal))
+            }
             OutcomeType.NOT_CONCEIVED -> FoalingOutcome.NotConceived
             OutcomeType.ABORTION -> FoalingOutcome.Abortion
             OutcomeType.TWIN_ABORTION -> FoalingOutcome.TwinAbortion
@@ -154,6 +157,7 @@ class JdbcBreedingResultRepository(
      */
     private fun BreedingResult.toRow(worldId: WorldId): BreedingResultRow {
         val (outcomeType, foalingDate) = outcome.toTypeAndDate()
+        val twin = (outcome as? FoalingOutcome.LiveFoal)?.twin
         val domestic = covering as? Covering.Domestic
         val overseas = covering as? Covering.Overseas
         val coveringType =
@@ -180,6 +184,7 @@ class JdbcBreedingResultRepository(
             coveringProofNumber = overseas?.proofNumber?.value,
             outcomeType = outcomeType,
             outcomeFoalingDate = foalingDate,
+            outcomeTwinFoalingDate = twin?.foalingDate,
             reportSubmittedOn = reportSubmittedOn,
             version = version,
         )

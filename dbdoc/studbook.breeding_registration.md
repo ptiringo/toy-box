@@ -83,6 +83,7 @@ erDiagram
   varchar_32_ covering_foreign_sire_coat_color
   varchar_255_ covering_country
   varchar_255_ covering_proof_number
+  date outcome_twin_foaling_date
 }
 "studbook.covering_report" {
   uuid id
@@ -113,6 +114,8 @@ erDiagram
   varchar_255_ foreign_sire_stud_book_country
   varchar_32_ foreign_sire_breed_type
   varchar_32_ foreign_sire_coat_color
+  uuid bred_from_breeding_result_id FK
+  varchar_16_ bred_from_position
 }
 "iam.world" {
   uuid id

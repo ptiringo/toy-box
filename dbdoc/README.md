@@ -6,8 +6,8 @@
 | ---- | ------- | ------- | ---- |
 | [racing.jockey](racing.jockey.md) | 5 | 騎手（JRA 競馬コンテキスト） | BASE TABLE |
 | [studbook.breeding_registration](studbook.breeding_registration.md) | 8 | 繁殖登録（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.blood_horse](studbook.blood_horse.md) | 20 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
-| [studbook.breeding_result](studbook.breeding_result.md) | 19 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.blood_horse](studbook.blood_horse.md) | 22 | 血統馬（軽種馬登録コンテキスト） | BASE TABLE |
+| [studbook.breeding_result](studbook.breeding_result.md) | 20 | 繁殖成績（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.horse_inspection](studbook.horse_inspection.md) | 9 | 個体識別審査・親子判定（軽種馬登録コンテキスト） | BASE TABLE |
 | [studbook.covering_report](studbook.covering_report.md) | 6 | 種付成績報告書（様式第13号）の年次提出記録（種牡馬×種付年） | BASE TABLE |
 | [iam.account](iam.account.md) | 3 | この API の利用者アカウント（IdP の subject に世界を結びつける） | BASE TABLE |
@@ -31,6 +31,7 @@ erDiagram
 "studbook.blood_horse" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "studbook.blood_horse" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, dam_id) REFERENCES studbook.blood_horse(world_id, id)"
 "studbook.blood_horse" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, sire_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.blood_horse" }o--|| "studbook.breeding_result" : "FOREIGN KEY (world_id, bred_from_breeding_result_id) REFERENCES studbook.breeding_result(world_id, id)"
 "studbook.blood_horse" }o--|| "studbook.horse_inspection" : "FOREIGN KEY (world_id, inspection_id) REFERENCES studbook.horse_inspection(world_id, id)"
 "studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 "studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
@@ -79,6 +80,8 @@ erDiagram
   varchar_255_ foreign_sire_stud_book_country
   varchar_32_ foreign_sire_breed_type
   varchar_32_ foreign_sire_coat_color
+  uuid bred_from_breeding_result_id FK
+  varchar_16_ bred_from_position
 }
 "studbook.breeding_result" {
   uuid id
@@ -100,6 +103,7 @@ erDiagram
   varchar_32_ covering_foreign_sire_coat_color
   varchar_255_ covering_country
   varchar_255_ covering_proof_number
+  date outcome_twin_foaling_date
 }
 "studbook.horse_inspection" {
   uuid id

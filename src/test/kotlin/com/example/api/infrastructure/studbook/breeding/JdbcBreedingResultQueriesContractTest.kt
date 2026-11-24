@@ -6,6 +6,7 @@ import com.example.api.domain.shared.WorldId
 import com.example.api.domain.shared.generateId
 import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
 import com.example.api.infrastructure.studbook.StudbookSeeder
@@ -64,6 +65,7 @@ class JdbcBreedingResultQueriesContractTest(
         reportSubmittedOn: LocalDate? = null,
         seedWorldId: WorldId = worldId,
         registrationId: UUID = seeder.seedRegistrationRow(),
+        twinFoalingDate: LocalDate? = null,
     ): UUID {
         val id = generateId()
         rows.save(
@@ -79,10 +81,26 @@ class JdbcBreedingResultQueriesContractTest(
                 coveringCertificateNumber = "C-$year-0001",
                 outcomeType = outcomeType,
                 outcomeFoalingDate = foalingDate,
+                outcomeTwinFoalingDate = twinFoalingDate,
                 reportSubmittedOn = reportSubmittedOn,
             ),
         )
         return id
+    }
+
+    @Test
+    fun `双子の生産の成績はもう一頭を持つ LiveFoal として復元する`() {
+        val id =
+            seedCoveredRow(
+                outcomeType = "LIVE_FOAL",
+                foalingDate = LocalDate.of(1991, 3, 20),
+                twinFoalingDate = LocalDate.of(1991, 3, 21),
+            )
+
+        val outcome = queries.findById(worldId, BreedingResultId(id))!!.outcome
+        val twin = TwinFoal(LocalDate.of(1991, 3, 21))
+
+        assert(outcome == FoalingOutcome.LiveFoal(LocalDate.of(1991, 3, 20), twin))
     }
 
     @Test
