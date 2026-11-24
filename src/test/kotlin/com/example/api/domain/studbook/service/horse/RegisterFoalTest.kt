@@ -1,13 +1,19 @@
 package com.example.api.domain.studbook.service.horse
 
 import com.example.api.domain.studbook.model.breeding.BreedingFixture
+import com.example.api.domain.studbook.model.breeding.BreedingResult
 import com.example.api.domain.studbook.model.breeding.FoalingOutcome
+import com.example.api.domain.studbook.model.breeding.TwinFoal
+import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalPosition
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalSlot
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.PedigreeRegistrationNumber
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
+import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
 import java.time.LocalDate
@@ -37,6 +43,7 @@ class RegisterFoalTest {
                     foalIdentity,
                     BloodHorseFixture.inspection(),
                     registrationNumber,
+                    takenPositions = emptySet(),
                 )
                 .unwrap()
 
@@ -62,6 +69,7 @@ class RegisterFoalTest {
                 BloodHorseFixture.foalIdentity(),
                 BloodHorseFixture.inspection(),
                 registrationNumber,
+                takenPositions = emptySet(),
             )
 
         assert(result.getError() == RegisterFoalError.NotDomesticCovering)
@@ -80,6 +88,7 @@ class RegisterFoalTest {
                 BloodHorseFixture.foalIdentity(),
                 BloodHorseFixture.inspection(),
                 registrationNumber,
+                takenPositions = emptySet(),
             )
 
         assert(result.getError() == RegisterFoalError.NotLiveFoal(null))
@@ -100,6 +109,7 @@ class RegisterFoalTest {
                 BloodHorseFixture.foalIdentity(),
                 BloodHorseFixture.inspection(),
                 registrationNumber,
+                takenPositions = emptySet(),
             )
 
         assert(result.getError() == RegisterFoalError.NotLiveFoal(FoalingOutcome.NotConceived))
@@ -118,11 +128,74 @@ class RegisterFoalTest {
                 BloodHorseFixture.foalIdentity(),
                 BloodHorseFixture.inspection(),
                 registrationNumber,
+                takenPositions = emptySet(),
             )
 
         assert(
             result.getError() ==
                 RegisterFoalError.RegistrationFailed(RegisterInStudBookError.SireNotMale),
         )
+    }
+
+    private fun twinResult() =
+        BreedingFixture.breedingResult()
+            .recordFoaling(FoalingOutcome.LiveFoal(foalingDate, TwinFoal(foalingDate.plusDays(1))))
+            .unwrap()
+
+    private fun register(
+        result: BreedingResult,
+        taken: Set<FoalPosition>,
+    ): Result<BloodHorse, RegisterFoalError> =
+        registerFoal(
+            result,
+            BloodHorseFixture.bloodHorse(sex = Sex.MALE),
+            BloodHorseFixture.bloodHorse(sex = Sex.FEMALE),
+            BloodHorseFixture.foalIdentity(),
+            BloodHorseFixture.inspection(),
+            registrationNumber,
+            takenPositions = taken,
+        )
+
+    @Test
+    fun `双子でない生産の 1 頭目は PRIMARY 枠で登録される`() {
+        val result = liveFoalResult()
+
+        val foal = register(result, emptySet()).unwrap()
+
+        assert(foal.bredFrom == FoalSlot(result.id, FoalPosition.PRIMARY))
+    }
+
+    @Test
+    fun `双子でない生産で PRIMARY が埋まっていると FoalLimitReached(1)`() {
+        val error = register(liveFoalResult(), setOf(FoalPosition.PRIMARY)).getError()
+
+        assert(error == RegisterFoalError.FoalLimitReached(1))
+    }
+
+    @Test
+    fun `双子の生産の 2 頭目は TWIN 枠でもう一頭の分娩日を生年月日にする`() {
+        val result = twinResult()
+
+        val foal = register(result, setOf(FoalPosition.PRIMARY)).unwrap()
+
+        assert(foal.bredFrom == FoalSlot(result.id, FoalPosition.TWIN))
+        assert(foal.dateOfBirth.value == LocalDate.of(2024, 3, 21))
+    }
+
+    @Test
+    fun `双子の生産で両方の枠が埋まっていると FoalLimitReached(2)`() {
+        val taken = setOf(FoalPosition.PRIMARY, FoalPosition.TWIN)
+
+        val error = register(twinResult(), taken).getError()
+
+        assert(error == RegisterFoalError.FoalLimitReached(2))
+    }
+
+    @Test
+    fun `生産でない成績は枠より先に NotLiveFoal を返す`() {
+        val error =
+            register(BreedingFixture.breedingResult(), setOf(FoalPosition.PRIMARY)).getError()
+
+        assert(error == RegisterFoalError.NotLiveFoal(null))
     }
 }

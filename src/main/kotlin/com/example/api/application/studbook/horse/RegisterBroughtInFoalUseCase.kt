@@ -171,8 +171,17 @@ class RegisterBroughtInFoalUseCase(
                 .toResultOr { RegisterBroughtInFoalUseCaseError.DamNotFound(damId.value) }
                 .bind()
 
+        // 登録頭数の上限（双子なら 2 頭・そうでなければ 1 頭）を数えるため、登録済みの枠を読む（#625）
+        val taken = bloodHorseRepository.findBredFromPositions(actor.worldId, breedingResult.id)
         val bloodHorse =
-            registerBroughtInFoal(breedingResult, dam, foalIdentity, inspection, registrationNumber)
+            registerBroughtInFoal(
+                    breedingResult,
+                    dam,
+                    foalIdentity,
+                    inspection,
+                    registrationNumber,
+                    taken,
+                )
                 .mapError { RegisterBroughtInFoalUseCaseError.PreconditionViolated(it) }
                 .bind()
 

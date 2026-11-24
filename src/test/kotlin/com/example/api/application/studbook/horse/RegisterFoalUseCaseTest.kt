@@ -17,6 +17,7 @@ import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseFixture
 import com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorseRepository
 import com.example.api.domain.studbook.model.horse.bloodhorse.BreedType
 import com.example.api.domain.studbook.model.horse.bloodhorse.CoatColor
+import com.example.api.domain.studbook.model.horse.bloodhorse.FoalPosition
 import com.example.api.domain.studbook.model.horse.bloodhorse.Origin
 import com.example.api.domain.studbook.model.horse.bloodhorse.RegisterInStudBookError
 import com.example.api.domain.studbook.model.horse.bloodhorse.Sex
@@ -91,6 +92,7 @@ class RegisterFoalUseCaseTest {
                 every { existsByRegistrationNumber(worldId, any()) } returns false
                 every { findById(worldId, sire.id) } returns sire
                 every { findById(worldId, dam.id) } returns dam
+                every { findBredFromPositions(worldId, any()) } returns emptySet()
                 every { save(worldId, any()) } answers { Ok(secondArg()) }
             }
         val horseInspectionRepository =
@@ -347,5 +349,23 @@ class RegisterFoalUseCaseTest {
 
             verify(exactly = 0) { strictInspectionRepository.save(worldId, any()) }
         }
+    }
+
+    @Test
+    fun `登録済みの枠を読んでドメインサービスに渡し 上限なら何も保存しない`() {
+        val w = Wiring()
+        every { w.bloodHorseRepository.findBredFromPositions(worldId, w.breedingResult.id) } returns
+            setOf(FoalPosition.PRIMARY)
+
+        val result = w.useCase()(actor, command(w.breedingResult.id.value))
+
+        assert(
+            result.getError() ==
+                RegisterFoalUseCaseError.PreconditionViolated(
+                    RegisterFoalError.FoalLimitReached(1),
+                ),
+        )
+        verify(exactly = 0) { w.bloodHorseRepository.save(worldId, any()) }
+        verify(exactly = 0) { w.horseInspectionRepository.save(worldId, any()) }
     }
 }

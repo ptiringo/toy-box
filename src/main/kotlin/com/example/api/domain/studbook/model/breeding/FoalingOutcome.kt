@@ -31,7 +31,11 @@ sealed interface FoalingOutcome {
      * @property twin 双子のもう一頭。双子でなければ null
      */
     @ValueObject
-    data class LiveFoal(val foalingDate: LocalDate, val twin: TwinFoal? = null) : FoalingOutcome
+    data class LiveFoal(val foalingDate: LocalDate, val twin: TwinFoal? = null) : FoalingOutcome {
+        /** この生産から血統登録できる産駒の上限（双子なら 2 頭・そうでなければ 1 頭）。 */
+        val foalLimit: Int
+            get() = if (twin == null) 1 else 2
+    }
 
     /** 不受胎。種付したが受胎が確認できなかった。 */
     @ValueObject data object NotConceived : FoalingOutcome
