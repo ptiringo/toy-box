@@ -1,8 +1,11 @@
 package com.example.api.domain.studbook.model.horse.bloodhorse
 
+import com.example.api.domain.studbook.model.breeding.BreedingResultId
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrap
+import java.util.UUID
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 /** BloodHorse 集約の馬名登録（assignName）に関するユニットテスト。 */
 class BloodHorseTest {
@@ -19,6 +22,78 @@ class BloodHorseTest {
         // 他の属性も引き継がれる
         assert(named.registrationNumber == unnamed.registrationNumber)
         assert(named.origin == unnamed.origin)
+    }
+
+    @Test
+    fun `create に渡した登録枠を bredFrom として持つ`() {
+        val slot = FoalSlot(BreedingResultId(UUID.randomUUID()), FoalPosition.PRIMARY)
+        val sire = BloodHorseFixture.bloodHorse(sex = Sex.MALE)
+        val dam = BloodHorseFixture.bloodHorse(sex = Sex.FEMALE)
+
+        val foal =
+            BloodHorse.create(
+                    sire,
+                    dam,
+                    BloodHorseFixture.studBookEntry(),
+                    BloodHorseFixture.inspection(),
+                    PedigreeRegistrationNumber.create("2023104567").unwrap(),
+                    bredFrom = slot,
+                )
+                .unwrap()
+
+        assert(foal.bredFrom == slot)
+    }
+
+    @Test
+    fun `createImported の bredFrom は常に null`() {
+        assert(BloodHorseFixture.importedBloodHorse().bredFrom == null)
+    }
+
+    @Test
+    fun `輸入馬の出自で bredFrom を持たせると reconstitute が IllegalArgumentException`() {
+        val imported = BloodHorseFixture.importedBloodHorse()
+
+        assertThrows<IllegalArgumentException> {
+            BloodHorse.reconstitute(
+                id = imported.id,
+                registrationNumber = imported.registrationNumber,
+                sex = imported.sex,
+                coatColor = imported.coatColor,
+                breedType = imported.breedType,
+                dateOfBirth = imported.dateOfBirth,
+                breeder = imported.breeder,
+                inspectionId = imported.inspectionId,
+                origin = imported.origin,
+                name = imported.name,
+                bredFrom = FoalSlot(BreedingResultId(UUID.randomUUID()), FoalPosition.PRIMARY),
+                version = 1L,
+            )
+        }
+    }
+
+    @Test
+    fun `命名しても bredFrom を引き継ぐ`() {
+        val base = BloodHorseFixture.domesticBloodHorse()
+        val slot = FoalSlot(BreedingResultId(UUID.randomUUID()), FoalPosition.TWIN)
+        val withSlot =
+            BloodHorse.reconstitute(
+                id = base.id,
+                registrationNumber = base.registrationNumber,
+                sex = base.sex,
+                coatColor = base.coatColor,
+                breedType = base.breedType,
+                dateOfBirth = base.dateOfBirth,
+                breeder = base.breeder,
+                inspectionId = base.inspectionId,
+                origin = base.origin,
+                name = null,
+                bredFrom = slot,
+                version = 1L,
+            )
+
+        val named = withSlot.assignName(name).unwrap().aggregate
+
+        assert(named.bredFrom == slot)
     }
 
     @Test

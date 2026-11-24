@@ -24,9 +24,14 @@ sealed interface FoalingOutcome {
      * [com.example.api.domain.studbook.model.horse.bloodhorse.BloodHorse] として実体化しない
      * ため、本帰結は分娩日のみを保持する。
      *
-     * @property foalingDate 分娩日（産駒の出生年月日）
+     * 双子として生産された場合は [twin] にもう一頭を持つ（様式第14号表「産駒あり」の双子欄と裏「双子の繁殖成績」欄）。
+     * 双子かどうかで、この成績から血統登録できる産駒の上限（双子なら2頭・そうでなければ1頭）が決まる（ADR-0092）。
+     *
+     * @property foalingDate 分娩日（産駒の出生年月日）。双子なら 1 頭目（様式の表）の分娩日
+     * @property twin 双子のもう一頭。双子でなければ null
      */
-    @ValueObject data class LiveFoal(val foalingDate: LocalDate) : FoalingOutcome
+    @ValueObject
+    data class LiveFoal(val foalingDate: LocalDate, val twin: TwinFoal? = null) : FoalingOutcome
 
     /** 不受胎。種付したが受胎が確認できなかった。 */
     @ValueObject data object NotConceived : FoalingOutcome

@@ -95,6 +95,8 @@ sealed interface RegisterInStudBookError {
  * @property inspectionId 個体識別・親子判定を行った審査（[HorseInspection]）の ID。識別子（マイクロチップ）は審査側が保持する
  * @property origin 出自（内国産＝父母ID／輸入＝原産国・揚陸日／移行取り込み＝属性なし）。相互排他を [Origin] で型強制する
  * @property name 馬名。未命名なら null。命名は [assignName] でのみ行う
+ * @property bredFrom 生まれた繁殖成績と、その中での枠（[FoalSlot]）。繁殖成績から登録した産駒（内国産・持込馬）だけが持ち、
+ *   輸入馬・移行取り込み・繁殖成績を経ない直接の血統登録では null（ADR-0092）
  */
 @AggregateRoot
 class BloodHorse
@@ -109,8 +111,15 @@ private constructor(
     val inspectionId: HorseInspectionId,
     val origin: Origin,
     val name: HorseName?,
+    val bredFrom: FoalSlot? = null,
     override val version: Long? = null,
 ) : Entity<BloodHorseId>() {
+    init {
+        require(bredFrom == null || origin is Origin.Domestic || origin is Origin.BroughtIn) {
+            "繁殖成績から生まれた産駒（bredFrom あり）の出自は内国産か持込馬でなければならない。"
+        }
+    }
+
     /**
      * 馬名を登録し、命名済みの新しい [BloodHorse] と発生した [HorseNamed] イベントを同梱して返す。
      *
@@ -148,6 +157,7 @@ private constructor(
             inspectionId = inspectionId,
             origin = origin,
             name = name,
+            bredFrom = bredFrom,
             version = version,
         )
 
@@ -178,6 +188,7 @@ private constructor(
             entry: StudBookEntry,
             inspection: HorseInspection,
             registrationNumber: PedigreeRegistrationNumber,
+            bredFrom: FoalSlot? = null,
         ): Result<BloodHorse, RegisterInStudBookError> {
             val violation =
                 if (sire.sex != Sex.MALE) RegisterInStudBookError.SireNotMale
@@ -191,6 +202,7 @@ private constructor(
                         inspection,
                         registrationNumber,
                         Origin.Domestic(sireId = sire.id, damId = dam.id),
+                        bredFrom,
                     ),
                 )
             }
@@ -216,6 +228,7 @@ private constructor(
             entry: StudBookEntry,
             inspection: HorseInspection,
             registrationNumber: PedigreeRegistrationNumber,
+            bredFrom: FoalSlot? = null,
         ): Result<BloodHorse, RegisterInStudBookError> {
             val violation =
                 validateWithParents(sire.breedType, sire.coatColor, dam, entry, inspection)
@@ -228,6 +241,7 @@ private constructor(
                         inspection,
                         registrationNumber,
                         Origin.BroughtIn(sire = sire, damId = dam.id),
+                        bredFrom,
                     ),
                 )
             }
@@ -264,6 +278,7 @@ private constructor(
             inspection: HorseInspection,
             registrationNumber: PedigreeRegistrationNumber,
             origin: Origin,
+            bredFrom: FoalSlot?,
         ): BloodHorse =
             BloodHorse(
                 id = BloodHorseId(generateId()),
@@ -276,6 +291,7 @@ private constructor(
                 inspectionId = inspection.id,
                 origin = origin,
                 name = null,
+                bredFrom = bredFrom,
             )
 
         /**
@@ -353,6 +369,7 @@ private constructor(
             inspectionId: HorseInspectionId,
             origin: Origin,
             name: HorseName?,
+            bredFrom: FoalSlot? = null,
             version: Long?,
         ): BloodHorse =
             BloodHorse(
@@ -366,6 +383,7 @@ private constructor(
                 inspectionId = inspectionId,
                 origin = origin,
                 name = name,
+                bredFrom = bredFrom,
                 version = version,
             )
     }

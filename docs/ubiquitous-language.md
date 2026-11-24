@@ -275,6 +275,7 @@ graph LR
 | DateOfBirth | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | DnaParentageResult | 値オブジェクト | domain.studbook.model.inspection |
 | FoalIdentity | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
+| FoalSlot | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | FoalingOutcome.Abortion | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.LiveFoal | 値オブジェクト | domain.studbook.model.breeding |
 | FoalingOutcome.NeonatalDeath | 値オブジェクト | domain.studbook.model.breeding |
@@ -308,6 +309,7 @@ graph LR
 | StudBookEntry | 値オブジェクト | domain.studbook.model.horse.bloodhorse |
 | StudCertificate | 値オブジェクト | domain.studbook.model.breeding |
 | StudCertificateNumber | 値オブジェクト | domain.studbook.model.breeding |
+| TwinFoal | 値オブジェクト | domain.studbook.model.breeding |
 | ValidityPeriod | 値オブジェクト | domain.studbook.model.breeding |
 | BloodHorseRepository | リポジトリポート | domain.studbook.model.horse.bloodhorse |
 | BreedingRegistrationRepository | リポジトリポート | domain.studbook.model.breeding |
