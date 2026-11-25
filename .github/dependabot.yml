@@ -36,8 +36,11 @@ updates:
       #   3 プラグインは version catalog で version.ref = "kotlin" を共有し、同じ kotlin 行を書き換える。
       #   別グループに散らすと同一 1 行を書く重複 PR が量産される（#242/#245/#575 の実績）。
       # - detekt: detekt は Kotlin コンパイラを埋め込み、「compiled with Kotlin X / running with Y」の
-      #   実行時一致を要求する。Kotlin と別 PR にすると双方が単独では緑にならないデッドロックになる
-      #   （Kotlin 単独 → detekt 非互換で :detekt 失敗 / detekt 単独 → 同じく失敗）。
+      #   実行時一致を要求する。かつては Spring の dependency-management が detekt の classpath まで
+      #   プロジェクトの Kotlin 版へ揃えたため、Kotlin と別 PR にすると双方が単独では緑にならなかった。
+      #   いまは build.gradle.kts が detekt の configuration だけ Kotlin を detekt 自身の要求版へ戻すので、
+      #   Kotlin 単独の更新でも :detekt は通る（detekt の新版が出ていなくても Kotlin を上げられる）。
+      #   同じグループに残すのは、両方に新版があるとき 1 PR で済ませるため。
       kotlin:
         patterns:
           - "org.jetbrains.kotlin.jvm"
