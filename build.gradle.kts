@@ -216,6 +216,24 @@ detekt {
     parallel = true
 }
 
+// detekt は自身をビルドした Kotlin と実行時の Kotlin の一致を要求する（不一致だと「detekt was compiled
+// with Kotlin X but is currently running with Y」で落ちる）。ところが Spring の dependency-management は
+// 全 configuration の Kotlin をプロジェクトの Kotlin 版へ揃えるため、detekt 用 classpath の
+// `kotlin-compiler {strictly X}` まで上書きしてしまう。detekt の configuration に限り、Kotlin 系依存を
+// detekt 自身が要求した版へ戻す（版をハードコードしないので detekt を上げれば自動で追従する）。
+// これにより Kotlin と detekt を別々に更新できる。
+configurations
+    .matching { it.name == "detekt" }
+    .configureEach {
+        resolutionStrategy.eachDependency {
+            val requestedVersion = requested.version
+            if (requested.group == "org.jetbrains.kotlin" && requestedVersion != null) {
+                useVersion(requestedVersion)
+                because("detekt は自身をビルドした Kotlin でしか動かないため")
+            }
+        }
+    }
+
 tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
     jvmTarget = "25"
     reports {
