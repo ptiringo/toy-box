@@ -1,12 +1,11 @@
 package com.example.api.replay.fixture
 
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.readValue
 
 /** クラスパス上のフィクスチャ JSON ファイルを [HorseFixture] へ読み込む。 */
 object FixtureLoader {
-    private val mapper = JsonMapper.builder().build().registerKotlinModule()
+    private val mapper = jacksonObjectMapper()
 
     /** 単一フィクスチャを名前で読み込む（例: "01-imported-normal.json"）。JSON の "kind" で covered / uncovered を判別する。 */
     fun load(resourceName: String): HorseFixture {
