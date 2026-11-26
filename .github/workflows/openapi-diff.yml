@@ -1,0 +1,133 @@
+# OpenAPI 仕様差分ワークフロー（#1085 / ADR-0093）
+#
+# 目的: PR が生成される OpenAPI 仕様（build/openapi.json）をどう変えるかを Job Summary に出す。
+# PR #1068（springdoc-openapi / spring-ai の Dependabot 更新）では `required` 配列や親への `allOf`
+# 参照が大量に消えたが、openapi-lint.yml の vacuum は仕様の「品質」しか見ず「前の版との差分」は
+# 見ないため、CI は緑のまま素通りした。依存更新は Kotlin のコードを 1 行も変えずに仕様を変えうるので、
+# 差分そのものを見せる。
+#
+# 比較するのは merge-base（PR が分岐した点）と PR の head。base ブランチの先端と比べると、PR が
+# 分岐した後に main へ入った別 PR の仕様変更まで「この PR の差分」として混ざるため。
+#
+# 今は可視化だけで、差分や破壊的変更があってもジョブは落とさない（落とすかは ADR-0093 の「今後の判断」）。
+# head 側の生成に失敗したときだけ赤にする（生成できない仕様は openapi-lint.yml も落とすので整合する）。
+# base 側の生成失敗は summary に書いて緑で抜ける（base の不具合は PR の責任ではない）。
+#
+# 生成物はコミットしない（ADR-0054）。比較に使った 2 本の仕様は Artifact として残す。
+
+name: OpenAPI Diff
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "src/main/**"
+      - "build.gradle.kts"
+      - "gradle/**"
+      - "compose.yaml"
+      - "mise.toml"
+      - "mise.lock"
+      - "scripts/openapi-spec-diff.sh"
+      - ".github/workflows/openapi-diff.yml"
+
+jobs:
+  openapi-diff:
+    runs-on: ubuntu-latest
+    name: spec diff
+    # 生成（forked bootRun + PostgreSQL 起動）を base / head の 2 回回すので lint（15 分）の倍を見込む。
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # MISE_ENV=ci の理由は openapi-lint.yml の同じ env ブロックを参照（#510 / #859 / #863）。
+    env:
+      MISE_ENV: ci
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 既定の refs/pull/N/merge ではなく PR の head そのものを取る。merge-base と比べるので、
+          # 比較の相手も「PR のブランチが実際に持っている内容」にそろえる。
+          ref: ${{ github.event.pull_request.head.sha }}
+          # merge-base を求めるのに base 側の履歴が要る。
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          java-version-file: ".java-version"
+          distribution: "temurin"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Install mise
+        uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          # このジョブが使うツールだけを入れる（#464）。backend 修飾名は mise.toml の [tools] キーと
+          # 完全一致させる（短縮名では `--locked` が解決できない）。jq は runner 同梱。
+          install_args: "github:oasdiff/oasdiff"
+
+      - name: Verify oasdiff
+        run: oasdiff --version
+
+      - name: Resolve merge-base
+        id: merge-base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mb=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          echo "sha=$mb" >> "$GITHUB_OUTPUT"
+          echo "merge-base: $mb"
+
+      - name: Generate head spec
+        run: |
+          ./gradlew generateOpenApiDocs --stacktrace
+          cp build/openapi.json "$RUNNER_TEMP/openapi-head.json"
+          # spring-boot-docker-compose はアプリ終了時に compose を stop するだけで down しない。
+          # base 側は別ディレクトリ（＝別 compose プロジェクト）で同じホストポート 5432 を使うので、
+          # 念のため片付けて取り合いを避ける。
+          docker compose down --volumes
+
+      - name: Generate base spec
+        id: base
+        # base の生成失敗は PR の責任ではないので、ジョブは落とさず summary で知らせる。
+        continue-on-error: true
+        env:
+          MERGE_BASE: ${{ steps.merge-base.outputs.sha }}
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/base" "$MERGE_BASE"
+          cd "$RUNNER_TEMP/base"
+          ./gradlew generateOpenApiDocs --stacktrace
+          cp build/openapi.json "$RUNNER_TEMP/openapi-base.json"
+          docker compose down --volumes
+
+      - name: Write diff to job summary
+        env:
+          BASE_OUTCOME: ${{ steps.base.outcome }}
+          MERGE_BASE: ${{ steps.merge-base.outputs.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$BASE_OUTCOME" != "success" ]; then
+            {
+              echo "## OpenAPI 仕様の差分"
+              echo
+              echo "merge-base（\`${MERGE_BASE:0:7}\`）側の仕様を生成できなかったため比較できない。ログの「Generate base spec」を参照。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          scripts/openapi-spec-diff.sh \
+            "$RUNNER_TEMP/openapi-base.json" "$RUNNER_TEMP/openapi-head.json" \
+            "merge-base ${MERGE_BASE:0:7}" "head ${HEAD_SHA:0:7}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload specs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: openapi-spec-diff
+          path: |
+            ${{ runner.temp }}/openapi-base.json
+            ${{ runner.temp }}/openapi-head.json
+          if-no-files-found: ignore
+          retention-days: 14

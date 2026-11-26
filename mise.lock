@@ -299,6 +299,40 @@ url = "https://github.com/jdx/fnox/releases/download/v1.27.1/fnox-x86_64-pc-wind
 url_api = "https://api.github.com/repos/jdx/fnox/releases/assets/450745535"
 provenance = "github-attestations"
 
+[[tools."github:oasdiff/oasdiff"]]
+version = "1.39.0"
+backend = "github:oasdiff/oasdiff"
+
+[tools."github:oasdiff/oasdiff"."platforms.linux-arm64"]
+checksum = "sha256:481db7d891d916f13df277b2ef8bbb95477702827710e49fe22cef69c359c780"
+url = "https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/oasdiff/oasdiff/releases/assets/760679266"
+
+[tools."github:oasdiff/oasdiff"."platforms.linux-arm64-musl"]
+checksum = "sha256:481db7d891d916f13df277b2ef8bbb95477702827710e49fe22cef69c359c780"
+url = "https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/oasdiff/oasdiff/releases/assets/760679266"
+
+[tools."github:oasdiff/oasdiff"."platforms.linux-x64"]
+checksum = "sha256:71a85930728f367a2086077b7ae1411319421549d18473a3e8258b6451520433"
+url = "https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/oasdiff/oasdiff/releases/assets/760679280"
+
+[tools."github:oasdiff/oasdiff"."platforms.linux-x64-musl"]
+checksum = "sha256:71a85930728f367a2086077b7ae1411319421549d18473a3e8258b6451520433"
+url = "https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/oasdiff/oasdiff/releases/assets/760679280"
+
+[tools."github:oasdiff/oasdiff"."platforms.macos-arm64"]
+checksum = "sha256:fe88d9950324d3b0ebeaf8e0d3a210b64cb099a0f55fce5ee5a22b276df0eac4"
+url = "https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_darwin_all.tar.gz"
+url_api = "https://api.github.com/repos/oasdiff/oasdiff/releases/assets/760679349"
+
+[tools."github:oasdiff/oasdiff"."platforms.macos-x64"]
+checksum = "sha256:fe88d9950324d3b0ebeaf8e0d3a210b64cb099a0f55fce5ee5a22b276df0eac4"
+url = "https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_darwin_all.tar.gz"
+url_api = "https://api.github.com/repos/oasdiff/oasdiff/releases/assets/760679349"
+
 [[tools."github:sbdchd/squawk"]]
 version = "2.58.0"
 backend = "github:sbdchd/squawk"

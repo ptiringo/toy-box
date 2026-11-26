@@ -84,7 +84,7 @@ Issue の優先度は **GitHub Projects（`toy-box` = Project #4）の `Priority
 
 ## API（OpenAPI・エラー・Actuator）
 
-`springdoc-openapi` で API ドキュメントを自動生成する（Swagger UI: `/swagger-ui.html`、OpenAPI JSON: `/v3/api-docs`）。全体定義 `@OpenAPIDefinition`（タイトル・タグ等）は `ApiApplication.kt` に置く。仕様の品質（summary 記述漏れ・operationId 命名等）は vacuum の lint で CI ゲートする（[ADR-0054](docs/adr/0054-vacuum-openapi-lint.md)）。リソース設計（Google AIP 準拠）とエラー描画（RFC 9457）の規約は **`.claude/rules/api-design.md`** / **`.claude/rules/error-handling.md`**（`controller` / `application` / `domain` 編集時にロード）。
+`springdoc-openapi` で API ドキュメントを自動生成する（Swagger UI: `/swagger-ui.html`、OpenAPI JSON: `/v3/api-docs`）。全体定義 `@OpenAPIDefinition`（タイトル・タグ等）は `ApiApplication.kt` に置く。仕様の品質（summary 記述漏れ・operationId 命名等）は vacuum の lint で CI ゲートする（[ADR-0054](docs/adr/0054-vacuum-openapi-lint.md)）。前の版からの変化は lint では見えないので、PR ごとに merge-base との差分を oasdiff で Job Summary に出す（可視化のみ。[ADR-0093](docs/adr/0093-openapi-spec-diff-in-pr.md)）。リソース設計（Google AIP 準拠）とエラー描画（RFC 9457）の規約は **`.claude/rules/api-design.md`** / **`.claude/rules/error-handling.md`**（`controller` / `application` / `domain` 編集時にロード）。
 
 ヘルスチェックは `/actuator/health` のみ公開する（`info` / `metrics` 等は非公開。Cloud Run のヘルスチェックが使う）。
 
