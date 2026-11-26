@@ -52,7 +52,13 @@ dependencies {
     // （#451 / ADR-0044）。契約テスト（Testcontainers）でも runtimeOnly は testRuntimeClasspath に含まれる。
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.flyway.database.postgresql)
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // Jackson 3（tools.jackson）用の Kotlin モジュール。springdoc 3.2.1 以降は swagger-core 3.0 が
+    // Jackson 3 の mapper でモデルを読むため、これが無いと Kotlin の non-null から OpenAPI の
+    // required を導けず、ほぼ全スキーマの required が消える（#1068 で実測: 39 → 3）。
+    // Boot 4 の Spring MVC も Jackson 3 を使うため、実行時の (de)serialize にも効く。
+    // Jackson 2 用（com.fasterxml.jackson.module）は swagger-core の Jackson 3 移行で
+    // 使い手が無くなったため外した。
+    implementation("tools.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)
     implementation(libs.jmolecules.ddd)

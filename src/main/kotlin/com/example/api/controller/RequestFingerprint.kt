@@ -13,10 +13,9 @@ import tools.jackson.databind.ObjectMapper
  * 直列化には Spring Boot が構成した [ObjectMapper] をそのまま使う。同じ DTO からは同じバイト列が出るので 指紋は決定的になる。
  *
  * 本プロジェクトは Spring Boot 4.1 の既定である Jackson 3 系（`tools.jackson.databind`）を採用している。
- * `com.fasterxml.jackson.databind.ObjectMapper`（Jackson 2 系）は `jackson-module-kotlin` 経由でクラスパスに
- * 乗ってはいるが、この Spring Boot バージョンではその型の Bean が定義されない（実測で `@SpringBootTest` 全体が
- * `NoSuchBeanDefinitionException` で落ちることを確認済み）。実際に構成されメッセージコンバータへ渡っているのは Jackson 3 系の
- * [ObjectMapper] のため、そちらへ注入先を合わせる。
+ * `com.fasterxml.jackson.databind.ObjectMapper`（Jackson 2 系）の Bean はこの Spring Boot バージョンでは定義されない
+ * （実測で `@SpringBootTest` 全体が `NoSuchBeanDefinitionException` で落ちることを確認済み）。実際に構成されメッセージ
+ * コンバータへ渡っているのは Jackson 3 系の [ObjectMapper] のため、そちらへ注入先を合わせる。
  */
 @Component
 class RequestFingerprint(private val objectMapper: ObjectMapper) {

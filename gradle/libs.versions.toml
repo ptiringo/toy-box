@@ -11,8 +11,8 @@ detekt = "2.0.0-alpha.6"
 kover = "0.9.11"
 
 # ライブラリのバージョン
-spring-ai = "2.0.2"
-springdoc-openapi-bom = "3.2.0"
+spring-ai = "2.0.3"
+springdoc-openapi-bom = "3.2.1"
 java-uuid-generator = "5.2.0"
 kotlin-result = "2.3.1"
 mockk = "1.14.12"
