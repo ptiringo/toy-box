@@ -53,6 +53,11 @@ dependencies {
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.flyway.database.postgresql)
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // Jackson 3（tools.jackson）用の Kotlin モジュール。springdoc 3.2.1 以降は swagger-core 3.0 が
+    // Jackson 3 の mapper でモデルを読むため、これが無いと Kotlin の non-null から OpenAPI の
+    // required を導けず、ほぼ全スキーマの required が消える（#1068 で実測: 39 → 3）。
+    // Boot 4 の Spring MVC も Jackson 3 を使うため、実行時の (de)serialize にも効く。
+    implementation("tools.jackson.module:jackson-module-kotlin")
     implementation(libs.java.uuid.generator)
     implementation(libs.kotlin.result)
     implementation(libs.jmolecules.ddd)
