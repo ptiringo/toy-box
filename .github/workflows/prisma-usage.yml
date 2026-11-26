@@ -1,0 +1,55 @@
+# 本番 DB の operations の使用量の監視ワークフロー
+#
+# 目的: Prisma Postgres の Free プランの operations（月 200,000 回）の上限に近づいたら Issue で知らせる
+# （#1041）。Free プランには上限が近いことを知らせるメールが無い。本体は scripts/report-prisma-usage.sh。
+#
+# トークン（PRISMA_USAGE_TOKEN）は読み取り専用にできない。Prisma のサービストークンは範囲をプロジェクト
+# までしか絞れず、そのプロジェクトの DB は削除できる。本番 DB のプロジェクトだけに絞り、期限を付けて
+# いる。このワークフローは外部からの入力を受けない（schedule と手動実行だけ）ので、PR から
+# トークンを読まれることはない。
+#
+# Project #4 への追加は、Project 側の組み込みの自動追加（label:prisma-usage）が行う。
+# GITHUB_TOKEN はユーザー所有の Project を操作できない。
+
+name: Prisma Usage
+
+on:
+  schedule:
+    # 毎日 9:23（JST）。毎時 0 分は GitHub Actions の schedule が混んで遅れやすいので外す。
+    - cron: "23 0 * * *"
+  workflow_dispatch:
+
+# 同時に 2 つ動くと、どちらも「開いた Issue が無い」と判断して 2 つ立てうる。直列にする。
+concurrency:
+  group: prisma-usage
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    name: Report Prisma Usage
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 素の bash と curl / jq / gh だけで動くのでツールのインストールは要らない（いずれもランナーに入っている）。
+      # `${{ }}` をシェルへ直接展開しないよう、環境変数を経由して渡す。
+      - name: Report Prisma usage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PRISMA_TOKEN: ${{ secrets.PRISMA_USAGE_TOKEN }}
+          PRISMA_DATABASE_ID: ${{ secrets.PRISMA_DATABASE_ID }}
+          # Free プランの月の上限（ https://www.prisma.io/docs/console/more/billing ）。プランを変えたら直す。
+          LIMIT: "200000"
+          THRESHOLDS: "50 75 90"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ASSIGNEE: ${{ github.repository_owner }}
+        run: scripts/report-prisma-usage.sh

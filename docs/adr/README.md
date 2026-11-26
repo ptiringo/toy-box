@@ -103,3 +103,4 @@
 | [0091](0091-no-preflight-for-data-dependent-migrations.md) | データ依存のマイグレーションに事前検証を設けない | Accepted |
 | [0092](0092-twin-live-foals-and-foal-slots.md) | 双子の生産を「産駒あり」の中の印で表し、繁殖成績ごとの登録枠で頭数を縛る | Accepted |
 | [0093](0093-openapi-spec-diff-in-pr.md) | PR で OpenAPI 仕様の差分を oasdiff で可視化する（落とすかは保留） | Accepted |
+| [0094](0094-prisma-usage-monitoring-via-management-api.md) | 本番 DB の operations の使用量を Management API で毎日見て、閾値で Issue を立てる | Accepted |
