@@ -61,6 +61,9 @@ pre-commit:
     # が意図的に mise exec を使っているとおり、ローカルのシェルは mise の PATH が通っている保証がない。
     # 検査対象はワークフロー全件なので {staged_files} は渡さない（glob は発火の条件だけを絞る役。
     # adr-numbering / mise-lock-platforms と同じ形）。素の bash なのでコミットは実質重くならない。
+    # 発火の範囲は CI（.github/workflows/mise-lock-check.yml の paths）に合わせている。片方を変えたら
+    # もう片方も直す（対応は機械検査していない。#920）。CI は `.github/workflows/**` で拡張子を
+    # 問わないが、ここは .yml / .yaml だけに絞っている（ワークフローとして読まれるのはこの 2 つ）。
     workflow-mise-exec:
       glob:
         - ".github/workflows/*.{yml,yaml}"
@@ -262,8 +265,13 @@ pre-push:
     # 毎回 Testcontainers 起動ぶんの時間（実測 20 秒前後）を払うことになり、検出機会が
     # `.sql` 等を触ったときだけであることに対して費用が非対称になる。
     #
-    # glob は CI（.github/workflows/db-doc-check.yml）の paths と同じ集合にして
-    # 「CI で走る変更 ＝ pre-push でも走る」の対応を保つ。ズレると塞いだはずの往復が戻る。
+    # glob は CI（.github/workflows/db-doc-check.yml）の paths に合わせ、「CI で走る変更 ＝ pre-push
+    # でも走る」の対応を保つ。ズレると塞いだはずの往復が戻る。**片方を変えたらもう片方も直す**
+    # （対応は機械検査していない。検査を置かない判断は #920）。比べるときの注意が 2 つある。
+    #   - 関係は完全一致ではなく「CI ⊇ pre-push」。CI 側のワークフロー自身の 1 行（#819）は
+    #     ここに対応を持たない
+    #   - glob の方言が違う。lefthook の `*` は `/` をまたぐが、GitHub Actions の `*` はまたがない
+    #     （CI の `dbdoc/**` とここの `dbdoc/*` は同じ範囲を指す）。文字列が同じでも意味は揃わない
     # `--no-daemon` の分岐は full-test と同じ理由（worktree での foreign daemon 再利用。#482）。
     db-doc-check:
       priority: 3
