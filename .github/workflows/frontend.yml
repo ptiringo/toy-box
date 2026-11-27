@@ -49,7 +49,9 @@ jobs:
           # このジョブが使うツールだけを入れる（#464。バージョンの出所は mise.toml）。
           # install_args のツール名は mise.toml の [tools] キーと一致させる（lock は backend 修飾名で
           # 同定するため、短縮名では --locked が lock エントリを引けず落ちる。node はそのままのキー）。
-          install_args: "node"
+          # npm も入れる。frontend/package.json の devEngines が npm 11 以上を要求するため、node 同梱の
+          # npm 10 では `npm ci` が EBADDEVENGINES で落ちる（#832。理由は mise.toml の npm のコメント）。
+          install_args: "node npm:npm"
 
       - name: Install dependencies
         run: npm ci

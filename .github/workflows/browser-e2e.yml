@@ -60,7 +60,9 @@ jobs:
         uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         # MISE_ENV=ci はジョブの env で与える（理由は上の env ブロックのコメント）。
         with:
-          install_args: "node"
+          # npm も入れる。frontend/package.json の devEngines が npm 11 以上を要求するため、node 同梱の
+          # npm 10 では `npm ci` が EBADDEVENGINES で落ちる（#832。理由は mise.toml の npm のコメント）。
+          install_args: "node npm:npm"
 
       - name: Install dependencies
         run: npm ci

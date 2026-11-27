@@ -50,11 +50,15 @@ lefthook = "2.1.9"
 # 実測: 同じ package.json から生成した lock の `libc` は npm 10 で 0 件、npm 11 / 12 で 14 件。
 # npm 11 と 12 の出力はバイト単位で一致するため、Dependabot が 11 系のままでも 12 で揃う。
 #
-# CI の install_args には足していない。frontend / browser-e2e のジョブは `npm ci`（lock を書き換えない）
-# しか使わず node 同梱の npm で足りるので、「そのジョブが使うツールだけ入れる」方針（#464）を優先する。
-#
 # **`node` より前に書くこと**。mise は [tools] の宣言順に PATH を積むため、node の後ろに置くと node 同梱の
-# npm 10 が先に解決され、この固定は無言で効かなくなる（`mise exec -- npm --version` が 10.9.8 を返すのを実測）。
+# npm 10 が先に解決される（`mise exec -- npm --version` が 10.9.8 や 10.9.9 を返すのを実測）。この順序は
+# frontend/package.json の `devEngines`（npm 11 以上、onFail: error）が守る。並びが崩れて npm 10 が
+# 解決されると、`npm install` / `npm ci` / `npm run` が EBADDEVENGINES で止まる（#832）。無言で lock が
+# 変わるのではなく、その場で落ちる。下限を 11 にしているのは、11 と 12 の lock が一致するため。
+# Dependabot は自前の npm（2026-11-25 のジョブログで 12.2.0）で lock を書くので、この下限を満たす。
+#
+# CI（frontend / browser-e2e）の install_args にも npm:npm を入れている。devEngines は `npm ci` にも効くので、
+# node 同梱の npm 10 のままでは落ちる。順序が崩れたときに CI も赤くなる。
 "npm:npm" = "12.0.2"
 node = "22"
 "aqua:koalaman/shellcheck" = "0.11.0"
