@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
+import type { UseWorlds } from "../worlds/useWorlds";
 
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ signOutUser: vi.fn() }),
-}));
+// useAuth の戻り値はモジュールスコープの安定した参照にする（実物の AuthContext と同じ。#747）。
+const auth = vi.hoisted(() => ({ signOutUser: async () => {} }));
+vi.mock("../auth/AuthContext", () => ({ useAuth: () => auth }));
 
 const useWorldsMock = vi.fn();
 vi.mock("../worlds/useWorlds", () => ({ useWorlds: () => useWorldsMock() }));
@@ -23,17 +24,11 @@ function renderPage() {
   );
 }
 
-// テストコードも tsc の対象なので、ヘルパの戻り値に正確な型を付ける（Record<string, unknown> で
-// スプレッドすると create 等が unknown に落ちて npm run build が失敗する）。
-type WorldsStub = {
-  worlds: { id: string; name: string }[];
-  loading: boolean;
-  busy: boolean;
-  error: string | null;
-  create: ReturnType<typeof vi.fn>;
-  rename: ReturnType<typeof vi.fn>;
-  remove: ReturnType<typeof vi.fn>;
-};
+// スタブの型は useWorlds の戻り値型（UseWorlds）から導く。手書きで複写すると、フックに項目が
+// 増えてもスタブが追随せず、tsc も vitest も落ちないまま本番と違う画面をテストする（#808 で
+// busy を足したとき実際に起きた。#747）。変更操作だけは呼び出しを検証するので Mock に差し替える。
+type Operations = "create" | "rename" | "remove";
+type WorldsStub = Omit<UseWorlds, Operations> & { [K in Operations]: Mock<UseWorlds[K]> };
 
 function stubWorlds(overrides: Partial<WorldsStub> = {}): WorldsStub {
   const value: WorldsStub = {
@@ -41,9 +36,9 @@ function stubWorlds(overrides: Partial<WorldsStub> = {}): WorldsStub {
     loading: false,
     busy: false,
     error: null,
-    create: vi.fn().mockResolvedValue(true),
-    rename: vi.fn().mockResolvedValue(true),
-    remove: vi.fn().mockResolvedValue(true),
+    create: vi.fn<UseWorlds["create"]>().mockResolvedValue(true),
+    rename: vi.fn<UseWorlds["rename"]>().mockResolvedValue(true),
+    remove: vi.fn<UseWorlds["remove"]>().mockResolvedValue(true),
     ...overrides,
   };
   useWorldsMock.mockReturnValue(value);

@@ -13,7 +13,7 @@ describe("apiGet", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const body = await apiGet<{ id: string }[]>("/api/bloodHorses", token);
+    const body = await apiGet<{ id: string }[]>("/api/worlds/w1/bloodHorses", token);
 
     expect(body).toEqual([{ id: "a" }]);
     const [, init] = fetchMock.mock.calls[0];
@@ -23,7 +23,7 @@ describe("apiGet", () => {
   it("401はApiError(status=401)として投げる", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
 
-    await expect(apiGet("/api/bloodHorses", token)).rejects.toMatchObject({
+    await expect(apiGet("/api/worlds/w1/bloodHorses", token)).rejects.toMatchObject({
       status: 401,
     });
   });
@@ -42,7 +42,7 @@ describe("apiGet", () => {
       ),
     );
 
-    await expect(apiGet("/api/bloodHorses", token)).rejects.toMatchObject({
+    await expect(apiGet("/api/worlds/w1/bloodHorses", token)).rejects.toMatchObject({
       status: 403,
       problem: { title: "Forbidden", detail: "権限がありません", status: 403 },
     });
@@ -52,7 +52,7 @@ describe("apiGet", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(apiGet("/api/bloodHorses", async () => null)).rejects.toMatchObject({
+    await expect(apiGet("/api/worlds/w1/bloodHorses", async () => null)).rejects.toMatchObject({
       status: 401,
     });
     expect(fetchMock).not.toHaveBeenCalled();
