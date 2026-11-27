@@ -9,10 +9,10 @@ import { RequireAuth } from "./RequireAuth";
 
 function renderAt() {
   return render(
-    <MemoryRouter initialEntries={["/bloodHorses"]}>
+    <MemoryRouter initialEntries={["/worlds/w1/bloodHorses"]}>
       <Routes>
         <Route element={<RequireAuth />}>
-          <Route path="/bloodHorses" element={<div>protected</div>} />
+          <Route path="/worlds/w1/bloodHorses" element={<div>protected</div>} />
         </Route>
         <Route path="/login" element={<div>login-page</div>} />
       </Routes>

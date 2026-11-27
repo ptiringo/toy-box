@@ -3,7 +3,7 @@ import { errorMessage } from "../api/client";
 import { createWorld, deleteWorld, listWorlds, renameWorld, type World } from "../api/worlds";
 import { useAuth } from "../auth/AuthContext";
 
-type UseWorlds = {
+export type UseWorlds = {
   worlds: World[];
   loading: boolean;
   busy: boolean;

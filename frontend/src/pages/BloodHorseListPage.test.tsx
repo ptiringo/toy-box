@@ -2,13 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "../api/client";
+import type { UseWorlds } from "../worlds/useWorlds";
 
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({
-    getToken: async () => "t",
-    signOutUser: vi.fn(),
-  }),
-}));
+// useAuth の戻り値はモジュールスコープの安定した参照にする（実物の AuthContext は useMemo で
+// 参照を保つ。毎回新しい getToken を返すと、それを依存に持つ取得処理が走り直す。#747）。
+const auth = vi.hoisted(() => ({ getToken: async () => "t", signOutUser: async () => {} }));
+vi.mock("../auth/AuthContext", () => ({ useAuth: () => auth }));
 
 const useWorldsMock = vi.fn();
 vi.mock("../worlds/useWorlds", () => ({ useWorlds: () => useWorldsMock() }));
@@ -32,7 +31,7 @@ function renderAt(path: string) {
     create: vi.fn(),
     rename: vi.fn(),
     remove: vi.fn(),
-  });
+  } satisfies UseWorlds);
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
