@@ -201,7 +201,7 @@ Kover 0.9 の検証ルールはパッケージ単位のフィルタを持てな�
 
 集約ゲート（成熟領域全体の絶対水準）を補完し、PR で変更した行のカバレッジを個別に検証するのが差分ゲートである（[ADR-0055](../../docs/adr/0055-patch-coverage-diff-cover-gate.md)）。母集団が厚い集約ゲートだけでは新規変更行のテスト漏れが薄まって見逃されるため、変更行そのものに閾値を課す。
 
-- **[diff-cover](https://github.com/Bachmann1234/diff-cover)**（pipx, 10.3.0, mise 管理）で変更行カバレッジを算出し、`--fail-under 90` で 90% 未満の PR を落とす（出所は `.github/workflows/api-tests.yml`。集約ゲートの LINE 下限とは**独立**の値で、ラチェットに連動しない）。
+- **[diff-cover](https://github.com/Bachmann1234/diff-cover)**（pipx, mise 管理。版の出所は `mise.toml`）で変更行カバレッジを算出し、`--fail-under 90` で 90% 未満の PR を落とす（出所は `.github/workflows/api-tests.yml`。集約ゲートの LINE 下限とは**独立**の値で、ラチェットに連動しない）。
 - 入力は `koverVerifyMature` と同じ `mature` variant の XML（`build/reports/kover/reportMature.xml`）。探索領域（`excludes` denylist、出所は `build.gradle.kts` に一元化）は mature XML の時点で除外済みのため、差分ゲートにも自動で継承される。
 - CI（`api-tests.yml`）は **PR ジョブ限定**で実行する（`github.event_name == 'pull_request'`）。main への push では走らせない（push でも走る `koverVerifyMature` が最終防波堤）。
 
