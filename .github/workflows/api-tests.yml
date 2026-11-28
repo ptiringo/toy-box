@@ -83,7 +83,7 @@ jobs:
       # 探索領域(denylist)は mature XML に載らないため分母から自動で外れる。
       #
       # **`mise exec --` は挟まない**（#917）。mise-action は install 先の bin（この場合
-      # `installs/pipx-diff-cover/10.3.0/bin`）を PATH に足すので直接呼べる。一方 `mise exec` は
+      # `installs/pipx-diff-cover/<版>/bin`）を PATH に足すので直接呼べる。一方 `mise exec` は
       # config 上の全ツールを解決・install してしまい、install_args による絞り込み（#464）を後段で
       # 無効化する。mise-action のキャッシュ保存は `mise install` の直後なので、そこで入った分は
       # キャッシュにも乗らず毎 run 入れ直しになる。
