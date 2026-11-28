@@ -43,6 +43,12 @@ Flyway は各マイグレーションを 1 トランザクションで適用す�
 
   `ALTER TABLE` 行の上に置いても効かない。空白区切り・コロン付き（`-- squawk-ignore: a, b`）も効かない。
 - **`-- squawk-ignore-file` は使わない**（そのファイルの全ルールを無効化し、将来の警告まで見えなくする）。
+- 制約の張り替え（drop → add）は squawk の `ban-drop-constraint` に当たる。このルールは、マイグレーション後も
+  動いている古い版のアプリ（切り替え中の旧リビジョン・アプリだけ戻したとき）を壊さないかを見る。
+  とくに **`ON CONFLICT (cols)` の衝突判定に使われている UNIQUE 制約を落とすと、古い版の insert が即座に失敗する**。
+  古い版が当てにしていないと確かめたうえで、`DROP CONSTRAINT` 行の直前に
+  `-- squawk-ignore ban-drop-constraint` と理由のコメントを置く（適用済みのものは `.squawk.toml` の
+  `excluded_paths` で外してある。#1100）。
 - nullable 列は素の `UNIQUE (col)` でよい（PostgreSQL は NULL 同士を衝突とみなさない）。partial index は不要。
 - 命名は `uq_<table>_<columns>`。
 
