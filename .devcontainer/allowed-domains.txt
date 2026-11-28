@@ -48,6 +48,7 @@ plugins.jetbrains.com
 data.services.jetbrains.com
 # kotlin-lsp（Claude Code の Kotlin LSP プラグインが要求する Language Server）を mise で取得する先。
 # 無いと devcontainer 内の `mise install` が http:kotlin-lsp のダウンロードで落ちる。採否は ADR-0046。
+# mise.toml の URL は上の download.jetbrains.com を指し、ここへ 302 で飛ばされる（CDN を直接指すと 404。#1100）。
 download-cdn.jetbrains.com
 
 # --- Docker Hub（DinD の dockerd が pull する先）---

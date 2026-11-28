@@ -50,7 +50,8 @@ Gradle 依存解決（Maven Central・`plugins.gradle.org`・`services.gradle.or
 | `mise-versions.jdx.dev` | `mise install` のバージョン解決 |
 | `mise-java.jdx.dev` | `mise install java` が JVM メタデータ（tar の所在）を引く先 |
 | `production.cloudfront.docker.com` | **Docker Hub の blob CDN**。Testcontainers のイメージ取得（`postgres:17-alpine` / Ryuk）に必須 |
-| `download-cdn.jetbrains.com` | **kotlin-lsp（JetBrains 公式 Language Server）の配信元**。`mise install http:kotlin-lsp` の取得先。無いと best-effort 導入が失敗し編集時診断が無効になる（`./gradlew check` には影響しない）。値の出所は `.devcontainer/allowed-domains.txt`（コミット共有） |
+| `download.jetbrains.com` | **kotlin-lsp の取得の入口**。`mise.toml` の URL はこのホストを指し、署名付きの `download-cdn.jetbrains.com` へ 302 で飛ばされる（CDN を直接指すと 404。#1100）。無いと下の CDN と同じく導入が失敗する |
+| `download-cdn.jetbrains.com` | **kotlin-lsp（JetBrains 公式 Language Server）の配信元**（上の入口からのリダイレクト先）。無いと best-effort 導入が失敗し編集時診断が無効になる（`./gradlew check` には影響しない）。値の出所は `.devcontainer/allowed-domains.txt`（コミット共有） |
 
 - **Docker Hub はデフォルト Trusted ではない**（当初そう見込んでいたが実測で否定された）。レジストリ API（`registry-1.docker.io`）までは通るが、**blob 取得が CDN で 403 になり** Testcontainers が `ContainerFetchException` で落ちる。CDN ホストを Custom に足すこと（`registry-1.docker.io` / `auth.docker.io` も 403 が出るなら併せて足す）。
 - GitHub（`github.com` / `objects.githubusercontent.com`）は Trusted で追加不要（mise バイナリ・チェックサム・JDK tar 実体はそこから来る）。
@@ -115,13 +116,13 @@ GH_TOKEN=<自前 PAT>
 
 Claude Code の `kotlin-lsp@claude-plugins-official` プラグイン（`.claude/settings.json` の `enabledPlugins` で有効化済み・コミット共有）は、PATH 上の `kotlin-lsp --stdio` を起動して**編集時のリアルタイム診断・コードナビ**を提供する（採否・供給は [ADR-0046](adr/0046-adopt-kotlin-lsp-plugin.md)）。ゲート（detekt / ArchUnit / gradle check）を置き換えない補助操舵。
 
-- **導入**: `scripts/web-setup.sh` が toolchain 検証の後に `mise install http:kotlin-lsp` を **best-effort** で実行する（`http:` バックエンドで `download-cdn.jetbrains.com` から取得）。取得失敗しても setup は止めず、`./gradlew check` の緑には影響しない。
-- **要件（UI 側）**: 上記「2. Custom 許可ドメイン」の表に `download-cdn.jetbrains.com` を追加すること。無いと best-effort 導入が失敗し編集時診断が無効のままになる。
+- **導入**: `scripts/web-setup.sh` が toolchain 検証の後に `mise install http:kotlin-lsp` を **best-effort** で実行する（`http:` バックエンドで `download.jetbrains.com` から取得し、署名付きの `download-cdn.jetbrains.com` へリダイレクトされる）。取得失敗しても setup は止めず、`./gradlew check` の緑には影響しない。
+- **要件（UI 側）**: 上記「2. Custom 許可ドメイン」の表に `download.jetbrains.com` と `download-cdn.jetbrains.com` の両方を追加すること。無いと best-effort 導入が失敗し編集時診断が無効のままになる。
 - **PATH**: バイナリは既存の `session-start-mise.sh`（`mise hook-env`）が注入する PATH に載る想定。プラグインの取り込みは初回にユーザーの信頼承認を経る。
 
 ### 実測で確定すべき点
 
-- `download-cdn.jetbrains.com` だけで足りるか（別ホストが 403 なら Custom に追記し表を更新）。
+- `download.jetbrains.com` と `download-cdn.jetbrains.com` の 2 つで足りるか（別ホストが 403 なら Custom に追記し表を更新）。
 - mise の `http:` バックエンドのダウンロードが TLS 傍受プロキシ越しに通るか（mise はシステム CA を使う想定だが未確認）。
 - **Linux x64 の kotlin-lsp が起動・動作するか**（[ADR-0046](adr/0046-adopt-kotlin-lsp-plugin.md) は Linux を未実機検証と明記。クラウド VM は Linux）。
 - ランチャ `kotlin-lsp.sh` がセッションの JDK 25（mise hook-env 注入 PATH）を使えるか。ランタイムはセッションの `JAVA_TOOL_OPTIONS`（プロキシ CA 入り truststore）が効く想定。
