@@ -30,7 +30,10 @@ GOOGLE_IMPERSONATE_SERVICE_ACCOUNT = "local-readonly@ptiringo-toy-box.iam.gservi
 [tools]
 actionlint = "1.7.12"
 "aqua:cli/cli" = "2.106.0"
-fnox = "1.50.0"
+# fnox: packslip backend（#1100）。mise registry の推奨が github から packslip へ変わったため追従した。
+# 配布物は github backend と同じ GitHub Releases の資産で、lock には発行元の署名者（sigstore の
+# OIDC 主体＝jdx/fnox の release.yml）が記録され、install 時に検証される。
+"packslip:github.com/jdx/fnox" = "1.50.0"
 # editorconfig-checker: github backend で GitHub Releases を直接指す（#980）。aqua backend は
 # aqua-registry が上流の資産名の変更（v4.0.0 の `ec-*` → `editorconfig-checker-*`）に追従するまで
 # 入らず、4.x への追従が止まった（#881）。4.x から実行名は `ec` ではなく `editorconfig-checker`。
