@@ -24,3 +24,23 @@ excluded_rules = [
   "prefer-text-field",
   "prefer-bigint-over-int",
 ]
+
+# 除外するファイル（#1100）
+# squawk 2.68.0 から既定で有効になったロールバック互換のルール（ban-drop-constraint / ban-set-schema）が、
+# 以下の適用済みマイグレーションに反応する。適用済みのファイルは Flyway のチェックサムが変わるため
+# `-- squawk-ignore` を書き足せず、内容を直す意味もない。ルール自体はこれから書くマイグレーションに
+# 効かせたいので、ルールではなくファイルを外す。
+# - V13: テーブルをコンテキスト別スキーマへ移した（ban-set-schema）
+# - V9 / V15 / V19 / V24 / V26: CHECK・FK・UNIQUE の張り替え（ban-drop-constraint）
+# 新しいマイグレーションをここに足さない。意図して制約を落とすなら、文ごとに `-- squawk-ignore` と
+# 理由を書く（.claude/rules/migrations.md）。
+# 除外したファイルだけを squawk に渡すと「Failed to find files」で exit 1 になる（lefthook で 1 本だけ
+# stage した場合）。適用済みのマイグレーションはそもそも編集しないので、そのままにしている。
+excluded_paths = [
+  "V9__add_version_not_null.sql",
+  "V13__split_schema_per_context.sql",
+  "V15__update_blood_horse_origin_check.sql",
+  "V19__enforce_world_scope_constraints.sql",
+  "V24__add_overseas_covering_and_brought_in_origin.sql",
+  "V26__fix_breeding_result_outcome_null_checks.sql",
+]
