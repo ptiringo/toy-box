@@ -66,9 +66,9 @@
 ```mermaid
 erDiagram
 
-"studbook.blood_horse" }o--|| "studbook.breeding_result" : "FOREIGN KEY (world_id, bred_from_breeding_result_id) REFERENCES studbook.breeding_result(world_id, id)"
+"studbook.blood_horse" }o--o| "studbook.breeding_result" : "FOREIGN KEY (world_id, bred_from_breeding_result_id) REFERENCES studbook.breeding_result(world_id, id)"
 "studbook.breeding_result" }o--|| "studbook.breeding_registration" : "FOREIGN KEY (world_id, breeding_registration_id) REFERENCES studbook.breeding_registration(world_id, id)"
-"studbook.breeding_result" }o--|| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
+"studbook.breeding_result" }o--o| "studbook.blood_horse" : "FOREIGN KEY (world_id, covering_stallion_id) REFERENCES studbook.blood_horse(world_id, id)"
 "studbook.breeding_result" }o--|| "iam.world" : "FOREIGN KEY (world_id) REFERENCES iam.world(id) ON DELETE CASCADE"
 
 "studbook.breeding_result" {
