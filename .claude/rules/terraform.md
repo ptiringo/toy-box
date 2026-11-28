@@ -43,6 +43,16 @@ infra/
 
 機微な値（請求先アカウント ID、Prisma のトークン・プロジェクト名、監査アラートの通知先メール）は公開リポジトリに直書きせず、**HCP workspace の変数**で供給する。`list(string)` 型の変数を HCP UI で登録するときは **HCL フラグをオンにする**（詳細は `.claude/rules/gcp-guardrails.md`）。
 
+## Terraform 本体の版
+
+版は 3 か所にあり、上げるときは揃える（#1100）。
+
+- `mise.toml` の `terraform`: ローカルと CI（terraform-check）が使う
+- `infra/terraform.tf` と各モジュールの `versions.tf` の `required_version`: 下限を上の版の minor に合わせる。HCP の版が下回ると plan が落ちるので、ずれたら気づける
+- **HCP workspace（`toy-box`）の Terraform Version**: 本番の plan / apply が使う。Terraform 管理外なので HCP の UI か `tfctl api`（PATCH は確認が入る）で変える。**一度新しい版で apply すると state がその版で書かれ、戻せない**
+
+`required_version` を上げる PR は HCP の speculative plan を起動するので、**先に HCP workspace の版を上げてから push する**（逆順だと plan が `Unsupported Terraform Core version` で errored になり、retry が要る）。
+
 ## コマンド
 
 ```bash
