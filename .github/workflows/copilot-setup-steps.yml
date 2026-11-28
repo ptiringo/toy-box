@@ -5,6 +5,9 @@ on:
   push:
     paths: &trigger_paths
       - .github/workflows/copilot-setup-steps.yml
+      # 全ツールを入れ直すので、ツールの版を上げる PR で導入できることを確かめる（#1104）。
+      - mise.toml
+      - mise.lock
   pull_request:
     paths: *trigger_paths
 

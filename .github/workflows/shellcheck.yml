@@ -11,11 +11,16 @@ on:
     paths:
       - "**/*.sh"
       - ".github/workflows/shellcheck.yml"
+      # ツールの版の出所。版だけを上げる PR でも新しい版で検査を走らせる（#1104）。
+      - "mise.toml"
+      - "mise.lock"
   push:
     branches: [main]
     paths:
       - "**/*.sh"
       - ".github/workflows/shellcheck.yml"
+      - "mise.toml"
+      - "mise.lock"
   workflow_dispatch:
 
 jobs:
