@@ -41,7 +41,7 @@ paths:
   ```
 
   実行中のプロセスやリポジトリの状態を判定に使う hook は、**その判定文字列が実際に何にマッチするか**まで確かめる（#780 のガードは `org.gradle.wrapper.GradleWrapperMain` がどのプロセスにも当たらず、構文としては正しいまま一度も発火しなかった）
-- **CI ジョブ**: 検査の本体はワークフローのインラインではなく `scripts/*.sh` へ切り出す。違反状態を作ってローカルで直接実行するだけで発火を確認できる（先例: `scripts/check-adr-numbering.sh` と `.github/workflows/adr-check.yml`）。加えて **`paths` フィルタがその変更でジョブを起動するか**を別途確かめる。フィルタが外れているとゲート本体が正しくてもジョブごと走らない
+- **CI ジョブ**: 検査の本体はワークフローのインラインではなく `scripts/*.sh` へ切り出す。違反状態を作ってローカルで直接実行するだけで発火を確認できる（先例: `scripts/check-adr-numbering.sh` と `.github/workflows/adr-check.yml`）。加えて **`paths` フィルタがその変更でジョブを起動するか**を別途確かめる。フィルタが外れているとゲート本体が正しくてもジョブごと走らない。**mise で入れるツールを使うジョブは、`paths` に `mise.toml` / `mise.lock` も含める**（ツールの版だけを上げる PR で新しい版が一度も CI で走らないまま main に入る。#1104）
 - **lefthook（pre-commit）**: 違反ファイルを stage して `lefthook run pre-commit` を実行し、当該コマンドが skip されずに落ちることを見る。**glob が効かず、対象ファイルだけのコミットで素通りする**穴が繰り返し出ている（#800 / #804）。glob を書いたら「そのファイル 1 本だけを stage したとき」に走るかを必ず確かめる
 - **lefthook（pre-push）**: **判定材料が stage ではない**ため、pre-commit のやり方が通用しない。pre-push の glob は `scripts/list-push-target-files.sh` が返す「これから push される変更ファイル」に対して当たるので、**ファイルを stage しただけでは glob は当たらない**。検証したい種類のファイルだけを変更した**一時コミット**を作ってから `lefthook run pre-push` を実行し、走り分けを見る（#906 / PR #918 の実測）。
 

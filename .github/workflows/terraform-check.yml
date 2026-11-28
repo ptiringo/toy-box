@@ -12,11 +12,16 @@ on:
       - "infra/**"
       # ワークフロー自身を変更した PR でも走らせる（#819。無いと、その変更を CI で確かめられない）。
       - ".github/workflows/terraform-check.yml"
+      # ツールの版の出所。版だけを上げる PR でも新しい版で検査を走らせる（#1104）。
+      - "mise.toml"
+      - "mise.lock"
   push:
     branches: [main]
     paths:
       - "infra/**"
       - ".github/workflows/terraform-check.yml"
+      - "mise.toml"
+      - "mise.lock"
   workflow_dispatch:
 
 defaults:
