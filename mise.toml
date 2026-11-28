@@ -129,7 +129,10 @@ checksum = "sha256:5f2caf7900b8f43dd72f390b992bafceab4ae85bbc58b60325bb1888ef9a0
 # 役割は「編集時のリアルタイム診断・コードナビ」で、detekt / ArchUnit / gradle check（stop hook）等のゲートは
 # 置き換えない補助操舵。採否・設計は ADR-0046 参照。
 #
-# 供給経路: JetBrains 公式配布は download-cdn.jetbrains.com（GitHub Releases に資産なし → ubi / aqua 不可、
+# 供給経路: JetBrains 公式配布は download.jetbrains.com（GitHub Releases に資産なし → ubi / aqua 不可、
+# 公式 brew tap は macOS 限定）。download.jetbrains.com は署名付きの download-cdn.jetbrains.com へ 302 で
+# 飛ばす。**CDN の URL を直接指すと 404 になる**（2026-11-28 に 262 / 271 とも実測。#859 の 404 も
+# 同じ機序だった可能性がある。#1100）ので、URL は必ず download.jetbrains.com で書く。
 # 公式 brew tap は macOS 限定）。クロスプラットフォーム再現性を保つため tfctl と同様に http バックエンドで
 # 直接指す。mac は `.sit`（実体は zip なので `format = "zip"` で明示）、Linux は `.tar.gz`。
 # 版は JetBrains ビルド番号（例 262.8190.0）。更新の手順は下の「バージョン更新時」を参照。
@@ -162,24 +165,24 @@ checksum = "sha256:5f2caf7900b8f43dd72f390b992bafceab4ae85bbc58b60325bb1888ef9a0
 # このコマンドは 6 platform 分を揃えられる）。出力は上記のとおり 2 エントリになるので、
 # 1 エントリへ手でまとめてからコミットする。
 [tools."http:kotlin-lsp"]
-version = "262.8190.0"
+version = "271.2085.0"
 strip_components = 1
 rename_exe = "kotlin-lsp"
 
 [tools."http:kotlin-lsp".platforms.macos-x64]
-url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit"
+url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.sit"
 format = "zip"
-checksum = "sha256:f3845ae9ee38c22ef5e436390d86a3d908f77073e9667fa643a5ae0957c19728"
+checksum = "sha256:68457ab1825331e3eac85191b7c32737cbd8993867f5a9c50dfe012c5509e8f7"
 
 [tools."http:kotlin-lsp".platforms.macos-arm64]
-url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit"
+url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.sit"
 format = "zip"
-checksum = "sha256:e20183262784bb7e665ce1aea4855872a8b16f211ebb478d452773553732d9fb"
+checksum = "sha256:2d22388f58be6f4dfa7a8f18c1e231871164dcacc16e407559029d7232816b4a"
 
 [tools."http:kotlin-lsp".platforms.linux-x64]
-url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.tar.gz"
-checksum = "sha256:8b4c70e95065420e7867c99aaf9f18e0b4e76311ec453e4c1a39e3f6ae774cbf"
+url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}.tar.gz"
+checksum = "sha256:e398e799027f41749ea33faa57470307d13d40f910961858c7e30adbd778ae08"
 
 [tools."http:kotlin-lsp".platforms.linux-arm64]
-url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.tar.gz"
-checksum = "sha256:c3edd59ef34a7faa4d04f3517afb7a932b19c3f9cf17d1a14e9da17b0b5440ad"
+url = "https://download.jetbrains.com/language-server/kotlin-server/{{version}}/kotlin-server-{{version}}-aarch64.tar.gz"
+checksum = "sha256:877aee612a17dab48144466282a6414ec58ab428a10b97c7e13edd9b6b3dc96e"
