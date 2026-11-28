@@ -11,7 +11,7 @@ pre-commit:
 
     # EditorConfig準拠チェック
     editorconfig-check:
-      run: ec
+      run: editorconfig-checker
       tags: format
 
     # ktfmt によるフォーマットチェック
